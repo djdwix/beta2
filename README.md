@@ -19,21 +19,38 @@ pip install -r requirements.txt
 在项目根目录创建 .env 文件，参考以下格式填写（所有 your-xxx-here 需替换为实际生成的值）：
 
 SECRET_KEY=your-secret-key-here
+
 ENCRYPTION_KEY=your-encryption-key-here
+
 QR_SECRET=your-qr-secret-here
+
 ADMIN_USERNAME=admin
+
 ADMIN_PASSWORD_HASH=your-bcrypt-hash-here
+
 CORS_ALLOWED_ORIGINS=https://your-domain.com,https://localhost:3000,https://127.0.0.1:3000
+
 RATELIMIT_STORAGE_URI=memory://
+
 RATELIMIT_STRATEGY=fixed-window
+
 RATELIMIT_DEFAULT=200 per day;50 per hour
+
 FILE_LOCK_TIMEOUT=10
+
 FEEDBACK_EMAIL=your-email@example.com
+
 FEEDBACK_EMAIL_PASSWORD=your-email-password
+
+
 FEEDBACK_SMTP_SERVER=smtp.example.com
+
 FEEDBACK_SMTP_PORT=465
+
 VERIFICATION_CODE_EXPIRE_SECONDS=300
+
 VERIFICATION_CODE_LENGTH=6
+
 SMTP_USE_SSL=True
 
 ### 3. 密钥生成方法
