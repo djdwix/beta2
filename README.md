@@ -12,15 +12,12 @@
 
 ### 1. 安装依赖
 
-```bash
 pip install -r requirements.txt
 
+### 2. 环境变量配置
 
-## 环境变量配置
+在项目根目录创建 .env 文件，参考以下格式填写：
 
-在项目根目录创建 `.env` 文件，参考以下格式填写：
-
-```env
 # ============================================================
 # 核心安全配置（必须修改）
 # ============================================================
@@ -87,6 +84,7 @@ VERIFICATION_CODE_EXPIRE_SECONDS=300
 VERIFICATION_CODE_LENGTH=6
 SMTP_USE_SSL=True
 
+### 3. 密钥生成方法
 
 # 生成 SECRET_KEY
 python -c "import secrets; print(secrets.token_hex(32))"
@@ -100,11 +98,19 @@ python -c "import secrets; print(secrets.token_hex(32))"
 # 生成管理员密码哈希（将 your_password 替换为实际密码）
 python -c "import bcrypt; print(bcrypt.generate_password_hash('your_password').decode('utf-8'))"
 
-#证书生成[可使用自己域名的证书]
+### 4. 生成 SSL 证书（可使用自己域名的证书）
+
 mkdir -p ssl
 openssl req -x509 -newkey rsa:4096 -nodes -out ssl/cert.pem -keyout ssl/key.pem -days 365
 
-###项目根目录
+### 5. 启动服务器
+
+python server.py
+
+服务器将在 https://0.0.0.0:3000 启动。
+
+## 项目根目录结构
+
 项目根目录/
 ├── server.py              # 主服务器
 ├── game.py                # 游戏模块
@@ -116,3 +122,7 @@ openssl req -x509 -newkey rsa:4096 -nodes -out ssl/cert.pem -keyout ssl/key.pem 
 ├── public/                # 前端静态文件
 └── GAME/                  # 游戏中心前端
 
+重要提示：
+1. 以上所有 your-xxx-here 占位符均需替换为实际生成的值
+2. 建议定期更换密钥，特别是 SECRET_KEY 和 ENCRYPTION_KEY
+3. 生产环境请使用强密码并妥善保管
