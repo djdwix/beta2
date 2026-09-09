@@ -9,6 +9,7 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+admin.py
 
 # 数据文件（重要！不要提交用户数据）
 data/

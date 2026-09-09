@@ -3,6 +3,91 @@ import time
 import json
 from datetime import datetime
 
+MEMBERSHIP_PRICE = 288.88
+NORMAL_MAX_PLAYS = 5
+MEMBER_MAX_PLAYS = 10
+MEMBER_BONUS_RATE = 0.30
+
+def get_membership_data(users, username):
+    if username not in users:
+        return None
+    user_data = users[username]
+    if 'membership' not in user_data:
+        user_data['membership'] = {
+            'is_member': False,
+            'activated_at': 0,
+            'expires_at': 0,
+            'lifetime': True
+        }
+    return user_data['membership']
+
+def is_game_member(users, username):
+    membership = get_membership_data(users, username)
+    if not membership:
+        return False
+    if membership.get('is_member', False):
+        expires_at = membership.get('expires_at', 0)
+        if expires_at == 0 or expires_at > int(time.time() * 1000):
+            return True
+        else:
+            membership['is_member'] = False
+            return False
+    return False
+
+def get_member_max_plays(users, username):
+    if is_game_member(users, username):
+        return MEMBER_MAX_PLAYS
+    return NORMAL_MAX_PLAYS
+
+def get_member_bonus_rate(users, username):
+    if is_game_member(users, username):
+        return MEMBER_BONUS_RATE
+    return 0.0
+
+def activate_game_membership(users, save_users_func, username):
+    if username not in users:
+        return False, '用户不存在'
+    user_data = users[username]
+    if user_data.get('totalPoints', 0) < MEMBERSHIP_PRICE:
+        return False, f'积分不足，需要 {MEMBERSHIP_PRICE} 积分'
+    if is_game_member(users, username):
+        return False, '您已是游戏会员'
+    user_data['totalPoints'] = round(user_data['totalPoints'] - MEMBERSHIP_PRICE, 2)
+    if 'membership' not in user_data:
+        user_data['membership'] = {}
+    user_data['membership']['is_member'] = True
+    user_data['membership']['activated_at'] = int(time.time() * 1000)
+    user_data['membership']['expires_at'] = 0
+    user_data['membership']['lifetime'] = True
+    save_users_func()
+    return True, '游戏会员开通成功！每日游戏次数提升至10次，获胜积分+30%'
+
+def migrate_game_membership_data(users, save_users_func):
+    modified = False
+    for username, user_data in users.items():
+        if 'membership' not in user_data:
+            user_data['membership'] = {
+                'is_member': False,
+                'activated_at': 0,
+                'expires_at': 0,
+                'lifetime': True
+            }
+            modified = True
+        else:
+            membership = user_data['membership']
+            if 'lifetime' not in membership:
+                membership['lifetime'] = True
+                modified = True
+            if 'activated_at' not in membership:
+                membership['activated_at'] = 0
+                modified = True
+            if 'expires_at' not in membership:
+                membership['expires_at'] = 0
+                modified = True
+    if modified:
+        save_users_func()
+    return modified
+
 class GameManager:
     def __init__(self, users_data, save_users_func, add_points_func, get_user_data_func):
         self.users = users_data
@@ -53,13 +138,15 @@ class GameManager:
         stats = self.get_user_game_stats(username)
         if not stats:
             return False
-        return stats.get('today_plays', 0) < 5
+        max_plays = get_member_max_plays(self.users, username)
+        return stats.get('today_plays', 0) < max_plays
 
     def get_remaining_plays(self, username):
         stats = self.get_user_game_stats(username)
         if not stats:
             return 0
-        return max(0, 5 - stats.get('today_plays', 0))
+        max_plays = get_member_max_plays(self.users, username)
+        return max(0, max_plays - stats.get('today_plays', 0))
 
     def record_play(self, username, won, points_earned):
         stats = self.get_user_game_stats(username)
@@ -74,7 +161,7 @@ class GameManager:
             self.add_points(username, points_earned)
         return stats
 
-    def calculate_points(self, won, game_type, bet_amount=0, extra_data=None):
+    def calculate_points(self, won, game_type, extra_data=None):
         if not won:
             return 0
         base_ranges = {
@@ -126,11 +213,17 @@ class GameManager:
                 base_min, base_max = 15, 35
             else:
                 base_min, base_max = 8, 20
-        return random.randint(base_min, base_max)
+        points = random.randint(base_min, base_max)
+        if extra_data and extra_data.get('username'):
+            username = extra_data.get('username')
+            bonus_rate = get_member_bonus_rate(self.users, username)
+            if bonus_rate > 0:
+                points = int(round(points * (1 + bonus_rate)))
+        return points
 
     def play_dice(self, username, bet_type='high', bet_value=7):
         if not self.can_play(username):
-            return {'success': False, 'error': '今日游戏次数已达上限（5次）', 'remaining': 0}
+            return {'success': False, 'error': '今日游戏次数已达上限', 'remaining': 0}
         player_dice = [random.randint(1, 6) for _ in range(3)]
         ai_dice = [random.randint(1, 6) for _ in range(3)]
         player_total = sum(player_dice)
@@ -146,9 +239,10 @@ class GameManager:
         else:
             won = player_total > ai_total
         diff = abs(player_total - ai_total)
-        points = self.calculate_points(won, 'dice', 0, {'diff': diff})
+        points = self.calculate_points(won, 'dice', {'diff': diff, 'username': username})
         self.record_play(username, won, points)
         remaining = self.get_remaining_plays(username)
+        max_plays = get_member_max_plays(self.users, username)
         return {
             'success': True,
             'won': won,
@@ -158,13 +252,15 @@ class GameManager:
             'ai_total': ai_total,
             'points_earned': points,
             'remaining_plays': remaining,
+            'max_plays': max_plays,
+            'is_member': is_game_member(self.users, username),
             'message': '🎉 你赢了！' if won else '😔 你输了！',
             'diff': diff
         }
 
     def play_blackjack(self, username):
         if not self.can_play(username):
-            return {'success': False, 'error': '今日游戏次数已达上限（5次）', 'remaining': 0}
+            return {'success': False, 'error': '今日游戏次数已达上限', 'remaining': 0}
         deck = [2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 11] * 4
         random.shuffle(deck)
         player_hand = [deck.pop(), deck.pop()]
@@ -193,9 +289,10 @@ class GameManager:
             won = False
         else:
             won = False
-        points = self.calculate_points(won, 'blackjack', 0, {'player_total': player_total, 'dealer_total': dealer_total})
+        points = self.calculate_points(won, 'blackjack', {'player_total': player_total, 'dealer_total': dealer_total, 'username': username})
         self.record_play(username, won, points)
         remaining = self.get_remaining_plays(username)
+        max_plays = get_member_max_plays(self.users, username)
         return {
             'success': True,
             'won': won,
@@ -206,12 +303,14 @@ class GameManager:
             'dealer_hit_count': dealer_hit_count,
             'points_earned': points,
             'remaining_plays': remaining,
+            'max_plays': max_plays,
+            'is_member': is_game_member(self.users, username),
             'message': '🎉 你赢了！' if won else '😔 你输了！'
         }
 
     def start_guess_game(self, username):
         if not self.can_play(username):
-            return {'success': False, 'error': '今日游戏次数已达上限（5次）', 'remaining': 0}
+            return {'success': False, 'error': '今日游戏次数已达上限', 'remaining': 0}
         secret = random.randint(1, 100)
         self.guess_game_state[username] = {
             'secret': secret,
@@ -239,9 +338,10 @@ class GameManager:
         state['attempts'] += 1
         secret = state['secret']
         if guess == secret:
-            points = self.calculate_points(True, 'guess_number', 0, {'attempts': state['attempts']})
+            points = self.calculate_points(True, 'guess_number', {'attempts': state['attempts'], 'username': username})
             self.record_play(username, True, points)
             remaining = self.get_remaining_plays(username)
+            max_plays = get_member_max_plays(self.users, username)
             state['active'] = False
             return {
                 'success': True,
@@ -251,6 +351,8 @@ class GameManager:
                 'max_attempts': state['max_attempts'],
                 'points_earned': points,
                 'remaining_plays': remaining,
+                'max_plays': max_plays,
+                'is_member': is_game_member(self.users, username),
                 'game_over': True,
                 'message': '🎉 你猜对了！数字是 ' + str(secret) + '，用了 ' + str(state['attempts']) + ' 次！'
             }
@@ -265,6 +367,7 @@ class GameManager:
             state['active'] = False
             self.record_play(username, False, 0)
             remaining = self.get_remaining_plays(username)
+            max_plays = get_member_max_plays(self.users, username)
             return {
                 'success': True,
                 'won': False,
@@ -274,6 +377,8 @@ class GameManager:
                 'max_attempts': state['max_attempts'],
                 'points_earned': 0,
                 'remaining_plays': remaining,
+                'max_plays': max_plays,
+                'is_member': is_game_member(self.users, username),
                 'message': '😔 你输了！数字是 ' + str(secret) + '，已用尽所有机会'
             }
         return {
@@ -304,7 +409,7 @@ class GameManager:
 
     def start_rps_game(self, username):
         if not self.can_play(username):
-            return {'success': False, 'error': '今日游戏次数已达上限（5次）', 'remaining': 0}
+            return {'success': False, 'error': '今日游戏次数已达上限', 'remaining': 0}
         self.rps_game_state[username] = {
             'player_wins': 0,
             'ai_wins': 0,
@@ -362,9 +467,10 @@ class GameManager:
         })
         if state['player_wins'] >= state['best_of'] or state['ai_wins'] >= state['best_of']:
             won = state['player_wins'] > state['ai_wins']
-            points = self.calculate_points(won, 'rock_paper_scissors', 0, {'rounds': state['rounds_played']})
+            points = self.calculate_points(won, 'rock_paper_scissors', {'rounds': state['rounds_played'], 'username': username})
             self.record_play(username, won, points)
             remaining = self.get_remaining_plays(username)
+            max_plays = get_member_max_plays(self.users, username)
             state['active'] = False
             return {
                 'success': True,
@@ -376,6 +482,8 @@ class GameManager:
                 'best_of': state['best_of'],
                 'points_earned': points,
                 'remaining_plays': remaining,
+                'max_plays': max_plays,
+                'is_member': is_game_member(self.users, username),
                 'game_over': True,
                 'message': '🎉 你赢了！' if won else '😔 你输了！'
             }
@@ -415,7 +523,7 @@ class GameManager:
 
     def play_roulette(self, username, bet_type='number', bet_value=0):
         if not self.can_play(username):
-            return {'success': False, 'error': '今日游戏次数已达上限（5次）', 'remaining': 0}
+            return {'success': False, 'error': '今日游戏次数已达上限', 'remaining': 0}
         numbers = list(range(0, 37))
         red_numbers = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]
         black_numbers = [2, 4, 6, 8, 10, 11, 13, 15, 17, 20, 22, 24, 26, 28, 29, 31, 33, 35]
@@ -470,9 +578,10 @@ class GameManager:
             color = '🔴 红色'
         else:
             color = '⚫ 黑色'
-        points = self.calculate_points(won, 'roulette', 0, {'multiplier': multiplier})
+        points = self.calculate_points(won, 'roulette', {'multiplier': multiplier, 'username': username})
         self.record_play(username, won, points)
         remaining = self.get_remaining_plays(username)
+        max_plays = get_member_max_plays(self.users, username)
         return {
             'success': True,
             'won': won,
@@ -484,29 +593,36 @@ class GameManager:
             'win_desc': win_desc,
             'points_earned': points,
             'remaining_plays': remaining,
+            'max_plays': max_plays,
+            'is_member': is_game_member(self.users, username),
             'message': '🎉 你赢了！' + (win_desc if win_desc else '') if won else '😔 你输了！'
         }
 
     def get_stats(self, username):
         stats = self.get_user_game_stats(username)
+        max_plays = get_member_max_plays(self.users, username)
         if not stats:
             return {
                 'today_plays': 0,
-                'max_plays': 5,
-                'remaining_plays': 5,
+                'max_plays': max_plays,
+                'remaining_plays': max_plays,
                 'total_wins': 0,
                 'total_plays': 0,
                 'win_rate': 0,
-                'today': self.get_today()
+                'today': self.get_today(),
+                'is_member': is_game_member(self.users, username),
+                'member_bonus_rate': get_member_bonus_rate(self.users, username) * 100
             }
         return {
             'today_plays': stats.get('today_plays', 0),
-            'max_plays': 5,
-            'remaining_plays': max(0, 5 - stats.get('today_plays', 0)),
+            'max_plays': max_plays,
+            'remaining_plays': max(0, max_plays - stats.get('today_plays', 0)),
             'total_wins': stats.get('total_wins', 0),
             'total_plays': stats.get('total_plays', 0),
             'win_rate': round(stats.get('total_wins', 0) / max(1, stats.get('total_plays', 0)) * 100, 1),
-            'today': self.get_today()
+            'today': self.get_today(),
+            'is_member': is_game_member(self.users, username),
+            'member_bonus_rate': get_member_bonus_rate(self.users, username) * 100
         }
 
     def get_game_list(self):
@@ -517,7 +633,6 @@ class GameManager:
             {'id': 'rock_paper_scissors', 'name': '石头剪刀布', 'emoji': '🤖', 'description': '三局两胜', 'min_points': 3, 'max_points': 25},
             {'id': 'roulette', 'name': '轮盘赌', 'emoji': '🎡', 'description': '猜数字/颜色/奇偶', 'min_points': 8, 'max_points': 100}
         ]
-
 
 game_manager = None
 

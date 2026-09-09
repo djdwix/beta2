@@ -1026,6 +1026,25 @@ def migrate_user_data():
         if 'old_email' not in user_data:
             user_data['old_email'] = ''
             modified = True
+        if 'membership' not in user_data:
+            user_data['membership'] = {
+                'is_member': False,
+                'activated_at': 0,
+                'expires_at': 0,
+                'lifetime': True
+            }
+            modified = True
+        else:
+            membership = user_data['membership']
+            if 'lifetime' not in membership:
+                membership['lifetime'] = True
+                modified = True
+            if 'activated_at' not in membership:
+                membership['activated_at'] = 0
+                modified = True
+            if 'expires_at' not in membership:
+                membership['expires_at'] = 0
+                modified = True
     if modified:
         save_users()
 
@@ -2108,6 +2127,33 @@ def migrate_attendance_dates():
             modified = True
     if modified:
         save_users()
+
+def migrate_game_membership_data():
+    modified = False
+    for username, user_data in users.items():
+        if 'membership' not in user_data:
+            user_data['membership'] = {
+                'is_member': False,
+                'activated_at': 0,
+                'expires_at': 0,
+                'lifetime': True
+            }
+            modified = True
+        else:
+            membership = user_data['membership']
+            if 'lifetime' not in membership:
+                membership['lifetime'] = True
+                modified = True
+            if 'activated_at' not in membership:
+                membership['activated_at'] = 0
+                modified = True
+            if 'expires_at' not in membership:
+                membership['expires_at'] = 0
+                modified = True
+    if modified:
+        save_users()
+        log.info("游戏会员数据迁移完成")
+    return modified
 
 def migrate_first_attendance_date():
     modified = False
@@ -13075,12 +13121,28 @@ def play_game(game_id):
         return jsonify({'error': '游戏服务未初始化'}), 500
     if game_id not in gm.games:
         return jsonify({'error': '游戏不存在'}), 400
+    
+    # 添加请求锁，防止同一用户并发请求
+    import threading
+    lock_key = f'game_lock_{username}'
+    if not hasattr(threading, 'local'):
+        threading.local = threading.local()
+    if not hasattr(threading.local, 'game_locks'):
+        threading.local.game_locks = {}
+    
+    if lock_key in threading.local.game_locks:
+        return jsonify({'error': '请等待当前游戏操作完成'}), 429
+    
+    threading.local.game_locks[lock_key] = True
+    
     try:
         data = request.get_json()
         if data is None:
             data = {}
     except Exception as e:
-        data = {}
+        threading.local.game_locks.pop(lock_key, None)
+        return jsonify({'error': '无效的请求数据'}), 400
+    
     try:
         if game_id == 'dice':
             bet_type = data.get('bet_type', 'high')
@@ -13094,6 +13156,7 @@ def play_game(game_id):
                 try:
                     guess = int(guess)
                 except:
+                    threading.local.game_locks.pop(lock_key, None)
                     return jsonify({'error': '请输入有效的数字'}), 400
             result = gm.play_guess_number(username, guess)
         elif game_id == 'rock_paper_scissors':
@@ -13104,16 +13167,24 @@ def play_game(game_id):
             bet_value = int(data.get('bet_value', 0))
             result = gm.play_roulette(username, bet_type, bet_value)
         else:
+            threading.local.game_locks.pop(lock_key, None)
             return jsonify({'error': '游戏不存在'}), 400
+        
+        threading.local.game_locks.pop(lock_key, None)
+        
         if result.get('success'):
             result['responseTime'] = int((time.time() - start_time) * 1000)
             return jsonify(result)
         else:
             return jsonify({'error': result.get('error', '游戏失败')}), 400
     except ValueError as e:
+        threading.local.game_locks.pop(lock_key, None)
         return jsonify({'error': '参数格式错误: ' + str(e)}), 400
     except Exception as e:
+        threading.local.game_locks.pop(lock_key, None)
         log.error(f"Game error for {username} in {game_id}: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': '游戏执行异常，请稍后重试'}), 500
 
 @app.route('/api/game/guess/state', methods=['GET'])
@@ -13152,6 +13223,45 @@ def get_rps_game_state():
         'round_history': state.get('round_history', [])
     })
 
+@app.route('/api/membership/status', methods=['GET'])
+@login_required
+def get_membership_status():
+    username = session['user']['username']
+    gm = game.get_game_manager()
+    membership = game.get_membership_data(users, username)
+    stats = gm.get_stats(username) if gm else {}
+    return jsonify({
+        'is_member': game.is_game_member(users, username),
+        'membership': membership,
+        'today_plays': stats.get('today_plays', 0),
+        'max_plays': game.get_member_max_plays(users, username),
+        'bonus_rate': game.get_member_bonus_rate(users, username) * 100,
+        'expires_at': membership.get('expires_at', 0) if membership else 0,
+        'activated_at': membership.get('activated_at', 0) if membership else 0
+    })
+
+@app.route('/api/membership/buy', methods=['POST'])
+@csrf_protect
+@login_required
+@identity_required
+def buy_membership():
+    start_time = time.time()
+    username = session['user']['username']
+    if is_login_restricted(username):
+        return jsonify({'error': '账号已被限制'}), 403
+    if game.is_game_member(users, username):
+        return jsonify({'error': '您已是游戏会员'}), 400
+    success, message = game.activate_game_membership(users, save_users, username)
+    if success:
+        response_time = int((time.time() - start_time) * 1000)
+        return jsonify({
+            'success': True,
+            'message': message,
+            'responseTime': response_time
+        })
+    else:
+        return jsonify({'error': message}), 400
+
 @app.route('/')
 def index():
     return send_from_directory('public', 'index.html')
@@ -13159,6 +13269,10 @@ def index():
 @app.route('/GAME/')
 def game_index():
     return send_from_directory('GAME', 'index.html')
+
+@app.route('/GAME/membership.html')
+def game_membership_page():
+    return send_from_directory('GAME', 'membership.html')
 
 @app.route('/GAME/<path:path>')
 def game_static(path):
@@ -13321,6 +13435,7 @@ if __name__ == '__main__':
     migrate_user_data()
     migrate_game_stats_to_users()
     migrate_existing_game_limits_to_users()
+    migrate_game_membership_data()
     log.info("用户数据迁移完成")
 
     if not os.getenv('ADMIN_PASSWORD_HASH'):

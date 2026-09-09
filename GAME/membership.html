@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>👑 游戏会员中心</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI','PingFang SC',sans-serif;background:linear-gradient(135deg,#0a0a1a 0%,#1a1a3e 50%,#0d0d2b 100%);min-height:100vh;color:#e8e8f0;padding:20px}
+        .container{max-width:900px;margin:0 auto}
+        .header{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;background:rgba(255,255,255,0.06);border-radius:20px;border:1px solid rgba(255,255,255,0.08);margin-bottom:24px;flex-wrap:wrap;gap:12px}
+        .header h1{font-size:24px;background:linear-gradient(135deg,#fbbf24,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+        .header .back-btn{padding:8px 20px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:40px;color:#d1d5db;cursor:pointer;transition:all 0.3s;font-size:13px;text-decoration:none}
+        .header .back-btn:hover{background:rgba(255,255,255,0.15)}
+        .membership-card{background:linear-gradient(145deg,rgba(251,191,36,0.08),rgba(245,158,11,0.02));border-radius:24px;padding:32px;border:1px solid rgba(251,191,36,0.15);text-align:center;margin-bottom:24px}
+        .membership-card .crown{font-size:64px;display:block;margin-bottom:12px}
+        .membership-card .title{font-size:28px;font-weight:700;color:#fbbf24;margin-bottom:8px}
+        .membership-card .subtitle{font-size:15px;color:rgba(255,255,255,0.5);margin-bottom:20px}
+        .membership-card .price{font-size:42px;font-weight:700;color:#fff;margin-bottom:4px}
+        .membership-card .price small{font-size:18px;color:rgba(255,255,255,0.4);font-weight:400}
+        .membership-card .perks{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:20px 0;text-align:left}
+        .membership-card .perks .perk{background:rgba(255,255,255,0.04);padding:12px 16px;border-radius:12px;display:flex;align-items:center;gap:10px;font-size:14px;color:rgba(255,255,255,0.7)}
+        .membership-card .perks .perk .icon{font-size:20px;flex-shrink:0}
+        .btn{display:inline-block;padding:12px 40px;border:none;border-radius:40px;font-size:16px;font-weight:600;cursor:pointer;transition:all 0.3s}
+        .btn-gold{background:linear-gradient(135deg,#fbbf24,#d97706);color:#1a1a2e}
+        .btn-gold:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(251,191,36,0.3)}
+        .btn-gold:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+        .btn-outline{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#d1d5db}
+        .btn-outline:hover{background:rgba(255,255,255,0.12)}
+        .btn-danger{background:linear-gradient(135deg,#f87171,#dc2626);color:#fff}
+        .btn-danger:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(248,113,113,0.3)}
+        .status-bar{background:rgba(255,255,255,0.04);border-radius:16px;padding:20px 24px;border:1px solid rgba(255,255,255,0.06);margin-bottom:20px;display:flex;flex-wrap:wrap;gap:20px;justify-content:space-between;align-items:center}
+        .status-bar .label{font-size:13px;color:rgba(255,255,255,0.4)}
+        .status-bar .value{font-size:18px;font-weight:600;color:#fff}
+        .status-bar .value.gold{color:#fbbf24}
+        .status-bar .value.green{color:#34d399}
+        .status-bar .item{display:flex;flex-direction:column;gap:2px}
+        .message{position:fixed;bottom:24px;right:24px;padding:14px 24px;border-radius:16px;z-index:9999;animation:slideUp 0.35s ease;max-width:420px;box-shadow:0 12px 40px rgba(0,0,0,0.5);font-size:14px;display:flex;align-items:center;gap:10px}
+        .message-success{background:#065f46;color:#a7f3d0;border:1px solid rgba(52,211,153,0.2)}
+        .message-error{background:#7f1d1d;color:#fca5a5;border:1px solid rgba(239,68,68,0.2)}
+        .message-warning{background:#78350f;color:#fde68a;border:1px solid rgba(251,191,36,0.2)}
+        @keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+        .loading{text-align:center;padding:40px;color:rgba(255,255,255,0.3)}
+        .loading i{font-size:28px;display:block;margin-bottom:12px;color:#667eea}
+        @media(max-width:768px){.membership-card{padding:20px}.membership-card .price{font-size:32px}.status-bar{flex-direction:column;align-items:flex-start}}
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>👑 游戏会员中心</h1>
+        <a href="/GAME/" class="back-btn">← 返回游戏大厅</a>
+    </div>
+
+    <div id="loadingState" class="loading"><i class="fas fa-spinner fa-spin"></i>加载中...</div>
+
+    <div id="mainContent" style="display:none;">
+        <div class="status-bar" id="statusBar">
+            <div class="item">
+                <span class="label">会员状态</span>
+                <span class="value" id="membershipStatus">❌ 未开通</span>
+            </div>
+            <div class="item">
+                <span class="label">每日游戏次数</span>
+                <span class="value" id="dailyPlays">0 / 5</span>
+            </div>
+            <div class="item">
+                <span class="label">获胜积分加成</span>
+                <span class="value" id="bonusRate">+0%</span>
+            </div>
+            <div class="item" id="expiryItem">
+                <span class="label">会员有效期</span>
+                <span class="value gold" id="expiryDate">永久</span>
+            </div>
+        </div>
+
+        <div class="membership-card" id="membershipCard">
+            <span class="crown">👑</span>
+            <div class="title">游戏终身会员</div>
+            <div class="subtitle">一次购买，永久享受会员权益</div>
+            <div class="price">288.88 <small>积分</small></div>
+            <div class="perks">
+                <div class="perk"><span class="icon">🎯</span> 每日游戏次数 <strong>10次</strong>（普通用户5次）</div>
+                <div class="perk"><span class="icon">⭐</span> 获胜积分 <strong>+30%</strong> 加成</div>
+                <div class="perk"><span class="icon">♾️</span> 永久有效，无需续费</div>
+                <div class="perk"><span class="icon">🏆</span> 专属会员标识</div>
+            </div>
+            <button class="btn btn-gold" id="buyBtn" onclick="buyMembership()">👑 立即开通会员</button>
+            <div style="margin-top:12px;font-size:13px;color:rgba(255,255,255,0.3);">直接支付，无需创建订单</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var csrfToken = null;
+    var csrfTokenLastFetch = 0;
+    var membershipData = null;
+
+    function getCsrfTokenFromCookie() {
+        try {
+            var c = document.cookie.split(';');
+            for (var i = 0; i < c.length; i++) {
+                var cookie = c[i].trim();
+                if (cookie.indexOf('csrf_token=') === 0) {
+                    return cookie.substring('csrf_token='.length, cookie.length);
+                }
+            }
+        } catch (e) {}
+        return null;
+    }
+
+    function setCsrfTokenCookie(token) {
+        try {
+            var expires = new Date(Date.now() + 300000).toUTCString();
+            document.cookie = 'csrf_token=' + token + '; expires=' + expires + '; path=/; SameSite=Strict; Secure';
+        } catch (e) {}
+    }
+
+    async function fetchCsrfToken() {
+        if (csrfToken && (Date.now() - csrfTokenLastFetch) < 300000) return csrfToken;
+        var cookieToken = getCsrfTokenFromCookie();
+        if (cookieToken) {
+            csrfToken = cookieToken;
+            csrfTokenLastFetch = Date.now();
+            return csrfToken;
+        }
+        try {
+            var res = await fetch('/api/csrf-token', {
+                method: 'GET',
+                credentials: 'include',
+                headers: { 'Accept': 'application/json' }
+            });
+            var data = await res.json();
+            if (data.csrf_token) {
+                csrfToken = data.csrf_token;
+                csrfTokenLastFetch = Date.now();
+                setCsrfTokenCookie(csrfToken);
+                return csrfToken;
+            }
+            throw new Error('No CSRF token');
+        } catch (e) {
+            throw new Error('Failed to fetch CSRF token');
+        }
+    }
+
+    async function apiRequest(url, options) {
+        if (!options) options = {};
+        options.credentials = 'include';
+        if (!options.headers) options.headers = {};
+        options.headers['Content-Type'] = 'application/json';
+        options.headers['Accept'] = 'application/json';
+        var method = (options.method || 'GET').toUpperCase();
+        if (method === 'GET' || method === 'HEAD') {
+            var res = await fetch(url, options);
+            var data = await res.json();
+            if (!res.ok) throw new Error(data.error || '请求失败: ' + res.status);
+            return data;
+        }
+        var token = await fetchCsrfToken();
+        options.headers['X-CSRF-Token'] = token;
+        var res = await fetch(url, options);
+        var data = await res.json();
+        if (!res.ok) {
+            if (res.status === 403 && data.error && data.error.indexOf('CSRF') !== -1) {
+                csrfToken = null;
+                var newToken = await fetchCsrfToken();
+                options.headers['X-CSRF-Token'] = newToken;
+                var retryRes = await fetch(url, options);
+                var retryData = await retryRes.json();
+                if (!retryRes.ok) throw new Error(retryData.error || '请求失败: ' + retryRes.status);
+                return retryData;
+            }
+            throw new Error(data.error || '请求失败: ' + res.status);
+        }
+        return data;
+    }
+
+    function showMessage(msg, type) {
+        var d = document.createElement('div');
+        d.className = 'message message-' + type;
+        var icon = type === 'success' ? '✅' : type === 'error' ? '❌' : '⚠️';
+        d.innerHTML = icon + ' ' + msg;
+        document.body.appendChild(d);
+        setTimeout(function() { d.remove(); }, 3500);
+    }
+
+    function escapeHtml(t) {
+        if (!t) return '';
+        var d = document.createElement('div');
+        d.textContent = t;
+        return d.innerHTML;
+    }
+
+    async function loadMembershipStatus() {
+        try {
+            var data = await apiRequest('/api/membership/status');
+            membershipData = data;
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+
+            var isMember = data.is_member || false;
+            var statusEl = document.getElementById('membershipStatus');
+            if (isMember) {
+                statusEl.textContent = '✅ 会员已开通';
+                statusEl.className = 'value gold';
+            } else {
+                statusEl.textContent = '❌ 未开通';
+                statusEl.className = 'value';
+            }
+
+            var maxPlays = isMember ? 10 : 5;
+            var todayPlays = data.today_plays || 0;
+            document.getElementById('dailyPlays').textContent = todayPlays + ' / ' + maxPlays;
+
+            var bonusRate = isMember ? 30 : 0;
+            document.getElementById('bonusRate').textContent = '+' + bonusRate + '%';
+
+            var expiryEl = document.getElementById('expiryDate');
+            if (isMember && data.expires_at) {
+                var expDate = new Date(data.expires_at);
+                expiryEl.textContent = expDate.toLocaleDateString('zh-CN') + ' 永久';
+            } else {
+                expiryEl.textContent = '—';
+            }
+
+            var buyBtn = document.getElementById('buyBtn');
+            if (isMember) {
+                buyBtn.textContent = '✅ 已是会员';
+                buyBtn.disabled = true;
+                buyBtn.className = 'btn btn-outline';
+            } else {
+                buyBtn.textContent = '👑 立即开通会员';
+                buyBtn.disabled = false;
+                buyBtn.className = 'btn btn-gold';
+            }
+
+        } catch (e) {
+            document.getElementById('loadingState').innerHTML = '<i class="fas fa-exclamation-triangle" style="color:#f87171;font-size:28px;display:block;margin-bottom:12px;"></i>加载失败: ' + escapeHtml(e.message);
+            showMessage('加载会员状态失败: ' + e.message, 'error');
+        }
+    }
+
+    async function buyMembership() {
+        var btn = document.getElementById('buyBtn');
+        if (btn.disabled) return;
+        btn.disabled = true;
+        btn.textContent = '⏳ 处理中...';
+
+        try {
+            var data = await apiRequest('/api/membership/buy', {
+                method: 'POST',
+                body: JSON.stringify({})
+            });
+
+            if (data.success) {
+                showMessage('🎉 ' + data.message, 'success');
+                await loadMembershipStatus();
+                var maxPlays = 10;
+                document.getElementById('dailyPlays').textContent = '0 / ' + maxPlays;
+                document.getElementById('bonusRate').textContent = '+30%';
+            } else {
+                showMessage(data.error || '购买失败', 'error');
+                btn.disabled = false;
+                btn.textContent = '👑 立即开通会员';
+            }
+        } catch (e) {
+            showMessage(e.message || '购买失败', 'error');
+            btn.disabled = false;
+            btn.textContent = '👑 立即开通会员';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadMembershipStatus();
+    });
+</script>
+</body>
+</html>
