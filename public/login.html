@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>虚拟手机号生成器 - 登录/注册</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        html,body{width:100%;min-height:100vh}
+        body{font-family:'Segoe UI','PingFang SC',Roboto,'Helvetica Neue',sans-serif;background:linear-gradient(135deg,#5865F2 0%,#4752C4 100%);min-height:100vh;display:flex;justify-content:center;align-items:center;padding:20px;position:relative;overflow-x:hidden}
+        body::before{content:'';position:fixed;width:200%;height:200%;background:radial-gradient(circle,rgba(255,255,255,0.08)1px,transparent 1px);background-size:40px 40px;animation:float 20s linear infinite;pointer-events:none}
+        @keyframes float{0%{transform:translate(0,0)}100%{transform:translate(40px,40px)}}
+        .container{background:rgba(255,255,255,0.98);border-radius:32px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);overflow:hidden;width:100%;max-width:700px;margin:0 auto;animation:slideUp 0.6s ease-out;position:relative;z-index:1}
+        @keyframes slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+        .header{background:linear-gradient(135deg,#5865F2 0%,#4752C4 100%);color:#fff;padding:24px 32px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px}
+        .header h2{font-size:24px;margin-bottom:4px}
+        .user-info{font-size:13px;opacity:0.9}
+        .form-container{padding:48px 40px}
+        h1{font-size:28px;font-weight:700;background:linear-gradient(135deg,#5865F2 0%,#4752C4 100%);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:8px;text-align:center}
+        .subtitle{text-align:center;color:#666;font-size:14px;margin-bottom:32px}
+        .tab-buttons{display:flex;margin-bottom:32px;gap:12px;background:#f0f0f0;padding:4px;border-radius:60px}
+        .tab-buttons button{flex:1;padding:12px;border:none;background:transparent;font-size:16px;font-weight:600;cursor:pointer;transition:all .3s;border-radius:60px;color:#666}
+        .tab-buttons button.active{background:linear-gradient(135deg,#5865F2 0%,#4752C4 100%);color:#fff;box-shadow:0 4px 12px rgba(88,101,242,0.3);transform:scale(1.02)}
+        .input-group{margin-bottom:20px;position:relative}
+        .input-group input{width:100%;padding:14px 16px;border:2px solid #e0e0e0;border-radius:16px;font-size:15px;transition:all .3s;outline:none;font-family:inherit;background:#fff;-webkit-appearance:none;appearance:none}
+        .input-group input:focus{border-color:#5865F2;box-shadow:0 0 0 3px rgba(88,101,242,0.1)}
+        .input-group label{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:#999;pointer-events:none;transition:all .3s;background:#fff;padding:0 4px;font-size:14px}
+        .input-group input:focus+label,.input-group input:not(:placeholder-shown)+label{top:0;font-size:12px;color:#5865F2}
+        .input-group.code-group{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+        .input-group.code-group input{flex:1;min-width:120px}
+        .input-group.code-group .code-btn{padding:14px 24px;background:linear-gradient(135deg,#5865F2 0%,#4752C4 100%);color:#fff;border:none;border-radius:60px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .3s;min-width:120px;height:56px;display:flex;align-items:center;justify-content:center}
+        .input-group.code-group .code-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 4px 12px rgba(88,101,242,0.3)}
+        .input-group.code-group .code-btn:disabled{opacity:0.6;cursor:not-allowed;transform:none}
+        .code-countdown{font-size:12px;color:#999;margin-top:4px;padding-left:16px;min-height:20px}
+        .password-hint{font-size:12px;color:#999;margin-top:5px;padding-left:16px}
+        .qq-hint{font-size:12px;color:#999;margin-top:5px;padding-left:16px}
+        .forgot-link{text-align:right;margin-top:8px;font-size:13px}
+        .forgot-link a{color:#5865F2;text-decoration:none;cursor:pointer}
+        button[type="submit"]{width:100%;padding:14px;background:linear-gradient(135deg,#5865F2 0%,#4752C4 100%);color:#fff;border:none;border-radius:60px;font-size:16px;font-weight:600;cursor:pointer;transition:all .3s;margin-top:12px}
+        button[type="submit"]:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 20px rgba(88,101,242,0.4)}
+        button[type="submit"]:disabled{opacity:0.6;cursor:not-allowed}
+        .message{margin-top:16px;text-align:center;font-size:13px;padding:10px;border-radius:12px;animation:fadeIn .3s}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+        .message.success{background:#d4edda;color:#155724}
+        .message.error{background:#f8d7da;color:#721c24}
+        .message.warning{background:#fff3cd;color:#856404}
+        .message.info{background:#d1ecf1;color:#0c5460}
+        .performance-badge{position:fixed;bottom:20px;right:20px;background:rgba(0,0,0,0.75);color:#0f0;padding:6px 14px;border-radius:40px;font-size:12px;font-family:monospace;font-weight:600;z-index:1000;backdrop-filter:blur(8px)}
+        .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:10001;justify-content:center;align-items:center}
+        .modal-content{background:#fff;border-radius:24px;padding:32px;max-width:450px;width:90%;max-height:80vh;overflow-y:auto}
+        .modal-content h3{margin-bottom:20px;color:#333}
+        .modal-content input{width:100%;padding:12px;margin:8px 0;border:2px solid #e0e0e0;border-radius:12px;font-size:14px;outline:none;transition:border-color .3s}
+        .modal-content input:focus{border-color:#5865F2}
+        .modal-content button{padding:12px 24px;background:linear-gradient(135deg,#5865F2 0%,#4752C4 100%);color:#fff;border:none;border-radius:60px;cursor:pointer;margin:8px 4px;font-size:15px;font-weight:600;transition:all .3s}
+        .modal-content button:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 4px 12px rgba(88,101,242,0.3)}
+        .modal-content button:disabled{opacity:0.6;cursor:not-allowed}
+        .modal-content .close-modal{background:#999}
+        .modal-content .close-modal:hover{background:#777}
+        .forgot-tabs{display:flex;gap:8px;margin-bottom:20px;background:#f0f0f0;padding:4px;border-radius:60px}
+        .forgot-tabs button{flex:1;padding:10px;border:none;background:transparent;font-size:14px;font-weight:600;cursor:pointer;transition:all .3s;border-radius:60px;color:#666;margin:0}
+        .forgot-tabs button.active{background:linear-gradient(135deg,#5865F2 0%,#4752C4 100%);color:#fff;box-shadow:0 4px 12px rgba(88,101,242,0.3)}
+        .forgot-tabs button:hover:not(.active){background:#e8e8e8}
+        .code-group-row{display:flex;gap:12px;margin:8px 0;align-items:center;flex-wrap:wrap}
+        .code-group-row input{flex:1;min-width:120px;margin:0}
+        .code-group-row button{padding:12px 20px;background:linear-gradient(135deg,#5865F2 0%,#4752C4 100%);color:#fff;border:none;border-radius:60px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;min-width:120px;margin:0;height:50px}
+        .code-group-row button:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 4px 12px rgba(88,101,242,0.3)}
+        .code-group-row button:disabled{opacity:0.6;cursor:not-allowed;transform:none}
+        .hint-text{font-size:12px;color:#999;margin:4px 0 8px 4px;min-height:20px}
+        .js-warning{display:none;background:#fef2f2;border:2px solid #fecaca;border-radius:16px;padding:20px;margin-bottom:24px;text-align:center;animation:fadeIn 0.5s ease-out}
+        .js-warning .icon{font-size:48px;color:#dc2626;margin-bottom:12px}
+        .js-warning .title{font-size:18px;font-weight:700;color:#dc2626;margin-bottom:8px}
+        .js-warning .desc{font-size:14px;color:#666;margin-bottom:16px;line-height:1.6}
+        .js-warning .steps{text-align:left;background:#fff;border-radius:12px;padding:16px;margin:16px 0;border:1px solid #fecaca;font-size:13px;color:#555;line-height:1.8}
+        .js-warning .steps code{background:#f0f0f0;padding:2px 8px;border-radius:4px;font-size:12px}
+        .js-warning .btn-primary{padding:10px 32px;background:#dc2626;color:white;border:none;border-radius:40px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s}
+        .js-warning .btn-primary:hover{background:#b91c1c;transform:translateY(-2px);box-shadow:0 4px 12px rgba(220,38,38,0.3)}
+        .js-warning .btn-secondary{padding:10px 32px;background:transparent;color:#dc2626;border:2px solid #dc2626;border-radius:40px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s;margin-left:12px}
+        .js-warning .btn-secondary:hover{background:#dc2626;color:white}
+        .cookie-warning{display:none;background:#fef2f2;border:2px solid #fecaca;border-radius:16px;padding:20px;margin-bottom:24px;text-align:center;animation:fadeIn 0.5s ease-out}
+        .cookie-warning .icon{font-size:48px;color:#dc2626;margin-bottom:12px}
+        .cookie-warning .title{font-size:18px;font-weight:700;color:#dc2626;margin-bottom:8px}
+        .cookie-warning .desc{font-size:14px;color:#666;margin-bottom:16px;line-height:1.6}
+        .cookie-warning .steps{text-align:left;background:#fff;border-radius:12px;padding:16px;margin:16px 0;border:1px solid #fecaca;font-size:13px;color:#555;line-height:1.8}
+        .cookie-warning .steps code{background:#f0f0f0;padding:2px 8px;border-radius:4px;font-size:12px}
+        .cookie-warning .btn-primary{padding:10px 32px;background:#dc2626;color:white;border:none;border-radius:40px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s}
+        .cookie-warning .btn-primary:hover{background:#b91c1c;transform:translateY(-2px);box-shadow:0 4px 12px rgba(220,38,38,0.3)}
+        .cookie-warning .btn-secondary{padding:10px 32px;background:transparent;color:#dc2626;border:2px solid #dc2626;border-radius:40px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s;margin-left:12px}
+        .cookie-warning .btn-secondary:hover{background:#dc2626;color:white}
+        .noscript-warning{display:block;background:#fef2f2;border:2px solid #fecaca;border-radius:16px;padding:24px;margin-bottom:0;text-align:center}
+        .noscript-warning .icon{font-size:48px;color:#dc2626;margin-bottom:12px}
+        .noscript-warning .title{font-size:20px;font-weight:700;color:#dc2626;margin-bottom:8px}
+        .noscript-warning .desc{font-size:14px;color:#666;margin-bottom:16px;line-height:1.8}
+        .noscript-warning .steps{text-align:left;background:#fff;border-radius:12px;padding:16px;margin:16px auto;border:1px solid #fecaca;font-size:13px;color:#555;line-height:1.8;max-width:400px}
+        .noscript-warning .steps code{background:#f0f0f0;padding:2px 8px;border-radius:4px;font-size:12px}
+        .noscript-warning .btn-primary{padding:10px 32px;background:#dc2626;color:white;border:none;border-radius:40px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s}
+        .noscript-warning .btn-primary:hover{background:#b91c1c;transform:translateY(-2px);box-shadow:0 4px 12px rgba(220,38,38,0.3)}
+        .toast-message{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);padding:12px 24px;border-radius:40px;font-size:14px;z-index:9999;animation:fadeInOut 3s;max-width:90%;text-align:center}
+        .toast-message.success{background:#27ae60;color:white}
+        .toast-message.error{background:#e74c3c;color:white}
+        .toast-message.info{background:#3498db;color:white}
+        .hidden{display:none!important}
+        @media(max-width:768px){.container{max-width:95%}.form-container{padding:40px 28px}.header{padding:20px 24px}.header h2{font-size:20px}}
+        @media(max-width:600px){body{padding:12px}.container{border-radius:24px;max-width:95%}.header{padding:16px 20px;flex-direction:column;text-align:center}.header h2{font-size:18px}.form-container{padding:32px 20px}.tab-buttons{gap:8px}.tab-buttons button{padding:10px;font-size:14px}.input-group input{padding:12px 14px;font-size:14px}.input-group.code-group .code-btn{padding:12px 16px;font-size:13px;min-width:100px;height:50px}.modal-content{padding:24px}.code-group-row button{min-width:80px;padding:10px 16px;font-size:12px;height:44px}.code-group-row input{min-width:80px}}
+        @media(max-width:480px){body{padding:8px}.container{border-radius:20px}.header{padding:14px 16px}.header h2{font-size:16px}.form-container{padding:24px 16px}.tab-buttons button{padding:8px;font-size:13px}.input-group input{padding:10px 12px;font-size:13px;border-radius:12px}.input-group label{font-size:12px}.input-group.code-group{gap:8px}.input-group.code-group .code-btn{padding:10px 12px;font-size:12px;min-width:80px;height:44px}.modal-content{padding:20px}.code-group-row{gap:8px}.code-group-row button{min-width:70px;padding:8px 12px;font-size:11px;height:38px}.forgot-tabs button{font-size:12px;padding:8px}.cookie-warning .btn-secondary{margin-left:0;margin-top:8px}.js-warning .btn-secondary{margin-left:0;margin-top:8px}.noscript-warning .steps{max-width:100%}}
+        @media(min-width:769px){.form-container{padding:56px 48px}}
+        @media(min-width:1024px){.container{max-width:720px}.form-container{padding:64px 56px}}
+    </style>
+</head>
+<body>
+
+    <noscript>
+        <div class="container" style="max-width:560px;">
+            <div class="header">
+                <div><h2>📱 虚拟手机号生成器</h2><div class="user-info">安全 · 便捷 · 智能</div></div>
+            </div>
+            <div class="form-container">
+                <div class="noscript-warning">
+                    <div class="icon">⚠️</div>
+                    <div class="title">请启用 JavaScript</div>
+                    <div class="desc">此应用需要启用 JavaScript 才能正常工作。<br>JavaScript 用于实现登录、注册、表单提交等核心功能。</div>
+                    <div class="steps">
+                        <strong>📋 如何启用 JavaScript：</strong><br><br>
+                        <strong>Google Chrome / Edge：</strong><br>
+                        1. 点击右上角 ⋮ → <strong>设置</strong><br>
+                        2. 搜索 <strong>JavaScript</strong><br>
+                        3. 选择 <strong>允许所有网站运行 JavaScript</strong><br><br>
+                        <strong>Firefox：</strong><br>
+                        1. 地址栏输入 <code>about:config</code><br>
+                        2. 搜索 <code>javascript.enabled</code><br>
+                        3. 双击设为 <strong>true</strong><br><br>
+                        <strong>Safari：</strong><br>
+                        1. 点击 <strong>Safari</strong> → <strong>设置</strong> → <strong>安全</strong><br>
+                        2. 勾选 <strong>启用 JavaScript</strong>
+                    </div>
+                    <button class="btn-primary" onclick="location.reload()">已启用，刷新页面</button>
+                </div>
+            </div>
+        </div>
+        <style>
+            body{background:linear-gradient(135deg,#5865F2 0%,#4752C4 100%);min-height:100vh;display:flex;justify-content:center;align-items:center;padding:20px}
+        </style>
+    </noscript>
+
+    <div class="container" id="mainContainer">
+        <div class="header">
+            <div>
+                <h2>📱 虚拟手机号生成器</h2>
+                <div class="user-info">安全 · 便捷 · 智能</div>
+            </div>
+        </div>
+        <div class="form-container">
+
+            <div id="jsWarning" class="js-warning" style="display:none;">
+                <div class="icon">⚠️</div>
+                <div class="title">JavaScript 未正常加载</div>
+                <div class="desc">此应用需要 JavaScript 才能正常工作。<br>请检查浏览器设置，确保 JavaScript 已启用。</div>
+                <div class="steps">
+                    <strong>📋 快速检查：</strong><br><br>
+                    <strong>Chrome / Edge：</strong><br>
+                    地址栏输入 <code>chrome://settings/content/javascript</code><br>
+                    确保 <strong>允许</strong> 已开启<br><br>
+                    <strong>Firefox：</strong><br>
+                    地址栏输入 <code>about:config</code><br>
+                    搜索 <code>javascript.enabled</code>，设为 <strong>true</strong>
+                </div>
+                <div>
+                    <button class="btn-primary" onclick="location.reload()">重新加载</button>
+                </div>
+            </div>
+
+            <div id="cookieWarning" class="cookie-warning">
+                <div class="icon">🍪</div>
+                <div class="title">请启用 Cookie</div>
+                <div class="desc">此应用需要启用 Cookie 才能正常工作。<br>Cookie 用于保存您的登录状态和安全令牌。</div>
+                <div class="steps">
+                    <strong>📋 如何启用 Cookie：</strong><br><br>
+                    <strong>Google Chrome / Edge：</strong><br>
+                    1. 点击地址栏左侧的锁图标 🔒<br>
+                    2. 点击 <strong>Cookie</strong> 设置<br>
+                    3. 确保 <strong>允许 Cookie</strong> 已启用<br><br>
+                    <strong>Firefox：</strong><br>
+                    1. 点击地址栏左侧的盾牌图标 🛡️<br>
+                    2. 点击 <strong>禁用保护</strong>（临时）<br>
+                    3. 或进入设置 → 隐私与安全 → 标准 或 自定义<br><br>
+                    <strong>Safari：</strong><br>
+                    1. 点击 <strong>Safari</strong> → <strong>设置</strong> → <strong>隐私</strong><br>
+                    2. 确保 <strong>阻止所有 Cookie</strong> 未勾选
+                </div>
+                <div>
+                    <button class="btn-primary" onclick="checkCookieAndReload()">已启用，重新检测</button>
+                    <button class="btn-secondary" onclick="window.open('https://support.google.com/chrome/answer/95647','_blank')">查看帮助</button>
+                </div>
+            </div>
+
+            <div class="tab-buttons">
+                <button id="loginTab" class="active">登录</button>
+                <button id="registerTab">注册</button>
+            </div>
+
+            <div id="loginForm">
+                <div class="input-group">
+                    <input type="text" id="loginUsername" placeholder=" " autocomplete="username">
+                    <label>用户名 或 邮箱</label>
+                </div>
+                <div class="input-group">
+                    <input type="password" id="loginPassword" placeholder=" " autocomplete="current-password">
+                    <label>密码</label>
+                </div>
+                <div class="forgot-link">
+                    <a id="forgotPasswordLink">忘记密码？</a>
+                </div>
+                <button type="submit" id="loginBtn">登录</button>
+                <div id="loginMessage" class="message"></div>
+            </div>
+
+            <div id="registerForm" style="display:none;">
+                <div class="input-group">
+                    <input type="text" id="regUsername" placeholder=" ">
+                    <label>用户名 (3-20位)</label>
+                </div>
+                <div class="input-group">
+                    <input type="email" id="regEmail" placeholder=" " autocomplete="email">
+                    <label>邮箱地址</label>
+                </div>
+
+                <div class="input-group code-group">
+                    <input type="text" id="regVerificationCode" placeholder=" " maxlength="6" autocomplete="off" style="flex:1; min-width:120px;">
+                    <label>邮箱验证码</label>
+                    <button type="button" id="sendCodeBtn" class="code-btn">发送验证码</button>
+                </div>
+                <div class="code-countdown" id="codeCountdown"></div>
+
+                <div class="input-group">
+                    <input type="password" id="regPassword" placeholder=" " autocomplete="new-password">
+                    <label>密码</label>
+                </div>
+                <div class="password-hint">密码至少8位，需包含至少两种类型（大小写字母/数字/特殊字符）</div>
+
+                <!-- QQ号修改为必填项 -->
+                <div class="input-group">
+                    <input type="text" id="regQqNumber" placeholder=" " maxlength="15" required>
+                    <label>QQ号 (必填，绑定后不可修改)</label>
+                </div>
+                <div class="qq-hint">填写QQ号后可在玩家中心显示QQ头像，绑定后不可修改</div>
+
+                <button type="submit" id="registerBtn">注册</button>
+                <div id="registerMessage" class="message"></div>
+            </div>
+        </div>
+    </div>
+    <div class="performance-badge" id="perfBadge">⏱️ 响应时间: --ms</div>
+
+    <div id="forgotModal" class="modal">
+        <div class="modal-content">
+            <h3>🔐 重置密码</h3>
+            <div class="forgot-tabs">
+                <button id="forgotTabCode" class="active">卡密重置</button>
+                <button id="forgotTabEmail">邮箱验证重置</button>
+            </div>
+
+            <div id="forgotCodeMethod">
+                <input type="text" id="forgotUsername" placeholder="用户名" autocomplete="off">
+                <input type="email" id="forgotEmail" placeholder="邮箱地址" autocomplete="off">
+                <input type="password" id="forgotNewPassword" placeholder="新密码">
+                <input type="text" id="forgotResetCode" placeholder="重置卡密 (格式: XXXX-XXXX-XXXX-XXXX)" autocomplete="off">
+                <div>
+                    <button id="resetPasswordBtn">确认重置</button>
+                    <button id="closeForgotModal" class="close-modal">取消</button>
+                </div>
+            </div>
+
+            <div id="forgotEmailMethod" style="display:none;">
+                <p style="color:#888;font-size:13px;margin-bottom:12px;">验证码将发送至您绑定的邮箱，重置将扣除8.8积分（含理财账户）</p>
+                <input type="text" id="forgotEmailUsername" placeholder="用户名" autocomplete="off">
+                <input type="email" id="forgotEmailAddr" placeholder="绑定的邮箱地址" autocomplete="off">
+                <div class="code-group-row">
+                    <input type="text" id="forgotVerificationCode" placeholder="邮箱验证码" maxlength="6" autocomplete="off">
+                    <button type="button" id="forgotSendCodeBtn">发送验证码</button>
+                </div>
+                <div class="hint-text" id="forgotCodeCountdown"></div>
+                <input type="password" id="forgotEmailNewPassword" placeholder="新密码（至少8位）">
+                <div style="font-size:12px;color:#999;margin-bottom:8px;padding-left:4px;">密码需包含至少两种类型（大小写字母/数字/特殊字符）</div>
+                <div>
+                    <button id="forgotEmailResetBtn">确认重置</button>
+                    <button id="closeForgotModal2" class="close-modal">取消</button>
+                </div>
+            </div>
+
+            <div id="forgotMessage" class="message" style="margin-top:12px;"></div>
+        </div>
+    </div>
+
+    <script>
+        var csrfToken = null;
+        var csrfTokenRefreshPromise = null;
+        var csrfTokenLastFetch = 0;
+        var CSRF_TOKEN_TTL = 300000;
+        var cookieEnabled = false;
+        var cookieCheckDone = false;
+        var codeCountdown = 0;
+        var codeTimer = null;
+        var currentResponseTime = 0;
+        var isRedirecting = false;
+        var forgotCodeTimer = null;
+        var forgotCodeCountdown = 0;
+
+        function checkJavaScript() {
+            var jsWarning = document.getElementById('jsWarning');
+            if (jsWarning) {
+                jsWarning.style.display = 'none';
+            }
+            return true;
+        }
+
+        function checkCookieEnabled() {
+            try {
+                var testCookie = 'cookie_test_' + Date.now();
+                document.cookie = testCookie + '=1; path=/; max-age=10';
+                var found = document.cookie.indexOf(testCookie) !== -1;
+                document.cookie = testCookie + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/';
+                return found;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function handleCookieDisabled() {
+            var warning = document.getElementById('cookieWarning');
+            var loginForm = document.getElementById('loginForm');
+            var registerForm = document.getElementById('registerForm');
+            var loginBtn = document.getElementById('loginBtn');
+            var registerBtn = document.getElementById('registerBtn');
+            var loginTab = document.getElementById('loginTab');
+            var registerTab = document.getElementById('registerTab');
+            var sendCodeBtn = document.getElementById('sendCodeBtn');
+
+            if (warning) warning.style.display = 'block';
+            if (loginForm) { loginForm.style.opacity = '0.5'; loginForm.style.pointerEvents = 'none'; }
+            if (registerForm) { registerForm.style.opacity = '0.5'; registerForm.style.pointerEvents = 'none'; }
+            if (loginBtn) { loginBtn.disabled = true; loginBtn.textContent = '⚠️ 请启用 Cookie'; loginBtn.style.opacity = '0.5'; loginBtn.style.cursor = 'not-allowed'; }
+            if (registerBtn) { registerBtn.disabled = true; registerBtn.textContent = '⚠️ 请启用 Cookie'; registerBtn.style.opacity = '0.5'; registerBtn.style.cursor = 'not-allowed'; }
+            if (sendCodeBtn) { sendCodeBtn.disabled = true; sendCodeBtn.textContent = '⚠️ 请启用 Cookie'; sendCodeBtn.style.opacity = '0.5'; sendCodeBtn.style.cursor = 'not-allowed'; }
+            if (loginTab) { loginTab.style.cursor = 'not-allowed'; loginTab.style.opacity = '0.5'; }
+            if (registerTab) { registerTab.style.cursor = 'not-allowed'; registerTab.style.opacity = '0.5'; }
+
+            var forgotLink = document.getElementById('forgotPasswordLink');
+            if (forgotLink) { forgotLink.style.cursor = 'not-allowed'; forgotLink.style.opacity = '0.5'; forgotLink.style.pointerEvents = 'none'; }
+        }
+
+        function handleCookieEnabled() {
+            var warning = document.getElementById('cookieWarning');
+            var loginForm = document.getElementById('loginForm');
+            var registerForm = document.getElementById('registerForm');
+            var loginBtn = document.getElementById('loginBtn');
+            var registerBtn = document.getElementById('registerBtn');
+            var sendCodeBtn = document.getElementById('sendCodeBtn');
+
+            if (warning) warning.style.display = 'none';
+            if (loginForm) { loginForm.style.opacity = '1'; loginForm.style.pointerEvents = 'auto'; }
+            if (registerForm) { registerForm.style.opacity = '1'; registerForm.style.pointerEvents = 'auto'; }
+            if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = '登录'; loginBtn.style.opacity = '1'; loginBtn.style.cursor = 'pointer'; }
+            if (registerBtn) { registerBtn.disabled = false; registerBtn.textContent = '注册'; registerBtn.style.opacity = '1'; registerBtn.style.cursor = 'pointer'; }
+            if (sendCodeBtn) { sendCodeBtn.disabled = false; sendCodeBtn.textContent = '发送验证码'; sendCodeBtn.style.opacity = '1'; sendCodeBtn.style.cursor = 'pointer'; }
+
+            var loginTab = document.getElementById('loginTab');
+            var registerTab = document.getElementById('registerTab');
+            if (loginTab) { loginTab.style.cursor = 'pointer'; loginTab.style.opacity = '1'; }
+            if (registerTab) { registerTab.style.cursor = 'pointer'; registerTab.style.opacity = '1'; }
+
+            var forgotLink = document.getElementById('forgotPasswordLink');
+            if (forgotLink) { forgotLink.style.cursor = 'pointer'; forgotLink.style.opacity = '1'; forgotLink.style.pointerEvents = 'auto'; }
+        }
+
+        function checkCookieAndReload() {
+            var enabled = checkCookieEnabled();
+            if (enabled) {
+                cookieEnabled = true;
+                cookieCheckDone = true;
+                handleCookieEnabled();
+                showToastMessage('✅ Cookie 已启用，正在重新加载...', 'success');
+                setTimeout(function() { window.location.reload(); }, 1000);
+            } else {
+                cookieEnabled = false;
+                cookieCheckDone = true;
+                handleCookieDisabled();
+                showToastMessage('❌ Cookie 仍然被禁用，请检查浏览器设置', 'error');
+            }
+        }
+
+        function showToastMessage(msg, type) {
+            var existing = document.querySelector('.toast-message');
+            if (existing) existing.remove();
+            var toast = document.createElement('div');
+            toast.className = 'toast-message ' + (type || 'info');
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+            setTimeout(function() { if (toast) toast.remove(); }, 3000);
+        }
+
+        function updatePerformanceBadge(ms) {
+            var el = document.getElementById('perfBadge');
+            if (el) {
+                el.innerHTML = '⚡ ' + ms + 'ms';
+                if (ms <= 60) el.style.color = '#0f0';
+                else if (ms <= 100) el.style.color = '#ff0';
+                else el.style.color = '#f00';
+            }
+        }
+
+        function getCsrfTokenFromCookie() {
+            try {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = cookies[i].trim();
+                    if (cookie.indexOf('csrf_token=') === 0) {
+                        return cookie.substring('csrf_token='.length, cookie.length);
+                    }
+                }
+                return null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function setCsrfTokenCookie(token) {
+            try {
+                var expires = new Date(Date.now() + CSRF_TOKEN_TTL).toUTCString();
+                document.cookie = 'csrf_token=' + token + '; expires=' + expires + '; path=/; SameSite=Strict; Secure';
+            } catch (e) {}
+        }
+
+        function fetchCsrfToken() {
+            if (csrfTokenRefreshPromise) return csrfTokenRefreshPromise;
+            if (csrfToken && (Date.now() - csrfTokenLastFetch) < CSRF_TOKEN_TTL) {
+                return Promise.resolve(csrfToken);
+            }
+            var cookieToken = getCsrfTokenFromCookie();
+            if (cookieToken) {
+                csrfToken = cookieToken;
+                csrfTokenLastFetch = Date.now();
+                return Promise.resolve(csrfToken);
+            }
+            csrfTokenRefreshPromise = fetch('/api/csrf-token', {
+                method: 'GET',
+                credentials: 'include',
+                headers: { 'Accept': 'application/json', 'Cache-Control': 'no-cache' }
+            }).then(function(response) {
+                if (!response.ok) throw new Error('Failed to fetch CSRF token: HTTP ' + response.status);
+                return response.json();
+            }).then(function(data) {
+                if (!data.csrf_token) throw new Error('No CSRF token in response');
+                csrfToken = data.csrf_token;
+                csrfTokenLastFetch = Date.now();
+                setCsrfTokenCookie(csrfToken);
+                csrfTokenRefreshPromise = null;
+                return csrfToken;
+            }).catch(function(error) {
+                csrfTokenRefreshPromise = null;
+                csrfToken = null;
+                throw error;
+            });
+            return csrfTokenRefreshPromise;
+        }
+
+        function apiRequest(url, options) {
+            if (!options) options = {};
+            options.credentials = 'include';
+            if (!options.headers) options.headers = {};
+            options.headers['Content-Type'] = 'application/json';
+            options.headers['Accept'] = 'application/json';
+            var method = (options.method || 'GET').toUpperCase();
+
+            if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') {
+                return fetch(url, options).then(function(response) {
+                    return response.json().then(function(data) {
+                        if (!response.ok) {
+                            throw new Error(data.error || '请求失败: ' + response.status);
+                        }
+                        return data;
+                    });
+                });
+            }
+
+            return fetchCsrfToken().then(function(token) {
+                options.headers['X-CSRF-Token'] = token;
+                return fetch(url, options);
+            }).then(function(response) {
+                return response.json().then(function(data) {
+                    if (!response.ok) {
+                        if (response.status === 403 && data.error && data.error.includes('CSRF')) {
+                            csrfToken = null;
+                            csrfTokenLastFetch = 0;
+                            return fetchCsrfToken().then(function(newToken) {
+                                options.headers['X-CSRF-Token'] = newToken;
+                                return fetch(url, options);
+                            }).then(function(retryResponse) {
+                                return retryResponse.json().then(function(retryData) {
+                                    if (!retryResponse.ok) {
+                                        throw new Error(retryData.error || '请求失败: ' + retryResponse.status);
+                                    }
+                                    return retryData;
+                                });
+                            });
+                        }
+                        throw new Error(data.error || '请求失败: ' + response.status);
+                    }
+                    return data;
+                });
+            });
+        }
+
+        async function checkAuthAndRedirect() {
+            if (isRedirecting) return;
+            try {
+                var result = await apiRequest('/api/check-auth');
+                if (result.authenticated) {
+                    isRedirecting = true;
+                    window.location.href = '/';
+                    return true;
+                }
+            } catch (e) {
+                console.error('Auth check failed:', e);
+            }
+            return false;
+        }
+
+        function validateEmail(email) {
+            return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);
+        }
+
+        function startCountdown(seconds, btn) {
+            codeCountdown = seconds;
+            var countdownEl = document.getElementById('codeCountdown');
+
+            if (codeTimer) {
+                clearInterval(codeTimer);
+                codeTimer = null;
+            }
+
+            btn.disabled = true;
+            btn.textContent = seconds + 's';
+
+            codeTimer = setInterval(function() {
+                codeCountdown--;
+                if (codeCountdown <= 0) {
+                    clearInterval(codeTimer);
+                    codeTimer = null;
+                    btn.disabled = false;
+                    btn.textContent = '重新发送';
+                    if (countdownEl) countdownEl.textContent = '';
+                } else {
+                    btn.textContent = codeCountdown + 's';
+                    if (countdownEl) countdownEl.textContent = '⏱️ ' + codeCountdown + '秒后可重新发送';
+                }
+            }, 1000);
+        }
+
+        document.getElementById('loginTab').addEventListener('click', function() {
+            if (!cookieEnabled) {
+                showToastMessage('⚠️ 请先启用 Cookie', 'error');
+                return;
+            }
+            document.getElementById('loginTab').classList.add('active');
+            document.getElementById('registerTab').classList.remove('active');
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('registerForm').style.display = 'none';
+            document.getElementById('loginMessage').textContent = '';
+            document.getElementById('registerMessage').textContent = '';
+            document.getElementById('loginMessage').className = 'message';
+            document.getElementById('registerMessage').className = 'message';
+        });
+
+        document.getElementById('registerTab').addEventListener('click', function() {
+            if (!cookieEnabled) {
+                showToastMessage('⚠️ 请先启用 Cookie', 'error');
+                return;
+            }
+            document.getElementById('registerTab').classList.add('active');
+            document.getElementById('loginTab').classList.remove('active');
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('registerForm').style.display = 'block';
+            document.getElementById('loginMessage').textContent = '';
+            document.getElementById('registerMessage').textContent = '';
+            document.getElementById('loginMessage').className = 'message';
+            document.getElementById('registerMessage').className = 'message';
+        });
+
+        document.getElementById('sendCodeBtn').addEventListener('click', async function() {
+            if (!cookieEnabled) {
+                showToastMessage('⚠️ 请先启用 Cookie', 'error');
+                return;
+            }
+
+            var email = document.getElementById('regEmail').value.trim();
+            var username = document.getElementById('regUsername').value.trim();
+            var btn = this;
+            var msg = document.getElementById('registerMessage');
+
+            if (!email) {
+                msg.textContent = '请先输入邮箱地址';
+                msg.className = 'message error';
+                return;
+            }
+
+            if (!validateEmail(email)) {
+                msg.textContent = '请输入有效的邮箱地址';
+                msg.className = 'message error';
+                return;
+            }
+
+            msg.textContent = '发送中...';
+            msg.className = 'message info';
+            btn.disabled = true;
+            btn.textContent = '发送中...';
+
+            try {
+                var response = await apiRequest('/api/send-verification-code', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        email: email,
+                        username: username,
+                        purpose: '注册'
+                    })
+                });
+
+                if (response.success) {
+                    msg.textContent = response.message || '验证码已发送至您的邮箱，请查收';
+                    msg.className = 'message success';
+                    startCountdown(60, btn);
+                } else {
+                    msg.textContent = response.message || '发送失败，请重试';
+                    msg.className = 'message error';
+                    btn.disabled = false;
+                    btn.textContent = '发送验证码';
+                }
+            } catch (error) {
+                msg.textContent = error.message || '发送失败，请重试';
+                msg.className = 'message error';
+                btn.disabled = false;
+                btn.textContent = '发送验证码';
+            }
+        });
+
+        document.getElementById('loginBtn').addEventListener('click', async function() {
+            if (!cookieEnabled) {
+                showToastMessage('⚠️ 请先启用 Cookie', 'error');
+                return;
+            }
+
+            var username = document.getElementById('loginUsername').value.trim();
+            var password = document.getElementById('loginPassword').value;
+            var msg = document.getElementById('loginMessage');
+
+            if (!username || !password) {
+                msg.textContent = '请输入用户名/邮箱和密码';
+                msg.className = 'message error';
+                return;
+            }
+
+            msg.textContent = '登录中...';
+            msg.className = 'message info';
+            this.disabled = true;
+
+            try {
+                var startTime = Date.now();
+                var response = await apiRequest('/api/login', {
+                    method: 'POST',
+                    body: JSON.stringify({ username: username, password: password })
+                });
+
+                var elapsed = Date.now() - startTime;
+                updatePerformanceBadge(elapsed);
+
+                msg.textContent = response.message || '登录成功';
+                msg.className = 'message success';
+
+                var userData = await apiRequest('/api/user/restrictions');
+                if (userData.loginRestricted) {
+                    msg.textContent = '❌ 账号已被限制登录，请联系管理员';
+                    msg.className = 'message error';
+                    await apiRequest('/api/logout', { method: 'POST' });
+                    this.disabled = false;
+                    return;
+                }
+
+                setTimeout(function() {
+                    window.location.href = '/';
+                }, 500);
+            } catch (error) {
+                msg.textContent = error.message || '登录失败';
+                msg.className = 'message error';
+                this.disabled = false;
+            }
+        });
+
+        document.getElementById('registerBtn').addEventListener('click', async function() {
+            if (!cookieEnabled) {
+                showToastMessage('⚠️ 请先启用 Cookie', 'error');
+                return;
+            }
+
+            var username = document.getElementById('regUsername').value.trim();
+            var email = document.getElementById('regEmail').value.trim();
+            var password = document.getElementById('regPassword').value;
+            var qqNumber = document.getElementById('regQqNumber').value.trim();
+            var verificationCode = document.getElementById('regVerificationCode').value.trim();
+            var msg = document.getElementById('registerMessage');
+
+            if (!username || !email || !password || !verificationCode) {
+                msg.textContent = '请填写所有必填字段（用户名、邮箱、验证码、密码）';
+                msg.className = 'message error';
+                return;
+            }
+
+            if (username.length < 3 || username.length > 20) {
+                msg.textContent = '用户名长度必须为3-20位';
+                msg.className = 'message error';
+                return;
+            }
+
+            if (!/^[a-zA-Z0-9_\u4e00-\u9fa5]+$/.test(username)) {
+                msg.textContent = '用户名仅支持字母、数字、下划线、中文';
+                msg.className = 'message error';
+                return;
+            }
+
+            if (!validateEmail(email)) {
+                msg.textContent = '请输入有效的邮箱地址';
+                msg.className = 'message error';
+                return;
+            }
+
+            if (password.length < 8) {
+                msg.textContent = '密码长度至少8位';
+                msg.className = 'message error';
+                return;
+            }
+
+            var hasUpper = /[A-Z]/.test(password);
+            var hasLower = /[a-z]/.test(password);
+            var hasDigit = /[0-9]/.test(password);
+            var hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+            var typeCount = [hasUpper, hasLower, hasDigit, hasSpecial].filter(Boolean).length;
+            if (typeCount < 2) {
+                msg.textContent = '密码需包含至少两种类型（大小写字母/数字/特殊字符）';
+                msg.className = 'message error';
+                return;
+            }
+
+            if (!qqNumber) {
+                msg.textContent = 'QQ号是必填项，请输入您的QQ号';
+                msg.className = 'message error';
+                return;
+            }
+            if (!/^\d{5,15}$/.test(qqNumber)) {
+                msg.textContent = 'QQ号格式不正确，请输入5-15位数字';
+                msg.className = 'message error';
+                return;
+            }
+
+            if (verificationCode.length !== 6 || !/^\d{6}$/.test(verificationCode)) {
+                msg.textContent = '验证码为6位数字，请检查输入';
+                msg.className = 'message error';
+                return;
+            }
+
+            msg.textContent = '注册中...';
+            msg.className = 'message info';
+            this.disabled = true;
+
+            try {
+                var startTime = Date.now();
+                var response = await apiRequest('/api/register', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        username: username,
+                        email: email,
+                        password: password,
+                        qq_number: qqNumber,
+                        verification_code: verificationCode
+                    })
+                });
+
+                var elapsed = Date.now() - startTime;
+                updatePerformanceBadge(elapsed);
+
+                msg.textContent = response.message || '注册成功，正在跳转...';
+                msg.className = 'message success';
+
+                setTimeout(function() {
+                    window.location.href = '/';
+                }, 800);
+            } catch (error) {
+                msg.textContent = error.message || '注册失败';
+                msg.className = 'message error';
+                this.disabled = false;
+            }
+        });
+
+        document.getElementById('loginUsername').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') document.getElementById('loginBtn').click();
+        });
+        document.getElementById('loginPassword').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') document.getElementById('loginBtn').click();
+        });
+        document.getElementById('regUsername').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') document.getElementById('registerBtn').click();
+        });
+        document.getElementById('regEmail').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') document.getElementById('registerBtn').click();
+        });
+        document.getElementById('regVerificationCode').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') document.getElementById('registerBtn').click();
+        });
+        document.getElementById('regPassword').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') document.getElementById('registerBtn').click();
+        });
+        document.getElementById('regQqNumber').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') document.getElementById('registerBtn').click();
+        });
+
+        var forgotModal = document.getElementById('forgotModal');
+        var forgotPasswordLink = document.getElementById('forgotPasswordLink');
+        var closeForgotModal = document.getElementById('closeForgotModal');
+        var closeForgotModal2 = document.getElementById('closeForgotModal2');
+        var resetPasswordBtn = document.getElementById('resetPasswordBtn');
+        var forgotSendCodeBtn = document.getElementById('forgotSendCodeBtn');
+        var forgotEmailResetBtn = document.getElementById('forgotEmailResetBtn');
+        var forgotTabCode = document.getElementById('forgotTabCode');
+        var forgotTabEmail = document.getElementById('forgotTabEmail');
+        var forgotCodeMethod = document.getElementById('forgotCodeMethod');
+        var forgotEmailMethod = document.getElementById('forgotEmailMethod');
+        var forgotCodeCountdownEl = document.getElementById('forgotCodeCountdown');
+
+        function resetForgotForm() {
+            document.getElementById('forgotUsername').value = '';
+            document.getElementById('forgotEmail').value = '';
+            document.getElementById('forgotNewPassword').value = '';
+            document.getElementById('forgotResetCode').value = '';
+            document.getElementById('forgotEmailUsername').value = '';
+            document.getElementById('forgotEmailAddr').value = '';
+            document.getElementById('forgotVerificationCode').value = '';
+            document.getElementById('forgotEmailNewPassword').value = '';
+            document.getElementById('forgotMessage').textContent = '';
+            document.getElementById('forgotMessage').className = 'message';
+            if (forgotSendCodeBtn) {
+                forgotSendCodeBtn.disabled = false;
+                forgotSendCodeBtn.textContent = '发送验证码';
+            }
+            if (forgotCodeCountdownEl) forgotCodeCountdownEl.textContent = '';
+            if (forgotCodeTimer) {
+                clearInterval(forgotCodeTimer);
+                forgotCodeTimer = null;
+                forgotCodeCountdown = 0;
+            }
+        }
+
+        forgotPasswordLink.addEventListener('click', function() {
+            if (!cookieEnabled) {
+                showToastMessage('⚠️ 请先启用 Cookie', 'error');
+                return;
+            }
+            forgotModal.style.display = 'flex';
+            resetForgotForm();
+            forgotTabCode.classList.add('active');
+            forgotTabEmail.classList.remove('active');
+            forgotCodeMethod.style.display = 'block';
+            forgotEmailMethod.style.display = 'none';
+        });
+
+        closeForgotModal.addEventListener('click', function() {
+            forgotModal.style.display = 'none';
+            if (forgotCodeTimer) {
+                clearInterval(forgotCodeTimer);
+                forgotCodeTimer = null;
+                forgotCodeCountdown = 0;
+            }
+            if (forgotSendCodeBtn) {
+                forgotSendCodeBtn.disabled = false;
+                forgotSendCodeBtn.textContent = '发送验证码';
+            }
+            if (forgotCodeCountdownEl) forgotCodeCountdownEl.textContent = '';
+        });
+
+        closeForgotModal2.addEventListener('click', function() {
+            forgotModal.style.display = 'none';
+            if (forgotCodeTimer) {
+                clearInterval(forgotCodeTimer);
+                forgotCodeTimer = null;
+                forgotCodeCountdown = 0;
+            }
+            if (forgotSendCodeBtn) {
+                forgotSendCodeBtn.disabled = false;
+                forgotSendCodeBtn.textContent = '发送验证码';
+            }
+            if (forgotCodeCountdownEl) forgotCodeCountdownEl.textContent = '';
+        });
+
+        forgotTabCode.addEventListener('click', function() {
+            forgotTabCode.classList.add('active');
+            forgotTabEmail.classList.remove('active');
+            forgotCodeMethod.style.display = 'block';
+            forgotEmailMethod.style.display = 'none';
+            document.getElementById('forgotMessage').textContent = '';
+            document.getElementById('forgotMessage').className = 'message';
+        });
+
+        forgotTabEmail.addEventListener('click', function() {
+            forgotTabEmail.classList.add('active');
+            forgotTabCode.classList.remove('active');
+            forgotCodeMethod.style.display = 'none';
+            forgotEmailMethod.style.display = 'block';
+            document.getElementById('forgotMessage').textContent = '';
+            document.getElementById('forgotMessage').className = 'message';
+            if (forgotSendCodeBtn) {
+                forgotSendCodeBtn.disabled = false;
+                forgotSendCodeBtn.textContent = '发送验证码';
+            }
+            if (forgotCodeCountdownEl) forgotCodeCountdownEl.textContent = '';
+            if (forgotCodeTimer) {
+                clearInterval(forgotCodeTimer);
+                forgotCodeTimer = null;
+                forgotCodeCountdown = 0;
+            }
+        });
+
+        resetPasswordBtn.addEventListener('click', async function() {
+            if (!cookieEnabled) {
+                showToastMessage('⚠️ 请先启用 Cookie', 'error');
+                return;
+            }
+
+            var username = document.getElementById('forgotUsername').value.trim();
+            var email = document.getElementById('forgotEmail').value.trim();
+            var newPassword = document.getElementById('forgotNewPassword').value;
+            var resetCode = document.getElementById('forgotResetCode').value.trim().toUpperCase();
+            var msg = document.getElementById('forgotMessage');
+
+            if (!username || !email || !newPassword || !resetCode) {
+                msg.textContent = '请填写所有字段';
+                msg.className = 'message error';
+                return;
+            }
+
+            if (!/^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(resetCode)) {
+                msg.textContent = '卡密格式不正确，应为 XXXX-XXXX-XXXX-XXXX';
+                msg.className = 'message error';
+                return;
+            }
+
+            if (newPassword.length < 8) {
+                msg.textContent = '新密码长度至少8位';
+                msg.className = 'message error';
+                return;
+            }
+
+            var hasUpper = /[A-Z]/.test(newPassword);
+            var hasLower = /[a-z]/.test(newPassword);
+            var hasDigit = /[0-9]/.test(newPassword);
+            var hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(newPassword);
+            var typeCount = [hasUpper, hasLower, hasDigit, hasSpecial].filter(Boolean).length;
+            if (typeCount < 2) {
+                msg.textContent = '密码需包含至少两种类型（大小写字母/数字/特殊字符）';
+                msg.className = 'message error';
+                return;
+            }
+
+            msg.textContent = '重置中...';
+            msg.className = 'message info';
+            this.disabled = true;
+
+            try {
+                var response = await apiRequest('/api/reset-password', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        username: username,
+                        email: email,
+                        newPassword: newPassword,
+                        resetCode: resetCode
+                    })
+                });
+
+                msg.textContent = response.message || '密码重置成功';
+                msg.className = 'message success';
+                setTimeout(function() {
+                    forgotModal.style.display = 'none';
+                    resetPasswordBtn.disabled = false;
+                }, 2000);
+            } catch (error) {
+                msg.textContent = error.message || '重置失败';
+                msg.className = 'message error';
+                this.disabled = false;
+            }
+        });
+
+        forgotSendCodeBtn.addEventListener('click', async function() {
+            if (!cookieEnabled) {
+                showToastMessage('⚠️ 请先启用 Cookie', 'error');
+                return;
+            }
+
+            var username = document.getElementById('forgotEmailUsername').value.trim();
+            var email = document.getElementById('forgotEmailAddr').value.trim();
+            var msg = document.getElementById('forgotMessage');
+
+            if (!username || !email) {
+                msg.textContent = '请填写用户名和邮箱';
+                msg.className = 'message error';
+                return;
+            }
+
+            if (!validateEmail(email)) {
+                msg.textContent = '请输入有效的邮箱地址';
+                msg.className = 'message error';
+                return;
+            }
+
+            msg.textContent = '发送中...';
+            msg.className = 'message info';
+            this.disabled = true;
+            this.textContent = '发送中...';
+
+            try {
+                var response = await apiRequest('/api/forgot-password/send-code', {
+                    method: 'POST',
+                    body: JSON.stringify({ username: username, email: email })
+                });
+
+                if (response.success) {
+                    msg.textContent = response.message || '验证码已发送至您的邮箱，请查收';
+                    msg.className = 'message success';
+                    forgotCodeCountdown = 60;
+                    this.textContent = forgotCodeCountdown + 's';
+                    if (forgotCodeCountdownEl) forgotCodeCountdownEl.textContent = '⏱️ ' + forgotCodeCountdown + '秒后可重新发送';
+
+                    if (forgotCodeTimer) clearInterval(forgotCodeTimer);
+                    forgotCodeTimer = setInterval(function() {
+                        forgotCodeCountdown--;
+                        if (forgotCodeCountdown <= 0) {
+                            clearInterval(forgotCodeTimer);
+                            forgotCodeTimer = null;
+                            forgotSendCodeBtn.disabled = false;
+                            forgotSendCodeBtn.textContent = '重新发送';
+                            if (forgotCodeCountdownEl) forgotCodeCountdownEl.textContent = '';
+                        } else {
+                            forgotSendCodeBtn.textContent = forgotCodeCountdown + 's';
+                            if (forgotCodeCountdownEl) forgotCodeCountdownEl.textContent = '⏱️ ' + forgotCodeCountdown + '秒后可重新发送';
+                        }
+                    }, 1000);
+                } else {
+                    msg.textContent = response.message || '发送失败，请重试';
+                    msg.className = 'message error';
+                    this.disabled = false;
+                    this.textContent = '发送验证码';
+                }
+            } catch (error) {
+                msg.textContent = error.message || '发送失败，请重试';
+                msg.className = 'message error';
+                this.disabled = false;
+                this.textContent = '发送验证码';
+            }
+        });
+
+        forgotEmailResetBtn.addEventListener('click', async function() {
+            if (!cookieEnabled) {
+                showToastMessage('⚠️ 请先启用 Cookie', 'error');
+                return;
+            }
+
+            var username = document.getElementById('forgotEmailUsername').value.trim();
+            var email = document.getElementById('forgotEmailAddr').value.trim();
+            var newPassword = document.getElementById('forgotEmailNewPassword').value;
+            var verificationCode = document.getElementById('forgotVerificationCode').value.trim();
+            var msg = document.getElementById('forgotMessage');
+
+            if (!username || !email || !newPassword || !verificationCode) {
+                msg.textContent = '请填写所有字段';
+                msg.className = 'message error';
+                return;
+            }
+
+            if (!validateEmail(email)) {
+                msg.textContent = '请输入有效的邮箱地址';
+                msg.className = 'message error';
+                return;
+            }
+
+            if (newPassword.length < 8) {
+                msg.textContent = '新密码长度至少8位';
+                msg.className = 'message error';
+                return;
+            }
+
+            var hasUpper = /[A-Z]/.test(newPassword);
+            var hasLower = /[a-z]/.test(newPassword);
+            var hasDigit = /[0-9]/.test(newPassword);
+            var hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(newPassword);
+            var typeCount = [hasUpper, hasLower, hasDigit, hasSpecial].filter(Boolean).length;
+            if (typeCount < 2) {
+                msg.textContent = '密码需包含至少两种类型（大小写字母/数字/特殊字符）';
+                msg.className = 'message error';
+                return;
+            }
+
+            if (verificationCode.length !== 6 || !/^\d{6}$/.test(verificationCode)) {
+                msg.textContent = '验证码为6位数字，请检查输入';
+                msg.className = 'message error';
+                return;
+            }
+
+            msg.textContent = '验证中...';
+            msg.className = 'message info';
+            this.disabled = true;
+
+            try {
+                var response = await apiRequest('/api/forgot-password', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        username: username,
+                        email: email,
+                        newPassword: newPassword,
+                        verificationCode: verificationCode
+                    })
+                });
+
+                if (response.success) {
+                    msg.textContent = response.message || '密码重置成功，已扣除8.8积分';
+                    msg.className = 'message success';
+                    setTimeout(function() {
+                        forgotModal.style.display = 'none';
+                        forgotEmailResetBtn.disabled = false;
+                        if (forgotCodeTimer) {
+                            clearInterval(forgotCodeTimer);
+                            forgotCodeTimer = null;
+                            forgotCodeCountdown = 0;
+                        }
+                        if (forgotSendCodeBtn) {
+                            forgotSendCodeBtn.disabled = false;
+                            forgotSendCodeBtn.textContent = '发送验证码';
+                        }
+                        if (forgotCodeCountdownEl) forgotCodeCountdownEl.textContent = '';
+                    }, 2000);
+                } else {
+                    msg.textContent = response.message || '重置失败，请重试';
+                    msg.className = 'message error';
+                    this.disabled = false;
+                }
+            } catch (error) {
+                msg.textContent = error.message || '操作失败，请重试';
+                msg.className = 'message error';
+                this.disabled = false;
+                if (error.message && (error.message.includes('验证码错误') || error.message.includes('验证码不存在') || error.message.includes('验证码已过期') || error.message.includes('验证码已被使用'))) {
+                    if (forgotSendCodeBtn) {
+                        forgotSendCodeBtn.disabled = false;
+                        forgotSendCodeBtn.textContent = '重新获取验证码';
+                    }
+                    if (forgotCodeCountdownEl) forgotCodeCountdownEl.textContent = '⚠️ 验证码已失效，请点击"重新获取验证码"';
+                }
+            }
+        });
+
+        window.onclick = function(e) {
+            if (e.target === forgotModal) {
+                forgotModal.style.display = 'none';
+                if (forgotCodeTimer) {
+                    clearInterval(forgotCodeTimer);
+                    forgotCodeTimer = null;
+                    forgotCodeCountdown = 0;
+                }
+                if (forgotSendCodeBtn) {
+                    forgotSendCodeBtn.disabled = false;
+                    forgotSendCodeBtn.textContent = '发送验证码';
+                }
+                if (forgotCodeCountdownEl) forgotCodeCountdownEl.textContent = '';
+            }
+        };
+
+        document.getElementById('forgotResetCode').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') resetPasswordBtn.click();
+        });
+        document.getElementById('forgotNewPassword').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') resetPasswordBtn.click();
+        });
+        document.getElementById('forgotEmail').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') resetPasswordBtn.click();
+        });
+        document.getElementById('forgotUsername').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') resetPasswordBtn.click();
+        });
+
+        document.getElementById('forgotVerificationCode').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') forgotEmailResetBtn.click();
+        });
+        document.getElementById('forgotEmailNewPassword').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') forgotEmailResetBtn.click();
+        });
+        document.getElementById('forgotEmailAddr').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') forgotSendCodeBtn.click();
+        });
+        document.getElementById('forgotEmailUsername').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') forgotSendCodeBtn.click();
+        });
+
+        function init() {
+            checkJavaScript();
+            cookieEnabled = checkCookieEnabled();
+            cookieCheckDone = true;
+
+            if (!cookieEnabled) {
+                handleCookieDisabled();
+                console.warn('⚠️ Cookie 被禁用，请启用 Cookie 后刷新页面');
+                return;
+            }
+
+            handleCookieEnabled();
+            fetchCsrfToken().catch(function(e) {
+                console.warn('CSRF pre-fetch failed:', e);
+            });
+            checkAuthAndRedirect();
+            console.log('✅ Login page initialized successfully');
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>

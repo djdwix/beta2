@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# 数据文件（重要！不要提交用户数据）
+data/
+*.enc
+*.lock
+*.db
+*.sqlite
+
+# SSL 证书
+ssl/
+*.pem
+*.key
+*.crt
+
+# 环境变量（包含密码和密钥）
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 日志
+*.log
+logs/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 备份文件
+*.bak
+*.backup

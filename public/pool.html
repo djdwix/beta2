@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>积分瓜分池 · 新人奖池</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI','PingFang SC',Roboto,'Helvetica Neue',sans-serif;background:linear-gradient(135deg,#0b1a2e 0%,#1e2f4a 100%);min-height:100vh;padding:20px;position:relative;overflow-x:hidden}
+        body::before{content:'';position:fixed;width:200%;height:200%;background:radial-gradient(circle,rgba(255,255,255,0.04) 1px,transparent 1px);background-size:40px 40px;animation:float 20s linear infinite;pointer-events:none}
+        @keyframes float{0%{transform:translate(0,0)}100%{transform:translate(40px,40px)}}
+        .container{max-width:720px;margin:0 auto;background:rgba(255,255,255,0.97);border-radius:36px;padding:32px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);position:relative;z-index:1;animation:slideUp 0.6s ease-out}
+        @keyframes slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+        .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+        .header h1{font-size:24px;background:linear-gradient(135deg,#6c8cff,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+        .back-btn{padding:8px 20px;background:linear-gradient(135deg,#6c8cff,#a78bfa);color:white;border:none;border-radius:40px;cursor:pointer;font-size:14px;text-decoration:none;transition:all 0.3s}
+        .back-btn:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(108,140,255,0.4)}
+        .user-info-bar{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:rgba(108,140,255,0.08);border-radius:14px;margin-bottom:20px;flex-wrap:wrap;gap:8px}
+        .user-info-bar .username{font-weight:600;color:#1e293b}
+        .user-info-bar .points{font-size:14px;color:#6c8cff;font-weight:600}
+        .tabs{display:flex;gap:4px;margin-bottom:20px;background:#f1f5f9;border-radius:14px;padding:4px;overflow-x:auto}
+        .tab-btn{flex:1;padding:12px 16px;border:none;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s;background:transparent;color:#64748b;white-space:nowrap}
+        .tab-btn:hover{color:#1e293b;background:rgba(108,140,255,0.08)}
+        .tab-btn.active{background:white;color:#6c8cff;box-shadow:0 2px 8px rgba(108,140,255,0.2)}
+        .tab-content{display:none}
+        .tab-content.active{display:block;animation:fadeIn 0.3s ease}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+        .pool-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;margin-bottom:24px}
+        .stat-card{background:#f1f5f9;border-radius:16px;padding:14px 10px;text-align:center;transition:all 0.2s;border:1px solid #e2e8f0}
+        .stat-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.06)}
+        .stat-card .label{font-size:12px;color:#64748b;margin-bottom:4px}
+        .stat-card .value{font-size:22px;font-weight:700;color:#0f172a}
+        .stat-card .value.pool{color:#6c8cff}
+        .stat-card .value.reward{color:#22c55e}
+        .stat-card .value.base{color:#f59e0b}
+        .stat-card .value.cons{color:#8b5cf6}
+        .stat-card .value.eligible{color:#ec4899}
+        .stat-card .value.newbie{color:#06b6d4}
+        .stat-card .value.claimed{color:#22c55e}
+        .dynamic-range{font-size:11px;color:#94a3b8;margin-top:2px}
+        .pool-preview{background:linear-gradient(135deg,#eef2ff,#e0e7ff);border-radius:20px;padding:24px 20px;margin-bottom:24px;text-align:center;border:1px solid #c7d2fe}
+        .pool-preview .label{font-size:14px;color:#475569;margin-bottom:6px;font-weight:500}
+        .pool-preview .reward-amount{font-size:42px;font-weight:800;color:#16a34a;line-height:1.2}
+        .pool-preview .reward-amount .unit{font-size:18px;font-weight:400;color:#64748b;margin-left:4px}
+        .pool-preview .reward-amount.locked{color:#ef4444}
+        .pool-preview .sub-info{font-size:13px;color:#64748b;margin-top:8px}
+        .pool-preview .bonus-info{font-size:12px;color:#8b5cf6;margin-top:4px;font-weight:500}
+        .claim-btn{width:100%;padding:16px;background:linear-gradient(135deg,#22c55e,#16a34a);color:white;border:none;border-radius:60px;font-size:18px;font-weight:700;cursor:pointer;transition:all 0.3s;margin-bottom:14px}
+        .claim-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 20px rgba(34,197,94,0.35)}
+        .claim-btn:disabled{opacity:0.5;cursor:not-allowed}
+        .claim-btn.claimed{background:#94a3b8}
+        .claim-btn.locked{background:#f59e0b}
+        .claim-btn.unavailable{background:#ef4444}
+        .claim-btn.cooldown{background:#8b5cf6}
+        .claim-btn.newbie{background:linear-gradient(135deg,#06b6d4,#0891b2)}
+        .claim-btn.newbie:hover:not(:disabled){box-shadow:0 8px 20px rgba(6,182,212,0.35)}
+        .claim-btn.newbie-disabled{background:#94a3b8}
+        .info-text{text-align:center;font-size:13px;color:#64748b;margin-top:14px;line-height:1.9}
+        .info-text strong{color:#6c8cff}
+        .info-text .highlight{color:#f59e0b;font-weight:600}
+        .info-text .newbie-highlight{color:#06b6d4;font-weight:600}
+        .update-timer{text-align:center;font-size:12px;color:#94a3b8;margin-top:16px}
+        .loading{text-align:center;padding:60px 20px;color:#94a3b8}
+        .loading i{font-size:32px;margin-bottom:12px;display:block}
+        .error-msg{background:#fef2f2;color:#ef4444;padding:12px 16px;border-radius:12px;margin-bottom:16px;border-left:4px solid #ef4444;display:none;font-size:14px}
+        .success-msg{background:#f0fdf4;color:#16a34a;padding:12px 16px;border-radius:12px;margin-bottom:16px;border-left:4px solid #22c55e;display:none;font-size:14px}
+        .status-badge{display:inline-block;padding:4px 18px;border-radius:30px;font-size:13px;font-weight:600;margin-top:10px}
+        .status-badge.claimed{background:#dcfce7;color:#16a34a}
+        .status-badge.unclaimed{background:#fef3c7;color:#f59e0b}
+        .status-badge.locked{background:#fee2e2;color:#ef4444}
+        .status-badge.ready{background:#e0e7ff;color:#6c8cff}
+        .status-badge.cooldown{background:#ede9fe;color:#7c3aed}
+        .status-badge.newbie-ready{background:#cffafe;color:#0891b2}
+        .status-badge.newbie-claimed{background:#dcfce7;color:#16a34a}
+        .status-badge.newbie-locked{background:#fee2e2;color:#ef4444}
+        .attendance-info{background:linear-gradient(135deg,#fef9c3,#fde68a);border-radius:14px;padding:14px 16px;margin-bottom:16px;text-align:center;border:1px solid #fcd34d}
+        .attendance-info .days{font-size:26px;font-weight:800;color:#b45309}
+        .attendance-info .required{font-size:14px;color:#92400e}
+        .attendance-info .required .highlight{color:#b45309;font-weight:700}
+        .cons-info{background:#f3f4f6;border-radius:12px;padding:12px 16px;margin-bottom:16px;text-align:center;border:1px solid #d1d5db;font-size:13px;color:#374151}
+        .cons-info .cons-value{font-weight:700;color:#6c8cff}
+        .cons-info .newbie-value{font-weight:700;color:#06b6d4}
+        .error-boundary{background:#fef2f2;border:2px solid #fecaca;border-radius:16px;padding:20px;margin-bottom:20px;text-align:center;display:none}
+        .error-boundary .error-icon{font-size:48px;color:#dc2626;margin-bottom:12px}
+        .error-boundary .error-title{font-size:18px;font-weight:700;color:#dc2626;margin-bottom:8px}
+        .error-boundary .retry-btn{padding:10px 32px;background:#dc2626;color:white;border:none;border-radius:40px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s}
+        .error-boundary .retry-btn:hover{background:#b91c1c;transform:translateY(-2px)}
+        .tier-info{background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-radius:12px;padding:12px 16px;margin-bottom:16px;text-align:center;border:1px solid #bbf7d0;font-size:13px;color:#166534}
+        .tier-info .tier-value{font-weight:700;color:#16a34a}
+        .newbie-info{background:linear-gradient(135deg,#cffafe,#a5f3fc);border-radius:12px;padding:12px 16px;margin-bottom:16px;text-align:center;border:1px solid #67e8f9;font-size:13px;color:#0e7490}
+        .newbie-info .newbie-value{font-weight:700;color:#0891b2}
+        .action-row{display:flex;gap:10px;margin-top:8px;flex-wrap:wrap;justify-content:center}
+        .action-row button{background:none;border:1px solid #c7d2fe;border-radius:40px;padding:8px 18px;color:#6c8cff;cursor:pointer;font-size:13px;transition:all 0.2s}
+        .action-row button:hover{background:#eef2ff;border-color:#6c8cff}
+        .action-row button.newbie-action{border-color:#67e8f9;color:#0891b2}
+        .action-row button.newbie-action:hover{background:#cffafe;border-color:#06b6d4}
+        .yesterday-details{background:#f8fafc;border-radius:12px;padding:16px;margin-top:12px;font-size:13px;display:none;border:1px solid #e2e8f0}
+        .yesterday-details .top-list{display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:12px;margin-top:6px}
+        .yesterday-details .top-list .medal{font-weight:600}
+        .cooldown-container{background:linear-gradient(135deg,#ede9fe,#ddd6fe);border-radius:12px;padding:14px 16px;margin-bottom:16px;text-align:center;border:1px solid #c4b5fd;display:none}
+        .cooldown-container .cooldown-title{font-size:14px;font-weight:600;color:#5b21b6}
+        .cooldown-container .cooldown-timer{font-size:28px;font-weight:800;color:#7c3aed;margin:4px 0;font-family:monospace}
+        .cooldown-container .cooldown-sub{font-size:12px;color:#7c3aed}
+        .cooldown-container .cooldown-bar{width:100%;height:6px;background:#e5e7eb;border-radius:4px;margin-top:8px;overflow:hidden}
+        .cooldown-container .cooldown-bar-fill{height:100%;background:linear-gradient(90deg,#8b5cf6,#6d28d9);border-radius:4px;transition:width 1s linear}
+        .newbie-activity{display:flex;gap:12px;justify-content:center;margin:12px 0;flex-wrap:wrap}
+        .activity-badge{padding:6px 16px;border-radius:30px;font-size:13px;font-weight:600}
+        .activity-badge.active{background:#dcfce7;color:#16a34a}
+        .activity-badge.inactive{background:#fee2e2;color:#ef4444}
+        .activity-badge.neutral{background:#f1f5f9;color:#64748b}
+        @media(max-width:600px){.container{padding:20px}.pool-stats{grid-template-columns:repeat(2,1fr);gap:10px}.pool-preview .reward-amount{font-size:32px}.header h1{font-size:20px}.claim-btn{font-size:16px;padding:14px}}
+        @media(max-width:400px){.pool-stats{grid-template-columns:1fr 1fr}.stat-card{padding:10px}.stat-card .value{font-size:18px}}
+        .perf-badge{position:fixed;bottom:20px;right:20px;background:rgba(15,23,42,0.85);color:#4ade80;padding:6px 14px;border-radius:40px;font-size:12px;font-family:monospace;font-weight:600;z-index:1000;backdrop-filter:blur(6px)}
+        .tab-btn .badge{display:inline-block;background:#ec4899;color:white;border-radius:20px;padding:0 8px;font-size:10px;line-height:18px;margin-left:4px}
+        .tab-btn .badge.newbie{background:#06b6d4}
+    </style>
+</head>
+<body>
+<div class="container">
+    <div id="errorBoundary" class="error-boundary">
+        <div class="error-icon"><i class="fas fa-exclamation-triangle"></i></div>
+        <div class="error-title">⚠️ 加载失败</div>
+        <div class="error-desc" id="errorDesc">网络连接失败，请检查网络后重试</div>
+        <button class="retry-btn" onclick="location.reload()">🔄 重新加载</button>
+    </div>
+
+    <div class="header">
+        <h1><i class="fas fa-layer-group"></i> 积分瓜分池</h1>
+        <a href="/" class="back-btn"><i class="fas fa-arrow-left"></i> 返回</a>
+    </div>
+
+    <div class="user-info-bar">
+        <span class="username" id="displayUsername">👤 加载中...</span>
+        <span class="points">⭐ 积分: <span id="displayPoints">0</span></span>
+    </div>
+
+    <div id="errorMsg" class="error-msg"></div>
+    <div id="successMsg" class="success-msg"></div>
+
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="main"><i class="fas fa-users"></i> 瓜分池</button>
+        <button class="tab-btn" data-tab="newbie"><i class="fas fa-star"></i> 新人奖池 <span class="badge newbie" id="newbieBadge">NEW</span></button>
+    </div>
+
+    <div id="loadingState" class="loading">
+        <i class="fas fa-spinner fa-spin"></i>
+        加载数据中...
+    </div>
+
+    <!-- 主瓜分池 -->
+    <div id="tab-main" class="tab-content active">
+        <div id="mainContent" style="display:none;">
+            <div class="attendance-info">
+                <div>📅 累计签到天数</div>
+                <div class="days" id="totalDays">0</div>
+                <div class="required">需要 <span class="highlight">≥7</span> 天参与瓜分</div>
+            </div>
+
+            <div class="cons-info">
+                <i class="fas fa-fire"></i> 连续签到: <span class="cons-value" id="consecutiveDays">0</span> 天 &nbsp;|&nbsp;
+                加成系数: <span class="cons-value" id="consBonus">100%</span>
+                <span style="display:block;font-size:11px;color:#8b5cf6;margin-top:2px;" id="bonusDetail">主池按基数分配 · 奖励池额外加成</span>
+            </div>
+
+            <div class="tier-info" id="tierInfo">
+                📊 池子阶梯: 保底人均 <strong>50</strong> 积分 · 上限人均 <strong>200</strong> 积分
+                <br><span style="font-size:12px;color:#15803d;">当前可瓜分 <span class="tier-value" id="eligibleCountDisplay">0</span> 人 · 池子范围: <span class="tier-value" id="poolRangeDisplay">10,000 ~ 50,000</span></span>
+            </div>
+
+            <div id="cooldownContainer" class="cooldown-container">
+                <div class="cooldown-title">⏳ 领取冷却中</div>
+                <div class="cooldown-timer" id="cooldownTimerDisplay">--:--:--</div>
+                <div class="cooldown-sub" id="cooldownSub">冷却结束后可再次领取</div>
+                <div class="cooldown-bar"><div class="cooldown-bar-fill" id="cooldownBarFill" style="width:100%"></div></div>
+            </div>
+
+            <div class="pool-stats">
+                <div class="stat-card"><div class="label">📊 今日瓜分池</div><div class="value pool" id="poolAmount">--</div><div class="dynamic-range" id="poolRange">范围: --</div></div>
+                <div class="stat-card"><div class="label">👥 可瓜分人数</div><div class="value eligible" id="eligibleCount">--</div></div>
+                <div class="stat-card"><div class="label">📈 当前基数</div><div class="value base" id="userBase">--%</div></div>
+                <div class="stat-card"><div class="label">🔥 连续加成</div><div class="value cons" id="bonusDisplay">--</div></div>
+            </div>
+
+            <div class="pool-preview">
+                <div class="label">🎯 今日可瓜分</div>
+                <div class="reward-amount" id="todayReward">-- <span class="unit">积分</span></div>
+                <div class="sub-info" id="previewSubInfo">基于平滑基数 + 连续签到加成</div>
+                <div class="bonus-info" id="bonusBreakdown">主池 80% · 奖励池 20%</div>
+                <div id="claimStatusBadge" class="status-badge unclaimed">⏳ 待领取</div>
+            </div>
+
+            <button id="claimBtn" class="claim-btn" disabled>⏳ 加载中...</button>
+
+            <div class="action-row">
+                <button onclick="loadYesterdayDetails()"><i class="fas fa-history"></i> 昨日明细</button>
+                <button onclick="location.reload()"><i class="fas fa-sync"></i> 刷新</button>
+            </div>
+            <div id="yesterdayDetails" class="yesterday-details"></div>
+
+            <div class="info-text">
+                <p>📌 池子动态范围: 保底人均 <span class="highlight">50</span> 积分，上限人均 <span class="highlight">200</span> 积分</p>
+                <p>📌 可瓜分人数越多，池子上下限阶梯提高</p>
+                <p>📌 主池(80%)按基数分配 · 奖励池(20%)按连续天数加成</p>
+                <p>📌 基数采用平滑曲线: 积分越高基数越平缓下降</p>
+                <p>📌 连续签到加成: ≥7天 100%｜4-6天 70%｜1-3天 40%｜断签归零</p>
+                <p>📌 新用户(注册≤14天) 额外 +15% 基数</p>
+                <p>📌 每日池子 = max(前日发放×1.05, 动态下限)，上限动态</p>
+                <p>📌 领取后冷却 <span class="highlight">24</span> 小时，防止频繁领取</p>
+                <p style="margin-top:8px;font-size:11px;color:#94a3b8;">数据每10分钟刷新 · 每人每日限领一次</p>
+            </div>
+
+            <div class="update-timer" id="updateTimer">下次更新: --</div>
+        </div>
+    </div>
+
+    <!-- 新人奖池 -->
+    <div id="tab-newbie" class="tab-content">
+        <div id="newbieContent" style="display:none;">
+            <div class="newbie-info">
+                <i class="fas fa-gift" style="font-size:20px;display:block;margin-bottom:6px;"></i>
+                <div>🎉 新人专属福利 · 注册 <span class="newbie-value" id="newbieDaysOld">--</span> 天</div>
+                <div style="font-size:12px;color:#0e7490;margin-top:4px;">注册 ≤ 7 天可领取 · 每日限领 1 次</div>
+            </div>
+
+            <div class="pool-stats">
+                <div class="stat-card"><div class="label">💰 奖池总额</div><div class="value newbie" id="newbiePoolAmount">--</div></div>
+                <div class="stat-card"><div class="label">👥 可领人数</div><div class="value eligible" id="newbieEligibleCount">--</div></div>
+                <div class="stat-card"><div class="label">🏆 最高奖励</div><div class="value reward" id="newbieMaxReward">--</div></div>
+                <div class="stat-card"><div class="label">📊 系统池</div><div class="value pool" id="newbieSystemTotal">--</div></div>
+            </div>
+
+            <div class="newbie-activity">
+                <span class="activity-badge neutral" id="newbieAttendBadge">📅 签到: --</span>
+                <span class="activity-badge neutral" id="newbieActiveBadge">🌐 活跃: --</span>
+            </div>
+
+            <div class="cons-info">
+                <span class="newbie-value" id="newbieMultiplier">--</span> 倍活跃度加成
+                <span style="display:block;font-size:11px;color:#0891b2;margin-top:2px;" id="newbieMultiplierDetail">签到 +100% · 登录 +100% · 注册天数衰减</span>
+            </div>
+
+            <div class="pool-preview" style="background:linear-gradient(135deg,#cffafe,#a5f3fc);border-color:#67e8f9;">
+                <div class="label">🎁 今日可领取</div>
+                <div class="reward-amount" id="newbieReward">-- <span class="unit">积分</span></div>
+                <div class="sub-info" id="newbiePreviewSub">基于活跃度动态计算</div>
+                <div id="newbieStatusBadge" class="status-badge newbie-locked">🔒 不可领取</div>
+            </div>
+
+            <button id="newbieClaimBtn" class="claim-btn newbie" disabled>⏳ 加载中...</button>
+
+            <div class="action-row">
+                <button class="newbie-action" onclick="refreshNewbie()"><i class="fas fa-sync"></i> 刷新</button>
+            </div>
+
+            <div class="info-text">
+                <p>📌 仅限注册 <span class="newbie-highlight">≤ 7 天</span> 的新用户</p>
+                <p>📌 活跃度计算: 签到 (<span class="newbie-highlight">+100%</span>) + 登录 (<span class="newbie-highlight">+100%</span>)</p>
+                <p>📌 注册天数衰减: 第1天 100% → 第7天 50%</p>
+                <p>📌 最高奖励不超过系统积分池的 <span class="newbie-highlight">1%</span></p>
+                <p>📌 奖池资金来源于 <span class="newbie-highlight">系统积分池</span></p>
+                <p style="margin-top:8px;font-size:11px;color:#94a3b8;">每日限领一次 · 奖励自动发放至邮箱</p>
+            </div>
+
+            <div class="update-timer" id="newbieUpdateTimer">下次更新: --</div>
+        </div>
+    </div>
+</div>
+
+<div class="perf-badge" id="perfBadge">⚡ --ms</div>
+
+<script>
+    var csrfToken = null;
+    var csrfTokenRefreshPromise = null;
+    var csrfTokenLastFetch = 0;
+    var CSRF_TOKEN_TTL = 300000;
+
+    function getCsrfTokenFromCookie() {
+        try {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                if (cookie.indexOf('csrf_token=') === 0) {
+                    return cookie.substring('csrf_token='.length, cookie.length);
+                }
+            }
+            return null;
+        } catch (e) { return null; }
+    }
+
+    function setCsrfTokenCookie(token) {
+        try {
+            var expires = new Date(Date.now() + CSRF_TOKEN_TTL).toUTCString();
+            document.cookie = 'csrf_token=' + token + '; expires=' + expires + '; path=/; SameSite=Strict; Secure';
+        } catch (e) {}
+    }
+
+    function fetchCsrfToken() {
+        if (csrfTokenRefreshPromise) { return csrfTokenRefreshPromise; }
+        if (csrfToken && (Date.now() - csrfTokenLastFetch) < CSRF_TOKEN_TTL) { return Promise.resolve(csrfToken); }
+        var cookieToken = getCsrfTokenFromCookie();
+        if (cookieToken) { csrfToken = cookieToken;
+            csrfTokenLastFetch = Date.now(); return Promise.resolve(csrfToken); }
+        csrfTokenRefreshPromise = fetch('/api/csrf-token', {
+            method: 'GET',
+            credentials: 'include',
+            headers: { 'Accept': 'application/json', 'Cache-Control': 'no-cache' }
+        }).then(function(response) {
+            if (!response.ok) { throw new Error('Failed to fetch CSRF token: HTTP ' + response.status); }
+            return response.json();
+        }).then(function(data) {
+            if (!data.csrf_token) { throw new Error('No CSRF token in response'); }
+            csrfToken = data.csrf_token;
+            csrfTokenLastFetch = Date.now();
+            setCsrfTokenCookie(csrfToken);
+            csrfTokenRefreshPromise = null;
+            return csrfToken;
+        }).catch(function(error) {
+            csrfTokenRefreshPromise = null;
+            csrfToken = null;
+            throw error;
+        });
+        return csrfTokenRefreshPromise;
+    }
+
+    function apiRequest(url, options) {
+        if (!options) options = {};
+        options.credentials = 'include';
+        if (!options.headers) options.headers = {};
+        options.headers['Content-Type'] = 'application/json';
+        options.headers['Accept'] = 'application/json';
+        var method = (options.method || 'GET').toUpperCase();
+        if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') {
+            return fetch(url, options).then(function(response) {
+                return response.json().then(function(data) {
+                    if (!response.ok) { throw new Error(data.error || '请求失败: ' + response.status); }
+                    return data;
+                });
+            });
+        }
+        return fetchCsrfToken().then(function(token) {
+            options.headers['X-CSRF-Token'] = token;
+            return fetch(url, options);
+        }).then(function(response) {
+            return response.json().then(function(data) {
+                if (!response.ok) {
+                    if (response.status === 403 && data.error && data.error.includes('CSRF')) {
+                        csrfToken = null;
+                        csrfTokenLastFetch = 0;
+                        return fetchCsrfToken().then(function(newToken) {
+                            options.headers['X-CSRF-Token'] = newToken;
+                            return fetch(url, options);
+                        }).then(function(retryResponse) {
+                            return retryResponse.json().then(function(retryData) {
+                                if (!retryResponse.ok) { throw new Error(retryData.error || '请求失败: ' + retryResponse.status); }
+                                return retryData;
+                            });
+                        });
+                    }
+                    throw new Error(data.error || '请求失败: ' + response.status);
+                }
+                return data;
+            });
+        });
+    }
+
+    var updateInterval = null;
+    var countdownInterval = null;
+    var cooldownInterval = null;
+    var nextUpdateTime = 0;
+    var currentUser = null;
+    var poolData = null;
+    var newbieData = null;
+    var initRetryCount = 0;
+    var MAX_INIT_RETRIES = 3;
+    var isInitialized = false;
+    var COOLDOWN_HOURS = 24;
+    var cooldownEndTime = 0;
+    var activeTab = 'main';
+
+    function updatePerformanceBadge(timeMs) {
+        var badge = document.getElementById('perfBadge');
+        if (badge) {
+            badge.innerHTML = '⚡ ' + timeMs + 'ms';
+            badge.style.color = timeMs <= 60 ? '#4ade80' : timeMs <= 100 ? '#facc15' : '#f87171';
+        }
+    }
+
+    function showErrorBoundary(message) {
+        var el = document.getElementById('errorBoundary');
+        var desc = document.getElementById('errorDesc');
+        if (el && desc) { desc.textContent = message || '网络连接失败，请检查网络后重试';
+            el.style.display = 'block'; }
+    }
+
+    function hideErrorBoundary() { var el = document.getElementById('errorBoundary'); if (el) el.style.display = 'none'; }
+
+    function showError(msg) {
+        var el = document.getElementById('errorMsg');
+        if (el) { el.textContent = msg;
+            el.style.display = 'block';
+            setTimeout(function() { el.style.display = 'none'; }, 5000); }
+    }
+
+    function showSuccess(msg) {
+        var el = document.getElementById('successMsg');
+        if (el) { el.textContent = msg;
+            el.style.display = 'block';
+            setTimeout(function() { el.style.display = 'none'; }, 5000); }
+    }
+
+    function formatNumber(num) {
+        if (num === undefined || num === null) return '--';
+        return typeof num === 'number' ? num.toFixed(2) : num;
+    }
+
+    function formatPercent(num) {
+        if (num === undefined || num === null) return '--';
+        return (num * 100).toFixed(2) + '%';
+    }
+
+    function formatNumberWithComma(num) {
+        if (num === undefined || num === null) return '--';
+        return Math.round(num).toLocaleString();
+    }
+
+    function getConsBonus(consDays) {
+        if (consDays >= 7) return 1.0;
+        if (consDays >= 4) return 0.7;
+        if (consDays >= 1) return 0.4;
+        return 0;
+    }
+
+    function getConsLabel(consDays) {
+        var pct = getConsBonus(consDays) * 100;
+        if (consDays >= 7) return pct + '% (🔥 巅峰)';
+        if (consDays >= 4) return pct + '% (📈 稳定)';
+        if (consDays >= 1) return pct + '% (🌱 起步)';
+        return '0% (断签)';
+    }
+
+    function getPoolRange(eligibleCount) {
+        var count = eligibleCount || 0;
+        var minPerUser = 50;
+        var maxPerUser = 200;
+        var dynamicMin = Math.max(10000, count * minPerUser);
+        var dynamicMax = Math.min(500000, Math.max(50000, count * maxPerUser));
+        return { min: dynamicMin, max: dynamicMax };
+    }
+
+    function updateCountdown() {
+        var now = Date.now();
+        var diff = Math.max(0, nextUpdateTime - now);
+        var minutes = Math.floor(diff / 60000);
+        var seconds = Math.floor((diff % 60000) / 1000);
+        var timerEl = document.getElementById('updateTimer');
+        if (!timerEl) return;
+        if (diff <= 0) { timerEl.textContent = '正在更新...';
+            loadPoolData(); return; }
+        timerEl.textContent = '下次更新: ' + minutes + '分' + seconds.toString().padStart(2, '0') + '秒';
+    }
+
+    function updateCooldownDisplay() {
+        var container = document.getElementById('cooldownContainer');
+        var timerDisplay = document.getElementById('cooldownTimerDisplay');
+        var barFill = document.getElementById('cooldownBarFill');
+        var subEl = document.getElementById('cooldownSub');
+        if (!container || !timerDisplay || !barFill) return;
+
+        var now = Date.now();
+        var remaining = Math.max(0, cooldownEndTime - now);
+
+        if (remaining <= 0) {
+            container.style.display = 'none';
+            if (cooldownInterval) {
+                clearInterval(cooldownInterval);
+                cooldownInterval = null;
+            }
+            return;
+        }
+
+        container.style.display = 'block';
+        var hours = Math.floor(remaining / 3600000);
+        var minutes = Math.floor((remaining % 3600000) / 60000);
+        var seconds = Math.floor((remaining % 60000) / 1000);
+        timerDisplay.textContent = 
+            String(hours).padStart(2, '0') + ':' + 
+            String(minutes).padStart(2, '0') + ':' + 
+            String(seconds).padStart(2, '0');
+
+        var totalCooldown = COOLDOWN_HOURS * 3600 * 1000;
+        var progress = ((totalCooldown - remaining) / totalCooldown) * 100;
+        barFill.style.width = Math.min(100, progress) + '%';
+
+        var remainingHours = remaining / 3600000;
+        if (remainingHours > 1) {
+            subEl.textContent = '冷却结束: ' + new Date(cooldownEndTime).toLocaleString();
+        } else if (remainingHours > 0.5) {
+            subEl.textContent = '⏳ 即将结束，请耐心等待';
+        } else {
+            subEl.textContent = '🔥 马上就好，稍后回来领取！';
+        }
+    }
+
+    function updateClaimStatus(hasClaimed, canClaim, totalDays, userBase, todayReward, isVerified, consBonus, eligibleCount, isCooldown, isSingleUser) {
+        var badge = document.getElementById('claimStatusBadge');
+        var claimBtn = document.getElementById('claimBtn');
+        if (!badge || !claimBtn) return;
+        var effectiveBase = userBase * (0.85 + 0.15 * consBonus);
+
+        if (isCooldown) {
+            badge.className = 'status-badge cooldown';
+            badge.textContent = '⏳ 冷却中';
+            claimBtn.textContent = '⏳ 冷却中，请稍后';
+            claimBtn.disabled = true;
+            claimBtn.className = 'claim-btn cooldown';
+        } else if (hasClaimed) {
+            badge.className = 'status-badge claimed';
+            badge.textContent = '✅ 今日已领取';
+            claimBtn.textContent = '✅ 今日已领取';
+            claimBtn.disabled = true;
+            claimBtn.className = 'claim-btn claimed';
+        } else if (!isVerified) {
+            badge.className = 'status-badge locked';
+            badge.textContent = '🔒 请先身份认证';
+            claimBtn.textContent = '🔒 请先完成身份认证';
+            claimBtn.disabled = true;
+            claimBtn.className = 'claim-btn locked';
+        } else if (totalDays < 7) {
+            badge.className = 'status-badge locked';
+            badge.textContent = '🔒 需要累计签到7天';
+            claimBtn.textContent = '🔒 需要 ' + totalDays + '/7 天';
+            claimBtn.disabled = true;
+            claimBtn.className = 'claim-btn unavailable';
+        } else if (effectiveBase <= 0.0001) {
+            badge.className = 'status-badge locked';
+            badge.textContent = '🔒 基数为0';
+            claimBtn.textContent = '⚠️ 基数为0，无法瓜分';
+            claimBtn.disabled = true;
+            claimBtn.className = 'claim-btn locked';
+        } else if (todayReward <= 0.01) {
+            badge.className = 'status-badge locked';
+            badge.textContent = '🔒 奖励为0';
+            claimBtn.textContent = '⚠️ 奖励为0，无法领取';
+            claimBtn.disabled = true;
+            claimBtn.className = 'claim-btn locked';
+        } else {
+            badge.className = 'status-badge ready';
+            badge.textContent = '🎁 可领取';
+            claimBtn.textContent = isSingleUser ? '🎁 单人保底领取 (上限30%)' : '🎁 立即领取瓜分奖励';
+            claimBtn.disabled = false;
+            claimBtn.className = 'claim-btn';
+        }
+    }
+
+    function updateNewbieUI(data) {
+        if (!data) return;
+        newbieData = data;
+
+        document.getElementById('newbiePoolAmount').textContent = formatNumberWithComma(data.pool_amount);
+        document.getElementById('newbieEligibleCount').textContent = data.eligible_count || 0;
+        document.getElementById('newbieMaxReward').textContent = formatNumber(data.max_reward);
+        document.getElementById('newbieSystemTotal').textContent = formatNumberWithComma(data.system_total);
+        document.getElementById('newbieDaysOld').textContent = data.user_days_old >= 0 ? data.user_days_old + ' 天' : '--';
+
+        var hasAttended = data.has_attended_today || false;
+        var isActive = data.is_active_today || false;
+        var attendBadge = document.getElementById('newbieAttendBadge');
+        var activeBadge = document.getElementById('newbieActiveBadge');
+        attendBadge.textContent = hasAttended ? '✅ 已签到' : '❌ 未签到';
+        attendBadge.className = 'activity-badge ' + (hasAttended ? 'active' : 'inactive');
+        activeBadge.textContent = isActive ? '✅ 今日登录' : '❌ 未登录';
+        activeBadge.className = 'activity-badge ' + (isActive ? 'active' : 'inactive');
+
+        var multiplier = 1.0;
+        if (hasAttended) multiplier += 1.0;
+        if (isActive) multiplier += 1.0;
+        var daysOld = data.user_days_old || 0;
+        var daysFactor = 1.0 - (daysOld / 7) * 0.5;
+        daysFactor = Math.max(0.5, daysFactor);
+        multiplier = multiplier * daysFactor;
+        multiplier = Math.min(multiplier, 3.0);
+        document.getElementById('newbieMultiplier').textContent = multiplier.toFixed(2);
+        document.getElementById('newbieMultiplierDetail').textContent = 
+            '签到 +100% · 登录 +100% · 注册' + daysOld + '天衰减 ' + (daysFactor * 100).toFixed(0) + '%';
+
+        var reward = data.reward || 0;
+        var rewardEl = document.getElementById('newbieReward');
+        rewardEl.innerHTML = formatNumber(reward) + ' <span class="unit">积分</span>';
+        rewardEl.className = (reward <= 0 || !data.is_eligible) ? 'reward-amount locked' : 'reward-amount';
+        document.getElementById('newbiePreviewSub').textContent = 
+            data.is_eligible ? '活跃度 ' + multiplier.toFixed(2) + 'x 倍率' : '暂不符合领取条件';
+
+        var badge = document.getElementById('newbieStatusBadge');
+        var claimBtn = document.getElementById('newbieClaimBtn');
+        var canClaim = data.can_claim || false;
+
+        if (data.has_claimed_today) {
+            badge.className = 'status-badge newbie-claimed';
+            badge.textContent = '✅ 今日已领取';
+            claimBtn.textContent = '✅ 今日已领取';
+            claimBtn.disabled = true;
+            claimBtn.className = 'claim-btn newbie-disabled';
+        } else if (!data.is_eligible) {
+            if (data.user_days_old > 7) {
+                badge.className = 'status-badge newbie-locked';
+                badge.textContent = '🔒 注册超过7天';
+                claimBtn.textContent = '🔒 注册已超过7天';
+                claimBtn.disabled = true;
+                claimBtn.className = 'claim-btn newbie-disabled';
+            } else {
+                badge.className = 'status-badge newbie-locked';
+                badge.textContent = '🔒 不符合条件';
+                claimBtn.textContent = '🔒 请先完成身份认证';
+                claimBtn.disabled = true;
+                claimBtn.className = 'claim-btn newbie-disabled';
+            }
+        } else if (reward <= 0) {
+            badge.className = 'status-badge newbie-locked';
+            badge.textContent = '🔒 奖励为0';
+            claimBtn.textContent = '⚠️ 当前奖励为0';
+            claimBtn.disabled = true;
+            claimBtn.className = 'claim-btn newbie-disabled';
+        } else if (data.pool_amount < reward) {
+            badge.className = 'status-badge newbie-locked';
+            badge.textContent = '🔒 奖池不足';
+            claimBtn.textContent = '⏳ 奖池资金不足，请稍后再试';
+            claimBtn.disabled = true;
+            claimBtn.className = 'claim-btn newbie-disabled';
+        } else {
+            badge.className = 'status-badge newbie-ready';
+            badge.textContent = '🎁 可领取';
+            claimBtn.textContent = '🎁 领取新人奖励';
+            claimBtn.disabled = false;
+            claimBtn.className = 'claim-btn newbie';
+        }
+
+        var timerEl = document.getElementById('newbieUpdateTimer');
+        if (timerEl) {
+            var now = new Date();
+            var tomorrow = new Date(now);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(0, 0, 0, 0);
+            var diff = tomorrow - now;
+            var hours = Math.floor(diff / 3600000);
+            var minutes = Math.floor((diff % 3600000) / 60000);
+            timerEl.textContent = '下次更新: ' + hours + '小时' + minutes + '分钟后';
+        }
+    }
+
+    async function loadPoolData() {
+        try {
+            var start = performance.now();
+            var data = await apiRequest('/api/pool/status');
+            var elapsed = Math.round(performance.now() - start);
+            updatePerformanceBadge(elapsed);
+            poolData = data;
+
+            var eligibleCount = data.user_count || 0;
+            var range = getPoolRange(eligibleCount);
+            var isCooldown = data.cooldown_remaining || false;
+
+            if (isCooldown && data.cooldown_end_time) {
+                cooldownEndTime = data.cooldown_end_time;
+                if (!cooldownInterval) {
+                    cooldownInterval = setInterval(updateCooldownDisplay, 1000);
+                }
+                updateCooldownDisplay();
+            } else {
+                cooldownEndTime = 0;
+                if (cooldownInterval) {
+                    clearInterval(cooldownInterval);
+                    cooldownInterval = null;
+                }
+                document.getElementById('cooldownContainer').style.display = 'none';
+            }
+
+            document.getElementById('poolAmount').textContent = data.pool_amount ? formatNumberWithComma(data.pool_amount) : '--';
+            document.getElementById('poolRange').textContent = '范围: ' + formatNumberWithComma(range.min) + ' ~ ' + formatNumberWithComma(range.max);
+            document.getElementById('eligibleCount').textContent = eligibleCount;
+            document.getElementById('eligibleCountDisplay').textContent = eligibleCount;
+            document.getElementById('poolRangeDisplay').textContent = formatNumberWithComma(range.min) + ' ~ ' + formatNumberWithComma(range.max);
+            document.getElementById('userBase').textContent = formatPercent(data.user_base);
+            document.getElementById('totalDays').textContent = data.total_days || 0;
+            document.getElementById('consecutiveDays').textContent = data.consecutive_days || 0;
+            var consBonus = getConsBonus(data.consecutive_days || 0);
+            document.getElementById('consBonus').textContent = (consBonus * 100).toFixed(0) + '%';
+            document.getElementById('bonusDisplay').textContent = getConsLabel(data.consecutive_days || 0);
+            document.getElementById('bonusBreakdown').textContent = '主池 80% · 奖励池 20% · ' + (consBonus >= 1 ? '🔥 奖励池激活' : '⚪ 奖励池未激活');
+
+            var rewardEl = document.getElementById('todayReward');
+            var rewardVal = data.today_reward || 0;
+            rewardEl.innerHTML = formatNumber(rewardVal) + ' <span class="unit">积分</span>';
+            rewardEl.className = (rewardVal <= 0 || data.total_days < 7) ? 'reward-amount locked' : 'reward-amount';
+            document.getElementById('previewSubInfo').textContent = 
+                '基数 ' + formatPercent(data.user_base) + ' × 连续加成 ' + (consBonus * 100).toFixed(0) + '%';
+
+            if (data.next_update) nextUpdateTime = data.next_update;
+            else {
+                var tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                tomorrow.setHours(0, 0, 0, 0);
+                nextUpdateTime = tomorrow.getTime();
+            }
+
+            updateClaimStatus(
+                data.has_claimed_today || false,
+                data.can_claim || false,
+                data.total_days || 0,
+                data.user_base || 0,
+                data.today_reward || 0,
+                data.is_verified || false,
+                consBonus,
+                eligibleCount,
+                isCooldown,
+                data.single_user_cap || false
+            );
+
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+            if (countdownInterval) clearInterval(countdownInterval);
+            countdownInterval = setInterval(updateCountdown, 1000);
+            updateCountdown();
+            hideErrorBoundary();
+        } catch (error) {
+            document.getElementById('loadingState').innerHTML = '<i class="fas fa-exclamation-circle"></i> 加载失败: ' + error.message;
+            showError(error.message);
+            showErrorBoundary('加载失败: ' + error.message);
+        }
+    }
+
+    async function loadNewbieData() {
+        try {
+            var start = performance.now();
+            var data = await apiRequest('/api/newbie-pool/status');
+            var elapsed = Math.round(performance.now() - start);
+            updateNewbieUI(data);
+            document.getElementById('newbieContent').style.display = 'block';
+        } catch (error) {
+            showError('新人奖池加载失败: ' + error.message);
+            document.getElementById('newbieContent').style.display = 'block';
+            document.getElementById('newbieContent').innerHTML = '<div style="text-align:center;padding:40px;color:#ef4444;"><i class="fas fa-exclamation-circle" style="font-size:32px;display:block;margin-bottom:12px;"></i>加载失败: ' + error.message + '</div>';
+        }
+    }
+
+    async function claimPoolReward() {
+        var claimBtn = document.getElementById('claimBtn');
+        if (!claimBtn || claimBtn.disabled) return;
+        claimBtn.disabled = true;
+        claimBtn.textContent = '⏳ 领取中...';
+        try {
+            var data = await apiRequest('/api/pool/claim', { method: 'POST' });
+            showSuccess('🎉 领取成功！获得 ' + data.reward + ' 积分，已发送至邮箱（冷却24小时）');
+            await loadPoolData();
+            await updateUserInfo();
+        } catch (error) {
+            showError(error.message);
+            claimBtn.disabled = false;
+            claimBtn.textContent = '🎁 立即领取瓜分奖励';
+            claimBtn.className = 'claim-btn';
+        }
+    }
+
+    async function claimNewbieReward() {
+        var claimBtn = document.getElementById('newbieClaimBtn');
+        if (!claimBtn || claimBtn.disabled) return;
+        claimBtn.disabled = true;
+        claimBtn.textContent = '⏳ 领取中...';
+        try {
+            var data = await apiRequest('/api/newbie-pool/claim', { method: 'POST' });
+            showSuccess('🎉 领取成功！获得 ' + data.reward + ' 积分新人奖励，已发送至邮箱');
+            await loadNewbieData();
+            await updateUserInfo();
+        } catch (error) {
+            showError(error.message);
+            claimBtn.disabled = false;
+            claimBtn.textContent = '🎁 领取新人奖励';
+            claimBtn.className = 'claim-btn newbie';
+        }
+    }
+
+    function refreshNewbie() {
+        loadNewbieData();
+    }
+
+    async function updateUserInfo() {
+        try {
+            var data = await apiRequest('/api/check-auth');
+            if (data.authenticated) {
+                currentUser = data.username;
+                document.getElementById('displayUsername').textContent = '👤 ' + currentUser;
+                document.getElementById('displayPoints').textContent = data.totalPoints ? data.totalPoints.toFixed(2) : '0';
+            }
+        } catch (e) { console.error('Update user info failed:', e); }
+    }
+
+    async function checkAuth() {
+        try {
+            var data = await apiRequest('/api/check-auth');
+            if (!data.authenticated) {
+                window.location.href = '/login.html';
+                return false;
+            }
+            currentUser = data.username;
+            document.getElementById('displayUsername').textContent = '👤 ' + currentUser;
+            document.getElementById('displayPoints').textContent = data.totalPoints ? data.totalPoints.toFixed(2) : '0';
+            return true;
+        } catch (error) {
+            window.location.href = '/login.html';
+            return false;
+        }
+    }
+
+    async function loadYesterdayDetails() {
+        var el = document.getElementById('yesterdayDetails');
+        if (!el) return;
+        if (el.style.display === 'block') {
+            el.style.display = 'none';
+            return;
+        }
+        try {
+            var data = await apiRequest('/api/pool/yesterday-details');
+            if (!data.has_record) {
+                el.innerHTML = '📭 昨日暂无瓜分记录';
+                el.style.display = 'block';
+                return;
+            }
+            var html = '<div style="font-weight:600;margin-bottom:8px;">📊 昨日瓜分明细 (' + data.date + ')</div>';
+            html += '<div style="display:flex;justify-content:space-around;margin-bottom:12px;flex-wrap:wrap;gap:4px;">';
+            html += '<span>总发放: <strong>' + data.total_payout + '</strong> 积分</span>';
+            html += '<span>参与人数: <strong>' + data.user_count + '</strong></span>';
+            html += '<span>您获得: <strong>' + data.user_reward + '</strong> 积分</span>';
+            html += '</div>';
+            if (data.top_10 && data.top_10.length > 0) {
+                html += '<div style="font-weight:600;margin-bottom:4px;">🏆 前十榜单</div>';
+                html += '<div class="top-list">';
+                data.top_10.forEach(function(item, index) {
+                    var medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : (index + 1) + '.';
+                    html += '<div class="medal">' + medal + ' ' + item.username + '</div>';
+                    html += '<div style="text-align:right;color:#16a34a;">+' + item.reward + '</div>';
+                });
+                html += '</div>';
+            }
+            el.innerHTML = html;
+            el.style.display = 'block';
+            setTimeout(function() {
+                if (el.style.display === 'block') {
+                    el.style.display = 'none';
+                }
+            }, 20000);
+        } catch (e) {
+            showError('加载昨日明细失败: ' + e.message);
+        }
+    }
+
+    document.getElementById('claimBtn').addEventListener('click', claimPoolReward);
+    document.getElementById('newbieClaimBtn').addEventListener('click', claimNewbieReward);
+
+    document.querySelectorAll('.tab-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+            var tabId = btn.getAttribute('data-tab');
+            document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+            document.getElementById('tab-' + tabId).classList.add('active');
+            activeTab = tabId;
+            if (tabId === 'newbie' && !newbieData) {
+                loadNewbieData();
+            }
+        });
+    });
+
+    async function init() {
+        if (isInitialized) return;
+        isInitialized = true;
+        try {
+            await fetchCsrfToken().catch(function(e) { console.warn('CSRF pre-fetch failed:', e); });
+            var ok = await checkAuth();
+            if (ok) {
+                await loadPoolData();
+                await loadNewbieData();
+                if (updateInterval) clearInterval(updateInterval);
+                updateInterval = setInterval(function() {
+                    loadPoolData();
+                    loadNewbieData();
+                }, 600000);
+                setInterval(updateUserInfo, 30000);
+                hideErrorBoundary();
+            }
+        } catch (error) {
+            console.error('Init error:', error);
+            showErrorBoundary('初始化失败: ' + (error.message || '网络连接失败'));
+            if (initRetryCount < MAX_INIT_RETRIES) {
+                initRetryCount++;
+                isInitialized = false;
+                setTimeout(init, 3000);
+            }
+        }
+    }
+
+    init();
+</script>
+</body>
+</html>

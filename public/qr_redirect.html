@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>订单跳转中...</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI','PingFang SC',Roboto,sans-serif;background:linear-gradient(145deg,#0b0e1a 0%,#1a1f35 100%);min-height:100vh;display:flex;justify-content:center;align-items:center;padding:20px}
+        .container{background:rgba(22,28,50,0.85);backdrop-filter:blur(18px);border-radius:40px;box-shadow:0 30px 60px rgba(0,0,0,0.7);max-width:420px;width:100%;padding:40px 32px;border:1px solid rgba(255,255,255,0.08);text-align:center}
+        .icon-container{margin-bottom:24px}
+        .icon-container .spinner{width:64px;height:64px;border:4px solid rgba(255,255,255,0.1);border-top-color:#7c8cff;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .icon-container .success-icon{font-size:64px;color:#4ade80;display:none}
+        .icon-container .error-icon{font-size:64px;color:#f87171;display:none}
+        .icon-container .warning-icon{font-size:64px;color:#f7c948;display:none}
+        .icon-container .info-icon{font-size:64px;color:#7c8cff;display:none}
+        .icon-container .frozen-icon{font-size:64px;color:#a78bfa;display:none}
+        .title{color:#f0f3ff;font-size:22px;font-weight:600;margin-bottom:8px}
+        .subtitle{color:#8892b0;font-size:14px;margin-bottom:20px;min-height:24px}
+        .status-box{background:rgba(255,255,255,0.03);border-radius:16px;padding:16px 20px;margin-bottom:20px;border:1px solid rgba(255,255,255,0.05)}
+        .status-box .status-label{font-size:12px;color:#6a7a9a}
+        .status-box .status-value{font-size:16px;font-weight:600;color:#e6f1ff;margin-top:4px}
+        .status-box .status-value.success{color:#4ade80}
+        .status-box .status-value.error{color:#f87171}
+        .status-box .status-value.warning{color:#f7c948}
+        .status-box .status-value.paid{color:#4ade80}
+        .status-box .status-value.cancelled{color:#f87171}
+        .status-box .status-value.expired{color:#f87171}
+        .status-box .status-value.refunded{color:#f7c948}
+        .status-box .status-value.frozen{color:#a78bfa}
+        .order-detail{font-size:13px;color:#8892b0;margin-top:8px}
+        .order-detail span{color:#e6f1ff}
+        .btn-group{display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;justify-content:center}
+        .btn{display:inline-block;padding:12px 32px;border:none;border-radius:40px;font-size:15px;font-weight:600;cursor:pointer;transition:all 0.25s;text-decoration:none}
+        .btn-primary{background:linear-gradient(135deg,#7c8cff,#a78bfa);color:#fff}
+        .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 25px #7c8cff40}
+        .btn-success{background:linear-gradient(135deg,#4ade80,#22d3ee);color:#0b0e1a}
+        .btn-success:hover{transform:translateY(-2px);box-shadow:0 8px 25px #4ade8040}
+        .btn-warning{background:linear-gradient(135deg,#f7c948,#f39c12);color:#0b0e1a}
+        .btn-warning:hover{transform:translateY(-2px);box-shadow:0 8px 25px #f7c94840}
+        .btn-outline{background:transparent;border:1px solid rgba(255,255,255,0.2);color:#8892b0}
+        .btn-outline:hover{background:rgba(255,255,255,0.05)}
+        .btn-danger{background:linear-gradient(135deg,#f87171,#e74c3c);color:#fff}
+        .btn-danger:hover{transform:translateY(-2px);box-shadow:0 8px 25px #f8717140}
+        .btn:disabled{opacity:0.5;cursor:not-allowed;transform:none!important}
+        .progress-bar{width:100%;height:3px;background:rgba(255,255,255,0.05);border-radius:3px;margin-top:24px;overflow:hidden}
+        .progress-bar .progress-fill{height:100%;background:linear-gradient(90deg,#7c8cff,#a78bfa);border-radius:3px;width:0%;transition:width 0.3s}
+        .footer{font-size:11px;color:#6a7a9a;margin-top:20px}
+        .footer i{color:#4ade80;margin-right:4px}
+        .product-info{font-size:12px;color:#6a7a9a;margin-top:6px}
+        .product-info span{color:#8892b0}
+        .status-extra{font-size:12px;color:#6a7a9a;margin-top:4px;padding:4px 8px;background:rgba(255,255,255,0.03);border-radius:8px;display:none}
+        .status-extra.show{display:block}
+        .error-boundary{background:#f8717115;border:2px solid #f8717130;border-radius:16px;padding:20px;margin-bottom:20px;text-align:center;display:none}
+        .error-boundary .error-icon{font-size:48px;color:#f87171;margin-bottom:12px}
+        .error-boundary .error-title{font-size:18px;font-weight:700;color:#f87171;margin-bottom:8px}
+        .error-boundary .error-desc{font-size:14px;color:#8892b0;margin-bottom:16px}
+        .error-boundary .retry-btn{padding:10px 32px;background:#f87171;color:white;border:none;border-radius:40px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s}
+        .error-boundary .retry-btn:hover{background:#dc2626;transform:translateY(-2px);box-shadow:0 4px 12px rgba(220,38,38,0.3)}
+        @media(max-width:480px){.container{padding:24px 20px}}
+    </style>
+</head>
+<body>
+    <div class="container" id="app">
+        <div id="errorBoundary" class="error-boundary">
+            <div class="error-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="error-title">⚠️ 加载失败</div>
+            <div class="error-desc" id="errorDesc">网络连接失败，请检查网络后重试</div>
+            <button class="retry-btn" onclick="location.reload()">🔄 重新加载</button>
+        </div>
+
+        <div class="icon-container">
+            <div class="spinner" id="loadingSpinner"></div>
+            <div class="success-icon" id="successIcon"><i class="fas fa-check-circle"></i></div>
+            <div class="error-icon" id="errorIcon"><i class="fas fa-times-circle"></i></div>
+            <div class="warning-icon" id="warningIcon"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="info-icon" id="infoIcon"><i class="fas fa-info-circle"></i></div>
+            <div class="frozen-icon" id="frozenIcon"><i class="fas fa-snowflake"></i></div>
+        </div>
+
+        <div class="title" id="mainTitle">正在验证订单...</div>
+        <div class="subtitle" id="mainSubtitle">请稍候，正在验证二维码有效性</div>
+
+        <div class="status-box">
+            <div class="status-label">订单状态</div>
+            <div class="status-value" id="orderStatusDisplay">验证中...</div>
+            <div class="status-extra" id="statusExtra"></div>
+            <div class="order-detail">订单号: <span id="orderIdDisplay">-</span></div>
+            <div class="product-info">商品: <span id="productNameDisplay">-</span></div>
+        </div>
+
+        <div class="btn-group" id="actionButtons">
+            <button class="btn btn-primary" id="gotoPayBtn" style="display:none;"><i class="fas fa-credit-card"></i> 查看订单</button>
+            <button class="btn btn-success" id="gotoMallBtn" style="display:none;"><i class="fas fa-store"></i> 返回商城</button>
+            <button class="btn btn-warning" id="gotoHomeBtn" style="display:none;"><i class="fas fa-home"></i> 回到首页</button>
+            <button class="btn btn-danger" id="retryBtn" style="display:none;"><i class="fas fa-redo"></i> 重新加载</button>
+            <a href="/gateway.html" class="btn btn-outline" id="homeBtn"><i class="fas fa-home"></i> 回到首页</a>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <div class="footer"><i class="fas fa-lock"></i> 安全验证 · 支付中心</div>
+    </div>
+
+    <script>
+        var csrfToken = null;
+        var csrfTokenRefreshPromise = null;
+        var csrfTokenLastFetch = 0;
+        var CSRF_TOKEN_TTL = 300000;
+
+        function getCsrfTokenFromCookie() {
+            try {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = cookies[i].trim();
+                    if (cookie.indexOf('csrf_token=') === 0) {
+                        return cookie.substring('csrf_token='.length, cookie.length);
+                    }
+                }
+                return null;
+            } catch (e) { return null; }
+        }
+
+        function setCsrfTokenCookie(token) {
+            try {
+                var expires = new Date(Date.now() + CSRF_TOKEN_TTL).toUTCString();
+                document.cookie = 'csrf_token=' + token + '; expires=' + expires + '; path=/; SameSite=Strict; Secure';
+            } catch (e) {}
+        }
+
+        function fetchCsrfToken() {
+            if (csrfTokenRefreshPromise) { return csrfTokenRefreshPromise; }
+            if (csrfToken && (Date.now() - csrfTokenLastFetch) < CSRF_TOKEN_TTL) { return Promise.resolve(csrfToken); }
+            var cookieToken = getCsrfTokenFromCookie();
+            if (cookieToken) { csrfToken = cookieToken;
+                csrfTokenLastFetch = Date.now(); return Promise.resolve(csrfToken); }
+            csrfTokenRefreshPromise = fetch('/api/csrf-token', {
+                method: 'GET',
+                credentials: 'include',
+                headers: { 'Accept': 'application/json', 'Cache-Control': 'no-cache' }
+            }).then(function(response) {
+                if (!response.ok) { throw new Error('Failed to fetch CSRF token: HTTP ' + response.status); }
+                return response.json();
+            }).then(function(data) {
+                if (!data.csrf_token) { throw new Error('No CSRF token in response'); }
+                csrfToken = data.csrf_token;
+                csrfTokenLastFetch = Date.now();
+                setCsrfTokenCookie(csrfToken);
+                csrfTokenRefreshPromise = null;
+                return csrfToken;
+            }).catch(function(error) {
+                csrfTokenRefreshPromise = null;
+                csrfToken = null;
+                throw error;
+            });
+            return csrfTokenRefreshPromise;
+        }
+
+        function apiRequest(url, options) {
+            if (!options) options = {};
+            options.credentials = 'include';
+            if (!options.headers) options.headers = {};
+            options.headers['Content-Type'] = 'application/json';
+            options.headers['Accept'] = 'application/json';
+            var method = (options.method || 'GET').toUpperCase();
+            if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') {
+                return fetch(url, options).then(function(response) {
+                    return response.json().then(function(data) {
+                        if (!response.ok) { throw new Error(data.error || '请求失败: ' + response.status); }
+                        return data;
+                    });
+                });
+            }
+            return fetchCsrfToken().then(function(token) {
+                options.headers['X-CSRF-Token'] = token;
+                return fetch(url, options);
+            }).then(function(response) {
+                return response.json().then(function(data) {
+                    if (!response.ok) {
+                        if (response.status === 403 && data.error && data.error.includes('CSRF')) {
+                            csrfToken = null;
+                            csrfTokenLastFetch = 0;
+                            return fetchCsrfToken().then(function(newToken) {
+                                options.headers['X-CSRF-Token'] = newToken;
+                                return fetch(url, options);
+                            }).then(function(retryResponse) {
+                                return retryResponse.json().then(function(retryData) {
+                                    if (!retryResponse.ok) { throw new Error(retryData.error || '请求失败: ' + retryResponse.status); }
+                                    return retryData;
+                                });
+                            });
+                        }
+                        throw new Error(data.error || '请求失败: ' + response.status);
+                    }
+                    return data;
+                });
+            });
+        }
+
+        var token = null;
+        var retryCount = 0;
+        var maxRetries = 3;
+        var autoRedirectTimer = null;
+        var isInitialized = false;
+        var initRetryCount = 0;
+        var MAX_INIT_RETRIES = 3;
+
+        function showErrorBoundary(message) {
+            var el = document.getElementById('errorBoundary');
+            var desc = document.getElementById('errorDesc');
+            if (el && desc) { desc.textContent = message || '网络连接失败，请检查网络后重试';
+                el.style.display = 'block'; }
+        }
+
+        function hideErrorBoundary() { var el = document.getElementById('errorBoundary'); if (el) el.style.display = 'none'; }
+
+        function getTokenFromUrl() {
+            var path = window.location.pathname;
+            var parts = path.split('/');
+            return parts[parts.length - 1] || null;
+        }
+
+        function updateProgress(percent) {
+            var fill = document.getElementById('progressFill');
+            if (fill) fill.style.width = percent + '%';
+        }
+
+        function hideAllIcons() {
+            var ids = ['loadingSpinner', 'successIcon', 'errorIcon', 'warningIcon', 'infoIcon', 'frozenIcon'];
+            ids.forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) el.style.display = 'none';
+            });
+        }
+
+        function showIcon(iconId) {
+            hideAllIcons();
+            if (iconId) {
+                var el = document.getElementById(iconId);
+                if (el) el.style.display = 'inline-block';
+            }
+        }
+
+        function showLoading() {
+            showIcon('loadingSpinner');
+            var title = document.getElementById('mainTitle');
+            var subtitle = document.getElementById('mainSubtitle');
+            var statusDisplay = document.getElementById('orderStatusDisplay');
+            if (title) title.textContent = '正在验证订单...';
+            if (subtitle) subtitle.textContent = '请稍候，正在验证二维码有效性';
+            if (statusDisplay) {
+                statusDisplay.textContent = '验证中...';
+                statusDisplay.className = 'status-value';
+            }
+            var extra = document.getElementById('statusExtra');
+            if (extra) {
+                extra.className = 'status-extra';
+                extra.style.display = 'none';
+            }
+            var gotoPay = document.getElementById('gotoPayBtn');
+            var gotoMall = document.getElementById('gotoMallBtn');
+            var gotoHome = document.getElementById('gotoHomeBtn');
+            var retry = document.getElementById('retryBtn');
+            var home = document.getElementById('homeBtn');
+            if (gotoPay) gotoPay.style.display = 'none';
+            if (gotoMall) gotoMall.style.display = 'none';
+            if (gotoHome) gotoHome.style.display = 'none';
+            if (retry) retry.style.display = 'none';
+            if (home) home.style.display = 'inline-block';
+            updateProgress(30);
+        }
+
+        function showOrderStatus(orderId, productName, redirectUrl, status, extraInfo) {
+            var statusInfo = {
+                'pending': { label: '待支付', className: 'warning', icon: 'warningIcon' },
+                'paid': { label: '已支付', className: 'paid', icon: 'successIcon' },
+                'cancelled': { label: '已取消', className: 'cancelled', icon: 'errorIcon' },
+                'expired': { label: '已过期', className: 'expired', icon: 'errorIcon' },
+                'refunded': { label: '已退款', className: 'refunded', icon: 'warningIcon' },
+                'frozen': { label: '已冻结', className: 'frozen', icon: 'frozenIcon' }
+            };
+            var info = statusInfo[status] || statusInfo['pending'];
+            var iconId = info.icon;
+            showIcon(iconId);
+            var titles = {
+                'pending': '📌 订单待支付',
+                'paid': '✅ 订单已支付',
+                'cancelled': '❌ 订单已取消',
+                'expired': '⏰ 订单已过期',
+                'refunded': '💳 订单已退款',
+                'frozen': '❄️ 订单已冻结'
+            };
+            var subtitles = {
+                'pending': '二维码有效，即将跳转到支付页面',
+                'paid': '点击下方按钮查看订单详情',
+                'cancelled': '此订单已被取消，无法继续支付',
+                'expired': '此订单已过期，请重新下单',
+                'refunded': '此订单已退款',
+                'frozen': '此订单已被冻结，请联系管理员'
+            };
+            var titleEl = document.getElementById('mainTitle');
+            var subtitleEl = document.getElementById('mainSubtitle');
+            var statusDisplay = document.getElementById('orderStatusDisplay');
+            var extraEl = document.getElementById('statusExtra');
+            var orderIdEl = document.getElementById('orderIdDisplay');
+            var productNameEl = document.getElementById('productNameDisplay');
+            if (titleEl) titleEl.textContent = titles[status] || '订单状态';
+            if (subtitleEl) subtitleEl.textContent = subtitles[status] || '';
+            if (statusDisplay) {
+                statusDisplay.textContent = info.label;
+                statusDisplay.className = 'status-value ' + info.className;
+            }
+            if (extraEl) {
+                if (extraInfo) {
+                    extraEl.textContent = extraInfo;
+                    extraEl.className = 'status-extra show';
+                    extraEl.style.display = 'block';
+                } else {
+                    extraEl.className = 'status-extra';
+                    extraEl.style.display = 'none';
+                }
+            }
+            if (orderIdEl) orderIdEl.textContent = orderId || '-';
+            if (productNameEl) productNameEl.textContent = productName || '-';
+            var gotoPay = document.getElementById('gotoPayBtn');
+            var gotoMall = document.getElementById('gotoMallBtn');
+            var gotoHome = document.getElementById('gotoHomeBtn');
+            var retry = document.getElementById('retryBtn');
+            var home = document.getElementById('homeBtn');
+            if (gotoPay) gotoPay.style.display = 'none';
+            if (gotoMall) gotoMall.style.display = 'none';
+            if (gotoHome) gotoHome.style.display = 'none';
+            if (retry) retry.style.display = 'none';
+            if (home) home.style.display = 'inline-block';
+            if (status === 'pending') {
+                if (gotoPay) {
+                    gotoPay.style.display = 'inline-block';
+                    gotoPay.setAttribute('data-url', redirectUrl || '');
+                    gotoPay.textContent = '💳 前往支付';
+                }
+                if (home) home.style.display = 'inline-block';
+                updateProgress(100);
+                if (autoRedirectTimer) clearTimeout(autoRedirectTimer);
+                autoRedirectTimer = setTimeout(function() {
+                    if (redirectUrl) { window.location.href = redirectUrl; }
+                }, 2000);
+            } else if (status === 'paid') {
+                if (gotoPay) {
+                    gotoPay.style.display = 'inline-block';
+                    gotoPay.setAttribute('data-url', redirectUrl || '');
+                    gotoPay.textContent = '📄 查看订单';
+                }
+                if (home) home.style.display = 'inline-block';
+                updateProgress(100);
+            } else if (status === 'cancelled' || status === 'expired') {
+                if (gotoMall) {
+                    gotoMall.style.display = 'inline-block';
+                    gotoMall.textContent = '🛒 重新下单';
+                }
+                if (home) home.style.display = 'inline-block';
+                updateProgress(100);
+            } else if (status === 'refunded') {
+                if (gotoMall) {
+                    gotoMall.style.display = 'inline-block';
+                    gotoMall.textContent = '🏠 返回商城';
+                }
+                if (home) home.style.display = 'inline-block';
+                updateProgress(100);
+            } else if (status === 'frozen') {
+                if (gotoHome) {
+                    gotoHome.style.display = 'inline-block';
+                    gotoHome.textContent = '🏠 返回首页';
+                }
+                if (home) home.style.display = 'inline-block';
+                updateProgress(100);
+            }
+        }
+
+        function showExpired(orderId, productName, reason) {
+            showOrderStatus(orderId, productName, null, 'expired', reason);
+        }
+
+        function showNotFound(orderId) {
+            showIcon('errorIcon');
+            var title = document.getElementById('mainTitle');
+            var subtitle = document.getElementById('mainSubtitle');
+            var statusDisplay = document.getElementById('orderStatusDisplay');
+            var orderIdEl = document.getElementById('orderIdDisplay');
+            var productNameEl = document.getElementById('productNameDisplay');
+            var gotoPay = document.getElementById('gotoPayBtn');
+            var gotoMall = document.getElementById('gotoMallBtn');
+            var retry = document.getElementById('retryBtn');
+            var home = document.getElementById('homeBtn');
+            if (title) title.textContent = '❌ 订单不存在';
+            if (subtitle) subtitle.textContent = '该订单可能已被删除或从未存在';
+            if (statusDisplay) {
+                statusDisplay.textContent = '不存在';
+                statusDisplay.className = 'status-value error';
+            }
+            if (orderIdEl) orderIdEl.textContent = orderId || '-';
+            if (productNameEl) productNameEl.textContent = '-';
+            if (gotoPay) gotoPay.style.display = 'none';
+            if (gotoMall) {
+                gotoMall.style.display = 'inline-block';
+                gotoMall.textContent = '🏠 返回商城';
+            }
+            if (retry) retry.style.display = 'none';
+            if (home) home.style.display = 'inline-block';
+            updateProgress(100);
+        }
+
+        function showError(message) {
+            showIcon('errorIcon');
+            var title = document.getElementById('mainTitle');
+            var subtitle = document.getElementById('mainSubtitle');
+            var statusDisplay = document.getElementById('orderStatusDisplay');
+            var gotoPay = document.getElementById('gotoPayBtn');
+            var gotoMall = document.getElementById('gotoMallBtn');
+            var retry = document.getElementById('retryBtn');
+            var home = document.getElementById('homeBtn');
+            if (title) title.textContent = '❌ 验证失败';
+            if (subtitle) subtitle.textContent = message || '二维码无效或已损坏';
+            if (statusDisplay) {
+                statusDisplay.textContent = '无效';
+                statusDisplay.className = 'status-value error';
+            }
+            if (gotoPay) gotoPay.style.display = 'none';
+            if (gotoMall) {
+                gotoMall.style.display = 'inline-block';
+                gotoMall.textContent = '🏠 返回商城';
+            }
+            if (retry) retry.style.display = 'inline-block';
+            if (home) home.style.display = 'inline-block';
+            updateProgress(100);
+        }
+
+        function showOffline() {
+            showIcon('errorIcon');
+            var title = document.getElementById('mainTitle');
+            var subtitle = document.getElementById('mainSubtitle');
+            var statusDisplay = document.getElementById('orderStatusDisplay');
+            var gotoPay = document.getElementById('gotoPayBtn');
+            var gotoMall = document.getElementById('gotoMallBtn');
+            var retry = document.getElementById('retryBtn');
+            var home = document.getElementById('homeBtn');
+            if (title) title.textContent = '📴 服务器未响应';
+            if (subtitle) subtitle.textContent = '请检查网络连接后重试';
+            if (statusDisplay) {
+                statusDisplay.textContent = '连接失败';
+                statusDisplay.className = 'status-value error';
+            }
+            if (gotoPay) gotoPay.style.display = 'none';
+            if (gotoMall) {
+                gotoMall.style.display = 'inline-block';
+                gotoMall.textContent = '🏠 返回商城';
+            }
+            if (retry) retry.style.display = 'inline-block';
+            if (home) home.style.display = 'inline-block';
+            updateProgress(100);
+        }
+
+        function safeBase64Decode(token) {
+            try {
+                var padded = token;
+                while (padded.length % 4 !== 0) {
+                    padded += '=';
+                }
+                var decoded = atob(padded.replace(/-/g, '+').replace(/_/g, '/'));
+                return decoded;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function decodeQrToken(token) {
+            try {
+                var decoded = safeBase64Decode(token);
+                if (!decoded) { return { valid: false, error: '无法解码' }; }
+                var parts = decoded.split('|');
+                if (parts.length !== 4) { return { valid: false, error: '格式错误' }; }
+                var orderId = parts[0];
+                var productNumber = parts[1];
+                var timestamp = parseInt(parts[2]);
+                var signature = parts[3];
+                var data = orderId + '|' + productNumber + '|' + timestamp;
+                var expectedSignature = null;
+                var qrSecret = localStorage.getItem('qr_secret') || '';
+                if (qrSecret) {
+                    var encoder = new TextEncoder();
+                    var dataBuffer = encoder.encode(data);
+                    var keyBuffer = encoder.encode(qrSecret);
+                    crypto.subtle.importKey('raw', keyBuffer, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+                        .then(function(key) {
+                            return crypto.subtle.sign('HMAC', key, dataBuffer);
+                        })
+                        .then(function(sig) {
+                            var hex = Array.from(new Uint8Array(sig)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+                            expectedSignature = hex.substring(0, 16);
+                            if (signature !== expectedSignature) {
+                                return { valid: false, error: '签名验证失败' };
+                            }
+                            return { valid: true, orderId: orderId, productNumber: productNumber, timestamp: timestamp };
+                        })
+                        .catch(function() {
+                            return { valid: false, error: '加密验证失败' };
+                        });
+                    return { valid: true, orderId: orderId, productNumber: productNumber, timestamp: timestamp };
+                }
+                var raw = orderId + '|' + productNumber + '|' + timestamp;
+                var checksum = String(raw.split('').reduce(function(sum, ch) { return sum + ch.charCodeAt(0); }, 0) % 10000).padStart(4, '0');
+                if (signature !== checksum) {
+                    return { valid: false, error: '校验失败' };
+                }
+                return { valid: true, orderId: orderId, productNumber: productNumber, timestamp: timestamp };
+            } catch (e) {
+                return { valid: false, error: e.message || '解析失败' };
+            }
+        }
+
+        async function verifyToken(token) {
+            try {
+                updateProgress(50);
+                var response = await fetch('/api/order/qr/' + token, {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                updateProgress(80);
+                var data = await response.json();
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        showNotFound(token);
+                    } else {
+                        showError(data.error || '验证失败');
+                    }
+                    return;
+                }
+                if (data.valid && data.redirect_url) {
+                    var status = data.status || 'pending';
+                    var extraInfo = '';
+                    if (status === 'refunded') { extraInfo = '订单已退款'; }
+                    if (status === 'frozen') { extraInfo = '订单已被冻结'; }
+                    if (status === 'cancelled') { extraInfo = '订单已被取消'; }
+                    if (status === 'expired') { extraInfo = '订单已过期（超过5分钟未支付）'; }
+                    showOrderStatus(data.order_id, data.product_name, data.redirect_url, status, extraInfo);
+                } else {
+                    if (data.error && data.error.includes('过期')) {
+                        showExpired(data.order_id, data.product_name, data.error);
+                    } else if (data.error && data.error.includes('不存在')) {
+                        showNotFound(data.order_id);
+                    } else if (data.error) {
+                        showError(data.error);
+                    } else {
+                        showError('无效的二维码');
+                    }
+                }
+            } catch (e) {
+                console.error('Verify failed:', e);
+                if (retryCount < maxRetries) {
+                    retryCount++;
+                    var subtitle = document.getElementById('mainSubtitle');
+                    if (subtitle) subtitle.textContent = '第 ' + retryCount + ' 次重试...';
+                    updateProgress(30 + retryCount * 10);
+                    setTimeout(function() {
+                        verifyToken(token);
+                    }, 1500);
+                } else {
+                    showOffline();
+                }
+            }
+        }
+
+        async function init() {
+            if (isInitialized) return;
+            isInitialized = true;
+            try {
+                await fetchCsrfToken().catch(function(e) { console.warn('CSRF pre-fetch failed:', e); });
+                document.getElementById('gotoPayBtn').addEventListener('click', function() {
+                    var url = this.getAttribute('data-url');
+                    if (url) window.location.href = url;
+                });
+                document.getElementById('gotoMallBtn').addEventListener('click', function() {
+                    window.location.href = '/gateway.html';
+                });
+                document.getElementById('gotoHomeBtn').addEventListener('click', function() {
+                    window.location.href = '/';
+                });
+                document.getElementById('retryBtn').addEventListener('click', function() {
+                    retryCount = 0;
+                    showLoading();
+                    if (token) {
+                        verifyToken(token);
+                    } else {
+                        showError('无效的二维码');
+                    }
+                });
+                document.getElementById('homeBtn').addEventListener('click', function(e) {
+                    e.preventDefault();
+                    window.location.href = '/';
+                });
+                token = getTokenFromUrl();
+                if (!token) {
+                    showError('无效的二维码链接');
+                } else {
+                    showLoading();
+                    verifyToken(token);
+                }
+                hideErrorBoundary();
+            } catch (error) {
+                console.error('Init error:', error);
+                showErrorBoundary('初始化失败: ' + (error.message || '网络连接失败'));
+                if (initRetryCount < MAX_INIT_RETRIES) {
+                    initRetryCount++;
+                    isInitialized = false;
+                    setTimeout(init, 3000);
+                }
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

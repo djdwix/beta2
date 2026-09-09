@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员控制台</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#0a0a1a;min-height:100vh;color:#e8e8f0}
+        .login-container{display:flex;justify-content:center;align-items:center;min-height:100vh;background:linear-gradient(135deg,#0a0a1a 0%,#1a1a3e 50%,#0d0d2b 100%)}
+        .login-card{background:rgba(255,255,255,0.06);backdrop-filter:blur(20px);border-radius:28px;padding:48px;width:420px;box-shadow:0 25px 60px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.08)}
+        .login-card .logo{text-align:center;margin-bottom:8px;font-size:42px;color:#667eea}
+        .login-card h2{text-align:center;font-size:24px;font-weight:600;color:#fff;margin-bottom:4px}
+        .login-card .subtitle{text-align:center;color:rgba(255,255,255,0.4);font-size:13px;margin-bottom:28px}
+        .login-card input{width:100%;padding:14px 18px;margin-bottom:14px;border:none;border-radius:14px;background:rgba(255,255,255,0.08);color:#fff;font-size:15px;outline:none;transition:all 0.3s;border:1px solid transparent}
+        .login-card input:focus{background:rgba(255,255,255,0.12);border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,0.2)}
+        .login-card input::placeholder{color:rgba(255,255,255,0.35)}
+        .login-card button{width:100%;padding:15px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border:none;border-radius:40px;color:#fff;font-size:16px;font-weight:600;cursor:pointer;transition:all 0.3s;position:relative;overflow:hidden}
+        .login-card button:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 30px rgba(102,126,234,0.35)}
+        .login-card button:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+        .login-card .error-msg{color:#f87171;text-align:center;margin-top:14px;font-size:14px;min-height:24px}
+        .login-card .hint{text-align:center;color:rgba(255,255,255,0.2);font-size:11px;margin-top:16px;border-top:1px solid rgba(255,255,255,0.05);padding-top:16px}
+        .login-card .hint code{background:rgba(255,255,255,0.06);padding:2px 10px;border-radius:6px;font-size:11px;color:#a78bfa}
+        .admin-container{display:none;padding:20px 28px;max-width:1600px;margin:0 auto;min-height:100vh}
+        .admin-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;padding:16px 24px;background:rgba(255,255,255,0.04);border-radius:20px;border:1px solid rgba(255,255,255,0.06);flex-wrap:wrap;gap:12px}
+        .admin-header .left{display:flex;align-items:center;gap:16px}
+        .admin-header .left h1{font-size:22px;background:linear-gradient(135deg,#667eea,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+        .admin-header .left .badge{background:rgba(102,126,234,0.2);color:#a78bfa;padding:2px 12px;border-radius:40px;font-size:11px;font-weight:500}
+        .admin-header .right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+        .admin-header .right .token-info{background:rgba(255,255,255,0.06);padding:6px 16px;border-radius:40px;font-family:monospace;font-size:11px;color:rgba(255,255,255,0.5)}
+        .admin-header .right .token-info .valid{color:#34d399}
+        .btn{padding:8px 18px;border:none;border-radius:40px;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.25s;display:inline-flex;align-items:center;gap:6px}
+        .btn-primary{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
+        .btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(102,126,234,0.3)}
+        .btn-danger{background:rgba(239,68,68,0.85);color:#fff}
+        .btn-danger:hover{background:#ef4444;transform:translateY(-1px)}
+        .btn-success{background:rgba(52,211,153,0.85);color:#fff}
+        .btn-success:hover{background:#34d399;transform:translateY(-1px)}
+        .btn-warning{background:rgba(251,191,36,0.85);color:#1a1a2e}
+        .btn-warning:hover{background:#fbbf24;transform:translateY(-1px)}
+        .btn-outline{background:rgba(255,255,255,0.06);color:#d1d5db;border:1px solid rgba(255,255,255,0.08)}
+        .btn-outline:hover{background:rgba(255,255,255,0.1)}
+        .btn-sm{padding:4px 14px;font-size:11px}
+        .btn-xs{padding:2px 10px;font-size:10px}
+        .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:28px}
+        .stat-card{background:rgba(255,255,255,0.04);border-radius:16px;padding:14px 18px;border:1px solid rgba(255,255,255,0.05);transition:all 0.3s}
+        .stat-card:hover{background:rgba(255,255,255,0.06);border-color:rgba(102,126,234,0.2)}
+        .stat-card .label{font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.5px}
+        .stat-card .value{font-size:22px;font-weight:700;color:#fff;margin-top:2px}
+        .stat-card .value.gold{color:#fbbf24}
+        .stat-card .value.green{color:#34d399}
+        .stat-card .value.pink{color:#f472b6}
+        .stat-card .value.blue{color:#60a5fa}
+        .stat-card .value.red{color:#f87171}
+        .tabs{display:flex;gap:6px;margin-bottom:24px;flex-wrap:wrap;background:rgba(255,255,255,0.03);padding:6px;border-radius:16px;border:1px solid rgba(255,255,255,0.05)}
+        .tab-btn{padding:10px 22px;background:transparent;border:none;border-radius:12px;color:rgba(255,255,255,0.5);cursor:pointer;transition:all 0.25s;font-size:13px;font-weight:500}
+        .tab-btn:hover{color:#fff;background:rgba(255,255,255,0.05)}
+        .tab-btn.active{background:rgba(102,126,234,0.2);color:#a78bfa;box-shadow:0 0 20px rgba(102,126,234,0.05)}
+        .tab-content{display:none;background:rgba(255,255,255,0.03);border-radius:20px;padding:24px;border:1px solid rgba(255,255,255,0.05)}
+        .tab-content.active{display:block}
+        .section-title{font-size:16px;font-weight:600;color:#fff;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:10px}
+        .section-title i{color:#667eea}
+        .form-row{display:flex;gap:14px;margin-bottom:16px;flex-wrap:wrap;align-items:flex-end}
+        .form-group{flex:1;min-width:160px}
+        .form-group label{display:block;margin-bottom:5px;font-size:12px;color:rgba(255,255,255,0.5);font-weight:500}
+        .form-group input,.form-group select,.form-group textarea{width:100%;padding:10px 14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:#fff;font-size:14px;outline:none;transition:all 0.25s}
+        .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:#667eea;background:rgba(255,255,255,0.08);box-shadow:0 0 0 3px rgba(102,126,234,0.1)}
+        .form-group textarea{resize:vertical;font-family:inherit;min-height:80px}
+        .form-group .checkbox-group{display:flex;align-items:center;gap:10px;padding-top:6px}
+        .form-group .checkbox-group input[type="checkbox"]{width:18px;height:18px;accent-color:#667eea;cursor:pointer}
+        .search-bar{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
+        .search-bar input{flex:1;min-width:180px;padding:10px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:#fff;font-size:14px;outline:none}
+        .search-bar input:focus{border-color:#667eea}
+        .table-wrap{overflow-x:auto;border-radius:12px;border:1px solid rgba(255,255,255,0.05)}
+        table{width:100%;border-collapse:collapse;font-size:13px}
+        th{text-align:left;padding:12px 14px;background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.5);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:0.3px;border-bottom:1px solid rgba(255,255,255,0.06)}
+        td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.04);color:#d1d5db}
+        tr:hover td{background:rgba(255,255,255,0.02)}
+        .badge{display:inline-block;padding:2px 10px;border-radius:40px;font-size:11px;font-weight:500}
+        .badge-success{background:rgba(52,211,153,0.2);color:#34d399}
+        .badge-danger{background:rgba(239,68,68,0.2);color:#f87171}
+        .badge-warning{background:rgba(251,191,36,0.2);color:#fbbf24}
+        .badge-info{background:rgba(96,165,250,0.2);color:#60a5fa}
+        .badge-neutral{background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5)}
+        .action-btn{padding:4px 12px;border:none;border-radius:20px;font-size:11px;cursor:pointer;transition:all 0.2s;color:#fff;margin:2px}
+        .action-btn-primary{background:rgba(102,126,234,0.7)}
+        .action-btn-primary:hover{background:#667eea}
+        .action-btn-danger{background:rgba(239,68,68,0.7)}
+        .action-btn-danger:hover{background:#ef4444}
+        .action-btn-success{background:rgba(52,211,153,0.7)}
+        .action-btn-success:hover{background:#34d399}
+        .action-btn-warning{background:rgba(251,191,36,0.7);color:#1a1a2e}
+        .action-btn-warning:hover{background:#fbbf24}
+        .loading{text-align:center;padding:40px;color:rgba(255,255,255,0.3);font-size:14px}
+        .loading i{font-size:28px;display:block;margin-bottom:12px;color:#667eea}
+        .message{position:fixed;bottom:24px;right:24px;padding:14px 24px;border-radius:16px;z-index:9999;animation:slideUp 0.35s ease;max-width:420px;box-shadow:0 12px 40px rgba(0,0,0,0.5);font-size:14px;display:flex;align-items:center;gap:10px}
+        .message-success{background:#065f46;color:#a7f3d0;border:1px solid rgba(52,211,153,0.2)}
+        .message-error{background:#7f1d1d;color:#fca5a5;border:1px solid rgba(239,68,68,0.2)}
+        .message-warning{background:#78350f;color:#fde68a;border:1px solid rgba(251,191,36,0.2)}
+        @keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+        .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:10000;justify-content:center;align-items:center;backdrop-filter:blur(8px)}
+        .modal-content{background:#1a1a2e;border-radius:24px;padding:36px;max-width:520px;width:92%;border:1px solid rgba(255,255,255,0.08);box-shadow:0 30px 60px rgba(0,0,0,0.6)}
+        .modal-content h3{font-size:18px;color:#fff;margin-bottom:16px}
+        .modal-content p{color:rgba(255,255,255,0.7);margin-bottom:20px;line-height:1.6}
+        .modal-content .modal-actions{display:flex;gap:12px;justify-content:flex-end}
+        .modal-content .modal-actions button{padding:10px 28px;border:none;border-radius:40px;font-size:14px;font-weight:500;cursor:pointer;transition:all 0.2s}
+        .restrict-badge{display:flex;gap:6px;flex-wrap:wrap}
+        .restrict-badge span{padding:2px 10px;border-radius:12px;font-size:10px}
+        .restrict-badge .on{background:rgba(239,68,68,0.2);color:#f87171}
+        .restrict-badge .off{background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.3)}
+        .restrict-btn-group{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+        .restrict-btn-group button{padding:6px 16px;border:none;border-radius:20px;font-size:12px;cursor:pointer;transition:all 0.2s;font-weight:500}
+        .restrict-btn-group .r-login{background:rgba(239,68,68,0.15);color:#f87171}
+        .restrict-btn-group .r-login:hover{background:rgba(239,68,68,0.25)}
+        .restrict-btn-group .r-mall{background:rgba(251,191,36,0.15);color:#fbbf24}
+        .restrict-btn-group .r-mall:hover{background:rgba(251,191,36,0.25)}
+        .restrict-btn-group .r-phone{background:rgba(96,165,250,0.15);color:#60a5fa}
+        .restrict-btn-group .r-phone:hover{background:rgba(96,165,250,0.25)}
+        .error-boundary{display:none;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:16px;padding:24px;text-align:center;margin-bottom:20px}
+        .error-boundary .icon{font-size:40px;color:#f87171;margin-bottom:10px}
+        .error-boundary .title{font-size:16px;font-weight:600;color:#f87171}
+        .error-boundary .desc{color:rgba(255,255,255,0.5);font-size:13px;margin:8px 0 16px}
+        .error-boundary .retry-btn{padding:8px 28px;background:#ef4444;border:none;border-radius:40px;color:#fff;font-size:13px;cursor:pointer}
+        .error-boundary .retry-btn:hover{background:#dc2626}
+        .security-bar{background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.12);border-radius:14px;padding:12px 20px;margin-bottom:24px;display:flex;align-items:center;gap:14px;color:rgba(255,255,255,0.6);font-size:13px}
+        .security-bar i{color:#34d399;font-size:18px}
+        .pagination{display:flex;justify-content:center;gap:6px;margin-top:20px;flex-wrap:wrap}
+        .pagination button{padding:6px 14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.06);border-radius:8px;color:rgba(255,255,255,0.5);cursor:pointer;font-size:12px;transition:all 0.2s}
+        .pagination button:hover{background:rgba(255,255,255,0.08)}
+        .pagination button.active{background:rgba(102,126,234,0.2);color:#a78bfa;border-color:rgba(102,126,234,0.2)}
+        .empty-state{text-align:center;padding:40px 20px;color:rgba(255,255,255,0.3)}
+        .empty-state i{font-size:36px;display:block;margin-bottom:12px;opacity:0.4}
+        .kb-edit-area{background:rgba(255,255,255,0.03);border-radius:16px;padding:20px;border:1px solid rgba(255,255,255,0.05);margin-bottom:20px}
+        .kb-edit-area .kb-item{background:rgba(255,255,255,0.04);border-radius:12px;padding:16px;margin-bottom:12px;border:1px solid rgba(255,255,255,0.06)}
+        .kb-edit-area .kb-item .kb-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px}
+        .kb-edit-area .kb-item .kb-header .kb-title{font-weight:600;color:#fff;font-size:15px}
+        .kb-edit-area .kb-item .kb-keywords{font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:6px}
+        .kb-edit-area .kb-item .kb-content{font-size:13px;color:rgba(255,255,255,0.6);white-space:pre-wrap;max-height:100px;overflow:hidden;text-overflow:ellipsis}
+        .kb-edit-area .kb-item .kb-actions{display:flex;gap:8px;margin-top:10px}
+        @media(max-width:768px){.admin-container{padding:12px 16px}.login-card{padding:32px 24px;width:95%}.stats-grid{grid-template-columns:repeat(2,1fr)}.admin-header .left h1{font-size:18px}.form-row{flex-direction:column}.form-group{min-width:100%}}
+    </style>
+</head>
+<body>
+
+<div id="loginContainer" class="login-container">
+    <div class="login-card">
+        <div class="logo"><i class="fas fa-shield-halved"></i></div>
+        <h2>管理员控制台</h2>
+        <div class="subtitle">安全身份验证 · 系统管理面板</div>
+        <input type="text" id="adminUsername" placeholder="用户名" autocomplete="off">
+        <input type="password" id="adminPassword" placeholder="密码" autocomplete="off">
+        <button id="loginBtn">登录控制台</button>
+        <div id="loginError" class="error-msg"></div>
+        <div class="hint">默认账号 <code>admin</code> · 密码在环境变量中配置</div>
+    </div>
+</div>
+
+<div id="adminContainer" class="admin-container">
+
+    <div id="errorBoundary" class="error-boundary">
+        <div class="icon"><i class="fas fa-triangle-exclamation"></i></div>
+        <div class="title">加载失败</div>
+        <div class="desc" id="errorDesc">网络连接异常，请检查网络后重试</div>
+        <button class="retry-btn" onclick="location.reload()"><i class="fas fa-rotate"></i> 重新加载</button>
+    </div>
+
+    <div class="admin-header">
+        <div class="left">
+            <h1><i class="fas fa-crown" style="background:linear-gradient(135deg,#667eea,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;"></i> 管理控制台</h1>
+            <span class="badge"><i class="fas fa-circle" style="color:#34d399;font-size:8px;"></i> 在线</span>
+        </div>
+        <div class="right">
+            <span class="token-info" id="tokenDisplay"><span class="valid">●</span> 已认证</span>
+            <button class="btn btn-outline btn-sm" id="refreshBtn"><i class="fas fa-sync-alt"></i> 刷新</button>
+            <button class="btn btn-danger btn-sm" id="logoutAdminBtn"><i class="fas fa-sign-out-alt"></i> 退出</button>
+        </div>
+    </div>
+
+    <div class="security-bar">
+        <i class="fas fa-shield-check"></i>
+        <span>管理员会话已认证 · 所有敏感操作均受登录保护</span>
+    </div>
+
+    <div class="stats-grid" id="statsGrid">
+        <div class="stat-card"><div class="label">总用户</div><div class="value" id="totalUsers">-</div></div>
+        <div class="stat-card"><div class="label">已认证</div><div class="value green" id="verifiedUsers">-</div></div>
+        <div class="stat-card"><div class="label">未认证</div><div class="value red" id="unverifiedUsers">-</div></div>
+        <div class="stat-card"><div class="label">登录受限</div><div class="value pink" id="loginRestricted">-</div></div>
+        <div class="stat-card"><div class="label">商城受限</div><div class="value gold" id="mallRestricted">-</div></div>
+        <div class="stat-card"><div class="label">生成受限</div><div class="value blue" id="generateRestricted">-</div></div>
+        <div class="stat-card"><div class="label">系统总积分</div><div class="value gold" id="totalPoints">-</div></div>
+        <div class="stat-card"><div class="label">用户总积分</div><div class="value" id="userTotalPoints">-</div></div>
+        <div class="stat-card"><div class="label">📬 邮件总数</div><div class="value blue" id="mailTotal">-</div></div>
+        <div class="stat-card"><div class="label">📬 未领取</div><div class="value gold" id="mailUnclaimed">-</div></div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="cdk"><i class="fas fa-ticket"></i> CDK管理</button>
+        <button class="tab-btn" data-tab="announcement"><i class="fas fa-bullhorn"></i> 公告管理</button>
+        <button class="tab-btn" data-tab="restrict"><i class="fas fa-ban"></i> 账号风控</button>
+        <button class="tab-btn" data-tab="reissue"><i class="fas fa-rotate-left"></i> 补发卡密</button>
+        <button class="tab-btn" data-tab="users"><i class="fas fa-users"></i> 用户管理</button>
+        <button class="tab-btn" data-tab="knowledge"><i class="fas fa-database"></i> 知识库管理</button>
+    </div>
+
+    <div id="cdkTab" class="tab-content active">
+        <div class="section-title"><i class="fas fa-ticket"></i> CDK礼包码管理</div>
+        <div style="margin-bottom:20px;background:rgba(255,255,255,0.03);border-radius:16px;padding:20px;border:1px solid rgba(255,255,255,0.05)">
+            <div style="font-size:14px;font-weight:500;color:#fff;margin-bottom:14px">创建新CDK</div>
+            <div class="form-row">
+                <div class="form-group"><label>礼包名称 (小写字母+数字, 3-32位)</label><input type="text" id="cdkName" placeholder="vip888" maxlength="32"></div>
+                <div class="form-group"><label>奖励类型</label>
+                    <select id="cdkRewardType">
+                        <option value="points">积分</option>
+                        <option value="point_code">普通积分卡密</option>
+                        <option value="premium_point_code">高级积分卡密</option>
+                        <option value="reset_code">重置密码卡密</option>
+                        <option value="boost_code">积分加成卡密</option>
+                        <option value="special_point_code">特殊积分卡密</option>
+                        <option value="makeup_code">补签卡</option>
+                        <option value="gamblers_code">赌神积分卡密</option>
+                        <option value="box_code">盲盒卡</option>
+                        <option value="plcard_code">普通PL随机卡</option>
+                        <option value="premium_boost_code">高级加成卡</option>
+                        <option value="cancellation_code">注销卡密</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>数量</label><input type="number" id="cdkRewardValue" placeholder="数量" value="1" min="1" max="100"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>起始时间 (可选)</label><input type="datetime-local" id="cdkStartTime"></div>
+                <div class="form-group"><label>截止时间 (可选)</label><input type="datetime-local" id="cdkEndTime"></div>
+                <div class="form-group"><label>限制累计签到 (0=不限)</label><input type="number" id="cdkMinTotalDays" min="0" max="9999" value="0"></div>
+                <div class="form-group"><label>限制连续签到 (0=不限)</label><input type="number" id="cdkMinConsecutiveDays" min="0" max="9999" value="0"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><div class="checkbox-group"><input type="checkbox" id="cdkIsUniversal"><label style="margin:0;color:rgba(255,255,255,0.6);font-size:13px">通用CDK (所有用户可兑换一次)</label></div></div>
+                <button class="btn btn-success" id="createCdkBtn"><i class="fas fa-plus"></i> 创建CDK</button>
+            </div>
+            <div id="cdkCreateResult" style="margin-top:10px;"></div>
+        </div>
+        <div style="margin-top:20px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+                <span style="font-weight:500;color:rgba(255,255,255,0.6);font-size:13px">CDK列表</span>
+                <div class="search-bar" style="margin:0;flex:1;max-width:400px">
+                    <input type="text" id="cdkSearchFilter" placeholder="搜索礼包码或名称...">
+                    <button class="btn btn-primary btn-sm" id="searchCdkBtn"><i class="fas fa-search"></i></button>
+                    <button class="btn btn-outline btn-sm" id="refreshCdkBtn"><i class="fas fa-rotate"></i></button>
+                </div>
+            </div>
+            <div class="table-wrap" id="cdkListContainer"><div class="loading"><i class="fas fa-spinner fa-spin"></i>加载中...</div></div>
+        </div>
+    </div>
+
+    <div id="announcementTab" class="tab-content">
+        <div class="section-title"><i class="fas fa-bullhorn"></i> 公告管理</div>
+        <div style="margin-bottom:20px;background:rgba(255,255,255,0.03);border-radius:16px;padding:20px;border:1px solid rgba(255,255,255,0.05)">
+            <div style="font-size:14px;font-weight:500;color:#fff;margin-bottom:14px">发布新公告</div>
+            <div class="form-row">
+                <div class="form-group" style="flex:2"><label>标题</label><input type="text" id="annTitle" placeholder="公告标题"></div>
+                <div class="form-group"><label>类型</label><select id="annType"><option value="info">普通</option><option value="warning">警告</option><option value="success">成功</option><option value="danger">重要</option></select></div>
+                <div class="form-group"><label>置顶</label><select id="annSticky"><option value="false">否</option><option value="true">是</option></select></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group" style="flex:1"><label>内容 (支持换行和URL超链接)</label><textarea id="annContent" rows="3" placeholder="请输入公告内容..."></textarea></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>生效时间 (可选)</label><input type="datetime-local" id="annStartTime"></div>
+                <div class="form-group"><label>失效时间 (可选)</label><input type="datetime-local" id="annEndTime"></div>
+                <button class="btn btn-success" id="createAnnBtn"><i class="fas fa-plus"></i> 发布公告</button>
+            </div>
+            <div id="annCreateResult" style="margin-top:10px;"></div>
+        </div>
+        <div style="margin-top:20px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+                <span style="font-weight:500;color:rgba(255,255,255,0.6);font-size:13px">公告列表</span>
+                <div class="search-bar" style="margin:0;flex:1;max-width:400px">
+                    <input type="text" id="annSearchFilter" placeholder="搜索公告标题...">
+                    <button class="btn btn-primary btn-sm" id="searchAnnBtn"><i class="fas fa-search"></i></button>
+                    <button class="btn btn-outline btn-sm" id="refreshAnnBtn"><i class="fas fa-rotate"></i></button>
+                </div>
+            </div>
+            <div class="table-wrap" id="annListContainer"><div class="loading"><i class="fas fa-spinner fa-spin"></i>加载中...</div></div>
+        </div>
+    </div>
+
+    <div id="restrictTab" class="tab-content">
+        <div class="section-title"><i class="fas fa-ban"></i> 账号风控管理</div>
+        <div style="background:rgba(255,255,255,0.03);border-radius:16px;padding:20px;border:1px solid rgba(255,255,255,0.05);margin-bottom:20px">
+            <div class="form-row">
+                <div class="form-group" style="flex:0 0 280px"><label>用户名</label><input type="text" id="restrictUsername" placeholder="输入要操作的用户名"></div>
+                <div class="form-group" style="flex:0 0 auto">
+                    <label style="opacity:0">操作</label>
+                    <div class="restrict-btn-group">
+                        <button class="r-login" id="toggleLoginRestrictBtn"><i class="fas fa-lock"></i> 登录限制</button>
+                        <button class="r-mall" id="toggleMallRestrictBtn"><i class="fas fa-store"></i> 商城限制</button>
+                        <button class="r-phone" id="toggleGenerateRestrictBtn"><i class="fas fa-phone"></i> 生成限制</button>
+                    </div>
+                </div>
+            </div>
+            <div id="restrictResult"></div>
+        </div>
+        <div>
+            <div style="font-weight:500;color:rgba(255,255,255,0.6);font-size:13px;margin-bottom:12px">受限用户列表</div>
+            <div id="restrictedUsersList"></div>
+        </div>
+    </div>
+
+    <div id="reissueTab" class="tab-content">
+        <div class="section-title"><i class="fas fa-rotate-left"></i> 注销卡密补发</div>
+        <div style="background:rgba(255,255,255,0.03);border-radius:16px;padding:20px;border:1px solid rgba(255,255,255,0.05)">
+            <div class="form-row">
+                <div class="form-group" style="flex:0 0 280px"><label>用户名</label><input type="text" id="reissueUsername" placeholder="输入用户名"></div>
+                <button class="btn btn-warning" id="reissueBtn"><i class="fas fa-rotate-left"></i> 补发注销卡密</button>
+            </div>
+            <div id="reissueResult" style="margin-top:12px;"></div>
+        </div>
+    </div>
+
+    <div id="usersTab" class="tab-content">
+        <div class="section-title"><i class="fas fa-users"></i> 用户管理</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+            <div class="search-bar" style="margin:0;flex:1;max-width:500px">
+                <input type="text" id="userSearchFilter" placeholder="搜索用户名或邮箱...">
+                <button class="btn btn-primary btn-sm" id="searchUsersBtn"><i class="fas fa-search"></i></button>
+                <button class="btn btn-outline btn-sm" id="refreshUsersBtn"><i class="fas fa-rotate"></i></button>
+            </div>
+        </div>
+        <div class="table-wrap" id="usersListContainer"><div class="loading"><i class="fas fa-spinner fa-spin"></i>加载中...</div></div>
+        <div id="usersPagination" class="pagination"></div>
+    </div>
+
+    <div id="knowledgeTab" class="tab-content">
+        <div class="section-title"><i class="fas fa-database"></i> 知识库管理</div>
+        <div style="margin-bottom:20px;background:rgba(255,255,255,0.03);border-radius:16px;padding:20px;border:1px solid rgba(255,255,255,0.05)">
+            <div style="font-size:14px;font-weight:500;color:#fff;margin-bottom:14px">添加知识条目</div>
+            <div class="form-row">
+                <div class="form-group" style="flex:2"><label>标题</label><input type="text" id="kbNewTitle" placeholder="知识标题"></div>
+                <div class="form-group"><label>关键词 (用逗号分隔)</label><input type="text" id="kbNewKeywords" placeholder="关键词1,关键词2,关键词3"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group" style="flex:1"><label>内容 (支持换行和URL)</label><textarea id="kbNewContent" rows="4" placeholder="请输入知识内容..."></textarea></div>
+            </div>
+            <div class="form-row">
+                <button class="btn btn-success" id="addKbBtn"><i class="fas fa-plus"></i> 添加知识</button>
+            </div>
+            <div id="kbAddResult" style="margin-top:10px;"></div>
+        </div>
+        <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+                <span style="font-weight:500;color:rgba(255,255,255,0.6);font-size:13px">知识条目列表</span>
+                <div class="search-bar" style="margin:0;flex:1;max-width:400px">
+                    <input type="text" id="kbSearchFilter" placeholder="搜索标题或关键词...">
+                    <button class="btn btn-primary btn-sm" id="searchKbBtn"><i class="fas fa-search"></i></button>
+                    <button class="btn btn-outline btn-sm" id="refreshKbBtn"><i class="fas fa-rotate"></i></button>
+                </div>
+            </div>
+            <div class="kb-edit-area" id="kbListContainer"><div class="loading"><i class="fas fa-spinner fa-spin"></i>加载中...</div></div>
+        </div>
+    </div>
+</div>
+
+<div id="confirmModal" class="modal">
+    <div class="modal-content">
+        <h3><i class="fas fa-triangle-exclamation" style="color:#fbbf24;margin-right:10px;"></i>确认操作</h3>
+        <p id="confirmMessage">确定要执行此操作吗？</p>
+        <div class="modal-actions">
+            <button id="confirmNo" style="background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);">取消</button>
+            <button id="confirmYes" style="background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;">确认</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    var csrfToken=null,csrfTokenRefreshPromise=null,csrfTokenLastFetch=0,CSRF_TOKEN_TTL=300000;
+    function getCsrfTokenFromCookie(){try{var c=document.cookie.split(';');for(var i=0;i<c.length;i++){var cookie=c[i].trim();if(cookie.indexOf('csrf_token=')===0)return cookie.substring('csrf_token='.length,cookie.length)}}catch(e){}return null}
+    function setCsrfTokenCookie(token){try{var expires=new Date(Date.now()+CSRF_TOKEN_TTL).toUTCString();document.cookie='csrf_token='+token+'; expires='+expires+'; path=/; SameSite=Strict; Secure'}catch(e){}}
+    function fetchCsrfToken(){if(csrfTokenRefreshPromise)return csrfTokenRefreshPromise;if(csrfToken&&(Date.now()-csrfTokenLastFetch)<CSRF_TOKEN_TTL)return Promise.resolve(csrfToken);var cookieToken=getCsrfTokenFromCookie();if(cookieToken){csrfToken=cookieToken;csrfTokenLastFetch=Date.now();return Promise.resolve(csrfToken)}
+    csrfTokenRefreshPromise=fetch('/api/csrf-token',{method:'GET',credentials:'include',headers:{'Accept':'application/json','Cache-Control':'no-cache'}}).then(function(r){if(!r.ok)throw new Error('CSRF token fetch failed: HTTP '+r.status);return r.json()}).then(function(d){if(!d.csrf_token)throw new Error('No CSRF token in response');csrfToken=d.csrf_token;csrfTokenLastFetch=Date.now();setCsrfTokenCookie(csrfToken);csrfTokenRefreshPromise=null;return csrfToken}).catch(function(e){csrfTokenRefreshPromise=null;csrfToken=null;throw e});return csrfTokenRefreshPromise}
+    function apiRequest(url,options){if(!options)options={};options.credentials='include';if(!options.headers)options.headers={};options.headers['Content-Type']='application/json';options.headers['Accept']='application/json';if(currentToken)options.headers['X-Admin-Token']=currentToken;var method=(options.method||'GET').toUpperCase();if(method==='GET'||method==='HEAD'||method==='OPTIONS'){return fetch(url,options).then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error(d.error||'请求失败: HTTP '+r.status);return d})})}
+    return fetchCsrfToken().then(function(token){options.headers['X-CSRF-Token']=token;return fetch(url,options)}).then(function(r){return r.json().then(function(d){if(!r.ok){if(r.status===403&&d.error&&d.error.includes('CSRF')){csrfToken=null;csrfTokenLastFetch=0;return fetchCsrfToken().then(function(newToken){options.headers['X-CSRF-Token']=newToken;return fetch(url,options)}).then(function(r2){return r2.json().then(function(d2){if(!r2.ok)throw new Error(d2.error||'请求失败: HTTP '+r2.status);return d2})})}throw new Error(d.error||'请求失败: HTTP '+r.status)}return d})})}
+    var currentToken=null,currentCdkSearch='',currentAnnSearch='',currentUserSearch='',currentKbSearch='',currentUserPage=1,currentUserTotalPages=1,isInitialized=false;
+    function showErrorBoundary(msg){var el=document.getElementById('errorBoundary'),desc=document.getElementById('errorDesc');if(el&&desc){desc.textContent=msg||'网络连接异常，请检查网络后重试';el.style.display='block'}}
+    function hideErrorBoundary(){var el=document.getElementById('errorBoundary');if(el)el.style.display='none'}
+    function showMessage(msg,type){var d=document.createElement('div');d.className='message message-'+type;var icon=type==='success'?'fa-check-circle':type==='error'?'fa-times-circle':'fa-exclamation-triangle';d.innerHTML='<i class="fas '+icon+'"></i> '+msg;document.body.appendChild(d);setTimeout(function(){d.remove()},3500)}
+    function escapeHtml(t){if(!t)return '';var d=document.createElement('div');d.textContent=t;return d.innerHTML}
+    function formatTime(t){if(!t)return '-';try{return new Date(t).toLocaleString('zh-CN')}catch(e){return '-'}}
+    function formatDate(d){if(!d)return '-';try{return new Date(d).toLocaleDateString('zh-CN')}catch(e){return '-'}}
+    function formatAnnouncementContent(c){if(!c)return '';var f=c.replace(/\n/g,'<br>');var p=/(https?:\/\/[a-zA-Z0-9\-._~:/?#[\]@!$&'()*+,;=]+)/g;f=f.replace(p,function(u){return '<a href="'+u+'" target="_blank" rel="noopener noreferrer" style="color:#a78bfa;text-decoration:underline;">'+u+'</a>'});return f}
+    function badge(status,type){var map={success:'badge-success',danger:'badge-danger',warning:'badge-warning',info:'badge-info',neutral:'badge-neutral'};return '<span class="badge '+(map[type]||'badge-neutral')+'">'+status+'</span>'}
+    function showModal(msg,onConfirm){var m=document.getElementById('confirmModal'),p=document.getElementById('confirmMessage');p.textContent=msg;m.style.display='flex';document.getElementById('confirmYes').onclick=function(){m.style.display='none';if(onConfirm)onConfirm()};document.getElementById('confirmNo').onclick=function(){m.style.display='none'}}
+    async function loadStats(){try{var d=await apiRequest('/api/admin/stats');document.getElementById('totalUsers').textContent=d.users.total;document.getElementById('verifiedUsers').textContent=d.users.verified;document.getElementById('unverifiedUsers').textContent=d.users.unverified;document.getElementById('loginRestricted').textContent=d.users.login_restricted||0;document.getElementById('mallRestricted').textContent=d.users.mall_restricted||0;document.getElementById('generateRestricted').textContent=d.users.generate_phone_restricted||0;document.getElementById('totalPoints').textContent=d.total_points.toFixed(2);document.getElementById('userTotalPoints').textContent=d.user_total_points.toFixed(2);document.getElementById('mailTotal').textContent=d.mail?.total||0;document.getElementById('mailUnclaimed').textContent=d.mail?.unclaimed||0;hideErrorBoundary()}catch(e){console.error(e);showMessage('加载统计数据失败: '+e.message,'error');showErrorBoundary('加载统计数据失败: '+e.message)}}
+    async function loadUsers(page){page=page||currentUserPage;try{var d=await apiRequest('/api/admin/users?page='+page+'&per_page=20&search='+encodeURIComponent(currentUserSearch));var c=document.getElementById('usersListContainer');if(d.users.length===0){c.innerHTML='<div class="empty-state"><i class="fas fa-users-slash"></i>暂无用户</div>';document.getElementById('usersPagination').innerHTML='';return}
+    var html='<table><thead><tr><th>用户名</th><th>邮箱</th><th>总积分</th><th>认证</th><th>签到</th><th>限制状态</th><th>注册时间</th></tr></thead><tbody>';d.users.forEach(function(u){var restrictBadges='';if(u.loginRestricted)restrictBadges+='<span class="on">登录</span>';else restrictBadges+='<span class="off">登录</span>';if(u.mallRestricted)restrictBadges+='<span class="on">商城</span>';else restrictBadges+='<span class="off">商城</span>';if(u.generatePhoneRestricted)restrictBadges+='<span class="on">生成</span>';else restrictBadges+='<span class="off">生成</span>';var verifiedBadge=u.isVerified?badge('已认证','success'):badge('未认证','danger');html+='<tr><td><strong>'+escapeHtml(u.username)+'</strong></td><td>'+escapeHtml(u.email)+'</td><td>'+u.totalPoints.toFixed(2)+'</td><td>'+verifiedBadge+'</td><td>'+u.attendanceTotalDays+'天</td><td><div class="restrict-badge">'+restrictBadges+'</div></td><td>'+formatDate(u.createdAt)+'</td></tr>'});html+='</tbody></table>';c.innerHTML=html;currentUserTotalPages=d.total_pages||1;var pg=document.getElementById('usersPagination');var pgHtml='';for(var i=1;i<=currentUserTotalPages;i++){pgHtml+='<button class="'+(i===page?'active':'')+'" onclick="loadUsers('+i+')">'+i+'</button>'}pg.innerHTML=pgHtml}catch(e){console.error(e);document.getElementById('usersListContainer').innerHTML='<div class="loading"><i class="fas fa-exclamation-triangle" style="color:#f87171;"></i>加载失败</div>'}}
+    async function loadRestrictedUsers(){try{var d=await apiRequest('/api/admin/users?per_page=1000');var r=d.users.filter(function(u){return u.loginRestricted||u.mallRestricted||u.generatePhoneRestricted});var c=document.getElementById('restrictedUsersList');if(r.length===0){c.innerHTML='<div class="empty-state"><i class="fas fa-check-circle" style="color:#34d399;"></i>暂无受限用户</div>';return}var html='';r.forEach(function(u){html+='<div style="background:rgba(255,255,255,0.03);border-radius:12px;padding:12px 16px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;border:1px solid rgba(255,255,255,0.04)"><div><strong>'+escapeHtml(u.username)+'</strong> <span style="color:rgba(255,255,255,0.3);font-size:12px">'+escapeHtml(u.email)+'</span></div><div style="font-size:12px;display:flex;gap:12px;flex-wrap:wrap">'+(u.loginRestricted?'<span style="color:#f87171;"><i class="fas fa-lock"></i> 登录受限</span>':'<span style="color:rgba(255,255,255,0.3);">登录正常</span>')+(u.mallRestricted?'<span style="color:#fbbf24;"><i class="fas fa-store"></i> 商城受限</span>':'<span style="color:rgba(255,255,255,0.3);">商城正常</span>')+(u.generatePhoneRestricted?'<span style="color:#60a5fa;"><i class="fas fa-phone"></i> 生成受限</span>':'<span style="color:rgba(255,255,255,0.3);">生成正常</span>')+'</div></div>'});c.innerHTML=html}catch(e){console.error(e)}}
+    async function loadCdkPackages(){try{var d=await apiRequest('/api/admin/cdk/packages');var c=document.getElementById('cdkListContainer');if(d.packages.length===0){c.innerHTML='<div class="empty-state"><i class="fas fa-ticket"></i>暂无CDK礼包码</div>';return}var filtered=d.packages;if(currentCdkSearch)filtered=filtered.filter(function(p){return p.code.toLowerCase().includes(currentCdkSearch.toLowerCase())||p.name.toLowerCase().includes(currentCdkSearch.toLowerCase())});if(filtered.length===0){c.innerHTML='<div class="empty-state"><i class="fas fa-search"></i>未找到匹配的CDK</div>';return}var html='<table><thead><tr><th>礼包码</th><th>名称</th><th>奖励</th><th>数量</th><th>类型</th><th>签到限制</th><th>状态</th><th>使用用户</th><th>生效时间</th><th>截止时间</th><th>操作</th></tr></thead><tbody>';filtered.forEach(function(p){var rewardText='';if(p.reward_type==='points')rewardText=p.reward_value+'积分';else if(p.reward_type==='point_code')rewardText='普通积分卡';else if(p.reward_type==='premium_point_code')rewardText='高级积分卡';else if(p.reward_type==='reset_code')rewardText='重置密码卡';else if(p.reward_type==='boost_code')rewardText='加成卡';else if(p.reward_type==='special_point_code')rewardText='特殊积分卡';else if(p.reward_type==='makeup_code')rewardText='补签卡';else if(p.reward_type==='gamblers_code')rewardText='赌神卡';else if(p.reward_type==='box_code')rewardText='盲盒卡';else if(p.reward_type==='plcard_code')rewardText='普通PL随机卡';else if(p.reward_type==='premium_boost_code')rewardText='高级加成卡';else if(p.reward_type==='cancellation_code')rewardText='注销卡';var statusText='',statusType='neutral';var now=Date.now();if(p.used){statusText='已使用';statusType='danger'}else if(p.expiry_time&&now>p.expiry_time){statusText='已过期';statusType='danger'}else if(p.start_time&&now<p.start_time){statusText='未开始';statusType='warning'}else{statusText='有效';statusType='success'}var limitText='';if(p.min_total_days>0&&p.min_consecutive_days>0)limitText='累签≥'+p.min_total_days+'天 连签≥'+p.min_consecutive_days+'天';else if(p.min_total_days>0)limitText='累签≥'+p.min_total_days+'天';else if(p.min_consecutive_days>0)limitText='连签≥'+p.min_consecutive_days+'天';else limitText='无限制';html+='<tr><td><code style="font-family:monospace;font-size:12px;color:#a78bfa;">'+escapeHtml(p.code)+'</code></td><td>'+escapeHtml(p.name)+'</td><td>'+rewardText+'</td><td>'+p.reward_quantity+'</td><td>'+(p.is_universal?'通用':'单次')+'</td><td>'+limitText+'</td><td>'+badge(statusText,statusType)+'</td><td>'+(p.used_by?escapeHtml(p.used_by):'-')+'</td><td>'+(p.start_time?formatTime(p.start_time):'-')+'</td><td>'+(p.expiry_time?formatTime(p.expiry_time):'-')+'</td><td><button class="action-btn action-btn-danger" onclick="deleteCdk(\''+escapeHtml(p.code)+'\')"><i class="fas fa-trash"></i></button></td></tr>'});html+='</tbody></table>';c.innerHTML=html}catch(e){console.error(e);document.getElementById('cdkListContainer').innerHTML='<div class="loading"><i class="fas fa-exclamation-triangle" style="color:#f87171;"></i>加载失败</div>'}}
+    window.deleteCdk=function(code){showModal('确定要删除CDK礼包码 <code style="color:#a78bfa;">'+code+'</code> 吗？此操作不可恢复。',function(){apiRequest('/api/admin/cdk/delete',{method:'POST',body:JSON.stringify({code:code})}).then(function(){showMessage('删除成功','success');loadCdkPackages()}).catch(function(e){showMessage(e.message,'error')})})}
+    async function createCdkPackage(){var name=document.getElementById('cdkName').value.trim().toLowerCase();var rType=document.getElementById('cdkRewardType').value;var rVal=document.getElementById('cdkRewardValue').value.trim();var rQty=parseInt(rVal)||1;var isUniv=document.getElementById('cdkIsUniversal').checked;var st=document.getElementById('cdkStartTime').value;var et=document.getElementById('cdkEndTime').value;var mt=parseInt(document.getElementById('cdkMinTotalDays').value)||0;var mc=parseInt(document.getElementById('cdkMinConsecutiveDays').value)||0;if(!name){showMessage('请输入礼包名称','error');return}if(!/^[a-z0-9]{3,32}$/.test(name)){showMessage('CDK名称仅限小写字母和数字，长度3-32位','error');return}if(!rVal||rQty<1){showMessage('请输入有效的数量（至少1）','error');return}if(rQty>100){showMessage('数量不能超过100','error');return}if(mt<0||mt>9999){showMessage('累计签到天数必须在0-9999之间','error');return}if(mc<0||mc>9999){showMessage('连续签到天数必须在0-9999之间','error');return}var validTypes=['points','point_code','premium_point_code','reset_code','boost_code','special_point_code','makeup_code','gamblers_code','box_code','plcard_code','premium_boost_code','cancellation_code'];if(!validTypes.includes(rType)){showMessage('无效的奖励类型','error');return}var btn=document.getElementById('createCdkBtn');btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> 创建中...';try{var d=await apiRequest('/api/admin/cdk/create',{method:'POST',body:JSON.stringify({name:name,reward_type:rType,reward_value:rVal,reward_quantity:rQty,is_universal:isUniv,start_time:st,expiry_time:et,min_total_days:mt,min_consecutive_days:mc})});showMessage(d.message,'success');document.getElementById('cdkCreateResult').innerHTML='<div style="background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.15);border-radius:12px;padding:12px 16px;color:#a7f3d0;"><i class="fas fa-check-circle" style="color:#34d399;"></i> 创建成功！礼包码: <code style="color:#a78bfa;background:rgba(255,255,255,0.06);padding:2px 10px;border-radius:6px;">'+escapeHtml(d.cdk_code)+'</code> 数量: '+rQty+'</div>';document.getElementById('cdkName').value='';document.getElementById('cdkRewardValue').value='1';document.getElementById('cdkStartTime').value='';document.getElementById('cdkEndTime').value='';document.getElementById('cdkIsUniversal').checked=false;document.getElementById('cdkMinTotalDays').value='0';document.getElementById('cdkMinConsecutiveDays').value='0';loadCdkPackages()}catch(e){showMessage(e.message,'error')}finally{btn.disabled=false;btn.innerHTML='<i class="fas fa-plus"></i> 创建CDK'}}
+    async function loadAnnouncements(){try{var d=await apiRequest('/api/admin/announcements');var c=document.getElementById('annListContainer');if(d.announcements.length===0){c.innerHTML='<div class="empty-state"><i class="fas fa-bullhorn"></i>暂无公告</div>';return}var filtered=d.announcements;if(currentAnnSearch)filtered=filtered.filter(function(a){return a.title.toLowerCase().includes(currentAnnSearch.toLowerCase())});if(filtered.length===0){c.innerHTML='<div class="empty-state"><i class="fas fa-search"></i>未找到匹配的公告</div>';return}var typeMap={'info':'普通','warning':'警告','success':'成功','danger':'重要'};var html='<table><thead><tr><th>标题</th><th>类型</th><th>内容</th><th>置顶</th><th>状态</th><th>生效时间</th><th>失效时间</th><th>操作</th></tr></thead><tbody>';filtered.forEach(function(a){var statusText=a.is_active?'有效':'已禁用';var statusType=a.is_active?'success':'danger';var stickyText=a.is_sticky?'是':'否';var contentPreview=formatAnnouncementContent(a.content);if(contentPreview.length>80)contentPreview=contentPreview.substring(0,80)+'...';html+='<tr><td><strong>'+escapeHtml(a.title)+'</strong></td><td>'+typeMap[a.type]+'</td><td><div title="'+escapeHtml(a.content).replace(/"/g,'&quot;')+'" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+contentPreview+'</div></td><td>'+stickyText+'</td><td>'+badge(statusText,statusType)+'</td><td>'+(a.start_time?formatTime(a.start_time):'-')+'</td><td>'+(a.end_time?formatTime(a.end_time):'-')+'</td><td><button class="action-btn action-btn-primary" onclick="editAnn(\''+a.id+'\')"><i class="fas fa-edit"></i></button><button class="action-btn action-btn-danger" onclick="deleteAnn(\''+a.id+'\')"><i class="fas fa-trash"></i></button></td></tr>'});html+='</tbody></table>';c.innerHTML=html}catch(e){console.error(e);document.getElementById('annListContainer').innerHTML='<div class="loading"><i class="fas fa-exclamation-triangle" style="color:#f87171;"></i>加载失败</div>'}}
+    window.editAnn=function(id){apiRequest('/api/admin/announcements').then(function(d){var a=d.announcements.find(function(x){return x.id===id});if(!a){showMessage('公告不存在','error');return}var nt=prompt('请输入新标题',a.title);if(nt===null)return;var nc=prompt('请输入新内容（支持换行和URL超链接）',a.content);if(nc===null)return;var ntype=prompt('请输入类型 (info/warning/success/danger)',a.type);if(ntype===null)return;var nsticky=confirm('是否置顶？当前状态：'+(a.is_sticky?'已置顶':'未置顶'));var nactive=confirm('是否启用？当前状态：'+(a.is_active?'已启用':'已禁用'));return apiRequest('/api/admin/announcements/update',{method:'POST',body:JSON.stringify({id:id,title:nt,content:nc,type:ntype,is_sticky:nsticky,is_active:nactive,start_time:'',end_time:''})})}).then(function(){showMessage('公告更新成功','success');loadAnnouncements()}).catch(function(e){showMessage(e.message,'error')})}
+    window.deleteAnn=function(id){showModal('确定要删除此公告吗？此操作不可恢复。',function(){apiRequest('/api/admin/announcements/delete',{method:'POST',body:JSON.stringify({id:id})}).then(function(){showMessage('删除成功','success');loadAnnouncements()}).catch(function(e){showMessage(e.message,'error')})})}
+    async function createAnnouncement(){var t=document.getElementById('annTitle').value.trim();var c=document.getElementById('annContent').value;var type=document.getElementById('annType').value;var sticky=document.getElementById('annSticky').value==='true';var st=document.getElementById('annStartTime').value;var et=document.getElementById('annEndTime').value;if(!t){showMessage('请输入公告标题','error');return}if(!c){showMessage('请输入公告内容','error');return}var btn=document.getElementById('createAnnBtn');btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> 发布中...';try{var d=await apiRequest('/api/admin/announcements/create',{method:'POST',body:JSON.stringify({title:t,content:c,type:type,is_sticky:sticky,start_time:st,end_time:et})});showMessage(d.message,'success');document.getElementById('annCreateResult').innerHTML='<div style="background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.15);border-radius:12px;padding:12px 16px;color:#a7f3d0;"><i class="fas fa-check-circle" style="color:#34d399;"></i> 发布成功！</div>';document.getElementById('annTitle').value='';document.getElementById('annContent').value='';document.getElementById('annStartTime').value='';document.getElementById('annEndTime').value='';loadAnnouncements()}catch(e){showMessage(e.message,'error')}finally{btn.disabled=false;btn.innerHTML='<i class="fas fa-plus"></i> 发布公告'}}
+    async function toggleRestrict(type){var u=document.getElementById('restrictUsername').value.trim();if(!u){showMessage('请输入用户名','error');return}try{var d=await apiRequest('/api/admin/toggle-restrict',{method:'POST',body:JSON.stringify({username:u,restrict_type:type})});showMessage(d.message,'success');document.getElementById('restrictResult').innerHTML='<div style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.12);border-radius:12px;padding:12px 16px;color:#a7f3d0;">'+d.message+'</div>';loadStats();loadRestrictedUsers()}catch(e){showMessage(e.message,'error')}}
+    async function reissueCancellation(){var u=document.getElementById('reissueUsername').value.trim();if(!u){showMessage('请输入用户名','error');return}var btn=document.getElementById('reissueBtn');btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> 补发中...';try{var d=await apiRequest('/api/admin/reissue-cancellation',{method:'POST',body:JSON.stringify({username:u})});showMessage(d.message,'success');document.getElementById('reissueResult').innerHTML='<div style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.12);border-radius:12px;padding:12px 16px;color:#a7f3d0;"><i class="fas fa-check-circle" style="color:#34d399;"></i> 补发成功！已发送至用户邮箱</div>';document.getElementById('reissueUsername').value=''}catch(e){showMessage(e.message,'error')}finally{btn.disabled=false;btn.innerHTML='<i class="fas fa-rotate-left"></i> 补发注销卡密'}}
+    function logoutAdmin(){currentToken=null;localStorage.removeItem('adminToken');document.getElementById('loginContainer').style.display='flex';document.getElementById('adminContainer').style.display='none';document.getElementById('adminUsername').value='';document.getElementById('adminPassword').value='';document.getElementById('loginError').textContent='';showMessage('已退出管理员会话','success')}
+    async function checkAdminSession(){if(!currentToken)return;try{var r=await fetch('/api/admin/check-session',{headers:{'X-Admin-Token':currentToken}});var d=await r.json();if(!d.valid){showMessage('管理员会话已过期，请重新登录','warning');logoutAdmin()}}catch(e){}}
+    async function loadKnowledgeBase(){try{var d=await apiRequest('/api/admin/knowledge');var c=document.getElementById('kbListContainer');if(!d.topics||d.topics.length===0){c.innerHTML='<div class="empty-state"><i class="fas fa-database"></i>暂无知识条目</div>';return}var filtered=d.topics;if(currentKbSearch){var search=currentKbSearch.toLowerCase();filtered=filtered.filter(function(t){return t.title.toLowerCase().includes(search)||t.keywords.some(function(k){return k.toLowerCase().includes(search)})})}if(filtered.length===0){c.innerHTML='<div class="empty-state"><i class="fas fa-search"></i>未找到匹配的知识条目</div>';return}var html='';filtered.forEach(function(t){var keywordsStr=t.keywords.join(', ');var contentPreview=t.content.length>120?t.content.substring(0,120)+'...':t.content;html+='<div class="kb-item" data-id="'+escapeHtml(t.id)+'"><div class="kb-header"><span class="kb-title">'+escapeHtml(t.title)+'</span><div><button class="action-btn action-btn-primary" onclick="editKbItem(\''+escapeHtml(t.id)+'\')"><i class="fas fa-edit"></i></button><button class="action-btn action-btn-danger" onclick="deleteKbItem(\''+escapeHtml(t.id)+'\')"><i class="fas fa-trash"></i></button></div></div><div class="kb-keywords"><i class="fas fa-tags"></i> '+escapeHtml(keywordsStr)+'</div><div class="kb-content">'+escapeHtml(contentPreview)+'</div></div>'});c.innerHTML=html}catch(e){console.error(e);document.getElementById('kbListContainer').innerHTML='<div class="loading"><i class="fas fa-exclamation-triangle" style="color:#f87171;"></i>加载失败</div>'}}
+    window.editKbItem=function(id){apiRequest('/api/admin/knowledge').then(function(d){var t=d.topics.find(function(x){return x.id===id});if(!t){showMessage('知识条目不存在','error');return}var ntitle=prompt('请输入新标题',t.title);if(ntitle===null)return;var nkeywords=prompt('请输入关键词（用逗号分隔）',t.keywords.join(','));if(nkeywords===null)return;var ncontent=prompt('请输入新内容',t.content);if(ncontent===null)return;var keywordsArr=nkeywords.split(',').map(function(s){return s.trim()}).filter(function(s){return s});if(keywordsArr.length===0){showMessage('至少需要一个关键词','error');return}return apiRequest('/api/admin/knowledge/update',{method:'POST',body:JSON.stringify({id:id,title:ntitle,keywords:keywordsArr,content:ncontent})})}).then(function(){showMessage('知识更新成功','success');loadKnowledgeBase()}).catch(function(e){showMessage(e.message,'error')})}
+    window.deleteKbItem=function(id){showModal('确定要删除此知识条目吗？此操作不可恢复。',function(){apiRequest('/api/admin/knowledge/delete',{method:'POST',body:JSON.stringify({id:id})}).then(function(){showMessage('删除成功','success');loadKnowledgeBase()}).catch(function(e){showMessage(e.message,'error')})})}
+    async function addKnowledgeItem(){var title=document.getElementById('kbNewTitle').value.trim();var keywordsRaw=document.getElementById('kbNewKeywords').value.trim();var content=document.getElementById('kbNewContent').value.trim();if(!title){showMessage('请输入标题','error');return}if(!keywordsRaw){showMessage('请输入关键词','error');return}if(!content){showMessage('请输入内容','error');return}var keywords=keywordsRaw.split(',').map(function(s){return s.trim()}).filter(function(s){return s});if(keywords.length===0){showMessage('至少需要一个关键词','error');return}var btn=document.getElementById('addKbBtn');btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> 添加中...';try{var d=await apiRequest('/api/admin/knowledge/add',{method:'POST',body:JSON.stringify({title:title,keywords:keywords,content:content})});showMessage(d.message,'success');document.getElementById('kbAddResult').innerHTML='<div style="background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.15);border-radius:12px;padding:12px 16px;color:#a7f3d0;"><i class="fas fa-check-circle" style="color:#34d399;"></i> 添加成功！</div>';document.getElementById('kbNewTitle').value='';document.getElementById('kbNewKeywords').value='';document.getElementById('kbNewContent').value='';loadKnowledgeBase()}catch(e){showMessage(e.message,'error')}finally{btn.disabled=false;btn.innerHTML='<i class="fas fa-plus"></i> 添加知识'}}
+
+    document.getElementById('loginBtn').addEventListener('click',async function(){var username=document.getElementById('adminUsername').value.trim();var password=document.getElementById('adminPassword').value;var errorEl=document.getElementById('loginError');var btn=document.getElementById('loginBtn');if(!username||!password){errorEl.textContent='请输入用户名和密码';return}errorEl.textContent='';btn.disabled=true;btn.textContent='登录中...';try{await fetchCsrfToken();var r=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':csrfToken||''},body:JSON.stringify({username:username,password:password})});var d=await r.json();if(r.ok&&d.success){currentToken=d.token;localStorage.setItem('adminToken',currentToken);document.getElementById('loginContainer').style.display='none';document.getElementById('adminContainer').style.display='block';document.getElementById('tokenDisplay').innerHTML='<span class="valid">●</span> 已认证 ('+d.expires_in+'s)';loadStats();loadRestrictedUsers();loadCdkPackages();loadAnnouncements();loadUsers(1);loadKnowledgeBase();setInterval(checkAdminSession,60000)}else{errorEl.textContent=d.error||'登录失败，请检查用户名和密码'}}catch(e){errorEl.textContent='网络错误，请重试';console.error(e)}finally{btn.disabled=false;btn.textContent='登录控制台'}});
+    document.getElementById('adminPassword').addEventListener('keypress',function(e){if(e.key==='Enter')document.getElementById('loginBtn').click()});
+    document.getElementById('adminUsername').addEventListener('keypress',function(e){if(e.key==='Enter')document.getElementById('loginBtn').click()});
+
+    document.getElementById('logoutAdminBtn').addEventListener('click',logoutAdmin);
+    document.getElementById('refreshBtn').addEventListener('click',function(){loadStats();loadRestrictedUsers();loadCdkPackages();loadAnnouncements();loadUsers(currentUserPage);loadKnowledgeBase();showMessage('数据已刷新','success')});
+    document.getElementById('toggleLoginRestrictBtn').addEventListener('click',function(){toggleRestrict('login')});
+    document.getElementById('toggleMallRestrictBtn').addEventListener('click',function(){toggleRestrict('mall')});
+    document.getElementById('toggleGenerateRestrictBtn').addEventListener('click',function(){toggleRestrict('generate_phone')});
+    document.getElementById('reissueBtn').addEventListener('click',reissueCancellation);
+    document.getElementById('createCdkBtn').addEventListener('click',createCdkPackage);
+    document.getElementById('searchCdkBtn').addEventListener('click',function(){currentCdkSearch=document.getElementById('cdkSearchFilter').value.trim();loadCdkPackages()});
+    document.getElementById('refreshCdkBtn').addEventListener('click',function(){currentCdkSearch='';document.getElementById('cdkSearchFilter').value='';loadCdkPackages()});
+    document.getElementById('createAnnBtn').addEventListener('click',createAnnouncement);
+    document.getElementById('searchAnnBtn').addEventListener('click',function(){currentAnnSearch=document.getElementById('annSearchFilter').value.trim();loadAnnouncements()});
+    document.getElementById('refreshAnnBtn').addEventListener('click',function(){currentAnnSearch='';document.getElementById('annSearchFilter').value='';loadAnnouncements()});
+    document.getElementById('searchUsersBtn').addEventListener('click',function(){currentUserSearch=document.getElementById('userSearchFilter').value.trim();currentUserPage=1;loadUsers(1)});
+    document.getElementById('refreshUsersBtn').addEventListener('click',function(){currentUserSearch='';document.getElementById('userSearchFilter').value='';currentUserPage=1;loadUsers(1)});
+    document.getElementById('cdkSearchFilter').addEventListener('keypress',function(e){if(e.key==='Enter'){currentCdkSearch=this.value.trim();loadCdkPackages()}});
+    document.getElementById('annSearchFilter').addEventListener('keypress',function(e){if(e.key==='Enter'){currentAnnSearch=this.value.trim();loadAnnouncements()}});
+    document.getElementById('userSearchFilter').addEventListener('keypress',function(e){if(e.key==='Enter'){currentUserSearch=this.value.trim();currentUserPage=1;loadUsers(1)}});
+    document.getElementById('addKbBtn').addEventListener('click',addKnowledgeItem);
+    document.getElementById('searchKbBtn').addEventListener('click',function(){currentKbSearch=document.getElementById('kbSearchFilter').value.trim();loadKnowledgeBase()});
+    document.getElementById('refreshKbBtn').addEventListener('click',function(){currentKbSearch='';document.getElementById('kbSearchFilter').value='';loadKnowledgeBase()});
+    document.getElementById('kbSearchFilter').addEventListener('keypress',function(e){if(e.key==='Enter'){currentKbSearch=this.value.trim();loadKnowledgeBase()}});
+
+    document.querySelectorAll('.tab-btn').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.tab-btn').forEach(function(x){x.classList.remove('active')});b.classList.add('active');document.querySelectorAll('.tab-content').forEach(function(x){x.classList.remove('active')});var id=b.getAttribute('data-tab');document.getElementById(id+'Tab').classList.add('active');if(id==='restrict')loadRestrictedUsers();if(id==='cdk')loadCdkPackages();if(id==='announcement')loadAnnouncements();if(id==='users')loadUsers(currentUserPage);if(id==='knowledge')loadKnowledgeBase()})});
+
+    async function init(){if(isInitialized)return;isInitialized=true;try{await fetchCsrfToken().catch(function(e){});var token=localStorage.getItem('adminToken');if(token){currentToken=token;document.getElementById('loginContainer').style.display='none';document.getElementById('adminContainer').style.display='block';document.getElementById('tokenDisplay').innerHTML='<span class="valid">●</span> 已认证';loadStats();loadRestrictedUsers();loadCdkPackages();loadAnnouncements();loadUsers(1);loadKnowledgeBase()}hideErrorBoundary()}catch(error){console.error('Init error:',error);showErrorBoundary('初始化失败: '+(error.message||'网络连接失败'))}}
+    init();
+</script>
+</body>
+</html>

@@ -1,0 +1,2224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>身份认证</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+            color: #1a1a2e;
+        }
+
+        .container {
+            max-width: 520px;
+            margin: 0 auto;
+            padding: 24px 16px;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            padding: 28px 24px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            font-size: 13px;
+            margin-bottom: 28px;
+        }
+
+        .quick-verify-section {
+            background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+            border: 2px solid #4caf50;
+            position: relative;
+        }
+
+        .quick-verify-section .badge {
+            position: absolute;
+            top: -10px;
+            right: 16px;
+            background: #4caf50;
+            color: white;
+            padding: 2px 16px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .quick-verify-section .title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #2e7d32;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .quick-verify-section .title i {
+            font-size: 20px;
+        }
+
+        .quick-verify-section .desc {
+            font-size: 13px;
+            color: #1b5e20;
+            margin-bottom: 12px;
+            line-height: 1.6;
+        }
+
+        .quick-verify-section .stats {
+            font-size: 12px;
+            color: #2e7d32;
+            background: rgba(255,255,255,0.6);
+            padding: 8px 14px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .quick-verify-section .stats .num {
+            font-weight: 700;
+            color: #1b5e20;
+        }
+
+        .quick-verify-section .stats .num.warning {
+            color: #e65100;
+        }
+
+        .quick-verify-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #43a047, #2e7d32);
+            color: white;
+            border: none;
+            border-radius: 40px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .quick-verify-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(46, 125, 50, 0.3);
+        }
+
+        .quick-verify-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .quick-verify-btn .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.6s linear infinite;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .quick-result {
+            margin-top: 12px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            display: none;
+        }
+
+        .quick-result.success {
+            display: block;
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #a5d6a7;
+        }
+
+        .quick-result.error {
+            display: block;
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef9a9a;
+        }
+
+        .quick-result .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 12px;
+            flex-wrap: wrap;
+        }
+
+        .quick-result .info-row .label {
+            color: #666;
+        }
+
+        .quick-result .info-row .value {
+            font-weight: 600;
+            color: #1b5e20;
+        }
+
+        .quick-result .info-row .value.warning {
+            color: #e65100;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+            color: #999;
+            font-size: 12px;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #e0e0e0;
+        }
+
+        .divider::before {
+            margin-right: 16px;
+        }
+
+        .divider::after {
+            margin-left: 16px;
+        }
+
+        .privacy-badge {
+            background: #e8f0fe;
+            border-radius: 16px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-left: 4px solid #2a5298;
+        }
+
+        .privacy-badge i {
+            font-size: 24px;
+            color: #2a5298;
+        }
+
+        .privacy-badge-text {
+            flex: 1;
+        }
+
+        .privacy-badge-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: #1e3c72;
+            margin-bottom: 4px;
+        }
+
+        .privacy-badge-desc {
+            font-size: 12px;
+            color: #5a6e8a;
+        }
+
+        .upload-area {
+            border: 2px dashed #cbd5e1;
+            border-radius: 20px;
+            padding: 32px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: #fafbfc;
+            margin-bottom: 24px;
+        }
+
+        .upload-area:hover {
+            border-color: #2a5298;
+            background: #f5f7fa;
+        }
+
+        .upload-area.dragover {
+            border-color: #2a5298;
+            background: #eef2ff;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            color: #94a3b8;
+            margin-bottom: 12px;
+        }
+
+        .upload-text {
+            color: #475569;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .upload-hint {
+            color: #94a3b8;
+            font-size: 12px;
+        }
+
+        .security-note {
+            background: #fef9e6;
+            border-radius: 12px;
+            padding: 10px 14px;
+            margin-top: 12px;
+            font-size: 11px;
+            color: #b45309;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .preview-area {
+            display: none;
+            margin-bottom: 24px;
+            position: relative;
+        }
+
+        .preview-img {
+            width: 100%;
+            max-height: 200px;
+            object-fit: contain;
+            border-radius: 12px;
+            background: #f8f9fa;
+            border: 1px solid #e2e8f0;
+        }
+
+        .reupload-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 6px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .reupload-btn:hover {
+            background: rgba(0,0,0,0.8);
+        }
+
+        .ocr-status {
+            display: none;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+
+        .ocr-status.loading {
+            background: #eef2ff;
+            color: #1e3c72;
+            display: block;
+        }
+
+        .ocr-status.success {
+            background: #e6f7e6;
+            color: #2e7d32;
+            display: block;
+        }
+
+        .ocr-status.error {
+            background: #ffebee;
+            color: #c62828;
+            display: block;
+        }
+
+        .ocr-status.warning {
+            background: #fff3e0;
+            color: #e65100;
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 14px;
+            color: #334155;
+        }
+
+        .form-group label i {
+            width: 20px;
+            color: #2a5298;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            font-size: 15px;
+            background: #ffffff;
+            transition: all 0.2s;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #2a5298;
+            box-shadow: 0 0 0 3px rgba(42, 82, 152, 0.1);
+        }
+
+        .form-group input:disabled {
+            background: #f1f5f9;
+            color: #64748b;
+            cursor: not-allowed;
+        }
+
+        .form-group select:disabled {
+            background: #f1f5f9;
+            color: #64748b;
+            cursor: not-allowed;
+        }
+
+        .edit-hint {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 6px;
+            text-align: right;
+        }
+
+        .edit-warning {
+            font-size: 11px;
+            color: #f59e0b;
+            margin-top: 6px;
+            text-align: right;
+        }
+
+        .info-row {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .info-label {
+            color: #64748b;
+        }
+
+        .info-value {
+            font-weight: 500;
+            color: #1e293b;
+        }
+
+        .info-value.valid {
+            color: #2e7d32;
+        }
+
+        .info-value.invalid {
+            color: #c62828;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 40px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(30, 60, 114, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status-card {
+            background: #f0fdf4;
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            border: 1px solid #bbf7d0;
+        }
+
+        .status-card.verified {
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+        }
+
+        .status-card.not-verified {
+            background: #fef2f2;
+            border-color: #fecaca;
+        }
+
+        .status-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .status-card.verified .status-icon i {
+            color: #22c55e;
+        }
+
+        .status-card.not-verified .status-icon i {
+            color: #ef4444;
+        }
+
+        .status-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .status-message {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .reward-badge {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            border-radius: 20px;
+            padding: 12px 16px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .reward-badge p {
+            color: white;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .reward-badge i {
+            margin-right: 6px;
+        }
+
+        .nav-links {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .nav-links a {
+            padding: 10px 20px;
+            background: #ffffff;
+            border-radius: 40px;
+            color: #475569;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .nav-links a:hover {
+            background: #1e3c72;
+            color: white;
+        }
+
+        .message {
+            display: none;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            font-size: 13px;
+        }
+
+        .message.success {
+            background: #e6f7e6;
+            color: #2e7d32;
+            display: block;
+        }
+
+        .message.error {
+            background: #ffebee;
+            color: #c62828;
+            display: block;
+        }
+
+        .message.info {
+            background: #eef2ff;
+            color: #1e3c72;
+            display: block;
+        }
+
+        .message.warning {
+            background: #fff3e0;
+            color: #e65100;
+            display: block;
+        }
+
+        .ocr-progress {
+            width: 100%;
+            height: 4px;
+            background: #e2e8f0;
+            border-radius: 2px;
+            margin-top: 10px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .ocr-progress-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #2a5298, #4a7cbf);
+            transition: width 0.3s ease;
+        }
+
+        .ocr-status.loading .ocr-progress {
+            display: block;
+        }
+
+        .data-notice {
+            background: #f0f9ff;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-top: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            border: 1px solid #bae6fd;
+        }
+
+        .data-notice i {
+            font-size: 18px;
+            color: #0284c7;
+            margin-top: 2px;
+        }
+
+        .data-notice-content {
+            flex: 1;
+        }
+
+        .data-notice-title {
+            font-weight: 600;
+            font-size: 13px;
+            color: #0369a1;
+            margin-bottom: 4px;
+        }
+
+        .data-notice-text {
+            font-size: 11px;
+            color: #475569;
+            line-height: 1.5;
+        }
+
+        input.error-border {
+            border-color: #ef4444 !important;
+        }
+
+        input.success-border {
+            border-color: #22c55e !important;
+        }
+
+        .id-edit-rule {
+            background: #fef9e6;
+            border-radius: 12px;
+            padding: 10px 14px;
+            margin-bottom: 16px;
+            font-size: 12px;
+            color: #b45309;
+            border-left: 3px solid #f59e0b;
+        }
+
+        .gender-auto-info {
+            background: #e8f0fe;
+            border-radius: 12px;
+            padding: 8px 12px;
+            margin-top: 8px;
+            font-size: 11px;
+            color: #1e3c72;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .action-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .action-row .upload-area {
+            flex: 1;
+            margin-bottom: 0;
+            padding: 20px 12px;
+        }
+
+        .action-row .upload-area .upload-icon {
+            font-size: 32px;
+        }
+
+        .action-row .upload-area .upload-text {
+            font-size: 12px;
+        }
+
+        .action-row .upload-area .upload-hint {
+            font-size: 10px;
+        }
+
+        .camera-btn {
+            flex: 0 0 80px;
+            background: #1e3c72;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            transition: all 0.2s;
+            padding: 8px;
+        }
+
+        .camera-btn i {
+            font-size: 28px;
+        }
+
+        .camera-btn:hover {
+            background: #2a5298;
+            transform: scale(1.02);
+        }
+
+        .camera-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error-boundary {
+            background: #fef2f2;
+            border: 2px solid #fecaca;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+
+        .error-boundary .error-icon {
+            font-size: 48px;
+            color: #dc2626;
+            margin-bottom: 12px;
+        }
+
+        .error-boundary .error-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #dc2626;
+            margin-bottom: 8px;
+        }
+
+        .error-boundary .error-desc {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 16px;
+        }
+
+        .error-boundary .retry-btn {
+            padding: 10px 32px;
+            background: #dc2626;
+            color: white;
+            border: none;
+            border-radius: 40px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .error-boundary .retry-btn:hover {
+            background: #b91c1c;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+        }
+
+        .loading-overlay {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            background: white;
+            border-radius: 24px;
+            margin-bottom: 20px;
+        }
+
+        .loading-overlay .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid #e5e7eb;
+            border-top-color: #2a5298;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        .loading-overlay .loading-text {
+            color: #666;
+            font-size: 14px;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 16px 12px;
+            }
+            .card {
+                padding: 20px 16px;
+            }
+            h1 {
+                font-size: 24px;
+            }
+            .action-row {
+                flex-direction: column;
+            }
+            .action-row .upload-area {
+                padding: 24px 12px;
+            }
+            .camera-btn {
+                flex: 1;
+                flex-direction: row;
+                padding: 12px 16px;
+                border-radius: 40px;
+                gap: 8px;
+            }
+            .camera-btn i {
+                font-size: 20px;
+            }
+            .quick-verify-section .stats {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-id-card"></i> 身份认证</h1>
+        <p class="subtitle">上传身份证照片自动识别信息，完成认证可获得PL和优惠券奖励</p>
+
+        <!-- 加载状态 -->
+        <div id="loadingOverlay" class="loading-overlay">
+            <div class="spinner"></div>
+            <div class="loading-text">⏳ 加载中，请稍候...</div>
+        </div>
+
+        <!-- 错误边界 -->
+        <div id="errorBoundary" class="error-boundary">
+            <div class="error-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="error-title">⚠️ 加载失败</div>
+            <div class="error-desc" id="errorDesc">网络连接失败，请检查网络后重试</div>
+            <button class="retry-btn" onclick="retryInit()">🔄 重新加载</button>
+        </div>
+
+        <div id="statusCard" class="status-card" style="display: none;"></div>
+        <div id="message" class="message"></div>
+
+        <div class="card" id="verificationCard">
+            <div id="quickVerifySection" class="quick-verify-section" style="display:none;">
+                <span class="badge">⚡ 快速认证</span>
+                <div class="title"><i class="fas fa-bolt"></i> 一键快速认证</div>
+                <div class="desc">使用系统预置的身份证信息快速完成认证，无需上传证件照片</div>
+                <div class="stats" id="quickStats">
+                    <span>📊 剩余可用: <span class="num" id="quickAvailable">0</span> 张</span>
+                    <span>📋 已使用: <span class="num" id="quickUsed">0</span> 张</span>
+                    <span>📦 身份证总数: <span class="num" id="quickTotal">0</span> 张</span>
+                </div>
+                <button class="quick-verify-btn" id="quickVerifyBtn">
+                    <i class="fas fa-bolt"></i> 立即快速认证
+                </button>
+                <div id="quickResult" class="quick-result"></div>
+            </div>
+
+            <div class="divider">或手动认证</div>
+
+            <div class="privacy-badge">
+                <i class="fas fa-shield-alt"></i>
+                <div class="privacy-badge-text">
+                    <div class="privacy-badge-title">隐私安全保障</div>
+                    <div class="privacy-badge-desc">身份证照片仅在前端进行文字识别，<strong>不会上传到服务器</strong>，不保存任何图片数据</div>
+                </div>
+            </div>
+
+            <div class="action-row">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <div class="upload-text">点击或拖拽上传</div>
+                    <div class="upload-hint">JPG / PNG</div>
+                    <div class="security-note" style="margin-top:6px;font-size:10px;padding:4px 8px;">
+                        <i class="fas fa-lock"></i>
+                        <span>仅前端识别</span>
+                    </div>
+                    <input type="file" id="idCardInput" accept="image/jpeg,image/png,image/jpg" style="display: none;">
+                </div>
+                <button class="camera-btn" id="cameraBtn" type="button">
+                    <i class="fas fa-camera"></i>
+                    <span>拍照</span>
+                </button>
+            </div>
+
+            <div class="preview-area" id="previewArea">
+                <img id="previewImg" class="preview-img" alt="预览图">
+                <button type="button" class="reupload-btn" id="reuploadBtn"><i class="fas fa-redo-alt"></i> 重新上传</button>
+            </div>
+
+            <div class="ocr-status" id="ocrStatus">
+                <div class="ocr-progress">
+                    <div class="ocr-progress-bar" id="ocrProgressBar"></div>
+                </div>
+            </div>
+
+            <form id="verificationForm">
+                <div class="form-group">
+                    <label><i class="fas fa-user"></i> 真实姓名</label>
+                    <input type="text" id="realName" name="real_name" placeholder="请先上传身份证照片" maxlength="4" autocomplete="off" disabled>
+                    <div class="edit-hint"><i class="fas fa-info-circle"></i> 上传身份证后自动识别，识别后可随意修改</div>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-id-card"></i> 身份证号码</label>
+                    <input type="text" id="idNumber" name="id_number" placeholder="请先上传身份证照片" maxlength="18" autocomplete="off" disabled>
+                    <div class="edit-warning"><i class="fas fa-exclamation-triangle"></i> 出生年份、后4位不允许修改，前6位最多修改1个字符，出生月日最多修改2个字符</div>
+                </div>
+
+                <div class="id-edit-rule">
+                    <i class="fas fa-info-circle"></i> 身份证号修改规则：<strong>出生年份（第7-10位）、后4位（第15-18位）不允许修改</strong>，前6位最多修改1个字符，出生月日（第11-14位）最多修改2个字符
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-venus-mars"></i> 性别</label>
+                    <select id="gender" name="gender" disabled>
+                        <option value="">根据身份证号自动计算</option>
+                        <option value="男">男</option>
+                        <option value="女">女</option>
+                    </select>
+                    <div class="gender-auto-info">
+                        <i class="fas fa-robot"></i> 性别由身份证号码倒数第2位自动计算，<strong>不可手动修改</strong>
+                    </div>
+                </div>
+
+                <div class="info-row">
+                    <span class="info-label"><i class="far fa-calendar-alt"></i> 年龄验证</span>
+                    <span class="info-value" id="ageInfo">等待识别</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label"><i class="fas fa-venus-mars"></i> 性别匹配</span>
+                    <span class="info-value" id="genderMatchInfo">等待识别</span>
+                </div>
+
+                <button type="submit" id="verifyBtn" class="btn" disabled><i class="fas fa-check-circle"></i> 提交认证</button>
+
+                <div class="reward-badge">
+                    <p><i class="fas fa-gift"></i> 完成认证可获得PL奖励 + 2张随机优惠券</p>
+                </div>
+            </form>
+
+            <div class="data-notice">
+                <i class="fas fa-database"></i>
+                <div class="data-notice-content">
+                    <div class="data-notice-title">数据安全说明</div>
+                    <div class="data-notice-text">
+                        • 身份证照片仅在您当前的浏览器中进行文字识别，<strong>不会上传到服务器</strong><br>
+                        • 识别完成后，照片数据立即从内存中清除，不留存任何副本<br>
+                        • 仅提取姓名、身份证号、性别信息用于身份验证<br>
+                        • 您的身份证号码将以加密哈希形式存储在服务器，原始号码不可逆<br>
+                        • 存储格式：前3位+*****+后6位，保障您的隐私安全<br>
+                        • 认证年龄要求：<strong>10-80周岁</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="nav-links">
+            <a href="index.html"><i class="fas fa-home"></i> 首页</a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js">
+    </script>
+    <script>
+        // ============================================================
+        // CSRF TOKEN MANAGEMENT - SECURITY FIX
+        // ============================================================
+        var csrfToken = null;
+        var csrfTokenRefreshPromise = null;
+        var csrfTokenLastFetch = 0;
+        var CSRF_TOKEN_TTL = 300000; // 5 minutes
+
+        function getCsrfTokenFromCookie() {
+            try {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = cookies[i].trim();
+                    if (cookie.indexOf('csrf_token=') === 0) {
+                        return cookie.substring('csrf_token='.length, cookie.length);
+                    }
+                }
+                return null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function setCsrfTokenCookie(token) {
+            try {
+                var expires = new Date(Date.now() + CSRF_TOKEN_TTL).toUTCString();
+                document.cookie = 'csrf_token=' + token + '; expires=' + expires + '; path=/; SameSite=Strict; Secure';
+            } catch (e) {
+                // Ignore cookie errors
+            }
+        }
+
+        function fetchCsrfToken() {
+            if (csrfTokenRefreshPromise) {
+                return csrfTokenRefreshPromise;
+            }
+
+            // Check if we have a valid token in memory
+            if (csrfToken && (Date.now() - csrfTokenLastFetch) < CSRF_TOKEN_TTL) {
+                return Promise.resolve(csrfToken);
+            }
+
+            // Check cookie
+            var cookieToken = getCsrfTokenFromCookie();
+            if (cookieToken) {
+                csrfToken = cookieToken;
+                csrfTokenLastFetch = Date.now();
+                return Promise.resolve(csrfToken);
+            }
+
+            csrfTokenRefreshPromise = fetch('/api/csrf-token', {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Cache-Control': 'no-cache'
+                    }
+                })
+                .then(function(response) {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch CSRF token: HTTP ' + response.status);
+                    }
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (!data.csrf_token) {
+                        throw new Error('No CSRF token in response');
+                    }
+                    csrfToken = data.csrf_token;
+                    csrfTokenLastFetch = Date.now();
+                    setCsrfTokenCookie(csrfToken);
+                    csrfTokenRefreshPromise = null;
+                    return csrfToken;
+                })
+                .catch(function(error) {
+                    csrfTokenRefreshPromise = null;
+                    console.error('CSRF token fetch error:', error);
+                    // Clear invalid token
+                    csrfToken = null;
+                    throw error;
+                });
+
+            return csrfTokenRefreshPromise;
+        }
+
+        // ============================================================
+        // API REQUEST WITH CSRF PROTECTION
+        // ============================================================
+        function apiRequest(url, options) {
+            if (!options) options = {};
+
+            // Always include credentials
+            options.credentials = 'include';
+
+            // Initialize headers
+            if (!options.headers) options.headers = {};
+            options.headers['Content-Type'] = 'application/json';
+            options.headers['Accept'] = 'application/json';
+
+            var method = (options.method || 'GET').toUpperCase();
+
+            // For GET requests, just fetch
+            if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') {
+                return fetch(url, options)
+                    .then(function(response) {
+                        return response.json().then(function(data) {
+                            if (!response.ok) {
+                                throw new Error(data.error || '请求失败: ' + response.status);
+                            }
+                            return data;
+                        });
+                    });
+            }
+
+            // For non-GET requests, add CSRF token
+            return fetchCsrfToken()
+                .then(function(token) {
+                    options.headers['X-CSRF-Token'] = token;
+                    return fetch(url, options);
+                })
+                .then(function(response) {
+                    return response.json().then(function(data) {
+                        if (!response.ok) {
+                            // Check for CSRF error
+                            if (response.status === 403 && data.error && data.error.includes('CSRF')) {
+                                // Token expired, refresh and retry once
+                                csrfToken = null;
+                                csrfTokenLastFetch = 0;
+                                return fetchCsrfToken()
+                                    .then(function(newToken) {
+                                        options.headers['X-CSRF-Token'] = newToken;
+                                        return fetch(url, options);
+                                    })
+                                    .then(function(retryResponse) {
+                                        return retryResponse.json().then(function(retryData) {
+                                            if (!retryResponse.ok) {
+                                                throw new Error(retryData.error || '请求失败: ' +
+                                                    retryResponse.status);
+                                            }
+                                            return retryData;
+                                        });
+                                    });
+                            }
+                            throw new Error(data.error || '请求失败: ' + response.status);
+                        }
+                        return data;
+                    });
+                });
+        }
+
+        // ============================================================
+        // APPLICATION CODE
+        // ============================================================
+        var isVerified = false;
+        var verifiedAt = null;
+        var currentOcrWorker = null;
+        var originalIdNumber = '';
+        var originalBirthYear = '';
+        var originalBirthMonthDay = '';
+        var ocrRetryCount = 0;
+        var isProcessing = false;
+        var quickVerifyAvailable = false;
+        var initRetryCount = 0;
+        var MAX_INIT_RETRIES = 3;
+        var isInitialized = false;
+
+        function showErrorBoundary(message) {
+            var el = document.getElementById('errorBoundary');
+            var desc = document.getElementById('errorDesc');
+            if (el && desc) {
+                desc.textContent = message || '网络连接失败，请检查网络后重试';
+                el.style.display = 'block';
+            }
+            var loading = document.getElementById('loadingOverlay');
+            if (loading) loading.style.display = 'none';
+        }
+
+        function hideErrorBoundary() {
+            var el = document.getElementById('errorBoundary');
+            if (el) el.style.display = 'none';
+        }
+
+        function showLoading(show) {
+            var el = document.getElementById('loadingOverlay');
+            if (el) {
+                el.style.display = show ? 'flex' : 'none';
+            }
+        }
+
+        async function checkAuth() {
+            try {
+                var data = await apiRequest('/api/check-auth');
+                if (!data.authenticated) {
+                    window.location.href = 'login.html';
+                    return false;
+                }
+                return data;
+            } catch (error) {
+                console.error('检查登录状态失败:', error);
+                showMessage('网络连接失败，请刷新页面', 'error');
+                showErrorBoundary('网络连接失败: ' + error.message);
+                return null;
+            }
+        }
+
+        async function checkIdentityStatus() {
+            try {
+                var data = await apiRequest('/api/check_identity_status');
+                if (data.success && data.authenticated) {
+                    if (data.id_verified) {
+                        isVerified = true;
+                        verifiedAt = data.verified_at;
+                        showVerifiedStatus(true, data);
+                        document.getElementById('verificationCard').style.display = 'none';
+                    } else {
+                        isVerified = false;
+                        showVerifiedStatus(false, null);
+                        document.getElementById('verificationCard').style.display = 'block';
+                    }
+                    return true;
+                }
+                return false;
+            } catch (error) {
+                console.error('检查身份认证状态失败:', error);
+                return false;
+            }
+        }
+
+        async function checkQuickVerifyStatus() {
+            try {
+                var data = await apiRequest('/api/identity/quick-status');
+                var section = document.getElementById('quickVerifySection');
+                var btn = document.getElementById('quickVerifyBtn');
+                var stats = document.getElementById('quickStats');
+
+                if (data.available) {
+                    section.style.display = 'block';
+                    quickVerifyAvailable = true;
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-bolt"></i> 立即快速认证';
+                    document.getElementById('quickAvailable').textContent = data.stats.available;
+                    document.getElementById('quickUsed').textContent = data.stats.used;
+                    document.getElementById('quickTotal').textContent = data.stats.unique_total || data.stats.total;
+                    document.getElementById('quickResult').className = 'quick-result';
+                    document.getElementById('quickResult').textContent = '';
+                    document.getElementById('quickResult').style.display = 'none';
+                } else if (data.reason === 'already_verified') {
+                    section.style.display = 'none';
+                } else if (data.reason === 'all_used') {
+                    section.style.display = 'block';
+                    quickVerifyAvailable = false;
+                    btn.disabled = true;
+                    btn.innerHTML = '🚫 所有身份证已使用完毕';
+                    document.getElementById('quickAvailable').textContent = data.stats.available;
+                    document.getElementById('quickUsed').textContent = data.stats.used;
+                    document.getElementById('quickTotal').textContent = data.stats.unique_total || data.stats.total;
+                    document.getElementById('quickResult').className = 'quick-result error';
+                    document.getElementById('quickResult').textContent = '⚠️ ' + data.message;
+                    document.getElementById('quickResult').style.display = 'block';
+                } else if (data.reason === 'no_data') {
+                    section.style.display = 'block';
+                    quickVerifyAvailable = false;
+                    btn.disabled = true;
+                    btn.innerHTML = '📭 暂无可用数据';
+                    document.getElementById('quickAvailable').textContent = '0';
+                    document.getElementById('quickUsed').textContent = '0';
+                    document.getElementById('quickTotal').textContent = '0';
+                    document.getElementById('quickResult').className = 'quick-result error';
+                    document.getElementById('quickResult').textContent = '⚠️ ' + data.message;
+                    document.getElementById('quickResult').style.display = 'block';
+                } else {
+                    section.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('检查快速认证状态失败:', error);
+                document.getElementById('quickVerifySection').style.display = 'none';
+            }
+        }
+
+        function showVerifiedStatus(verified, data) {
+            var statusCard = document.getElementById('statusCard');
+            if (verified) {
+                statusCard.className = 'status-card verified';
+                statusCard.innerHTML =
+                    `
+                    <div class="status-icon"><i class="fas fa-check-circle"></i></div>
+                    <div class="status-title">已认证</div>
+                    <div class="status-message">认证时间：${data?.verified_at || '未知'}</div>
+                    <div class="status-message">姓名：${data?.real_name || '未知'}</div>
+                    <div class="status-message">证件号：${data?.id_number_masked || '未知'}</div>
+                    <div class="status-message" style="margin-top:8px;color:#22c55e;"><i class="fas fa-gift"></i> 已获得PL和优惠券奖励</div>
+                `;
+            } else {
+                statusCard.className = 'status-card not-verified';
+                statusCard.innerHTML =
+                    `
+                    <div class="status-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                    <div class="status-title">未认证</div>
+                    <div class="status-message">请完成身份认证后使用完整功能</div>
+                    <div class="status-message" style="margin-top:8px;color:#f59e0b;"><i class="fas fa-gift"></i> 认证后可获得PL和2张优惠券</div>
+                `;
+            }
+            statusCard.style.display = 'block';
+        }
+
+        function showMessage(msg, type) {
+            var msgDiv = document.getElementById('message');
+            msgDiv.textContent = msg;
+            msgDiv.className = 'message ' + type;
+            msgDiv.style.display = 'block';
+            setTimeout(function() {
+                msgDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function calculateAge(idNumber) {
+            if (!idNumber || idNumber.length !== 18) return null;
+            try {
+                var birthYear = parseInt(idNumber.substring(6, 10));
+                var birthMonth = parseInt(idNumber.substring(10, 12)) - 1;
+                var birthDay = parseInt(idNumber.substring(12, 14));
+                var birthDate = new Date(birthYear, birthMonth, birthDay);
+                var today = new Date();
+                var age = today.getFullYear() - birthDate.getFullYear();
+                var monthDiff = today.getMonth() - birthDate.getMonth();
+                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+                return age;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function getGenderFromIdNumber(idNumber) {
+            if (!idNumber || idNumber.length !== 18) return null;
+            var genderDigit = parseInt(idNumber.charAt(16));
+            if (isNaN(genderDigit)) return null;
+            return genderDigit % 2 === 1 ? '男' : '女';
+        }
+
+        function updateGenderFromIdNumber() {
+            var idNumber = document.getElementById('idNumber').value.trim();
+            var genderSelect = document.getElementById('gender');
+            if (idNumber.length === 18 && /^\d{17}[\dXx]$/.test(idNumber.toUpperCase())) {
+                var gender = getGenderFromIdNumber(idNumber);
+                if (gender) {
+                    genderSelect.value = gender;
+                }
+            } else if (idNumber.length === 0) {
+                genderSelect.value = '';
+            }
+        }
+
+        function levenshteinDistance(str1, str2) {
+            var m = str1.length;
+            var n = str2.length;
+            var dp = Array(m + 1).fill().map(function() { return Array(n + 1).fill(0); });
+            for (var i = 0; i <= m; i++) dp[i][0] = i;
+            for (var j = 0; j <= n; j++) dp[0][j] = j;
+            for (var i = 1; i <= m; i++) {
+                for (var j = 1; j <= n; j++) {
+                    if (str1[i - 1] === str2[j - 1]) {
+                        dp[i][j] = dp[i - 1][j - 1];
+                    } else {
+                        dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + 1);
+                    }
+                }
+            }
+            return dp[m][n];
+        }
+
+        function validateIdNumberEdit(newValue, originalValue) {
+            if (newValue.length !== 18) {
+                return { valid: false, message: '身份证号码必须为18位' };
+            }
+            if (!/^\d{17}[\dXx]$/.test(newValue.toUpperCase())) {
+                return { valid: false, message: '身份证号码格式不正确' };
+            }
+            if (originalValue && originalValue.length === 18) {
+                var originalLastFour = originalValue.substring(14, 18);
+                var newLastFour = newValue.substring(14, 18);
+                if (newLastFour !== originalLastFour) {
+                    return { valid: false, message: '身份证号码后4位不允许修改' };
+                }
+                var originalBirthYearPart = originalValue.substring(6, 10);
+                var newBirthYearPart = newValue.substring(6, 10);
+                if (newBirthYearPart !== originalBirthYearPart) {
+                    return { valid: false, message: '出生年份不允许修改' };
+                }
+                var firstSixOriginal = originalValue.substring(0, 6);
+                var firstSixNew = newValue.substring(0, 6);
+                var editDistanceFirstSix = levenshteinDistance(firstSixNew, firstSixOriginal);
+                if (editDistanceFirstSix > 1) {
+                    return { valid: false, message: '前6位最多允许修改1个字符' };
+                }
+                var birthMonthDayOriginal = originalValue.substring(10, 14);
+                var birthMonthDayNew = newValue.substring(10, 14);
+                var editDistanceMonthDay = levenshteinDistance(birthMonthDayNew, birthMonthDayOriginal);
+                if (editDistanceMonthDay > 2) {
+                    return { valid: false, message: '出生月日最多允许修改2个字符' };
+                }
+            }
+            return { valid: true, message: '验证通过' };
+        }
+
+        function saveOriginalValues() {
+            originalIdNumber = document.getElementById('idNumber').value.trim();
+            if (originalIdNumber.length === 18) {
+                originalBirthYear = originalIdNumber.substring(6, 10);
+                originalBirthMonthDay = originalIdNumber.substring(10, 14);
+            }
+        }
+
+        function enableManualEdit() {
+            document.getElementById('realName').disabled = false;
+            document.getElementById('idNumber').disabled = false;
+        }
+
+        function disableManualEdit() {
+            document.getElementById('realName').disabled = true;
+            document.getElementById('idNumber').disabled = true;
+            document.getElementById('gender').disabled = true;
+        }
+
+        function updateInfoDisplay() {
+            var idNumber = document.getElementById('idNumber').value.trim();
+            var selectedGender = document.getElementById('gender').value;
+            var verifyBtn = document.getElementById('verifyBtn');
+            var realName = document.getElementById('realName').value.trim();
+
+            if (idNumber.length === 18 && /^\d{17}[\dXx]$/.test(idNumber.toUpperCase())) {
+                var age = calculateAge(idNumber);
+                var actualGender = getGenderFromIdNumber(idNumber);
+                var ageInfo = document.getElementById('ageInfo');
+                var genderMatchInfo = document.getElementById('genderMatchInfo');
+
+                if (age !== null) {
+                    if (age >= 10 && age <= 80) {
+                        ageInfo.innerHTML = '<span style="color:#2e7d32;">' + age + '岁 ✓ 符合要求（10-80岁）</span>';
+                        ageInfo.className = 'info-value valid';
+                    } else {
+                        ageInfo.innerHTML = '<span style="color:#c62828;">' + age + '岁 ✗ 不符合要求（需10-80岁）</span>';
+                        ageInfo.className = 'info-value invalid';
+                    }
+                } else {
+                    ageInfo.innerHTML = '<span style="color:#c62828;">无法计算年龄</span>';
+                    ageInfo.className = 'info-value invalid';
+                }
+
+                if (actualGender && selectedGender) {
+                    if (actualGender === selectedGender) {
+                        genderMatchInfo.innerHTML = '<span style="color:#2e7d32;">' + actualGender + ' ✓ 与身份证一致</span>';
+                        genderMatchInfo.className = 'info-value valid';
+                    } else {
+                        genderMatchInfo.innerHTML = '<span style="color:#c62828;">身份证显示：' + actualGender + ' ✗ 与选择不一致</span>';
+                        genderMatchInfo.className = 'info-value invalid';
+                    }
+                } else if (actualGender) {
+                    genderMatchInfo.innerHTML = '<span>身份证显示：' + actualGender + '</span>';
+                    genderMatchInfo.className = 'info-value';
+                } else {
+                    genderMatchInfo.innerHTML = '<span>请填写身份证号码</span>';
+                    genderMatchInfo.className = 'info-value';
+                }
+            } else if (idNumber.length > 0 && idNumber.length !== 18) {
+                document.getElementById('ageInfo').innerHTML = '<span style="color:#c62828;">身份证号码需为18位</span>';
+                document.getElementById('ageInfo').className = 'info-value invalid';
+                document.getElementById('genderMatchInfo').innerHTML = '<span>请填写完整18位身份证号码</span>';
+                document.getElementById('genderMatchInfo').className = 'info-value';
+            } else {
+                document.getElementById('ageInfo').innerHTML = '<span>等待识别</span>';
+                document.getElementById('ageInfo').className = 'info-value';
+                document.getElementById('genderMatchInfo').innerHTML = '<span>等待识别</span>';
+                document.getElementById('genderMatchInfo').className = 'info-value';
+            }
+
+            if (realName.length >= 2 && realName.length <= 4 && /^[\u4e00-\u9fa5]+$/.test(realName) &&
+                idNumber.length === 18 && /^\d{17}[\dXx]$/.test(idNumber.toUpperCase()) &&
+                selectedGender) {
+                verifyBtn.disabled = false;
+            } else {
+                verifyBtn.disabled = true;
+            }
+        }
+
+        // ============================================================
+        // FILE UPLOAD HANDLING
+        // ============================================================
+        var uploadArea = document.getElementById('uploadArea');
+        var fileInput = document.getElementById('idCardInput');
+        var previewArea = document.getElementById('previewArea');
+        var previewImg = document.getElementById('previewImg');
+        var ocrStatus = document.getElementById('ocrStatus');
+        var ocrProgressBar = document.getElementById('ocrProgressBar');
+        var reuploadBtn = document.getElementById('reuploadBtn');
+        var cameraBtn = document.getElementById('cameraBtn');
+
+        uploadArea.addEventListener('click', function() {
+            if (!isProcessing) {
+                fileInput.click();
+            }
+        });
+
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            if (!isProcessing) {
+                uploadArea.classList.add('dragover');
+            }
+        });
+
+        uploadArea.addEventListener('dragleave', function() {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            if (!isProcessing) {
+                var files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    fileInput.files = files;
+                    handleFile(files[0]);
+                }
+            }
+        });
+
+        reuploadBtn.addEventListener('click', function() {
+            resetOcrState();
+            fileInput.value = '';
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', function(e) {
+            if (e.target.files.length > 0 && !isProcessing) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        cameraBtn.addEventListener('click', async function() {
+            if (isProcessing) return;
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showMessage('当前浏览器不支持摄像头，请使用最新版浏览器或上传照片', 'error');
+                return;
+            }
+            try {
+                var stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment', width: { ideal: 800 }, height: { ideal: 600 } }
+                });
+                var video = document.createElement('video');
+                video.srcObject = stream;
+                video.setAttribute('playsinline', 'true');
+                await video.play();
+                var canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth || 800;
+                canvas.height = video.videoHeight || 600;
+                var ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                stream.getTracks().forEach(function(t) { t.stop(); });
+                var dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+                var blob = await fetch(dataUrl).then(function(r) { return r.blob(); });
+                var file = new File([blob], 'camera_id.jpg', { type: 'image/jpeg' });
+                var dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                fileInput.files = dataTransfer.files;
+                handleFile(file);
+            } catch (err) {
+                console.error('摄像头错误:', err);
+                showMessage('无法访问摄像头，请检查权限设置或使用上传功能', 'error');
+            }
+        });
+
+        function resetOcrState() {
+            if (currentOcrWorker) {
+                currentOcrWorker.terminate();
+                currentOcrWorker = null;
+            }
+            isProcessing = false;
+            ocrRetryCount = 0;
+            disableManualEdit();
+            document.getElementById('realName').value = '';
+            document.getElementById('idNumber').value = '';
+            document.getElementById('gender').value = '';
+            document.getElementById('gender').disabled = true;
+            document.getElementById('realName').placeholder = '请先上传身份证照片';
+            document.getElementById('idNumber').placeholder = '请先上传身份证照片';
+            document.getElementById('ageInfo').innerHTML = '等待识别';
+            document.getElementById('genderMatchInfo').innerHTML = '等待识别';
+            ocrStatus.className = 'ocr-status';
+            ocrStatus.innerHTML = '';
+            previewArea.style.display = 'none';
+            previewImg.src = '';
+            uploadArea.style.display = 'block';
+            document.getElementById('verifyBtn').disabled = true;
+            if (ocrProgressBar) ocrProgressBar.style.width = '0%';
+            originalIdNumber = '';
+            originalBirthYear = '';
+            originalBirthMonthDay = '';
+        }
+
+        async function handleFile(file) {
+            if (isProcessing) return;
+            if (!file.type.match(/image\/(jpeg|png|jpg)/)) {
+                showMessage('请上传 JPG 或 PNG 格式的图片', 'error');
+                return;
+            }
+
+            if (file.size > 5 * 1024 * 1024) {
+                showMessage('图片大小不能超过5MB', 'error');
+                return;
+            }
+
+            isProcessing = true;
+            var reader = new FileReader();
+            reader.onload = async function(e) {
+                previewImg.src = e.target.result;
+                previewArea.style.display = 'block';
+                uploadArea.style.display = 'none';
+                await performOCR(file);
+                isProcessing = false;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // ============================================================
+        // OCR FUNCTIONS
+        // ============================================================
+        async function performOCR(file) {
+            ocrStatus.className = 'ocr-status loading';
+            ocrStatus.innerHTML =
+                '<i class="fas fa-spinner fa-pulse"></i> 正在识别身份证信息（前端识别，不上传服务器），请稍候...<div class="ocr-progress"><div class="ocr-progress-bar" id="ocrProgressBar"></div></div>';
+            var progressBar = document.getElementById('ocrProgressBar');
+            if (progressBar) progressBar.style.width = '15%';
+
+            var ocrSuccess = false;
+            var extracted = { name: '', idNumber: '', gender: '' };
+
+            try {
+                if (currentOcrWorker) {
+                    await currentOcrWorker.terminate();
+                }
+
+                currentOcrWorker = await Tesseract.createWorker('chi_sim+eng', 1, {
+                    logger: function(m) {
+                        if (m.status === 'recognizing text') {
+                            var progress = Math.min(70, 15 + Math.floor(m.progress * 55));
+                            if (progressBar) progressBar.style.width = progress + '%';
+                        }
+                    }
+                });
+
+                await currentOcrWorker.setParameters({
+                    tessedit_pageseg_mode: '6',
+                    tessedit_char_whitelist: '姓名性别民族出生年月日居民身份证号码0123456789X一二三四五六七八九十',
+                    preserve_interword_spaces: '0'
+                });
+
+                if (progressBar) progressBar.style.width = '55%';
+
+                var result = await currentOcrWorker.recognize(file);
+                var text = result.data.text;
+
+                if (progressBar) progressBar.style.width = '80%';
+
+                await currentOcrWorker.terminate();
+                currentOcrWorker = null;
+
+                extracted = extractIdInfoEnhanced(text);
+
+                if (extracted.name && extracted.name !== '姓名' && extracted.name !== '身份' &&
+                    extracted.name.length >= 2 && extracted.name.length <= 4) {
+                    document.getElementById('realName').value = extracted.name;
+                }
+
+                if (extracted.idNumber && extracted.idNumber.length === 18 &&
+                    /^\d{17}[\dXx]$/i.test(extracted.idNumber)) {
+                    document.getElementById('idNumber').value = extracted.idNumber.toUpperCase();
+                }
+
+                if (document.getElementById('idNumber').value.trim().length === 18) {
+                    var genderFromId = getGenderFromIdNumber(document.getElementById('idNumber').value.trim());
+                    if (genderFromId) {
+                        document.getElementById('gender').value = genderFromId;
+                    }
+                } else if (extracted.gender) {
+                    document.getElementById('gender').value = extracted.gender;
+                }
+
+                document.getElementById('gender').disabled = true;
+
+                var hasName = document.getElementById('realName').value.trim().length >= 2;
+                var hasIdNumber = document.getElementById('idNumber').value.trim().length === 18;
+
+                if (hasName && hasIdNumber) {
+                    saveOriginalValues();
+                    enableManualEdit();
+                    updateInfoDisplay();
+                    ocrSuccess = true;
+                    ocrStatus.className = 'ocr-status success';
+                    ocrStatus.innerHTML =
+                        '<i class="fas fa-check-circle"></i> 识别成功！请核对信息，如有错误可手动修改后提交（身份证照片仅用于前端识别，已从内存清除）';
+                    showMessage('身份证识别成功！请核对信息，确认无误后提交认证', 'info');
+                } else if (hasName || hasIdNumber) {
+                    if (hasIdNumber) {
+                        saveOriginalValues();
+                    }
+                    enableManualEdit();
+                    updateInfoDisplay();
+                    ocrStatus.className = 'ocr-status warning';
+                    ocrStatus.innerHTML =
+                        '<i class="fas fa-exclamation-triangle"></i> 部分识别成功，请手动补充缺失信息后提交（照片不上传服务器）';
+                    showMessage('部分信息识别成功，请手动填写缺失的信息', 'info');
+                } else {
+                    ocrStatus.className = 'ocr-status error';
+                    ocrStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> 识别失败，尝试备用识别库...';
+                    disableManualEdit();
+                    await fallbackOcr(file);
+                }
+
+            } catch (error) {
+                console.error('OCR识别失败:', error);
+                await fallbackOcr(file);
+            } finally {
+                if (progressBar) progressBar.style.width = '100%';
+                setTimeout(function() {
+                    if (progressBar) progressBar.style.width = '0%';
+                    if (currentOcrWorker) {
+                        currentOcrWorker.terminate();
+                        currentOcrWorker = null;
+                    }
+                }, 800);
+                if (!ocrSuccess && !document.getElementById('realName').value.trim() &&
+                    !document.getElementById('idNumber').value.trim()) {
+                    ocrStatus.className = 'ocr-status error';
+                    ocrStatus.innerHTML =
+                        '<i class="fas fa-exclamation-triangle"></i> 识别失败，请确保照片清晰完整，或点击重新上传（照片不上传服务器）';
+                    disableManualEdit();
+                    showMessage('识别失败，请确保照片清晰、光线充足，重新上传', 'error');
+                }
+            }
+        }
+
+        async function fallbackOcr(file) {
+            try {
+                ocrStatus.className = 'ocr-status loading';
+                ocrStatus.innerHTML =
+                    '<i class="fas fa-spinner fa-pulse"></i> 使用备用识别引擎（不存储图片）...<div class="ocr-progress"><div class="ocr-progress-bar" id="ocrProgressBar"></div></div>';
+                var progressBar = document.getElementById('ocrProgressBar');
+                if (progressBar) progressBar.style.width = '20%';
+
+                var fallbackWorker = await Tesseract.createWorker('eng+chi_sim', 2, {
+                    logger: function(m) {
+                        if (m.status === 'recognizing text') {
+                            var progress = Math.min(70, 20 + Math.floor(m.progress * 50));
+                            if (progressBar) progressBar.style.width = progress + '%';
+                        }
+                    }
+                });
+
+                await fallbackWorker.setParameters({
+                    tessedit_pageseg_mode: '6',
+                    tessedit_char_whitelist: '姓名性别民族出生年月日居民身份证号码0123456789X一二三四五六七八九十',
+                    preserve_interword_spaces: '0'
+                });
+
+                if (progressBar) progressBar.style.width = '60%';
+
+                var result = await fallbackWorker.recognize(file);
+                var text = result.data.text;
+
+                await fallbackWorker.terminate();
+
+                if (progressBar) progressBar.style.width = '85%';
+
+                var extracted = extractIdInfoEnhanced(text);
+
+                if (extracted.name && extracted.name !== '姓名' && extracted.name !== '身份' &&
+                    extracted.name.length >= 2 && extracted.name.length <= 4) {
+                    document.getElementById('realName').value = extracted.name;
+                }
+
+                if (extracted.idNumber && extracted.idNumber.length === 18 &&
+                    /^\d{17}[\dXx]$/i.test(extracted.idNumber)) {
+                    document.getElementById('idNumber').value = extracted.idNumber.toUpperCase();
+                }
+
+                if (document.getElementById('idNumber').value.trim().length === 18) {
+                    var genderFromId = getGenderFromIdNumber(document.getElementById('idNumber').value.trim());
+                    if (genderFromId) {
+                        document.getElementById('gender').value = genderFromId;
+                    }
+                } else if (extracted.gender) {
+                    document.getElementById('gender').value = extracted.gender;
+                }
+
+                document.getElementById('gender').disabled = true;
+
+                var hasName = document.getElementById('realName').value.trim().length >= 2;
+                var hasIdNumber = document.getElementById('idNumber').value.trim().length === 18;
+
+                if (hasName && hasIdNumber) {
+                    saveOriginalValues();
+                    enableManualEdit();
+                    updateInfoDisplay();
+                    ocrSuccess = true;
+                    ocrStatus.className = 'ocr-status success';
+                    ocrStatus.innerHTML =
+                        '<i class="fas fa-check-circle"></i> 备用识别成功！请核对信息（照片不上传服务器）';
+                    showMessage('身份证识别成功！请核对信息', 'info');
+                } else if (hasName || hasIdNumber) {
+                    if (hasIdNumber) saveOriginalValues();
+                    enableManualEdit();
+                    updateInfoDisplay();
+                    ocrStatus.className = 'ocr-status warning';
+                    ocrStatus.innerHTML =
+                        '<i class="fas fa-exclamation-triangle"></i> 部分识别成功，请手动补充缺失信息';
+                    showMessage('部分信息识别成功，请手动补充', 'info');
+                } else {
+                    ocrStatus.className = 'ocr-status error';
+                    ocrStatus.innerHTML =
+                    '<i class="fas fa-exclamation-triangle"></i> 备用识别也失败了，请确保照片清晰完整';
+                    disableManualEdit();
+                    showMessage('识别失败，请确保照片清晰、光线充足，重新上传', 'error');
+                }
+
+                if (progressBar) progressBar.style.width = '100%';
+                setTimeout(function() {
+                    if (progressBar) progressBar.style.width = '0%';
+                }, 500);
+
+            } catch (err) {
+                console.error('备用OCR失败:', err);
+                ocrStatus.className = 'ocr-status error';
+                ocrStatus.innerHTML =
+                    '<i class="fas fa-exclamation-triangle"></i> 识别失败，请确保照片清晰完整，或点击重新上传（照片不上传服务器）';
+                disableManualEdit();
+                showMessage('识别失败，请确保照片清晰、光线充足，重新上传', 'error');
+            }
+        }
+
+        function extractIdInfoEnhanced(text) {
+            var result = { name: '', idNumber: '', gender: '' };
+
+            var lines = text.split(/\r?\n/);
+            var cleanedLines = [];
+
+            for (var i = 0; i < lines.length; i++) {
+                var cleaned = lines[i].replace(/[\s\xA0\u3000]/g, '');
+                if (cleaned.length > 0) {
+                    cleanedLines.push(cleaned);
+                }
+            }
+
+            var fullText = cleanedLines.join('');
+
+            for (var i = 0; i < cleanedLines.length; i++) {
+                var line = cleanedLines[i];
+
+                if (line.includes('姓名')) {
+                    var nameMatch = line.match(/姓名[:：]?([\u4e00-\u9fa5]{2,4})/);
+                    if (nameMatch && nameMatch[1]) {
+                        var candidate = nameMatch[1];
+                        if (candidate !== '姓名' && candidate !== '身份' && candidate !== '证号' &&
+                            candidate !== '身份证' && candidate.length >= 2 && candidate.length <= 4) {
+                            result.name = candidate;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (!result.name) {
+                for (var i = 0; i < cleanedLines.length; i++) {
+                    var line = cleanedLines[i];
+                    if (line.length >= 2 && line.length <= 4 && /^[\u4e00-\u9fa5]+$/.test(line)) {
+                        if (line !== '姓名' && line !== '身份' && line !== '证号' && line !== '身份证' &&
+                            line !== '号码' && line !== '性别' && line !== '民族' && line !== '出生' &&
+                            line !== '年月日' && !line.includes('共和国') && !line.includes('居民')) {
+                            result.name = line;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (!result.name && fullText) {
+                var nameMatch = fullText.match(/姓名[:：]?([\u4e00-\u9fa5]{2,4})/);
+                if (nameMatch && nameMatch[1]) {
+                    var candidate = nameMatch[1];
+                    if (candidate !== '姓名' && candidate !== '身份') {
+                        result.name = candidate;
+                    }
+                }
+            }
+
+            var idPatterns = [
+                /[1-9]\d{5}(18|19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}[\dXx]/i,
+                /\b(\d{17}[\dXx])\b/i,
+                /(\d{6}(19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}[\dXx])/i,
+                /(\d{17}[\dXx])/i
+            ];
+
+            for (var i = 0; i < idPatterns.length; i++) {
+                var match = fullText.match(idPatterns[i]);
+                if (match) {
+                    var idNum = match[0] || match[1];
+                    if (idNum) {
+                        if (idNum.length === 17) {
+                            idNum = idNum + 'X';
+                        }
+                        if (idNum.length === 18 && /^\d{17}[\dXx]$/i.test(idNum)) {
+                            result.idNumber = idNum.toUpperCase();
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (!result.idNumber) {
+                for (var i = 0; i < cleanedLines.length; i++) {
+                    var digits = cleanedLines[i].replace(/[^0-9X]/gi, '');
+                    if (digits.length === 18 && /^\d{17}[\dXx]$/i.test(digits)) {
+                        result.idNumber = digits.toUpperCase();
+                        break;
+                    } else if (digits.length === 17 && /^\d{17}$/i.test(digits)) {
+                        result.idNumber = digits.toUpperCase() + 'X';
+                        break;
+                    }
+                }
+            }
+
+            if (result.idNumber && result.idNumber.length === 18) {
+                var genderFromId = getGenderFromIdNumber(result.idNumber);
+                if (genderFromId) {
+                    result.gender = genderFromId;
+                }
+            }
+
+            if (fullText.match(/性别[:：]?男/) || fullText.match(/男[性别]/)) {
+                result.gender = '男';
+            } else if (fullText.match(/性别[:：]?女/) || fullText.match(/女[性别]/)) {
+                result.gender = '女';
+            }
+
+            return result;
+        }
+
+        // ============================================================
+        // FORM EVENT HANDLERS
+        // ============================================================
+        document.getElementById('realName').addEventListener('input', function(e) {
+            if (isProcessing) return;
+            var value = e.target.value;
+            value = value.replace(/[^\u4e00-\u9fa5]/g, '');
+            if (value.length > 4) value = value.substring(0, 4);
+            e.target.value = value;
+            updateInfoDisplay();
+        });
+
+        document.getElementById('idNumber').addEventListener('input', function(e) {
+            if (isProcessing) return;
+            var value = e.target.value.toUpperCase();
+            value = value.replace(/[^0-9X]/g, '');
+            if (value.length > 18) value = value.substring(0, 18);
+
+            if (value.length === 18 && originalIdNumber) {
+                var originalLastFour = originalIdNumber.substring(14, 18);
+                var currentLastFour = value.substring(14, 18);
+                if (currentLastFour !== originalLastFour) {
+                    showMessage('身份证号码后4位不允许修改，已自动恢复', 'error');
+                    value = value.substring(0, 14) + originalLastFour;
+                }
+                var originalBirthYearPart = originalIdNumber.substring(6, 10);
+                var currentBirthYearPart = value.substring(6, 10);
+                if (currentBirthYearPart !== originalBirthYearPart && value.length >= 10) {
+                    showMessage('出生年份不允许修改，已自动恢复', 'error');
+                    value = value.substring(0, 6) + originalBirthYearPart + value.substring(10);
+                }
+            }
+
+            e.target.value = value;
+
+            if (value.length === 18 && /^\d{17}[\dXx]$/.test(value)) {
+                var genderFromId = getGenderFromIdNumber(value);
+                if (genderFromId) {
+                    document.getElementById('gender').value = genderFromId;
+                }
+            } else if (value.length === 0) {
+                document.getElementById('gender').value = '';
+            }
+
+            updateInfoDisplay();
+        });
+
+        document.getElementById('verificationForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            if (isProcessing) return;
+
+            var realName = document.getElementById('realName').value.trim();
+            var idNumber = document.getElementById('idNumber').value.trim();
+            var gender = document.getElementById('gender').value;
+
+            if (!realName || !/^[\u4e00-\u9fa5]{2,4}$/.test(realName)) {
+                showMessage('请输入2-4个中文字符的真实姓名', 'error');
+                return;
+            }
+            if (idNumber.length !== 18 || !/^\d{17}[\dXx]$/.test(idNumber.toUpperCase())) {
+                showMessage('请输入正确的18位身份证号码', 'error');
+                return;
+            }
+            if (!gender) {
+                showMessage('请填写完整的身份证号码', 'error');
+                return;
+            }
+
+            if (originalIdNumber && originalIdNumber !== idNumber) {
+                var validation = validateIdNumberEdit(idNumber, originalIdNumber);
+                if (!validation.valid) {
+                    showMessage(validation.message, 'error');
+                    return;
+                }
+            }
+
+            var age = calculateAge(idNumber);
+            if (age === null) {
+                showMessage('身份证号码格式错误，无法计算年龄', 'error');
+                return;
+            }
+            if (age < 18) {
+                showMessage('年龄验证失败：' + age + '岁，需年满18周岁', 'error');
+                return;
+            }
+            if (age > 65) {
+                showMessage('年龄验证失败：' + age + '岁，年龄不超过65岁', 'error');
+                return;
+            }
+
+            var actualGender = getGenderFromIdNumber(idNumber);
+            if (actualGender !== gender) {
+                showMessage('性别验证失败：身份证显示性别为' + actualGender, 'error');
+                return;
+            }
+
+            var verifyBtn = document.getElementById('verifyBtn');
+            var originalText = verifyBtn.innerHTML;
+            verifyBtn.disabled = true;
+            verifyBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> 提交中...';
+            isProcessing = true;
+
+            try {
+                var response = await apiRequest('/api/verify_identity', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        id_number: idNumber,
+                        gender: gender,
+                        real_name: realName
+                    })
+                });
+
+                if (response.success) {
+                    showMessage(response.message, 'success');
+                    isVerified = true;
+                    isProcessing = false;
+                    setTimeout(function() {
+                        window.location.href = '/';
+                    }, 2000);
+                } else {
+                    showMessage(response.message || '认证失败，请稍后重试', 'error');
+                    verifyBtn.disabled = false;
+                    verifyBtn.innerHTML = originalText;
+                    isProcessing = false;
+                }
+            } catch (error) {
+                console.error('身份认证请求失败:', error);
+                showMessage('网络错误：' + (error.message || '请稍后重试'), 'error');
+                verifyBtn.disabled = false;
+                verifyBtn.innerHTML = originalText;
+                isProcessing = false;
+            }
+        });
+
+        document.getElementById('quickVerifyBtn').addEventListener('click', async function() {
+            if (isProcessing) return;
+            if (!quickVerifyAvailable) {
+                showMessage('快速认证暂不可用', 'error');
+                return;
+            }
+
+            var btn = this;
+            var resultDiv = document.getElementById('quickResult');
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> 认证中...';
+            resultDiv.className = 'quick-result';
+            resultDiv.style.display = 'none';
+
+            try {
+                var response = await apiRequest('/api/identity/quick-verify', {
+                    method: 'POST',
+                    body: JSON.stringify({})
+                });
+
+                if (response.success) {
+                    resultDiv.className = 'quick-result success';
+                    resultDiv.innerHTML =
+                        `
+                        <div style="font-weight:700;margin-bottom:8px;">✅ ${response.message}</div>
+                        <div class="info-row"><span class="label">使用姓名</span><span class="value">${response.real_name}</span></div>
+                        <div class="info-row"><span class="label">证件号</span><span class="value">${response.id_number_masked}</span></div>
+                        <div class="info-row"><span class="label">PL奖励</span><span class="value">${response.pl_reward.toFixed(4)} PL</span></div>
+                        <div class="info-row"><span class="label">剩余可用</span><span class="value ${response.stats.available < 5 ? 'warning' : ''}">${response.stats.available} 张</span></div>
+                        <div class="info-row"><span class="label">身份证总数</span><span class="value">${response.stats.unique_total || response.stats.total} 张</span></div>
+                        ${response.all_used ? '<div style="margin-top:8px;color:#e65100;font-weight:600;">⚠️ 所有身份证已使用完毕，快速认证已禁用</div>' : ''}
+                    `;
+                    resultDiv.style.display = 'block';
+
+                    btn.innerHTML = '✅ 认证成功';
+                    btn.disabled = true;
+
+                    setTimeout(function() {
+                        window.location.href = '/';
+                    }, 3000);
+                } else {
+                    resultDiv.className = 'quick-result error';
+                    resultDiv.textContent = '❌ ' + response.error;
+                    resultDiv.style.display = 'block';
+                    btn.innerHTML = '<i class="fas fa-bolt"></i> 立即快速认证';
+                    btn.disabled = false;
+                    showMessage(response.error, 'error');
+                    await checkQuickVerifyStatus();
+                }
+            } catch (error) {
+                resultDiv.className = 'quick-result error';
+                resultDiv.textContent = '❌ 认证失败: ' + (error.message || '请重试');
+                resultDiv.style.display = 'block';
+                btn.innerHTML = '<i class="fas fa-bolt"></i> 立即快速认证';
+                btn.disabled = false;
+                showMessage('快速认证失败: ' + (error.message || '请重试'), 'error');
+                await checkQuickVerifyStatus();
+            }
+        });
+
+        // ============================================================
+        // RETRY FUNCTION
+        // ============================================================
+        async function retryInit() {
+            hideErrorBoundary();
+            showLoading(true);
+            initRetryCount = 0;
+            isInitialized = false;
+            await init();
+        }
+
+        // ============================================================
+        // INITIALIZATION
+        // ============================================================
+        async function init() {
+            if (isInitialized) return;
+            isInitialized = true;
+
+            try {
+                showLoading(true);
+
+                // Pre-fetch CSRF token
+                try {
+                    await fetchCsrfToken();
+                } catch (csrfError) {
+                    console.warn('CSRF token pre-fetch failed, will retry on demand:', csrfError);
+                }
+
+                // Check authentication
+                var authData = await checkAuth();
+                if (!authData) {
+                    if (initRetryCount < MAX_INIT_RETRIES) {
+                        initRetryCount++;
+                        isInitialized = false;
+                        setTimeout(init, 2000);
+                    }
+                    return;
+                }
+
+                // Check identity status
+                await checkIdentityStatus();
+                await checkQuickVerifyStatus();
+
+                showLoading(false);
+                hideErrorBoundary();
+
+            } catch (error) {
+                console.error('初始化失败:', error);
+                showLoading(false);
+                showErrorBoundary('初始化失败: ' + (error.message || '网络连接失败，请刷新页面重试'));
+                isInitialized = false;
+            }
+        }
+
+        // Start initialization on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set a timeout to show error if loading takes too long
+            var loadTimeout = setTimeout(function() {
+                if (!isInitialized) {
+                    showLoading(false);
+                    showErrorBoundary('加载超时，请检查网络连接后刷新重试');
+                }
+            }, 15000);
+
+            init().finally(function() {
+                clearTimeout(loadTimeout);
+            });
+        });
+
+        // Also run if DOM is already loaded
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            var loadTimeout = setTimeout(function() {
+                if (!isInitialized) {
+                    showLoading(false);
+                    showErrorBoundary('加载超时，请检查网络连接后刷新重试');
+                }
+            }, 15000);
+
+            init().finally(function() {
+                clearTimeout(loadTimeout);
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>积分商城 - 入口</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI','PingFang SC',Roboto,'Helvetica Neue',sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;padding:20px;display:flex;justify-content:center;align-items:center}
+        .gateway-container{background:rgba(255,255,255,0.98);border-radius:32px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);padding:40px;width:100%;max-width:560px;animation:slideUp 0.6s ease-out}
+        @keyframes slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+        .gateway-header{text-align:center;margin-bottom:32px}
+        .gateway-header h1{font-size:28px;color:#333;margin-bottom:8px}
+        .gateway-header p{color:#888;font-size:14px}
+        .user-status{background:#f0f2ff;border-radius:12px;padding:12px 16px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+        .user-status .user-name{font-weight:600;color:#333}
+        .user-status .points{color:#667eea;font-weight:600}
+        .user-status .status-badge{font-size:12px;padding:4px 12px;border-radius:20px;font-weight:600}
+        .status-badge.active{background:#27ae60;color:white}
+        .status-badge.inactive{background:#e74c3c;color:white}
+        .card-grid{display:flex;flex-direction:column;gap:16px;margin-bottom:24px}
+        .card-item{background:#f8f9fa;border-radius:16px;padding:20px;border:2px solid #e8e8e8;transition:all 0.3s;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+        .card-item.disabled{opacity:0.5}
+        .card-item .card-info{display:flex;flex-direction:column;gap:4px}
+        .card-item .card-name{font-size:18px;font-weight:700;color:#333}
+        .card-item .card-desc{font-size:13px;color:#888}
+        .card-item .card-price{font-size:20px;font-weight:700;color:#667eea;background:rgba(102,126,234,0.1);padding:6px 16px;border-radius:40px;display:inline-block}
+        .card-item .card-price .currency{font-size:14px;font-weight:400}
+        .card-item .card-price .dynamic-hint{font-size:12px;font-weight:400;color:#888;display:block;text-align:center}
+        .card-item .card-price .original-price{font-size:14px;color:#999;text-decoration:line-through;font-weight:400;margin-right:6px}
+        .card-item .card-price .multiplier-badge{font-size:12px;color:#e67e22;font-weight:600;margin-left:4px}
+        .card-item .buy-btn{padding:8px 24px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;border:none;border-radius:40px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s;min-width:80px}
+        .card-item .buy-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 4px 12px rgba(102,126,234,0.3)}
+        .card-item .buy-btn:disabled{opacity:0.5;cursor:not-allowed}
+        .card-item .buy-btn.bought{background:#27ae60}
+        .card-item .buy-btn.used{background:#95a5a6}
+        .card-item .stock-badge{font-size:11px;color:#e74c3c;font-weight:600;background:#fef2f2;padding:2px 10px;border-radius:12px;display:inline-block}
+        .active-card-info{background:#e8f5e9;border-radius:12px;padding:16px;margin-bottom:20px;border-left:4px solid #27ae60}
+        .active-card-info .label{font-size:13px;color:#666}
+        .active-card-info .value{font-size:16px;font-weight:600;color:#27ae60}
+        .active-card-info .expire-time{font-size:14px;color:#333;margin-top:4px}
+        .enter-mall-btn{width:100%;padding:16px;background:linear-gradient(135deg,#27ae60,#2ecc71);color:white;border:none;border-radius:40px;font-size:18px;font-weight:700;cursor:pointer;transition:all 0.3s}
+        .enter-mall-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 20px rgba(39,174,96,0.3)}
+        .enter-mall-btn:disabled{opacity:0.5;cursor:not-allowed}
+        .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#27ae60;color:white;padding:10px 20px;border-radius:40px;font-size:14px;z-index:2000;animation:fadeInOut 2s}
+        .toast.error{background:#e74c3c}
+        @keyframes fadeInOut{0%{opacity:0;transform:translateX(-50%) translateY(10px)}15%{opacity:1;transform:translateX(-50%) translateY(0)}85%{opacity:1;transform:translateX(-50%) translateY(0)}100%{opacity:0;transform:translateX(-50%) translateY(-10px)}}
+        .back-link{display:block;text-align:center;margin-top:16px;color:#888;text-decoration:none;font-size:14px}
+        .back-link:hover{color:#667eea}
+        .loading-spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-radius:50%;border-top-color:white;animation:spin 0.6s linear infinite}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .price-update-tip{font-size:11px;color:#999;text-align:center;margin-top:8px;padding:6px;background:#f8f9fa;border-radius:8px}
+        .access-check-toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);padding:12px 24px;border-radius:12px;font-size:14px;font-weight:600;z-index:3000;animation:slideDown 0.5s ease-out;max-width:90%;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,0.2)}
+        .access-check-toast.error{background:#e74c3c;color:white}
+        @keyframes slideDown{from{opacity:0;transform:translateX(-50%) translateY(-20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+        .daifu-section{background:#f7c94815;border-radius:16px;padding:16px 20px;margin-top:16px;border:1px solid #f7c94830;display:block}
+        .daifu-section .daifu-title{font-size:14px;font-weight:600;color:#f7c948;display:flex;align-items:center;gap:8px;margin-bottom:6px}
+        .daifu-section .daifu-title i{color:#f7c948}
+        .daifu-section .daifu-desc{font-size:13px;color:#888;margin-bottom:12px}
+        .daifu-section .daifu-input-group{display:flex;gap:10px;flex-wrap:wrap}
+        .daifu-section .daifu-input-group input{flex:2;min-width:140px;padding:10px 16px;border:2px solid #e8e8e8;border-radius:40px;font-size:14px;font-family:monospace;outline:none;transition:all 0.3s}
+        .daifu-section .daifu-input-group input:focus{border-color:#f7c948;box-shadow:0 0 0 3px #f7c94820}
+        .daifu-section .daifu-input-group button{padding:10px 24px;background:linear-gradient(135deg,#f7c948,#f39c12);color:#0b0e1a;border:none;border-radius:40px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s}
+        .daifu-section .daifu-input-group button:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 4px 12px #f7c94840}
+        .daifu-section .daifu-input-group button:disabled{opacity:0.5;cursor:not-allowed}
+        .daifu-result{margin-top:12px;padding:12px;border-radius:12px;font-size:13px;text-align:center;display:none}
+        .daifu-result.success{display:block;background:#e6f7e6;color:#2e7d32}
+        .daifu-result.error{display:block;background:#ffebee;color:#c62828}
+        .daifu-result .qr-link{display:block;margin-top:8px;font-family:monospace;font-size:12px;color:#667eea;word-break:break-all;background:#f0f2ff;padding:8px 12px;border-radius:8px;cursor:pointer}
+        .daifu-result .qr-link:hover{background:#e0e4ff}
+        .daifu-result .copy-daifu-btn{margin-top:8px;padding:4px 16px;background:#667eea;color:white;border:none;border-radius:20px;cursor:pointer;font-size:12px}
+        .daifu-result .copy-daifu-btn:hover{background:#764ba2}
+        .price-multiplier-info{background:#667eea15;border-radius:12px;padding:12px 16px;margin-bottom:16px;border:1px solid #667eea20;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+        .price-multiplier-info .label{font-size:13px;color:#555}
+        .price-multiplier-info .multiplier-value{font-size:18px;font-weight:700;color:#e67e22}
+        .price-multiplier-info .effective-points{font-size:14px;font-weight:600;color:#667eea}
+        .price-multiplier-info .tier-info{font-size:11px;color:#888}
+        @media(max-width:480px){.gateway-container{padding:24px}.card-item{flex-direction:column;align-items:stretch;text-align:center}.card-item .buy-btn{width:100%}.user-status{flex-direction:column;text-align:center}.daifu-section .daifu-input-group{flex-direction:column}.daifu-section .daifu-input-group input{width:100%}.daifu-section .daifu-input-group button{width:100%}.price-multiplier-info{flex-direction:column;text-align:center}}
+    </style>
+</head>
+<body>
+    <div class="gateway-container">
+        <div class="gateway-header">
+            <h1>🏪 积分商城入口</h1>
+            <p>购买通行卡密后即可进入积分商城</p>
+        </div>
+
+        <div class="price-multiplier-info" id="priceMultiplierInfo">
+            <div>
+                <span class="label">💰 有效积分</span>
+                <span class="effective-points" id="effectivePointsDisplay">0</span>
+            </div>
+            <div>
+                <span class="label">📊 当前价格倍率</span>
+                <span class="multiplier-value" id="multiplierDisplay">1.00x</span>
+            </div>
+            <div class="tier-info" id="tierInfoDisplay">积分越高，价格越高</div>
+        </div>
+
+        <div class="user-status" id="userStatus">
+            <span class="user-name" id="userName">👤 加载中...</span>
+            <span class="points" id="userPoints">⭐ 0 积分</span>
+            <span class="status-badge inactive" id="accessStatus">🔒 未开通</span>
+        </div>
+
+        <div id="activeCardInfo" style="display:none;" class="active-card-info">
+            <div class="label">✅ 当前有效卡密</div>
+            <div class="value" id="activeCardType">-</div>
+            <div class="expire-time" id="activeCardExpire">有效期至: -</div>
+        </div>
+
+        <div class="card-grid" id="cardGrid">
+            <div class="card-item" id="cardHour">
+                <div class="card-info">
+                    <div class="card-name">⏰ 小时卡</div>
+                    <div class="card-desc">有效期至下一个整点 <span class="stock-badge" id="stockHour">库存: --</span></div>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                    <span class="card-price" id="hourPriceDisplay">
+                        <span class="currency">⭐</span> <span id="hourPriceValue">6.6</span>
+                        <span class="original-price" id="hourOriginalPrice" style="display:none;"></span>
+                        <span class="multiplier-badge" id="hourMultiplierBadge" style="display:none;"></span>
+                    </span>
+                    <button class="buy-btn" data-type="hour">购买</button>
+                </div>
+            </div>
+
+            <div class="card-item" id="cardDay">
+                <div class="card-info">
+                    <div class="card-name">📅 天卡</div>
+                    <div class="card-desc">有效期至次日 0:00 <span id="dayRemainHint" style="color:#e67e22;font-weight:600;"></span> <span class="stock-badge" id="stockDay">库存: --</span></div>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                    <span class="card-price" id="dayPriceDisplay">
+                        <span class="currency">⭐</span> <span id="dayPriceValue">--</span>
+                        <span class="original-price" id="dayOriginalPrice" style="display:none;"></span>
+                        <span class="multiplier-badge" id="dayMultiplierBadge" style="display:none;"></span>
+                        <span class="dynamic-hint" id="dayPriceHint">计算中...</span>
+                    </span>
+                    <button class="buy-btn" data-type="day">购买</button>
+                </div>
+            </div>
+
+            <div class="card-item" id="cardWeek">
+                <div class="card-info">
+                    <div class="card-name">📆 周卡</div>
+                    <div class="card-desc">有效期7天 (168小时) <span class="stock-badge" id="stockWeek">库存: --</span></div>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                    <span class="card-price" id="weekPriceDisplay">
+                        <span class="currency">⭐</span> <span id="weekPriceValue">288.8</span>
+                        <span class="original-price" id="weekOriginalPrice" style="display:none;"></span>
+                        <span class="multiplier-badge" id="weekMultiplierBadge" style="display:none;"></span>
+                    </span>
+                    <button class="buy-btn" data-type="week">购买</button>
+                </div>
+            </div>
+
+            <div class="card-item" id="cardPermanent">
+                <div class="card-info">
+                    <div class="card-name">♾️ 永久卡</div>
+                    <div class="card-desc">购买后永久使用 <span class="stock-badge" id="stockPermanent">库存: --</span></div>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                    <span class="card-price" id="permanentPriceDisplay">
+                        <span class="currency">⭐</span> <span id="permanentPriceValue">1888.0</span>
+                        <span class="original-price" id="permanentOriginalPrice" style="display:none;"></span>
+                        <span class="multiplier-badge" id="permanentMultiplierBadge" style="display:none;"></span>
+                    </span>
+                    <button class="buy-btn" data-type="permanent">购买</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="daifu-section" id="daifuSection">
+            <div class="daifu-title"><i class="fas fa-hand-holding-usd"></i> 🤝 代付商城入口</div>
+            <div class="daifu-desc">输入朋友分享的代付二维码链接或代付码，帮朋友支付订单</div>
+            <div class="daifu-input-group">
+                <input type="text" id="daifuInput" placeholder="粘贴代付链接或代付码" autocomplete="off">
+                <button id="daifuSubmitBtn"><i class="fas fa-arrow-right"></i> 前往代付</button>
+            </div>
+            <div id="daifuResult" class="daifu-result"></div>
+        </div>
+
+        <div class="price-update-tip" id="priceUpdateTip">🔄 价格实时更新中...</div>
+
+        <button class="enter-mall-btn" id="enterMallBtn" disabled>🚪 进入积分商城</button>
+        <a href="/" class="back-link">← 返回主控台</a>
+    </div>
+
+    <script>
+        var csrfToken = null;
+        var csrfTokenRefreshPromise = null;
+        var csrfTokenLastFetch = 0;
+        var CSRF_TOKEN_TTL = 300000;
+
+        function getCsrfTokenFromCookie() {
+            try {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = cookies[i].trim();
+                    if (cookie.indexOf('csrf_token=') === 0) {
+                        return cookie.substring('csrf_token='.length, cookie.length);
+                    }
+                }
+                return null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function setCsrfTokenCookie(token) {
+            try {
+                var expires = new Date(Date.now() + CSRF_TOKEN_TTL).toUTCString();
+                document.cookie = 'csrf_token=' + token + '; expires=' + expires + '; path=/; SameSite=Strict; Secure';
+            } catch (e) {}
+        }
+
+        function fetchCsrfToken() {
+            if (csrfTokenRefreshPromise) {
+                return csrfTokenRefreshPromise;
+            }
+            if (csrfToken && (Date.now() - csrfTokenLastFetch) < CSRF_TOKEN_TTL) {
+                return Promise.resolve(csrfToken);
+            }
+            var cookieToken = getCsrfTokenFromCookie();
+            if (cookieToken) {
+                csrfToken = cookieToken;
+                csrfTokenLastFetch = Date.now();
+                return Promise.resolve(csrfToken);
+            }
+            csrfTokenRefreshPromise = fetch('/api/csrf-token', {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Accept': 'application/json',
+                    'Cache-Control': 'no-cache'
+                }
+            }).then(function(response) {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch CSRF token: HTTP ' + response.status);
+                }
+                return response.json();
+            }).then(function(data) {
+                if (!data.csrf_token) {
+                    throw new Error('No CSRF token in response');
+                }
+                csrfToken = data.csrf_token;
+                csrfTokenLastFetch = Date.now();
+                setCsrfTokenCookie(csrfToken);
+                csrfTokenRefreshPromise = null;
+                return csrfToken;
+            }).catch(function(error) {
+                csrfTokenRefreshPromise = null;
+                csrfToken = null;
+                throw error;
+            });
+            return csrfTokenRefreshPromise;
+        }
+
+        function apiRequest(url, options) {
+            if (!options) options = {};
+            options.credentials = 'include';
+            if (!options.headers) options.headers = {};
+            options.headers['Content-Type'] = 'application/json';
+            options.headers['Accept'] = 'application/json';
+            var method = (options.method || 'GET').toUpperCase();
+            if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') {
+                return fetch(url, options).then(function(response) {
+                    return response.json().then(function(data) {
+                        if (!response.ok) {
+                            throw new Error(data.error || '请求失败: ' + response.status);
+                        }
+                        return data;
+                    });
+                });
+            }
+            return fetchCsrfToken().then(function(token) {
+                options.headers['X-CSRF-Token'] = token;
+                return fetch(url, options);
+            }).then(function(response) {
+                return response.json().then(function(data) {
+                    if (!response.ok) {
+                        if (response.status === 403 && data.error && data.error.includes('CSRF')) {
+                            csrfToken = null;
+                            csrfTokenLastFetch = 0;
+                            return fetchCsrfToken().then(function(newToken) {
+                                options.headers['X-CSRF-Token'] = newToken;
+                                return fetch(url, options);
+                            }).then(function(retryResponse) {
+                                return retryResponse.json().then(function(retryData) {
+                                    if (!retryResponse.ok) {
+                                        throw new Error(retryData.error || '请求失败: ' + retryResponse.status);
+                                    }
+                                    return retryData;
+                                });
+                            });
+                        }
+                        throw new Error(data.error || '请求失败: ' + response.status);
+                    }
+                    return data;
+                });
+            });
+        }
+
+        function getMultiplierForPoints(points) {
+            if (points >= 500000) return 1.90;
+            if (points >= 300000) return 1.70;
+            if (points >= 200000) return 1.48;
+            if (points >= 100000) return 1.35;
+            if (points >= 50000) return 1.20;
+            return 1.00;
+        }
+
+        function getTierForPoints(points) {
+            if (points >= 500000) return { threshold: 500000, multiplier: 1.90, label: '500,000+ (90%溢价)' };
+            if (points >= 300000) return { threshold: 300000, multiplier: 1.70, label: '300,000+ (70%溢价)' };
+            if (points >= 200000) return { threshold: 200000, multiplier: 1.48, label: '200,000+ (48%溢价)' };
+            if (points >= 100000) return { threshold: 100000, multiplier: 1.35, label: '100,000+ (35%溢价)' };
+            if (points >= 50000) return { threshold: 50000, multiplier: 1.20, label: '50,000+ (20%溢价)' };
+            return { threshold: 0, multiplier: 1.00, label: '无溢价' };
+        }
+
+        function getFinalPrice(basePrice, multiplier) {
+            return Math.round(basePrice * multiplier * 100) / 100;
+        }
+
+        function updatePriceMultiplierDisplay(effectivePoints, multiplier) {
+            var tier = getTierForPoints(effectivePoints || 0);
+            var displayMultiplier = multiplier || tier.multiplier || 1.00;
+            
+            document.getElementById('effectivePointsDisplay').textContent = Math.round(effectivePoints || 0).toLocaleString();
+            document.getElementById('multiplierDisplay').textContent = displayMultiplier.toFixed(2) + 'x';
+            
+            var tierInfo = document.getElementById('tierInfoDisplay');
+            if (displayMultiplier > 1.0) {
+                tierInfo.textContent = '📈 ' + tier.label + ' | 有效积分: ' + Math.round(effectivePoints || 0).toLocaleString();
+                tierInfo.style.color = '#e67e22';
+            } else {
+                tierInfo.textContent = '✅ 无溢价 | 积分达到 50,000 后开始溢价';
+                tierInfo.style.color = '#888';
+            }
+
+            updateCardPrices(displayMultiplier);
+        }
+
+        function updateCardPrices(multiplier) {
+            var cardTypes = [
+                { id: 'hour', basePrice: 6.6, priceEl: 'hourPriceValue', originalEl: 'hourOriginalPrice', badgeEl: 'hourMultiplierBadge' },
+                { id: 'day', basePrice: dayPrice || 0, priceEl: 'dayPriceValue', originalEl: 'dayOriginalPrice', badgeEl: 'dayMultiplierBadge' },
+                { id: 'week', basePrice: 288.8, priceEl: 'weekPriceValue', originalEl: 'weekOriginalPrice', badgeEl: 'weekMultiplierBadge' },
+                { id: 'permanent', basePrice: 1888.0, priceEl: 'permanentPriceValue', originalEl: 'permanentOriginalPrice', badgeEl: 'permanentMultiplierBadge' }
+            ];
+
+            cardTypes.forEach(function(card) {
+                var basePrice = card.id === 'day' ? dayPrice : card.basePrice;
+                var finalPrice = getFinalPrice(basePrice, multiplier);
+                var priceEl = document.getElementById(card.priceEl);
+                var originalEl = document.getElementById(card.originalEl);
+                var badgeEl = document.getElementById(card.badgeEl);
+
+                if (priceEl) {
+                    if (multiplier > 1.0 && basePrice > 0) {
+                        priceEl.textContent = finalPrice.toFixed(1);
+                        if (originalEl) {
+                            originalEl.style.display = 'inline';
+                            originalEl.textContent = basePrice.toFixed(1);
+                        }
+                        if (badgeEl) {
+                            badgeEl.style.display = 'inline';
+                            badgeEl.textContent = '×' + multiplier.toFixed(2);
+                        }
+                    } else {
+                        priceEl.textContent = basePrice.toFixed(1);
+                        if (originalEl) {
+                            originalEl.style.display = 'none';
+                        }
+                        if (badgeEl) {
+                            badgeEl.style.display = 'none';
+                        }
+                    }
+                }
+            });
+        }
+
+        var currentUser = null;
+        var userPoints = 0;
+        var activeCard = null;
+        var cardKey = null;
+        var refreshInterval = null;
+        var dayPrice = 0;
+        var dayRemainHours = 0;
+        var stockData = { hour: 0, day: 0, week: 0, permanent: 0 };
+        var effectivePoints = 0;
+        var priceMultiplier = 1.0;
+
+        function calculateDayPrice() {
+            var now = new Date();
+            var tomorrow = new Date(now);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(0, 0, 0, 0);
+            var remainMs = tomorrow.getTime() - now.getTime();
+            var remainHours = remainMs / (1000 * 60 * 60);
+            remainHours = Math.max(0, Math.ceil(remainHours));
+            dayRemainHours = remainHours;
+            var price = remainHours * 6.6;
+            dayPrice = Math.round(price * 100) / 100;
+            return {
+                price: dayPrice,
+                remainHours: remainHours,
+                remainMs: remainMs
+            };
+        }
+
+        function updateDayPriceDisplay() {
+            var result = calculateDayPrice();
+            var priceEl = document.getElementById('dayPriceValue');
+            var hintEl = document.getElementById('dayPriceHint');
+            var remainHintEl = document.getElementById('dayRemainHint');
+            if (priceEl) {
+                var finalDayPrice = getFinalPrice(result.price, priceMultiplier);
+                if (priceMultiplier > 1.0 && result.price > 0) {
+                    priceEl.textContent = finalDayPrice.toFixed(1);
+                    var originalEl = document.getElementById('dayOriginalPrice');
+                    if (originalEl) {
+                        originalEl.style.display = 'inline';
+                        originalEl.textContent = result.price.toFixed(1);
+                    }
+                    var badgeEl = document.getElementById('dayMultiplierBadge');
+                    if (badgeEl) {
+                        badgeEl.style.display = 'inline';
+                        badgeEl.textContent = '×' + priceMultiplier.toFixed(2);
+                    }
+                } else {
+                    priceEl.textContent = result.price.toFixed(1);
+                    var originalEl = document.getElementById('dayOriginalPrice');
+                    if (originalEl) {
+                        originalEl.style.display = 'none';
+                    }
+                    var badgeEl = document.getElementById('dayMultiplierBadge');
+                    if (badgeEl) {
+                        badgeEl.style.display = 'none';
+                    }
+                }
+            }
+            if (hintEl) {
+                if (result.remainHours <= 0) {
+                    hintEl.textContent = '⚠️ 今日已过，请明日购买';
+                } else if (result.remainHours <= 1) {
+                    hintEl.textContent = '⏰ 仅剩 ' + Math.round(result.remainHours * 60) + ' 分钟';
+                } else {
+                    hintEl.textContent = '⏰ 剩余 ' + result.remainHours + ' 小时 × 6.6';
+                }
+            }
+            if (remainHintEl) {
+                if (result.remainHours <= 0) {
+                    remainHintEl.textContent = '⚠️ 今日已过';
+                } else if (result.remainHours <= 1) {
+                    remainHintEl.textContent = '⏰ 仅剩 ' + Math.round(result.remainHours * 60) + ' 分钟';
+                } else {
+                    remainHintEl.textContent = '⏰ 剩余 ' + result.remainHours + ' 小时';
+                }
+            }
+            var tipEl = document.getElementById('priceUpdateTip');
+            if (tipEl) {
+                var now = new Date();
+                var displayPrice = getFinalPrice(result.price, priceMultiplier);
+                tipEl.textContent = '🔄 天卡价格实时计算 | ' + now.toLocaleTimeString('zh-CN') + ' | 剩余 ' + result.remainHours + ' 小时 × 6.6 = ' + displayPrice.toFixed(1) + ' 积分' + (priceMultiplier > 1.0 ? ' (×' + priceMultiplier.toFixed(2) + ')' : '');
+            }
+            return result;
+        }
+
+        function startPriceUpdater() {
+            updateDayPriceDisplay();
+            if (refreshInterval) clearInterval(refreshInterval);
+            refreshInterval = setInterval(function() {
+                updateDayPriceDisplay();
+                loadStock();
+            }, 10000);
+        }
+
+        function showToast(message, type) {
+            type = type || 'success';
+            var toast = document.createElement('div');
+            toast.className = 'toast' + (type === 'error' ? ' error' : '');
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(function() { toast.remove(); }, 2500);
+        }
+
+        function showAccessCheckToast(message, type) {
+            var toast = document.createElement('div');
+            toast.className = 'access-check-toast ' + type;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(function() {
+                if (toast) toast.remove();
+            }, 4000);
+        }
+
+        async function checkMallRestriction() {
+            try {
+                var data = await apiRequest('/api/user/restrictions');
+                if (data.mallRestricted) {
+                    showAccessCheckToast('🚫 您的账号已被限制使用商城功能，请联系管理员', 'error');
+                    setTimeout(function() {
+                        window.location.href = '/';
+                    }, 3000);
+                    return false;
+                }
+                return true;
+            } catch (error) {
+                console.error('Check mall restriction failed:', error);
+                return true;
+            }
+        }
+
+        async function loadStock() {
+            try {
+                var data = await apiRequest('/api/gateway/stock');
+                stockData = data.stock;
+                document.getElementById('stockHour').textContent = '库存: ' + stockData.hour;
+                document.getElementById('stockDay').textContent = '库存: ' + stockData.day;
+                document.getElementById('stockWeek').textContent = '库存: ' + stockData.week;
+                document.getElementById('stockPermanent').textContent = '库存: ' + stockData.permanent;
+                var buttons = document.querySelectorAll('.buy-btn');
+                buttons.forEach(function(btn) {
+                    var type = btn.getAttribute('data-type');
+                    var stock = stockData[type] || 0;
+                    if (stock <= 0 && !activeCard) {
+                        btn.disabled = true;
+                        btn.textContent = '已售罄';
+                        btn.className = 'buy-btn used';
+                    } else if (!activeCard) {
+                        btn.disabled = false;
+                        btn.textContent = '购买';
+                        btn.className = 'buy-btn';
+                    }
+                });
+            } catch (e) {
+                console.error('Load stock failed:', e);
+            }
+        }
+
+        async function loadUserStatus() {
+            try {
+                var data = await apiRequest('/api/gateway/status');
+                currentUser = data.username;
+                userPoints = data.points;
+                activeCard = data.activeCard;
+                cardKey = data.cardKey;
+                stockData = data.stock || { hour: 0, day: 0, week: 0, permanent: 0 };
+                document.getElementById('userName').textContent = '👤 ' + currentUser;
+                document.getElementById('userPoints').textContent = '⭐ ' + userPoints.toFixed(2) + ' 积分';
+                document.getElementById('stockHour').textContent = '库存: ' + stockData.hour;
+                document.getElementById('stockDay').textContent = '库存: ' + stockData.day;
+                document.getElementById('stockWeek').textContent = '库存: ' + stockData.week;
+                document.getElementById('stockPermanent').textContent = '库存: ' + stockData.permanent;
+                var statusBadge = document.getElementById('accessStatus');
+                var activeCardInfo = document.getElementById('activeCardInfo');
+                if (activeCard) {
+                    var typeNames = { 'hour': '⏰ 小时卡', 'day': '📅 天卡', 'week': '📆 周卡', 'permanent': '♾️ 永久卡' };
+                    statusBadge.className = 'status-badge active';
+                    statusBadge.textContent = '✅ 已开通 (' + typeNames[activeCard.type] + ')';
+                    statusBadge.style.display = 'inline-block';
+                    activeCardInfo.style.display = 'block';
+                    document.getElementById('activeCardType').textContent = typeNames[activeCard.type];
+                    var expireText = '永久有效';
+                    if (activeCard.expireAt) {
+                        var expireDate = new Date(activeCard.expireAt);
+                        expireText = '有效期至: ' + expireDate.toLocaleString('zh-CN');
+                    }
+                    document.getElementById('activeCardExpire').textContent = expireText;
+                    document.getElementById('enterMallBtn').disabled = false;
+                    updateCardButtons();
+                } else {
+                    statusBadge.className = 'status-badge inactive';
+                    statusBadge.textContent = '🔒 未开通';
+                    activeCardInfo.style.display = 'none';
+                    document.getElementById('enterMallBtn').disabled = true;
+                    updateCardButtons();
+                }
+
+                try {
+                    var authData = await apiRequest('/api/check-auth');
+                    if (authData && authData.authenticated) {
+                        if (authData.effectivePoints !== undefined) {
+                            effectivePoints = authData.effectivePoints;
+                        }
+                        if (authData.priceMultiplier !== undefined) {
+                            priceMultiplier = authData.priceMultiplier;
+                        }
+                        updatePriceMultiplierDisplay(effectivePoints, priceMultiplier);
+                    }
+                } catch (e) {
+                    console.warn('Failed to get price info:', e);
+                }
+            } catch (error) {
+                console.error('Load user status failed:', error);
+                showToast('加载用户状态失败: ' + error.message, 'error');
+            }
+        }
+
+        function updateCardButtons() {
+            var buttons = document.querySelectorAll('.buy-btn');
+            buttons.forEach(function(btn) {
+                var type = btn.getAttribute('data-type');
+                var stock = stockData[type] || 0;
+                if (activeCard) {
+                    btn.disabled = true;
+                    if (activeCard.type === type) {
+                        btn.textContent = '✅ 已激活';
+                        btn.className = 'buy-btn bought';
+                    } else {
+                        btn.textContent = '🔒 已锁定';
+                        btn.className = 'buy-btn used';
+                    }
+                    btn.parentElement.parentElement.classList.add('disabled');
+                } else if (stock <= 0) {
+                    btn.disabled = true;
+                    btn.textContent = '已售罄';
+                    btn.className = 'buy-btn used';
+                } else {
+                    btn.disabled = false;
+                    btn.textContent = '购买';
+                    btn.className = 'buy-btn';
+                    btn.parentElement.parentElement.classList.remove('disabled');
+                }
+            });
+        }
+
+        async function buyCard(type) {
+            if (activeCard) {
+                showToast('您已拥有有效的通行卡密，无需重复购买', 'error');
+                return;
+            }
+            var stock = stockData[type] || 0;
+            if (stock <= 0) {
+                showToast('该卡密已售罄，请明日再试', 'error');
+                return;
+            }
+            var btn = document.querySelector('.buy-btn[data-type="' + type + '"]');
+            var originalText = btn.textContent;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading-spinner"></span> 创建订单...';
+            var requestData = { cardType: type };
+            if (type === 'day') {
+                var priceData = calculateDayPrice();
+                if (priceData.remainHours <= 0) {
+                    showToast('今日已过，天卡无法购买，请选择其他卡密', 'error');
+                    btn.disabled = false;
+                    btn.textContent = originalText;
+                    return;
+                }
+                requestData.dayPrice = priceData.price;
+                requestData.remainHours = priceData.remainHours;
+            }
+            try {
+                var data = await apiRequest('/api/gateway/create-order', {
+                    method: 'POST',
+                    body: JSON.stringify(requestData)
+                });
+                if (data.success) {
+                    window.location.href = '/pay/' + data.order_id;
+                }
+            } catch (error) {
+                showToast('创建订单失败: ' + error.message, 'error');
+                btn.disabled = false;
+                btn.textContent = originalText;
+                loadStock();
+            }
+        }
+
+        function extractTokenFromInput(input) {
+            var trimmed = input.trim();
+            if (!trimmed) return null;
+            if (trimmed.includes('/qr/')) {
+                var parts = trimmed.split('/qr/');
+                var token = parts[parts.length - 1].split('?')[0].split('#')[0];
+                return token.trim() || null;
+            }
+            var urlMatch = trimmed.match(/qr\/([a-zA-Z0-9_\-]+)/);
+            if (urlMatch) return urlMatch[1];
+            var tokenMatch = trimmed.match(/^[a-zA-Z0-9_\-]+$/);
+            if (tokenMatch) return tokenMatch[0];
+            return null;
+        }
+
+        document.getElementById('daifuSubmitBtn').addEventListener('click', async function() {
+            var input = document.getElementById('daifuInput').value.trim();
+            var resultDiv = document.getElementById('daifuResult');
+            if (!input) {
+                resultDiv.className = 'daifu-result error';
+                resultDiv.textContent = '❌ 请输入代付链接或代付码';
+                resultDiv.style.display = 'block';
+                return;
+            }
+            var token = extractTokenFromInput(input);
+            if (!token) {
+                resultDiv.className = 'daifu-result error';
+                resultDiv.textContent = '❌ 无效的代付链接或代付码，请检查后重新输入';
+                resultDiv.style.display = 'block';
+                return;
+            }
+            var btn = this;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading-spinner"></span> 验证中...';
+            resultDiv.style.display = 'none';
+            try {
+                var data = await apiRequest('/api/order/qr/' + token, {
+                    method: 'GET'
+                });
+                if (data.valid && data.redirect_url) {
+                    var isDaifu = data.is_daifu || false;
+                    var owner = data.owner || '';
+                    var status = data.status || 'pending';
+                    var productName = data.product_name || '未知商品';
+                    if (isDaifu && status === 'pending') {
+                        resultDiv.className = 'daifu-result success';
+                        resultDiv.innerHTML = '✅ 代付订单验证成功！<br>商品: <strong>' + productName + '</strong><br>商品归属: <strong>' + owner + '</strong><br>即将跳转到支付页面...';
+                        resultDiv.style.display = 'block';
+                        setTimeout(function() {
+                            window.location.href = data.redirect_url;
+                        }, 1500);
+                    } else if (isDaifu && status === 'paid') {
+                        resultDiv.className = 'daifu-result error';
+                        resultDiv.innerHTML = '⚠️ 此代付订单已被支付<br>商品归属: <strong>' + owner + '</strong>';
+                        resultDiv.style.display = 'block';
+                    } else if (!isDaifu) {
+                        resultDiv.className = 'daifu-result error';
+                        resultDiv.textContent = '⚠️ 这不是代付订单，请使用普通方式购买';
+                        resultDiv.style.display = 'block';
+                    } else {
+                        resultDiv.className = 'daifu-result error';
+                        resultDiv.textContent = '⚠️ 订单状态异常: ' + status;
+                        resultDiv.style.display = 'block';
+                    }
+                } else {
+                    var errorMsg = data.error || '验证失败';
+                    resultDiv.className = 'daifu-result error';
+                    resultDiv.textContent = '❌ ' + errorMsg;
+                    resultDiv.style.display = 'block';
+                }
+            } catch (error) {
+                resultDiv.className = 'daifu-result error';
+                resultDiv.textContent = '❌ 验证失败: ' + error.message;
+                resultDiv.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-arrow-right"></i> 前往代付';
+            }
+        });
+
+        document.getElementById('daifuInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('daifuSubmitBtn').click();
+            }
+        });
+
+        document.querySelectorAll('.buy-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var type = this.getAttribute('data-type');
+                buyCard(type);
+            });
+        });
+
+        document.getElementById('enterMallBtn').addEventListener('click', function() {
+            if (!activeCard) {
+                showToast('请先购买通行卡密', 'error');
+                return;
+            }
+            var key = cardKey || '';
+            window.location.href = '/mall.html?key=' + encodeURIComponent(key);
+        });
+
+        function checkUrlKey() {
+            var urlParams = new URLSearchParams(window.location.search);
+            var key = urlParams.get('key');
+            if (key) {
+                cardKey = key;
+            }
+        }
+
+        async function init() {
+            await fetchCsrfToken().catch(function(e) { console.warn('CSRF pre-fetch failed:', e); });
+            checkUrlKey();
+            var hasMallAccess = await checkMallRestriction();
+            if (!hasMallAccess) return;
+            await loadUserStatus();
+            await loadStock();
+            startPriceUpdater();
+            if (cardKey && !activeCard) {
+                showToast('卡密已失效或已过期，请重新购买', 'error');
+            }
+            if (activeCard && cardKey) {
+                var url = new URL(window.location.href);
+                if (!url.searchParams.has('key')) {
+                    url.searchParams.set('key', cardKey);
+                    window.history.replaceState({}, '', url);
+                }
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

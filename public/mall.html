@@ -1,0 +1,2570 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>积分商城</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js">
+    </script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', Roboto, 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .mall-container {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 32px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            animation: slideUp 0.6s ease-out;
+            position: relative;
+            z-index: 1;
+            padding: 32px;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .mall-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .mall-header .left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .mall-header h1 { font-size: 24px; color: #333; }
+        .mall-header .user-info { font-size: 14px; color: #666; }
+        .mall-header .points-display { font-size: 14px; font-weight: 600; color: #667eea; }
+        .mall-header .mail-link {
+            position: relative;
+            padding: 4px 12px;
+            background: rgba(102,126,234,0.1);
+            border-radius: 20px;
+            color: #667eea;
+            text-decoration: none;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+        .mall-header .mail-link:hover { background: rgba(102,126,234,0.2); }
+        .mall-header .mail-link .mail-badge {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: #e74c3c;
+            color: white;
+            border-radius: 50%;
+            padding: 0 5px;
+            font-size: 10px;
+            font-weight: 700;
+            min-width: 18px;
+            text-align: center;
+            line-height: 18px;
+        }
+        .mall-header .back-link {
+            color: #888;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 6px 16px;
+            border-radius: 20px;
+            transition: all 0.3s;
+        }
+        .mall-header .back-link:hover { color: #667eea; background: rgba(102, 126, 234, 0.1); }
+        .refund-entry {
+            padding: 4px 12px;
+            background: rgba(231, 76, 60, 0.1);
+            border-radius: 20px;
+            color: #e74c3c;
+            text-decoration: none;
+            font-size: 13px;
+            transition: all 0.3s;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .refund-entry:hover { background: rgba(231, 76, 60, 0.2); }
+        .mall-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .mall-tabs .tab {
+            padding: 8px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #888;
+            transition: all 0.3s;
+            border: none;
+            background: transparent;
+        }
+        .mall-tabs .tab:hover { background: rgba(102, 126, 234, 0.05); }
+        .mall-tabs .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .card-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+        .mall-card {
+            background: #f8f9fa;
+            border-radius: 16px;
+            padding: 20px;
+            border: 2px solid #e8e8e8;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .mall-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.1);
+        }
+        .mall-card .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .mall-card .card-name { font-size: 17px; font-weight: 700; color: #333; }
+        .mall-card .card-badge {
+            font-size: 11px;
+            padding: 2px 10px;
+            border-radius: 20px;
+            background: #667eea20;
+            color: #667eea;
+            font-weight: 600;
+        }
+        .mall-card .card-desc { font-size: 13px; color: #888; line-height: 1.4; }
+        .mall-card .card-price-multiplier {
+            font-size: 12px;
+            color: #e67e22;
+            background: #fef9e7;
+            padding: 4px 10px;
+            border-radius: 8px;
+            border-left: 3px solid #f39c12;
+            display: inline-block;
+            margin-bottom: 4px;
+        }
+        .mall-card .card-price-multiplier i { margin-right: 4px; }
+        .mall-card .card-warning {
+            font-size: 12px;
+            color: #e67e22;
+            background: #fef9e7;
+            padding: 6px 10px;
+            border-radius: 8px;
+            border-left: 3px solid #f39c12;
+        }
+        .mall-card .card-recycle {
+            font-size: 11px;
+            color: #888;
+            padding: 4px 0;
+        }
+        .mall-card .card-price-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #eee;
+        }
+        .mall-card .card-price { font-size: 20px; font-weight: 700; color: #667eea; }
+        .mall-card .card-price .currency { font-size: 14px; font-weight: 400; }
+        .mall-card .card-price .original {
+            font-size: 14px;
+            color: #999;
+            text-decoration: line-through;
+            font-weight: 400;
+            margin-left: 8px;
+        }
+        .mall-card .card-price .multiplier-label {
+            font-size: 12px;
+            color: #e67e22;
+            font-weight: 600;
+            margin-left: 6px;
+        }
+        .mall-card .card-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+        }
+        .mall-card .card-actions .action-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .mall-card .quantity-control {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: white;
+            border-radius: 40px;
+            border: 1px solid #e0e0e0;
+            overflow: hidden;
+        }
+        .mall-card .quantity-control button {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 700;
+            color: #666;
+            transition: all 0.2s;
+        }
+        .mall-card .quantity-control button:hover { background: #f0f0f0; }
+        .mall-card .quantity-control button:disabled { opacity: 0.3; cursor: not-allowed; }
+        .mall-card .quantity-control span {
+            min-width: 30px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 15px;
+        }
+        .mall-card .buy-btn {
+            padding: 8px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 40px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 80px;
+        }
+        .mall-card .buy-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        .mall-card .buy-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .mall-card .buy-btn.purchased { background: #27ae60; }
+        .mall-card .buy-btn .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.6s linear infinite;
+        }
+        .mall-card .daifu-btn {
+            padding: 8px 20px;
+            background: linear-gradient(135deg, #f7c948, #f39c12);
+            color: #0b0e1a;
+            border: none;
+            border-radius: 40px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 80px;
+        }
+        .mall-card .daifu-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px #f7c94840;
+        }
+        .mall-card .daifu-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .pay-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #666;
+            padding: 6px 12px;
+            background: white;
+            border-radius: 40px;
+            border: 1px solid #e8e8e8;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-wrap: wrap;
+        }
+        .pay-toggle:hover { border-color: #667eea; }
+        .pay-toggle input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: #f39c12;
+        }
+        .pay-toggle .pl-price { color: #e67e22; font-weight: 600; }
+        .pay-toggle .pl-balance-mini { color: #888; font-size: 12px; }
+        .pay-toggle .pl-insufficient { color: #e74c3c; font-size: 12px; font-weight: 600; }
+        .pl-balance {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #f39c1220;
+            color: #e67e22;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #27ae60;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 40px;
+            font-size: 14px;
+            z-index: 2000;
+            animation: fadeInOut 2s;
+            max-width: 90%;
+            text-align: center;
+        }
+        .toast.error { background: #e74c3c; }
+        .toast.warning { background: #f39c12; }
+        .toast.info { background: #667eea; }
+        .toast.daifu { background: #f7c948; color: #0b0e1a; }
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
+            15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            85% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+        }
+        .refresh-btn {
+            padding: 6px 14px;
+            background: transparent;
+            border: 1px solid #e0e0e0;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #666;
+            transition: all 0.3s;
+        }
+        .refresh-btn:hover { border-color: #667eea; color: #667eea; }
+        .access-denied {
+            text-align: center;
+            padding: 40px 20px;
+            color: #e74c3c;
+        }
+        .access-denied h2 { font-size: 24px; margin-bottom: 12px; }
+        .access-denied p { color: #888; margin-bottom: 20px; }
+        .access-denied .btn {
+            padding: 12px 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 40px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .access-denied .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        .inventory-section, .coupon-section, .order-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .inventory-category {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 16px;
+        }
+        .inventory-category .category-title {
+            font-weight: 700;
+            font-size: 15px;
+            color: #333;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .inventory-category .category-count { font-size: 12px; color: #888; font-weight: 400; }
+        .inventory-items { display: flex; flex-wrap: wrap; gap: 8px; }
+        .inventory-item {
+            background: white;
+            border-radius: 8px;
+            padding: 6px 12px;
+            border: 1px solid #e8e8e8;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: monospace;
+            color: #333;
+            flex-wrap: wrap;
+        }
+        .inventory-item .expire { font-size: 10px; color: #e74c3c; }
+        .inventory-item .use-btn {
+            padding: 2px 10px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .inventory-item .use-btn:hover { background: #764ba2; }
+        .inventory-item .use-btn.copy-btn { background: #27ae60; }
+        .inventory-item .use-btn.copy-btn:hover { background: #1e8449; }
+        .inventory-item .use-btn.recycle { background: #e74c3c; }
+        .inventory-item .use-btn.recycle:hover { background: #c0392b; }
+        .inventory-item .use-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .inventory-empty { color: #bbb; font-size: 13px; padding: 8px 0; }
+        .coupon-item {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 14px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .coupon-item .coupon-info { display: flex; flex-direction: column; gap: 2px; }
+        .coupon-item .coupon-name { font-weight: 600; font-size: 14px; color: #333; }
+        .coupon-item .coupon-desc { font-size: 12px; color: #888; }
+        .coupon-item .coupon-expire { font-size: 11px; color: #e74c3c; }
+        .order-history-item {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+        .order-history-item:hover { background: #f0f2ff; }
+        .order-history-item .order-info { display: flex; flex-direction: column; gap: 2px; }
+        .order-history-item .order-name { font-weight: 600; font-size: 14px; color: #333; }
+        .order-history-item .order-time { font-size: 12px; color: #888; }
+        .order-history-item .order-expire-timer { font-size: 12px; color: #e74c3c; font-weight: 600; }
+        .order-history-item .order-status {
+            font-size: 12px;
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        .order-status.pending { background: #f39c1220; color: #f39c12; }
+        .order-status.paid { background: #27ae6020; color: #27ae60; }
+        .order-status.expired { background: #e74c3c20; color: #e74c3c; }
+        .order-status.cancelled { background: #e74c3c20; color: #e74c3c; }
+        .order-status.refunded { background: #f39c1220; color: #f39c12; }
+        .order-status.frozen { background: #a78bfa20; color: #a78bfa; }
+        .order-history-item .order-pay-btn {
+            padding: 4px 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .order-history-item .order-pay-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        .order-history-item .order-pay-btn:active { transform: scale(0.95); }
+        .order-history-item .order-pay-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .order-history-item .order-refund-btn {
+            padding: 4px 16px;
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .order-history-item .order-refund-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+        }
+        .order-history-item .order-refund-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .order-history-item .order-refund-btn.refunded {
+            background: #27ae60;
+        }
+        .order-history-item .order-refund-btn.refunded:hover {
+            transform: none;
+            box-shadow: none;
+        }
+        .order-history-empty { color: #bbb; text-align: center; padding: 30px 0; }
+        .loading-spinner {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid #f0f0f0;
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 0.6s linear infinite;
+            margin: 20px auto;
+        }
+        .badge-count {
+            background: #e74c3c;
+            color: white;
+            border-radius: 50%;
+            padding: 0 8px;
+            font-size: 11px;
+            margin-left: 4px;
+            display: none;
+        }
+        .access-check-toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 3000;
+            animation: slideDown 0.5s ease-out;
+            max-width: 90%;
+            text-align: center;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+        }
+        .access-check-toast.warning { background: #f39c12; color: white; }
+        .access-check-toast.error { background: #e74c3c; color: white; }
+        .access-check-toast.success { background: #27ae60; color: white; }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        .order-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .loading-products { text-align: center; padding: 40px 0; color: #888; }
+        .mail-notice {
+            background: linear-gradient(135deg, #667eea20, #764ba220);
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            border-left: 4px solid #667eea;
+            font-size: 13px;
+            color: #555;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .mail-notice .mail-link-btn {
+            padding: 6px 16px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 40px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        .mail-notice .mail-link-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(102,126,234,0.3); }
+        .fund-link {
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(102,126,234,0.1);
+            border-radius: 20px;
+            color: #667eea;
+            text-decoration: none;
+            font-size: 13px;
+            transition: all 0.3s;
+            margin-left: 4px;
+        }
+        .fund-link:hover { background: rgba(102,126,234,0.2); }
+        .order-refund-info {
+            font-size: 11px;
+            color: #f39c12;
+            margin-top: 2px;
+        }
+        .order-frozen-info {
+            font-size: 11px;
+            color: #a78bfa;
+            margin-top: 2px;
+        }
+        .order-cancelled-info {
+            font-size: 11px;
+            color: #e74c3c;
+            margin-top: 2px;
+        }
+        .error-boundary {
+            padding: 20px;
+            margin: 16px 0;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 12px;
+            color: #dc2626;
+            text-align: center;
+        }
+        .error-boundary .retry-btn {
+            margin-top: 12px;
+            padding: 8px 24px;
+            background: #dc2626;
+            color: white;
+            border: none;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .error-boundary .retry-btn:hover { background: #b91c1c; }
+
+        .adblock-notice {
+            background: #fef3c7;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-top: 16px;
+            border-left: 4px solid #f59e0b;
+            font-size: 12px;
+            color: #92400e;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .adblock-notice i {
+            font-size: 16px;
+            color: #d97706;
+            margin-top: 1px;
+        }
+        .adblock-notice strong {
+            color: #78350f;
+        }
+        .adblock-notice .discord-link {
+            color: #5865F2;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .adblock-notice .discord-link:hover {
+            text-decoration: underline;
+        }
+
+        .price-multiplier-info {
+            background: #667eea15;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            border: 1px solid #667eea20;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .price-multiplier-info .label {
+            font-size: 13px;
+            color: #555;
+        }
+        .price-multiplier-info .multiplier-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #e67e22;
+        }
+        .price-multiplier-info .effective-points {
+            font-size: 14px;
+            font-weight: 600;
+            color: #667eea;
+        }
+        .price-multiplier-info .tier-info {
+            font-size: 11px;
+            color: #888;
+        }
+
+        @media (max-width: 600px) {
+            .mall-container { padding: 20px; }
+            .card-list { grid-template-columns: 1fr; }
+            .mall-header { flex-direction: column; text-align: center; }
+            .mall-header .left { flex-wrap: wrap; justify-content: center; }
+            .mall-card .card-actions .action-row { flex-wrap: wrap; justify-content: center; }
+            .mall-tabs { flex-wrap: wrap; justify-content: center; }
+            .mall-tabs .tab { font-size: 12px; padding: 6px 14px; }
+            .pay-toggle { justify-content: center; }
+            .order-history-item { flex-direction: column; text-align: center; }
+            .order-actions { justify-content: center; }
+            .mall-card .daifu-btn { width: 100%; }
+            .price-multiplier-info { flex-direction: column; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="mall-container" id="mallContainer">
+        <div id="accessDenied" style="display:none;" class="access-denied">
+            <h2>🚫 访问被拒绝</h2>
+            <p>您没有有效的通行卡密，请先购买通行卡密</p>
+            <a href="/gateway.html" class="btn">前往购买通行卡密</a>
+        </div>
+
+        <div id="mallContent" style="display:none;">
+            <div class="mall-header">
+                <div class="left">
+                    <h1>🎁 积分商城</h1>
+                    <span class="user-info" id="userInfo">👤 加载中...</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                    <span class="points-display" id="pointsDisplay">⭐ 0 积分</span>
+                    <span class="pl-balance" id="plDisplay">💎 0.0000 PL</span>
+                    <a href="/mail.html" class="mail-link" id="mailLink">📬 邮箱 <span class="mail-badge" id="mailBadge" style="display:none;">0</span></a>
+                    <a href="/fund.html" class="fund-link">🏦 理财</a>
+                    <a href="/refund.html" class="refund-entry"><i class="fas fa-undo-alt"></i> 退款</a>
+                    <button class="refresh-btn" id="refreshBtn"><i class="fas fa-sync-alt"></i></button>
+                    <a href="/" class="back-link">← 返回</a>
+                </div>
+            </div>
+
+            <div class="mail-notice" id="mailNotice" style="display:none;">
+                <span><i class="fas fa-envelope"></i> 您有未领取的商城物品，请前往邮箱领取</span>
+                <a href="/mail.html" class="mail-link-btn">📬 前往邮箱</a>
+            </div>
+
+            <div class="price-multiplier-info" id="priceMultiplierInfo">
+                <div>
+                    <span class="label">💰 有效积分</span>
+                    <span class="effective-points" id="effectivePointsDisplay">0</span>
+                </div>
+                <div>
+                    <span class="label">📊 当前价格倍率</span>
+                    <span class="multiplier-value" id="multiplierDisplay">1.00x</span>
+                </div>
+                <div class="tier-info" id="tierInfoDisplay">积分越高，价格越高</div>
+            </div>
+
+            <div class="adblock-notice">
+                <i class="fas fa-shield-alt"></i>
+                <div>
+                    <strong>⚠️ 遇到卡密使用报错？</strong>
+                    请确保您浏览器的广告拦截功能处于 <strong>关闭</strong> 状态。
+                    如果问题依旧，请前往主控台点击 <a href="#" class="discord-link" onclick="window.open('https://discord.gg/vzT54nKnt','_blank')">Discord</a> 联系客服进行处理。
+                </div>
+            </div>
+
+            <div class="mall-tabs">
+                <button class="tab active" data-tab="shop">🛒 商城</button>
+                <button class="tab" data-tab="inventory">🎒 背包 <span class="badge-count" id="inventoryBadge">0</span></button>
+                <button class="tab" data-tab="coupons">🎫 优惠券 <span class="badge-count" id="couponBadge">0</span></button>
+                <button class="tab" data-tab="orders">📋 订单</button>
+            </div>
+
+            <div id="errorBoundary" class="error-boundary" style="display:none;">
+                <div id="errorMessage">❌ 加载失败</div>
+                <button class="retry-btn" onclick="location.reload()">🔄 刷新重试</button>
+            </div>
+
+            <div class="tab-content active" id="tabShop">
+                <div class="card-list" id="cardList">
+                    <div class="loading-products">🔄 加载商品中...</div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="tabInventory">
+                <div class="inventory-section" id="inventoryList">
+                    <div class="loading-spinner"></div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="tabCoupons">
+                <div class="coupon-section" id="couponList">
+                    <div class="loading-spinner"></div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="tabOrders">
+                <div class="order-section" id="orderList">
+                    <div class="loading-spinner"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="daifuModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:10002;justify-content:center;align-items:center;">
+        <div style="background:#1a1f35;border-radius:24px;padding:32px;max-width:500px;width:90%;border:1px solid rgba(255,255,255,0.1);text-align:center;">
+            <h3 style="color:#f7c948;margin-bottom:12px;"><i class="fas fa-hand-holding-usd"></i> 🤝 代付订单已创建</h3>
+            <p style="color:#8892b0;font-size:14px;margin-bottom:16px;">分享下方二维码或链接给朋友，朋友扫码后用自己的积分帮你支付</p>
+            <div style="background:white;padding:12px;border-radius:12px;display:inline-block;margin-bottom:16px;">
+                <div id="daifuQrContainer" style="width:160px;height:160px;"></div>
+            </div>
+            <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:12px;margin-bottom:16px;">
+                <div style="font-size:12px;color:#8892b0;word-break:break-all;font-family:monospace;" id="daifuLinkDisplay"></div>
+                <button id="copyDaifuLinkBtn" style="margin-top:8px;padding:4px 16px;background:#667eea;color:white;border:none;border-radius:20px;cursor:pointer;font-size:12px;"><i class="fas fa-copy"></i> 复制链接</button>
+            </div>
+            <div style="display:flex;gap:12px;justify-content:center;">
+                <button onclick="document.getElementById('daifuModal').style.display='none'" style="padding:10px 32px;background:rgba(255,255,255,0.05);color:#8892b0;border:1px solid rgba(255,255,255,0.1);border-radius:40px;cursor:pointer;">关闭</button>
+                <a id="daifuOrderLink" href="#" style="padding:10px 32px;background:linear-gradient(135deg,#f7c948,#f39c12);color:#0b0e1a;border:none;border-radius:40px;text-decoration:none;font-weight:600;">查看订单</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var csrfToken = null;
+        var csrfTokenRefreshPromise = null;
+        var csrfTokenLastFetch = 0;
+        var CSRF_TOKEN_TTL = 300000;
+
+        function getCsrfTokenFromCookie() {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                if (cookie.indexOf('csrf_token=') === 0) {
+                    return cookie.substring('csrf_token='.length, cookie.length);
+                }
+            }
+            return null;
+        }
+
+        function setCsrfTokenCookie(token) {
+            var expires = new Date(Date.now() + CSRF_TOKEN_TTL).toUTCString();
+            document.cookie = 'csrf_token=' + token + '; expires=' + expires + '; path=/; SameSite=Strict; Secure';
+        }
+
+        function fetchCsrfToken() {
+            if (csrfTokenRefreshPromise) {
+                return csrfTokenRefreshPromise;
+            }
+
+            if (csrfToken && (Date.now() - csrfTokenLastFetch) < CSRF_TOKEN_TTL) {
+                return Promise.resolve(csrfToken);
+            }
+
+            var cookieToken = getCsrfTokenFromCookie();
+            if (cookieToken && (Date.now() - csrfTokenLastFetch) < CSRF_TOKEN_TTL) {
+                csrfToken = cookieToken;
+                return Promise.resolve(csrfToken);
+            }
+
+            csrfTokenRefreshPromise = fetch('/api/csrf-token', {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(function(response) {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch CSRF token: ' + response.status);
+                    }
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (!data.csrf_token) {
+                        throw new Error('No CSRF token in response');
+                    }
+                    csrfToken = data.csrf_token;
+                    csrfTokenLastFetch = Date.now();
+                    setCsrfTokenCookie(csrfToken);
+                    csrfTokenRefreshPromise = null;
+                    return csrfToken;
+                })
+                .catch(function(error) {
+                    csrfTokenRefreshPromise = null;
+                    csrfToken = null;
+                    throw error;
+                });
+
+            return csrfTokenRefreshPromise;
+        }
+
+        fetchCsrfToken().catch(function(e) {
+            console.warn('Pre-fetch CSRF token failed:', e);
+        });
+
+        function apiRequest(url, options) {
+            if (!options) options = {};
+            options.credentials = 'include';
+            if (!options.headers) options.headers = {};
+            options.headers['Content-Type'] = 'application/json';
+
+            var method = (options.method || 'GET').toUpperCase();
+            if (method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS') {
+                return fetchCsrfToken()
+                    .then(function(token) {
+                        options.headers['X-CSRF-Token'] = token;
+                        return fetch(url, options);
+                    })
+                    .then(function(response) {
+                        return response.json().then(function(data) {
+                            if (!response.ok) {
+                                if (response.status === 403 && data.error && data.error.includes('CSRF')) {
+                                    csrfToken = null;
+                                    csrfTokenLastFetch = 0;
+                                    return fetchCsrfToken()
+                                        .then(function(newToken) {
+                                            options.headers['X-CSRF-Token'] = newToken;
+                                            return fetch(url, options);
+                                        })
+                                        .then(function(retryResponse) {
+                                            return retryResponse.json().then(function(retryData) {
+                                                if (!retryResponse.ok) {
+                                                    throw new Error(retryData.error || '请求失败');
+                                                }
+                                                return retryData;
+                                            });
+                                        });
+                                }
+                                throw new Error(data.error || '请求失败');
+                            }
+                            return data;
+                        });
+                    });
+            }
+
+            return fetch(url, options)
+                .then(function(response) {
+                    return response.json().then(function(data) {
+                        if (!response.ok) {
+                            throw new Error(data.error || '请求失败');
+                        }
+                        return data;
+                    });
+                });
+        }
+
+        function fetchWithCSRF(url, options) {
+            if (!options) options = {};
+            options.credentials = 'include';
+            if (!options.headers) options.headers = {};
+
+            var method = (options.method || 'GET').toUpperCase();
+            if (method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS') {
+                return fetchCsrfToken()
+                    .then(function(token) {
+                        options.headers['X-CSRF-Token'] = token;
+                        return fetch(url, options);
+                    });
+            }
+            return fetch(url, options);
+        }
+
+        var currentUser = null;
+        var userPoints = 0;
+        var userPl = 0;
+        var currentRate = 0.07;
+        var cardKey = null;
+        var quantities = {};
+        var accessCheckInterval = null;
+        var checkToastTimer = null;
+        var orderRefreshInterval = null;
+        var productData = [];
+        var mailCount = 0;
+        var isInitialized = false;
+        var initRetryCount = 0;
+        var MAX_INIT_RETRIES = 3;
+
+        // Dynamic pricing state
+        var effectivePoints = 0;
+        var priceMultiplier = 1.0;
+        var priceTiers = [];
+        var isNewUser = false;
+        var fundBalance = 0;
+
+        var cache = {
+            pl: { balance: null, rate: null, lastFetch: 0, ttl: 30000 },
+            auth: { data: null, lastFetch: 0, ttl: 60000 },
+            inventory: { data: null, lastFetch: 0, ttl: 60000 },
+            coupons: { data: null, lastFetch: 0, ttl: 60000 },
+            mail: { data: null, lastFetch: 0, ttl: 60000 },
+            gateway: { data: null, lastFetch: 0, ttl: 60000 }
+        };
+
+        var statusMap = {
+            'pending': { label: '⏳ 待支付', className: 'pending', icon: 'fa-clock' },
+            'paid': { label: '✅ 已支付', className: 'paid', icon: 'fa-check-circle' },
+            'cancelled': { label: '❌ 已取消', className: 'cancelled', icon: 'fa-times-circle' },
+            'expired': { label: '⏰ 已过期', className: 'expired', icon: 'fa-hourglass-end' },
+            'refunded': { label: '💳 已退款', className: 'refunded', icon: 'fa-undo-alt' },
+            'frozen': { label: '❄️ 已冻结', className: 'frozen', icon: 'fa-snowflake' }
+        };
+
+        function isCacheValid(cacheKey) {
+            var c = cache[cacheKey];
+            if (!c) return false;
+            return (Date.now() - c.lastFetch) < c.ttl && c.data !== null;
+        }
+
+        function getDefaultQuantity(type) {
+            return quantities[type] || 1;
+        }
+
+        function setQuantity(type, val) {
+            val = Math.max(1, Math.min(5, parseInt(val) || 1));
+            quantities[type] = val;
+
+            document.querySelectorAll('.qty-num[data-type="' + type + '"]').forEach(function(span) {
+                span.textContent = val;
+            });
+
+            document.querySelectorAll('.qty-dec[data-type="' + type + '"]').forEach(function(dec) {
+                dec.disabled = val <= 1;
+            });
+
+            document.querySelectorAll('.qty-inc[data-type="' + type + '"]').forEach(function(inc) {
+                inc.disabled = val >= 5;
+            });
+
+            updatePlPricesUI();
+        }
+
+        function showToast(message, type) {
+            type = type || 'success';
+            var toast = document.createElement('div');
+            toast.className = 'toast' + (type === 'error' ? ' error' : '') + (type === 'warning' ? ' warning' : '') + (type === 'info' ? ' info' : '') + (type === 'daifu' ? ' daifu' : '');
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(function() { toast.remove(); }, 3000);
+        }
+
+        function showAccessCheckToast(message, type) {
+            if (checkToastTimer) {
+                clearTimeout(checkToastTimer);
+                var existing = document.querySelector('.access-check-toast');
+                if (existing) existing.remove();
+            }
+            var toast = document.createElement('div');
+            toast.className = 'access-check-toast ' + type;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            checkToastTimer = setTimeout(function() {
+                if (toast) toast.remove();
+                checkToastTimer = null;
+            }, 4000);
+        }
+
+        function showErrorBoundary(message) {
+            var el = document.getElementById('errorBoundary');
+            var msgEl = document.getElementById('errorMessage');
+            if (el && msgEl) {
+                msgEl.textContent = '❌ ' + (message || '加载失败，请重试');
+                el.style.display = 'block';
+            }
+        }
+
+        function hideErrorBoundary() {
+            var el = document.getElementById('errorBoundary');
+            if (el) el.style.display = 'none';
+        }
+
+        // ===================== DYNAMIC PRICING HELPERS =====================
+
+        function getMultiplierForPoints(points) {
+            if (points >= 500000) return 1.90;
+            if (points >= 300000) return 1.70;
+            if (points >= 200000) return 1.48;
+            if (points >= 100000) return 1.35;
+            if (points >= 50000) return 1.20;
+            return 1.00;
+        }
+
+        function getTierForPoints(points) {
+            if (points >= 500000) return { threshold: 500000, multiplier: 1.90, label: '500,000+ (90%溢价)' };
+            if (points >= 300000) return { threshold: 300000, multiplier: 1.70, label: '300,000+ (70%溢价)' };
+            if (points >= 200000) return { threshold: 200000, multiplier: 1.48, label: '200,000+ (48%溢价)' };
+            if (points >= 100000) return { threshold: 100000, multiplier: 1.35, label: '100,000+ (35%溢价)' };
+            if (points >= 50000) return { threshold: 50000, multiplier: 1.20, label: '50,000+ (20%溢价)' };
+            return { threshold: 0, multiplier: 1.00, label: '无溢价' };
+        }
+
+        function getFinalPrice(basePrice, multiplier) {
+            return Math.round(basePrice * multiplier * 100) / 100;
+        }
+
+        function updatePriceMultiplierDisplay() {
+            var tier = getTierForPoints(effectivePoints);
+            priceMultiplier = tier.multiplier;
+            
+            document.getElementById('effectivePointsDisplay').textContent = Math.round(effectivePoints).toLocaleString();
+            document.getElementById('multiplierDisplay').textContent = priceMultiplier.toFixed(2) + 'x';
+            
+            var tierInfo = document.getElementById('tierInfoDisplay');
+            if (priceMultiplier > 1.0) {
+                tierInfo.textContent = '📈 ' + tier.label + ' | 有效积分: ' + Math.round(effectivePoints).toLocaleString();
+                tierInfo.style.color = '#e67e22';
+            } else {
+                tierInfo.textContent = '✅ 无溢价 | 积分达到 50,000 后开始溢价';
+                tierInfo.style.color = '#888';
+            }
+        }
+
+        function updateCachedPriceInfo(data) {
+            if (data) {
+                if (data.effectivePoints !== undefined) {
+                    effectivePoints = data.effectivePoints;
+                }
+                if (data.priceMultiplier !== undefined) {
+                    priceMultiplier = data.priceMultiplier;
+                }
+                if (data.totalPointsWithFund !== undefined) {
+                    userPoints = data.totalPointsWithFund;
+                }
+                if (data.fundBalance !== undefined) {
+                    fundBalance = data.fundBalance;
+                }
+                if (data.isNewUser !== undefined) {
+                    isNewUser = data.isNewUser;
+                }
+                updatePriceMultiplierDisplay();
+            }
+        }
+
+        // ===================== END DYNAMIC PRICING HELPERS =====================
+
+        async function getCachedPlData(forceRefresh) {
+            if (!forceRefresh && isCacheValid('pl')) {
+                userPl = cache.pl.balance;
+                currentRate = cache.pl.rate;
+                return true;
+            }
+            try {
+                var [rateData, balanceData] = await Promise.all([
+                    apiRequest('/api/pl/rate'),
+                    apiRequest('/api/pl/balance')
+                ]);
+                currentRate = rateData.rate || 0.07;
+                userPl = balanceData.balance || 0;
+                cache.pl.rate = currentRate;
+                cache.pl.balance = userPl;
+                cache.pl.lastFetch = Date.now();
+                return true;
+            } catch (error) {
+                console.error('Get PL data failed:', error);
+                return false;
+            }
+        }
+
+        async function getCachedAuth(forceRefresh) {
+            if (!forceRefresh && isCacheValid('auth')) {
+                return cache.auth.data;
+            }
+            try {
+                var data = await apiRequest('/api/check-auth');
+                cache.auth.data = data;
+                cache.auth.lastFetch = Date.now();
+                if (data) {
+                    updateCachedPriceInfo(data);
+                }
+                return data;
+            } catch (error) {
+                console.error('Get auth failed:', error);
+                return null;
+            }
+        }
+
+        async function getCachedInventory(forceRefresh) {
+            if (!forceRefresh && isCacheValid('inventory')) {
+                return cache.inventory.data;
+            }
+            try {
+                var data = await apiRequest('/api/get-inventory');
+                cache.inventory.data = data;
+                cache.inventory.lastFetch = Date.now();
+                if (data) {
+                    if (data.effectivePoints !== undefined) {
+                        effectivePoints = data.effectivePoints;
+                    }
+                    if (data.priceMultiplier !== undefined) {
+                        priceMultiplier = data.priceMultiplier;
+                    }
+                    updatePriceMultiplierDisplay();
+                }
+                return data;
+            } catch (error) {
+                console.error('Get inventory failed:', error);
+                return null;
+            }
+        }
+
+        async function getCachedCoupons(forceRefresh) {
+            if (!forceRefresh && isCacheValid('coupons')) {
+                return cache.coupons.data;
+            }
+            try {
+                var data = await apiRequest('/api/coupons/list');
+                cache.coupons.data = data;
+                cache.coupons.lastFetch = Date.now();
+                return data;
+            } catch (error) {
+                console.error('Get coupons failed:', error);
+                return null;
+            }
+        }
+
+        async function getCachedMail(forceRefresh) {
+            if (!forceRefresh && isCacheValid('mail')) {
+                return cache.mail.data;
+            }
+            try {
+                var data = await apiRequest('/api/mail/list');
+                cache.mail.data = data;
+                cache.mail.lastFetch = Date.now();
+                return data;
+            } catch (error) {
+                console.error('Get mail failed:', error);
+                return null;
+            }
+        }
+
+        async function getCachedGateway(key, forceRefresh) {
+            if (!forceRefresh && isCacheValid('gateway')) {
+                return cache.gateway.data;
+            }
+            try {
+                var data = await apiRequest('/api/gateway/check-access?key=' + encodeURIComponent(key));
+                cache.gateway.data = data;
+                cache.gateway.lastFetch = Date.now();
+                return data;
+            } catch (error) {
+                console.error('Get gateway failed:', error);
+                return null;
+            }
+        }
+
+        function updatePlBalanceDisplay() {
+            document.querySelectorAll('.pl-balance-mini').forEach(function(el) {
+                var type = el.getAttribute('data-type');
+                el.textContent = '余额: ' + userPl.toFixed(4) + ' PL';
+            });
+            document.querySelectorAll('.pl-insufficient').forEach(function(el) {
+                var type = el.getAttribute('data-type');
+                var product = productData.find(function(p) { return p.type === type; });
+                if (!product) return;
+                var qty = quantities[type] || 1;
+                var finalPrice = getFinalPrice(product.price, priceMultiplier);
+                var totalPoints = finalPrice * qty;
+                var plNeeded = currentRate > 0 ? (totalPoints / currentRate) : 0;
+                if (userPl < plNeeded) {
+                    el.style.display = 'inline';
+                } else {
+                    el.style.display = 'none';
+                }
+            });
+        }
+
+        function updatePlPricesUI() {
+            document.querySelectorAll('.pl-price').forEach(function(el) {
+                var type = el.getAttribute('data-type');
+                var product = productData.find(function(p) { return p.type === type; });
+                if (!product) return;
+                var qty = quantities[type] || 1;
+                var finalPrice = getFinalPrice(product.price, priceMultiplier);
+                var totalPoints = finalPrice * qty;
+                var plPrice = currentRate > 0 ? (totalPoints / currentRate) : 0;
+                el.textContent = '(≈' + plPrice.toFixed(4) + ' PL)';
+            });
+            updatePlBalanceDisplay();
+        }
+
+        async function updateMailBadge(forceRefresh) {
+            try {
+                var data = await getCachedMail(forceRefresh);
+                if (!data) return;
+                mailCount = data.total || 0;
+                var badge = document.getElementById('mailBadge');
+                if (badge) {
+                    if (mailCount > 0) {
+                        badge.style.display = 'inline';
+                        badge.textContent = mailCount > 99 ? '99+' : mailCount;
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+                var notice = document.getElementById('mailNotice');
+                if (notice) {
+                    if (mailCount > 0) {
+                        notice.style.display = 'flex';
+                    } else {
+                        notice.style.display = 'none';
+                    }
+                }
+            } catch (e) {
+                console.error('Update mail badge failed:', e);
+            }
+        }
+
+        async function loadProducts() {
+            try {
+                hideErrorBoundary();
+                var response = await fetchWithCSRF('/public/mall.json', {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
+
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+                }
+
+                var data = await response.json();
+                if (!data || !data.products || !Array.isArray(data.products)) {
+                    throw new Error('Invalid product data format');
+                }
+
+                productData = data.products || [];
+                renderProducts(productData);
+            } catch (error) {
+                console.error('Load products failed:', error);
+                document.getElementById('cardList').innerHTML = '<div class="loading-products">❌ 加载商品失败: ' + error.message + '</div>';
+                showErrorBoundary('加载商品失败: ' + error.message);
+            }
+        }
+
+        function renderProducts(products) {
+            var container = document.getElementById('cardList');
+            if (!products || products.length === 0) {
+                container.innerHTML = '<div class="loading-products">📭 暂无商品</div>';
+                return;
+            }
+
+            var html = '';
+            products.forEach(function(product) {
+                var basePrice = product.price;
+                var finalPrice = getFinalPrice(basePrice, priceMultiplier);
+                var multiplier = priceMultiplier;
+                var effectivePts = effectivePoints;
+
+                var multiplierDisplay = '';
+                if (multiplier > 1.0) {
+                    var percentIncrease = ((multiplier - 1) * 100).toFixed(0);
+                    multiplierDisplay = '<div class="card-price-multiplier"><i class="fas fa-arrow-up"></i> 溢价 +' + percentIncrease + '% (有效积分 ' + Math.round(effectivePts).toLocaleString() + ')</div>';
+                } else {
+                    multiplierDisplay = '<div class="card-price-multiplier" style="border-left-color:#27ae60;background:#e6f7e6;color:#27ae60;"><i class="fas fa-check-circle"></i> 无溢价</div>';
+                }
+
+                var plPriceHtml = '';
+                if (product.plPrice !== false) {
+                    var plPrice = currentRate > 0 ? (finalPrice / currentRate) : 0;
+                    plPriceHtml = `
+                        <div class="pay-toggle" onclick="document.getElementById('pl_${product.type}').click()">
+                            <input type="checkbox" class="use-pl" data-type="${product.type}" id="pl_${product.type}">
+                            <label for="pl_${product.type}">💎 PL支付 <span class="pl-price" data-type="${product.type}">(≈${plPrice.toFixed(4)} PL)</span></label>
+                            <span class="pl-balance-mini" data-type="${product.type}">余额: ${userPl.toFixed(4)} PL</span>
+                            <span class="pl-insufficient" data-type="${product.type}" style="display:none;">⚠️ 余额不足</span>
+                        </div>
+                    `;
+                }
+
+                var warningHtml = product.warning ? '<div class="card-warning">' + product.warning + '</div>' : '';
+                var recycleHtml = product.recycleInfo ? '<div class="card-recycle">' + product.recycleInfo + '</div>' : '';
+                var badgeHtml = '';
+                if (product.type === 'cancellation') {
+                    badgeHtml = '<span class="card-badge">需签到4天</span>';
+                } else if (product.type === 'makeup') {
+                    badgeHtml = '<span class="card-badge">永久限购3次</span>';
+                } else if (product.type === 'gamblers') {
+                    badgeHtml = '<span class="card-badge">单日限购3次</span>';
+                } else if (product.type === 'box') {
+                    badgeHtml = '<span class="card-badge">单日限购5次</span>';
+                } else if (product.type === 'plcard') {
+                    badgeHtml = '<span class="card-badge">单日限购10次</span>';
+                } else if (product.type === 'premium_boost') {
+                    badgeHtml = '<span class="card-badge">高级加成</span>';
+                } else if (product.price > 10) {
+                    badgeHtml = '<span class="card-badge">稀有</span>';
+                } else if (product.price <= 3) {
+                    badgeHtml = '<span class="card-badge">热门</span>';
+                } else {
+                    badgeHtml = '<span class="card-badge">推荐</span>';
+                }
+
+                var priceDisplay = finalPrice;
+                var originalDisplay = basePrice;
+                var hasPriceChange = finalPrice !== basePrice;
+
+                html += `
+                    <div class="mall-card" id="card${product.type.charAt(0).toUpperCase() + product.type.slice(1)}">
+                        <div class="card-header">
+                            <span class="card-name">${product.name}</span>
+                            ${badgeHtml}
+                        </div>
+                        <div class="card-desc">${product.description}</div>
+                        ${multiplierDisplay}
+                        ${warningHtml}
+                        ${recycleHtml}
+                        <div class="card-price-row">
+                            <div>
+                                <span class="card-price">
+                                    <span class="currency">⭐</span> ${priceDisplay.toFixed(2)}
+                                    ${hasPriceChange ? `<span class="original">原价 ${originalDisplay.toFixed(2)}</span>` : ''}
+                                    ${multiplier > 1.0 ? `<span class="multiplier-label">×${multiplier.toFixed(2)}</span>` : ''}
+                                </span>
+                            </div>
+                            <div class="card-actions">
+                                <div class="action-row">
+                                    <div class="quantity-control">
+                                        <button class="qty-dec" data-type="${product.type}">−</button>
+                                        <span class="qty-num" data-type="${product.type}">1</span>
+                                        <button class="qty-inc" data-type="${product.type}">+</button>
+                                    </div>
+                                    <button class="buy-btn" data-type="${product.type}">购买</button>
+                                    <button class="daifu-btn" data-type="${product.type}">🤝 代付</button>
+                                </div>
+                                ${plPriceHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+
+            document.querySelectorAll('.qty-num').forEach(function(span) {
+                var type = span.getAttribute('data-type');
+                if (!quantities[type]) {
+                    quantities[type] = 1;
+                }
+                span.textContent = quantities[type];
+            });
+
+            document.querySelectorAll('.qty-dec').forEach(function(dec) {
+                var type = dec.getAttribute('data-type');
+                dec.disabled = quantities[type] <= 1;
+            });
+
+            document.querySelectorAll('.qty-inc').forEach(function(inc) {
+                var type = inc.getAttribute('data-type');
+                inc.disabled = quantities[type] >= 5;
+            });
+
+            container.querySelectorAll('.qty-dec').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var type = this.getAttribute('data-type');
+                    var current = quantities[type] || 1;
+                    if (current > 1) {
+                        setQuantity(type, current - 1);
+                    }
+                });
+            });
+
+            container.querySelectorAll('.qty-inc').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var type = this.getAttribute('data-type');
+                    var current = quantities[type] || 1;
+                    if (current < 5) {
+                        setQuantity(type, current + 1);
+                    }
+                });
+            });
+
+            container.querySelectorAll('.buy-btn').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var type = this.getAttribute('data-type');
+                    buyCard(type, false);
+                });
+            });
+
+            container.querySelectorAll('.daifu-btn').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var type = this.getAttribute('data-type');
+                    buyCard(type, true);
+                });
+            });
+
+            container.querySelectorAll('.use-pl').forEach(function(cb) {
+                cb.addEventListener('change', function() {
+                    var type = this.getAttribute('data-type');
+                    var product = productData.find(function(p) { return p.type === type; });
+                    if (!product) return;
+                    var qty = quantities[type] || 1;
+                    var finalPrice = getFinalPrice(product.price, priceMultiplier);
+                    var totalPoints = finalPrice * qty;
+                    var plNeeded = currentRate > 0 ? (totalPoints / currentRate) : 0;
+                    var insuff = document.querySelector('.pl-insufficient[data-type="' + type + '"]');
+                    if (this.checked && userPl < plNeeded) {
+                        insuff.style.display = 'inline';
+                        showToast('PL余额不足，需要 ' + plNeeded.toFixed(4) + ' PL', 'warning');
+                    } else {
+                        insuff.style.display = 'none';
+                    }
+                });
+            });
+
+            updatePlPricesUI();
+            updateCardStates();
+        }
+
+        async function verifyAccess(forceRefresh) {
+            var urlParams = new URLSearchParams(window.location.search);
+            var key = urlParams.get('key');
+            if (!key) {
+                document.getElementById('accessDenied').style.display = 'block';
+                document.getElementById('mallContent').style.display = 'none';
+                return false;
+            }
+            try {
+                var data = await getCachedGateway(key, forceRefresh);
+                if (!data || !data.hasAccess) {
+                    document.getElementById('accessDenied').style.display = 'block';
+                    document.getElementById('mallContent').style.display = 'none';
+                    return false;
+                }
+                cardKey = key;
+                return true;
+            } catch (error) {
+                document.getElementById('accessDenied').style.display = 'block';
+                document.getElementById('mallContent').style.display = 'none';
+                return false;
+            }
+        }
+
+        async function checkMallRestriction() {
+            try {
+                var data = await getCachedAuth(false);
+                if (data && data.mallRestricted) {
+                    showAccessCheckToast('🚫 您的账号已被限制使用商城功能，请联系管理员', 'error');
+                    setTimeout(function() {
+                        window.location.href = '/';
+                    }, 3000);
+                    return false;
+                }
+                return true;
+            } catch (error) {
+                console.error('Check mall restriction failed:', error);
+                return true;
+            }
+        }
+
+        async function checkAccessStillValid() {
+            var key = new URLSearchParams(window.location.search).get('key');
+            if (!key) {
+                handleAccessExpired('卡密参数丢失');
+                return false;
+            }
+
+            try {
+                var data = await getCachedGateway(key, false);
+                if (!data || !data.hasAccess) {
+                    handleAccessExpired(data ? data.error : '卡密已失效');
+                    return false;
+                }
+
+                var expireAt = data.expireAt || 0;
+                if (expireAt > 0) {
+                    var now = Date.now();
+                    var timeLeft = expireAt - now;
+                    if (timeLeft < 300000 && timeLeft > 0) {
+                        var minutes = Math.ceil(timeLeft / 60000);
+                        var seconds = Math.ceil(timeLeft / 1000);
+                        if (timeLeft < 60000) {
+                            showAccessCheckToast('⏰ 通行卡密将在 ' + seconds + ' 秒后过期', 'warning');
+                        } else {
+                            showAccessCheckToast('⏰ 通行卡密即将过期，剩余 ' + minutes + ' 分钟', 'warning');
+                        }
+                    } else if (timeLeft <= 0) {
+                        handleAccessExpired('卡密已过期');
+                        return false;
+                    } else {
+                        var existing = document.querySelector('.access-check-toast');
+                        if (existing) existing.remove();
+                    }
+                }
+                return true;
+            } catch (error) {
+                console.error('Access check failed:', error);
+                if (error.message && error.message.includes('卡密无效')) {
+                    handleAccessExpired(error.message);
+                    return false;
+                }
+                return true;
+            }
+        }
+
+        function handleAccessExpired(reason) {
+            if (accessCheckInterval) {
+                clearInterval(accessCheckInterval);
+                accessCheckInterval = null;
+            }
+
+            showAccessCheckToast('🔒 通行卡密已失效: ' + (reason || '请重新购买'), 'error');
+
+            setTimeout(function() {
+                window.location.href = '/gateway.html';
+            }, 2500);
+        }
+
+        function startAccessCheck() {
+            if (accessCheckInterval) {
+                clearInterval(accessCheckInterval);
+                accessCheckInterval = null;
+            }
+
+            setTimeout(function() {
+                checkAccessStillValid();
+            }, 1000);
+
+            accessCheckInterval = setInterval(function() {
+                if (!isCacheValid('gateway')) {
+                    checkAccessStillValid();
+                }
+            }, 60000);
+        }
+
+        function stopAccessCheck() {
+            if (accessCheckInterval) {
+                clearInterval(accessCheckInterval);
+                accessCheckInterval = null;
+            }
+            if (checkToastTimer) {
+                clearTimeout(checkToastTimer);
+                checkToastTimer = null;
+                var existing = document.querySelector('.access-check-toast');
+                if (existing) existing.remove();
+            }
+        }
+
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                checkAccessStillValid();
+            }
+        });
+
+        window.addEventListener('beforeunload', function() {
+            stopAccessCheck();
+            if (orderRefreshInterval) {
+                clearInterval(orderRefreshInterval);
+                orderRefreshInterval = null;
+            }
+        });
+
+        async function loadUserInfo(forceRefresh) {
+            try {
+                var data = await getCachedAuth(forceRefresh);
+                if (!data || !data.authenticated) {
+                    window.location.href = '/login.html';
+                    return false;
+                }
+                currentUser = data.username;
+                userPoints = data.totalPointsWithFund || data.totalPoints || 0;
+                fundBalance = data.fundBalance || 0;
+                isNewUser = data.isNewUser || false;
+                if (data.effectivePoints !== undefined) {
+                    effectivePoints = data.effectivePoints;
+                }
+                if (data.priceMultiplier !== undefined) {
+                    priceMultiplier = data.priceMultiplier;
+                }
+                document.getElementById('userInfo').textContent = '👤 ' + currentUser;
+                document.getElementById('pointsDisplay').textContent = '⭐ ' + userPoints.toFixed(2) + ' 积分（含理财）';
+                await getCachedPlData(forceRefresh);
+                document.getElementById('plDisplay').textContent = '💎 ' + userPl.toFixed(4) + ' PL';
+                updatePriceMultiplierDisplay();
+                updatePlBalanceDisplay();
+                await updateCardStates(forceRefresh);
+                await updateMailBadge(forceRefresh);
+                return true;
+            } catch (error) {
+                console.error('Load user info failed:', error);
+                return false;
+            }
+        }
+
+        async function updateCardStates(forceRefresh) {
+            try {
+                var data = await getCachedInventory(forceRefresh);
+                if (!data) return;
+                var cancellationPurchased = data.cancellationPurchased || false;
+                var consecutiveDays = data.consecutiveDays || 0;
+                var makeupUsedCount = data.makeupUsedCount || 0;
+                var gamblersPurchaseCount = data.gamblersPurchaseCount || 0;
+                var boxPurchaseCount = data.boxPurchaseCount || 0;
+                var plcardPurchaseCount = data.plcardPurchaseCount || 0;
+
+                var cancellationBtn = document.querySelector('.buy-btn[data-type="cancellation"]');
+                if (cancellationBtn) {
+                    if (cancellationPurchased) {
+                        cancellationBtn.disabled = true;
+                        cancellationBtn.textContent = '✅ 已购买';
+                        cancellationBtn.className = 'buy-btn purchased';
+                    } else if (consecutiveDays < 4) {
+                        cancellationBtn.disabled = true;
+                        cancellationBtn.textContent = '🔒 需签到' + (4 - consecutiveDays) + '天';
+                    } else {
+                        cancellationBtn.disabled = false;
+                        cancellationBtn.textContent = '购买';
+                        cancellationBtn.className = 'buy-btn';
+                    }
+                }
+
+                var makeupBtn = document.querySelector('.buy-btn[data-type="makeup"]');
+                if (makeupBtn) {
+                    if (makeupUsedCount >= 3) {
+                        makeupBtn.disabled = true;
+                        makeupBtn.textContent = '✅ 已用尽';
+                        makeupBtn.className = 'buy-btn purchased';
+                    } else {
+                        makeupBtn.disabled = false;
+                        makeupBtn.textContent = '购买 (' + (3 - makeupUsedCount) + '次)';
+                        makeupBtn.className = 'buy-btn';
+                    }
+                }
+
+                var gamblersBtn = document.querySelector('.buy-btn[data-type="gamblers"]');
+                if (gamblersBtn) {
+                    if (gamblersPurchaseCount >= 3) {
+                        gamblersBtn.disabled = true;
+                        gamblersBtn.textContent = '📅 今日已满';
+                        gamblersBtn.className = 'buy-btn purchased';
+                    } else {
+                        gamblersBtn.disabled = false;
+                        gamblersBtn.textContent = '购买 (' + (3 - gamblersPurchaseCount) + '次)';
+                        gamblersBtn.className = 'buy-btn';
+                    }
+                }
+
+                var boxBtn = document.querySelector('.buy-btn[data-type="box"]');
+                if (boxBtn) {
+                    if (boxPurchaseCount >= 5) {
+                        boxBtn.disabled = true;
+                        boxBtn.textContent = '📅 今日已满';
+                        boxBtn.className = 'buy-btn purchased';
+                    } else {
+                        boxBtn.disabled = false;
+                        boxBtn.textContent = '购买 (' + (5 - boxPurchaseCount) + '次)';
+                        boxBtn.className = 'buy-btn';
+                    }
+                }
+
+                var plcardBtn = document.querySelector('.buy-btn[data-type="plcard"]');
+                if (plcardBtn) {
+                    if (plcardPurchaseCount >= 10) {
+                        plcardBtn.disabled = true;
+                        plcardBtn.textContent = '📅 今日已满';
+                        plcardBtn.className = 'buy-btn purchased';
+                    } else {
+                        plcardBtn.disabled = false;
+                        plcardBtn.textContent = '购买 (' + (10 - plcardPurchaseCount) + '次)';
+                        plcardBtn.className = 'buy-btn';
+                    }
+                }
+
+                document.querySelectorAll('.daifu-btn').forEach(function(btn) {
+                    var type = btn.getAttribute('data-type');
+                    if (type === 'cancellation') {
+                        if (cancellationPurchased) {
+                            btn.disabled = true;
+                            btn.textContent = '✅ 已购买';
+                        } else if (consecutiveDays < 4) {
+                            btn.disabled = true;
+                            btn.textContent = '🔒 需签到' + (4 - consecutiveDays) + '天';
+                        } else {
+                            btn.disabled = false;
+                            btn.textContent = '🤝 代付';
+                        }
+                    } else if (type === 'makeup') {
+                        if (makeupUsedCount >= 3) {
+                            btn.disabled = true;
+                            btn.textContent = '✅ 已用尽';
+                        } else {
+                            btn.disabled = false;
+                            btn.textContent = '🤝 代付 (' + (3 - makeupUsedCount) + '次)';
+                        }
+                    } else if (type === 'gamblers') {
+                        if (gamblersPurchaseCount >= 3) {
+                            btn.disabled = true;
+                            btn.textContent = '📅 今日已满';
+                        } else {
+                            btn.disabled = false;
+                            btn.textContent = '🤝 代付 (' + (3 - gamblersPurchaseCount) + '次)';
+                        }
+                    } else if (type === 'box') {
+                        if (boxPurchaseCount >= 5) {
+                            btn.disabled = true;
+                            btn.textContent = '📅 今日已满';
+                        } else {
+                            btn.disabled = false;
+                            btn.textContent = '🤝 代付 (' + (5 - boxPurchaseCount) + '次)';
+                        }
+                    } else if (type === 'plcard') {
+                        if (plcardPurchaseCount >= 10) {
+                            btn.disabled = true;
+                            btn.textContent = '📅 今日已满';
+                        } else {
+                            btn.disabled = false;
+                            btn.textContent = '🤝 代付 (' + (10 - plcardPurchaseCount) + '次)';
+                        }
+                    } else {
+                        btn.disabled = false;
+                        btn.textContent = '🤝 代付';
+                    }
+                });
+            } catch (error) {
+                console.error('Update card states failed:', error);
+            }
+        }
+
+        function showDaifuQRCode(orderId, fullQrUrl) {
+            var modal = document.getElementById('daifuModal');
+            var container = document.getElementById('daifuQrContainer');
+            var linkDisplay = document.getElementById('daifuLinkDisplay');
+            var orderLink = document.getElementById('daifuOrderLink');
+
+            container.innerHTML = '';
+            linkDisplay.textContent = fullQrUrl;
+            orderLink.href = '/pay/' + orderId;
+
+            function generateQR() {
+                try {
+                    if (typeof QRCode !== 'undefined') {
+                        new QRCode(container, {
+                            text: fullQrUrl,
+                            width: 160,
+                            height: 160,
+                            colorDark: '#0b0e1a',
+                            colorLight: '#ffffff',
+                            correctLevel: QRCode.CorrectLevel.H
+                        });
+                        return true;
+                    }
+                    return false;
+                } catch (e) {
+                    console.error('QRCode generation failed:', e);
+                    return false;
+                }
+            }
+
+            if (!generateQR()) {
+                var img = document.createElement('img');
+                img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' + encodeURIComponent(fullQrUrl);
+                img.style.width = '160px';
+                img.style.height = '160px';
+                img.style.borderRadius = '8px';
+                img.alt = '二维码';
+                img.onerror = function() {
+                    container.innerHTML = '<div style="width:160px;height:160px;background:#f0f0f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#666;flex-direction:column;gap:4px;">' +
+                        '<i class="fas fa-link" style="font-size:24px;color:#667eea;"></i>' +
+                        '复制链接分享给朋友</div>';
+                };
+                container.appendChild(img);
+            }
+
+            modal.style.display = 'flex';
+            showToast('🤝 代付订单已创建，分享二维码给朋友扫码支付', 'daifu');
+        }
+
+        document.getElementById('copyDaifuLinkBtn').addEventListener('click', function() {
+            var text = document.getElementById('daifuLinkDisplay').textContent;
+            if (text) {
+                navigator.clipboard.writeText(text).then(function() {
+                    showToast('✅ 链接已复制', 'success');
+                }).catch(function() {
+                    var range = document.createRange();
+                    var el = document.getElementById('daifuLinkDisplay');
+                    range.selectNode(el);
+                    window.getSelection().removeAllRanges();
+                    window.getSelection().addRange(range);
+                    document.execCommand('copy');
+                    showToast('✅ 链接已复制', 'success');
+                });
+            }
+        });
+
+        document.getElementById('daifuModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.style.display = 'none';
+            }
+        });
+
+        async function buyCard(type, isDaifu) {
+            var btn = document.querySelector(isDaifu ? '.daifu-btn[data-type="' + type + '"]' : '.buy-btn[data-type="' + type + '"]');
+            if (btn && btn.disabled) return;
+
+            var usePlCheckbox = document.querySelector('.use-pl[data-type="' + type + '"]');
+            var usePl = usePlCheckbox ? usePlCheckbox.checked : false;
+
+            var product = productData.find(function(p) { return p.type === type; });
+            if (!product) {
+                showToast('❌ 商品不存在', 'error');
+                return;
+            }
+
+            var qty = quantities[type] || 1;
+            var finalPrice = getFinalPrice(product.price, priceMultiplier);
+            var totalPoints = finalPrice * qty;
+
+            if (usePl) {
+                await getCachedPlData(false);
+                var plNeeded = currentRate > 0 ? (totalPoints / currentRate) : 0;
+                if (userPl < plNeeded) {
+                    showToast('PL余额不足！需要 ' + plNeeded.toFixed(4) + ' PL，当前 ' + userPl.toFixed(4) + ' PL', 'error');
+                    return;
+                }
+                if (userPl < 0.01) {
+                    showToast('PL余额不足，请先兑换PL', 'error');
+                    return;
+                }
+            }
+
+            var originalText = btn.textContent;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> 创建订单...';
+
+            try {
+                var data = await apiRequest('/api/order/create-batch', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        product_type: type,
+                        quantity: qty,
+                        use_pl: usePl || false,
+                        is_daifu: isDaifu || false
+                    })
+                });
+
+                if (data.success) {
+                    if (isDaifu && data.is_daifu) {
+                        var baseUrl = window.location.origin;
+                        var fullQrUrl = data.full_qr_url || baseUrl + data.qr_url;
+                        showDaifuQRCode(data.order_id, fullQrUrl);
+                        btn.disabled = false;
+                        btn.innerHTML = originalText;
+                    } else {
+                        window.location.href = '/pay/' + data.order_id;
+                    }
+                }
+            } catch (error) {
+                showToast('创建订单失败: ' + error.message, 'error');
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        document.querySelectorAll('.tab').forEach(function(tab) {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+                this.classList.add('active');
+                document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+                var target = document.getElementById('tab' + this.getAttribute('data-tab').charAt(0).toUpperCase() + this.getAttribute('data-tab').slice(1));
+                if (target) target.classList.add('active');
+                var tabName = this.getAttribute('data-tab');
+                if (tabName === 'inventory') loadInventory(false);
+                if (tabName === 'coupons') loadCoupons(false);
+                if (tabName === 'orders') {
+                    loadOrders();
+                    startOrderRefresh();
+                } else {
+                    stopOrderRefresh();
+                }
+            });
+        });
+
+        document.getElementById('refreshBtn').addEventListener('click', function() {
+            var btn = this;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            Promise.all([
+                loadUserInfo(true),
+                getCachedPlData(true),
+                loadInventory(true),
+                loadCoupons(true),
+                loadOrders(),
+                loadProducts(),
+                verifyAccess(true),
+                updateMailBadge(true)
+            ]).then(function() {
+                showToast('🔄 已刷新', 'success');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+            }).catch(function(err) {
+                console.error('Refresh failed:', err);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+                showErrorBoundary('刷新失败: ' + (err.message || '未知错误'));
+            });
+        });
+
+        function startOrderRefresh() {
+            if (orderRefreshInterval) {
+                clearInterval(orderRefreshInterval);
+                orderRefreshInterval = null;
+            }
+            orderRefreshInterval = setInterval(function() {
+                var ordersTab = document.querySelector('.tab[data-tab="orders"]');
+                if (ordersTab && ordersTab.classList.contains('active')) {
+                    loadOrders();
+                }
+            }, 30000);
+        }
+
+        function stopOrderRefresh() {
+            if (orderRefreshInterval) {
+                clearInterval(orderRefreshInterval);
+                orderRefreshInterval = null;
+            }
+        }
+
+        async function continuePay(orderId) {
+            if (!orderId) {
+                showToast('❌ 订单ID无效', 'error');
+                return;
+            }
+
+            var btn = document.querySelector('.order-pay-btn[data-order="' + orderId + '"]');
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = '⏳ 跳转中...';
+            }
+
+            try {
+                var orderData = await apiRequest('/api/order/' + orderId);
+                var order = orderData.order || {};
+
+                if (order.status !== 'pending') {
+                    showToast('⚠️ 订单状态已变更，无法继续支付', 'warning');
+                    loadOrders();
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.textContent = '💳 继续支付';
+                    }
+                    return;
+                }
+
+                var created_at = order.created_at || 0;
+                var now = Date.now();
+                if (now - created_at > 300000) {
+                    showToast('⚠️ 订单已过期（超过5分钟），请重新下单', 'warning');
+                    try {
+                        await apiRequest('/api/order/' + orderId + '/cancel', { method: 'POST' });
+                        loadOrders();
+                    } catch (e) {}
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.textContent = '💳 继续支付';
+                    }
+                    return;
+                }
+
+                window.location.href = '/pay/' + orderId;
+            } catch (error) {
+                if (error.message && error.message.includes('订单已过期')) {
+                    showToast('⚠️ 订单已过期，请重新下单', 'warning');
+                    loadOrders();
+                } else if (error.message && error.message.includes('不存在')) {
+                    showToast('⚠️ 订单不存在或已被删除', 'warning');
+                    loadOrders();
+                } else {
+                    showToast('❌ 跳转失败: ' + error.message, 'error');
+                }
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = '💳 继续支付';
+                }
+            }
+        }
+
+        async function loadInventory(forceRefresh) {
+            try {
+                var data = await getCachedInventory(forceRefresh);
+                if (!data) {
+                    document.getElementById('inventoryList').innerHTML = '<div class="inventory-empty">加载失败，请刷新重试</div>';
+                    return;
+                }
+                renderInventory(data);
+            } catch (error) {
+                console.error('Load inventory failed:', error);
+                document.getElementById('inventoryList').innerHTML = '<div class="inventory-empty">加载失败，请刷新重试</div>';
+            }
+        }
+
+        function renderInventory(data) {
+            var container = document.getElementById('inventoryList');
+            var total = 0;
+            var html = '';
+
+            var categories = [
+                { key: 'pointCodes', label: '⭐ 普通积分卡', icon: '⭐', allowUse: true, allowRecycle: true },
+                { key: 'premiumPointCodes', label: '💎 高级积分卡', icon: '💎', allowUse: true, allowRecycle: true },
+                { key: 'specialPointCodes', label: '🌟 特殊积分卡', icon: '🌟', allowUse: true, allowRecycle: true },
+                { key: 'boostCodes', label: '⚡ 加成卡', icon: '⚡', allowUse: true, allowRecycle: true },
+                { key: 'premiumBoostCodes', label: '💄 高级加成卡', icon: '💄', allowUse: true, allowRecycle: true },
+                { key: 'resetCodes', label: '🔐 重置密码卡', icon: '🔐', allowUse: false, allowRecycle: true },
+                { key: 'cancellationCodes', label: '🗑️ 注销卡', icon: '🗑️', allowUse: false, allowRecycle: false },
+                { key: 'makeupCodes', label: '📝 补签卡', icon: '📝', allowUse: true, allowRecycle: false },
+                { key: 'gamblersCodes', label: '🎰 赌神卡', icon: '🎰', allowUse: true, allowRecycle: false },
+                { key: 'boxCodes', label: '🎁 盲盒卡', icon: '🎁', allowUse: true, allowRecycle: false },
+                { key: 'plcardCodes', label: '🎃 普通PL随机卡', icon: '🎃', allowUse: true, allowRecycle: true }
+            ];
+
+            categories.forEach(function(cat) {
+                var items = data[cat.key] || [];
+                if (items.length === 0) return;
+                total += items.length;
+                html += '<div class="inventory-category">';
+                html += '<div class="category-title">' + cat.icon + ' ' + cat.label + ' <span class="category-count">' + items.length + '张</span></div>';
+                html += '<div class="inventory-items">';
+                items.forEach(function(item) {
+                    var expireText = '';
+                    if (item.expiresIn !== undefined) {
+                        if (item.expiresIn < 0.1) {
+                            expireText = '⏰ 即将过期';
+                        } else if (item.expiresIn < 1) {
+                            expireText = '⏰ ' + Math.round(item.expiresIn * 60) + '分钟';
+                        } else {
+                            expireText = '⏰ ' + Math.round(item.expiresIn) + '小时';
+                        }
+                    }
+
+                    var useBtn = '';
+                    var copyBtn = '';
+                    var recycleBtn = '';
+
+                    if (cat.key === 'resetCodes' || cat.key === 'cancellationCodes') {
+                        copyBtn = '<button class="use-btn copy-btn" onclick="copyCode(\'' + item.code + '\')">📋 复制</button>';
+                    } else {
+                        if (cat.key === 'boostCodes') {
+                            useBtn = '<button class="use-btn" onclick="useBoostCode(\'' + item.code + '\')">使用</button>';
+                        } else if (cat.key === 'premiumBoostCodes') {
+                            useBtn = '<button class="use-btn" onclick="usePremiumBoostCode(\'' + item.code + '\')">使用</button>';
+                        } else if (cat.key === 'pointCodes' || cat.key === 'premiumPointCodes' || cat.key === 'specialPointCodes') {
+                            useBtn = '<button class="use-btn" onclick="usePointCode(\'' + item.code + '\')">使用</button>';
+                        } else if (cat.key === 'makeupCodes') {
+                            useBtn = '<button class="use-btn" onclick="useMakeupCode(\'' + item.code + '\')">使用</button>';
+                        } else if (cat.key === 'gamblersCodes') {
+                            useBtn = '<button class="use-btn" onclick="useGamblersCode(\'' + item.code + '\')">使用</button>';
+                        } else if (cat.key === 'boxCodes') {
+                            useBtn = '<button class="use-btn" onclick="useBoxCode(\'' + item.code + '\')">使用</button>';
+                        } else if (cat.key === 'plcardCodes') {
+                            useBtn = '<button class="use-btn" onclick="usePlcardCode(\'' + item.code + '\')">使用</button>';
+                        }
+                    }
+
+                    if (cat.allowRecycle && item.recyclable) {
+                        var recycleKey = cat.key;
+                        if (recycleKey === 'premiumBoostCodes') {
+                            recycleKey = 'premium_boost';
+                        }
+                        recycleBtn = '<button class="use-btn recycle" onclick="recycleCode(\'' + item.code + '\', \'' + recycleKey + '\')">回收</button>';
+                    }
+
+                    var tipText = '';
+                    if (cat.key === 'resetCodes') {
+                        tipText = ' <span style="font-size:10px;color:#888;">(需在密码重置页面使用)</span>';
+                    } else if (cat.key === 'cancellationCodes') {
+                        tipText = ' <span style="font-size:10px;color:#888;">(需在注销页面使用)</span>';
+                    }
+
+                    html += '<div class="inventory-item">' + item.code + ' ' + expireText + ' ' + useBtn + ' ' + copyBtn + ' ' + recycleBtn + tipText + '</div>';
+                });
+                html += '</div></div>';
+            });
+
+            if (total === 0) {
+                html = '<div class="inventory-empty">📭 背包为空，快去商城购买卡密吧</div>';
+            }
+
+            container.innerHTML = html;
+
+            var badge = document.getElementById('inventoryBadge');
+            if (total > 0) {
+                badge.style.display = 'inline';
+                badge.textContent = total;
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        async function copyCode(code) {
+            try {
+                await navigator.clipboard.writeText(code);
+                showToast('✅ 已复制卡密: ' + code, 'success');
+            } catch (error) {
+                var textArea = document.createElement('textarea');
+                textArea.value = code;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    showToast('✅ 已复制卡密: ' + code, 'success');
+                } catch (e) {
+                    showToast('❌ 复制失败，请手动复制: ' + code, 'error');
+                }
+                document.body.removeChild(textArea);
+            }
+        }
+
+        async function loadCoupons(forceRefresh) {
+            try {
+                var data = await getCachedCoupons(forceRefresh);
+                if (!data) {
+                    document.getElementById('couponList').innerHTML = '<div class="inventory-empty">加载失败，请刷新重试</div>';
+                    return;
+                }
+                var coupons = data.coupons || [];
+                renderCoupons(coupons);
+            } catch (error) {
+                console.error('Load coupons failed:', error);
+                document.getElementById('couponList').innerHTML = '<div class="inventory-empty">加载失败，请刷新重试</div>';
+            }
+        }
+
+        function renderCoupons(coupons) {
+            var container = document.getElementById('couponList');
+            if (!coupons || coupons.length === 0) {
+                container.innerHTML = '<div class="inventory-empty">🎫 暂无可用优惠券</div>';
+                document.getElementById('couponBadge').style.display = 'none';
+                return;
+            }
+
+            var html = '';
+            coupons.forEach(function(c) {
+                var expireDate = new Date(c.expire_at);
+                var now = new Date();
+                var hoursLeft = Math.floor((expireDate - now) / 3600000);
+                var expireText = hoursLeft > 24 ? Math.floor(hoursLeft / 24) + '天后过期' : hoursLeft + '小时后过期';
+                if (hoursLeft < 0) expireText = '已过期';
+                html += '<div class="coupon-item">';
+                html += '<div class="coupon-info">';
+                html += '<div class="coupon-name">' + c.type_label + ' - ' + c.description + '</div>';
+                html += '<div class="coupon-desc">' + (c.threshold > 0 ? '满' + c.threshold + '可用' : '无门槛') + '</div>';
+                html += '</div>';
+                html += '<div class="coupon-expire">' + expireText + '</div>';
+                html += '</div>';
+            });
+
+            container.innerHTML = html;
+            document.getElementById('couponBadge').style.display = 'inline';
+            document.getElementById('couponBadge').textContent = coupons.length;
+        }
+
+        async function loadOrders() {
+            try {
+                var data = await apiRequest('/api/order/history?page=1&per_page=50');
+                var orders = data.orders || [];
+                renderOrders(orders);
+            } catch (error) {
+                console.error('Load orders failed:', error);
+                document.getElementById('orderList').innerHTML = '<div class="order-history-empty">加载失败，请刷新重试</div>';
+            }
+        }
+
+        function renderOrders(orders) {
+            var container = document.getElementById('orderList');
+            if (!orders || orders.length === 0) {
+                container.innerHTML = '<div class="order-history-empty">📋 暂无订单记录</div>';
+                return;
+            }
+
+            var html = '';
+            var now = Date.now();
+
+            orders.forEach(function(o) {
+                var status = o.status || 'pending';
+                var statusInfo = statusMap[status] || statusMap['pending'];
+                var time = new Date(o.created_at).toLocaleString('zh-CN');
+
+                var created_at = o.created_at || 0;
+                var isExpired = (status === 'pending' && (now - created_at) > 300000);
+
+                var actionBtn = '';
+                var extraInfo = '';
+                var refundBtn = '';
+
+                if (status === 'pending') {
+                    if (isExpired) {
+                        actionBtn = '<span style="font-size:12px;color:#e74c3c;">⏰ 已过期</span>';
+                    } else {
+                        var remaining = Math.max(0, 300000 - (now - created_at));
+                        var remainingSec = Math.ceil(remaining / 1000);
+                        actionBtn = '<button class="order-pay-btn" data-order="' + o.order_id + '" onclick="continuePay(\'' + o.order_id + '\')">💳 继续支付</button>';
+                    }
+                } else if (status === 'paid') {
+                    if (o.delivered) {
+                        actionBtn = '<span style="font-size:12px;color:#27ae60;">✅ 已发货（邮箱）</span>';
+                    } else {
+                        actionBtn = '<span style="font-size:12px;color:#f39c12;">⏳ 处理中</span>';
+                    }
+                    refundBtn = '<a href="/refund.html?order_id=' + o.order_id + '" class="order-refund-btn"><i class="fas fa-undo-alt"></i> 退款</a>';
+                } else if (status === 'cancelled') {
+                    actionBtn = '<span style="font-size:12px;color:#e74c3c;">❌ 已取消</span>';
+                    extraInfo = '订单已取消';
+                } else if (status === 'expired') {
+                    actionBtn = '<span style="font-size:12px;color:#e74c3c;">⏰ 已过期</span>';
+                    extraInfo = '订单已过期';
+                } else if (status === 'refunded') {
+                    actionBtn = '<span style="font-size:12px;color:#f39c12;">💳 已退款</span>';
+                    if (o.refund_amount) {
+                        extraInfo = '退款金额: ' + o.refund_amount.toFixed(2) + ' 积分';
+                    } else {
+                        extraInfo = '订单已退款';
+                    }
+                    refundBtn = '<a href="/refund.html?order_id=' + o.order_id + '" class="order-refund-btn refunded" disabled>✅ 已退款</a>';
+                } else if (status === 'frozen') {
+                    actionBtn = '<span style="font-size:12px;color:#a78bfa;">❄️ 已冻结</span>';
+                    extraInfo = '订单已被冻结，请联系管理员';
+                }
+
+                var remaining = Math.max(0, 300000 - (now - created_at));
+                var remainingSec = Math.ceil(remaining / 1000);
+                var expireTimer = '';
+                if (status === 'pending' && !isExpired && remainingSec > 0 && remainingSec < 300) {
+                    expireTimer = '<div class="order-expire-timer" data-order="' + o.order_id + '">⏱️ ' + remainingSec + '秒后过期</div>';
+                }
+
+                var extraInfoHtml = '';
+                if (extraInfo) {
+                    var extraClass = '';
+                    if (status === 'cancelled') extraClass = 'order-cancelled-info';
+                    else if (status === 'refunded') extraClass = 'order-refund-info';
+                    else if (status === 'frozen') extraClass = 'order-frozen-info';
+                    extraInfoHtml = '<div class="' + extraClass + '">' + extraInfo + '</div>';
+                }
+
+                html += '<div class="order-history-item" data-order="' + o.order_id + '">';
+                html += '<div class="order-info" data-order="' + o.order_id + '">';
+                html += '<div class="order-name">' + o.product_name + ' x' + o.quantity + '</div>';
+                html += '<div class="order-time">' + time + ' | 金额: ' + o.product_price + ' ' + (o.payment_method === 'pl' ? 'PL' : '积分') + '</div>';
+                html += expireTimer;
+                html += extraInfoHtml;
+                html += '</div>';
+                html += '<div class="order-actions">';
+                html += '<span class="order-status ' + statusInfo.className + '">' + statusInfo.label + '</span>';
+                html += actionBtn;
+                html += refundBtn;
+                html += '</div>';
+                html += '</div>';
+            });
+
+            container.innerHTML = html;
+
+            var pendingOrders = orders.filter(function(o) { return o.status === 'pending'; });
+            if (pendingOrders.length > 0) {
+                startOrderRefresh();
+            }
+        }
+
+        async function useBoostCode(code) {
+            try {
+                var data = await apiRequest('/api/use-boost-code', {
+                    method: 'POST',
+                    body: JSON.stringify({ boostCode: code })
+                });
+                showToast('✅ ' + data.message, 'success');
+                await loadInventory(true);
+                await loadUserInfo(true);
+            } catch (error) {
+                showToast('❌ ' + error.message, 'error');
+            }
+        }
+
+        async function usePremiumBoostCode(code) {
+            try {
+                var data = await apiRequest('/api/use-premium-boost-code', {
+                    method: 'POST',
+                    body: JSON.stringify({ premiumBoostCode: code })
+                });
+                showToast('✅ ' + data.message, 'success');
+                await loadInventory(true);
+                await loadUserInfo(true);
+            } catch (error) {
+                showToast('❌ ' + error.message, 'error');
+            }
+        }
+
+        async function usePointCode(code) {
+            try {
+                var data = await apiRequest('/api/use-point-code', {
+                    method: 'POST',
+                    body: JSON.stringify({ pointCode: code })
+                });
+                var msg = '✅ 使用成功！获得 ' + data.pointsEarned + ' 积分';
+                if (data.isPremium) msg += ' (高级卡)';
+                if (data.isSpecial) msg += ' (特殊卡)';
+                showToast(msg, 'success');
+                await loadInventory(true);
+                await loadUserInfo(true);
+            } catch (error) {
+                showToast('❌ ' + error.message, 'error');
+            }
+        }
+
+        async function useMakeupCode(code) {
+            try {
+                var data = await apiRequest('/api/use-makeup-code', {
+                    method: 'POST',
+                    body: JSON.stringify({ makeupCode: code })
+                });
+                showToast('✅ ' + data.message, 'success');
+                await loadInventory(true);
+                await loadUserInfo(true);
+            } catch (error) {
+                showToast('❌ ' + error.message, 'error');
+            }
+        }
+
+        async function useGamblersCode(code) {
+            try {
+                var data = await apiRequest('/api/use-gamblers-code', {
+                    method: 'POST',
+                    body: JSON.stringify({ gamblersCode: code })
+                });
+                showToast('✅ 使用成功！获得 ' + data.pointsEarned + ' 积分', 'success');
+                await loadInventory(true);
+                await loadUserInfo(true);
+            } catch (error) {
+                showToast('❌ ' + error.message, 'error');
+            }
+        }
+
+        async function useBoxCode(code) {
+            try {
+                var data = await apiRequest('/api/use-box-code', {
+                    method: 'POST',
+                    body: JSON.stringify({ boxCode: code })
+                });
+                showToast('✅ ' + data.message, 'success');
+                await loadInventory(true);
+                await loadUserInfo(true);
+            } catch (error) {
+                showToast('❌ ' + error.message, 'error');
+            }
+        }
+
+        async function usePlcardCode(code) {
+            try {
+                var data = await apiRequest('/api/use-plcard-code', {
+                    method: 'POST',
+                    body: JSON.stringify({ plcardCode: code })
+                });
+                showToast('✅ 使用成功！获得 ' + data.plEarned + ' PL', 'success');
+                await loadInventory(true);
+                await loadUserInfo(true);
+            } catch (error) {
+                showToast('❌ ' + error.message, 'error');
+            }
+        }
+
+        async function recycleCode(code, type) {
+            var typeMap = {
+                'pointCodes': 'point',
+                'premiumPointCodes': 'premium_point',
+                'specialPointCodes': 'special_point',
+                'boostCodes': 'boost',
+                'resetCodes': 'reset',
+                'plcardCodes': 'plcard',
+                'premium_boost': 'premium_boost'
+            };
+            var mappedType = typeMap[type];
+            if (!mappedType) {
+                showToast('❌ 该类型卡密不支持回收', 'error');
+                return;
+            }
+            if (!confirm('确认要回收此卡密吗？将获得原价10%的积分返还')) return;
+            try {
+                var data = await apiRequest('/api/recycle-code', {
+                    method: 'POST',
+                    body: JSON.stringify({ code: code, type: mappedType })
+                });
+                showToast('✅ 回收成功！获得 ' + data.recyclePrice + ' 积分', 'success');
+                await loadInventory(true);
+                await loadUserInfo(true);
+            } catch (error) {
+                showToast('❌ ' + error.message, 'error');
+            }
+        }
+
+        setInterval(function() {
+            if (document.hidden) return;
+            if (!isCacheValid('mail')) {
+                updateMailBadge(false);
+            }
+        }, 60000);
+
+        setInterval(function() {
+            if (document.hidden) return;
+            if (!isCacheValid('pl')) {
+                getCachedPlData(false);
+            }
+        }, 60000);
+
+        setInterval(function() {
+            if (document.hidden) return;
+            if (!isCacheValid('gateway')) {
+                checkAccessStillValid();
+            }
+        }, 60000);
+
+        setInterval(function() {
+            if (document.hidden) return;
+            fetchCsrfToken().catch(function(e) {
+                console.warn('Background CSRF token refresh failed:', e);
+            });
+        }, 240000);
+
+        async function init() {
+            if (isInitialized) return;
+            isInitialized = true;
+
+            try {
+                await fetchCsrfToken();
+
+                var hasAccess = await verifyAccess(false);
+                if (!hasAccess) {
+                    return;
+                }
+
+                var hasMallAccess = await checkMallRestriction();
+                if (!hasMallAccess) return;
+
+                document.getElementById('accessDenied').style.display = 'none';
+                document.getElementById('mallContent').style.display = 'block';
+                hideErrorBoundary();
+
+                await Promise.all([
+                    loadProducts(),
+                    loadUserInfo(false),
+                    getCachedPlData(false),
+                    loadInventory(false),
+                    loadCoupons(false),
+                    loadOrders(),
+                    updateMailBadge(false)
+                ]);
+
+                startAccessCheck();
+            } catch (error) {
+                console.error('Init error:', error);
+                showErrorBoundary('初始化失败: ' + (error.message || '未知错误'));
+                if (initRetryCount < MAX_INIT_RETRIES) {
+                    initRetryCount++;
+                    setTimeout(init, 3000);
+                }
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

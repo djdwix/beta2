@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>我的邮箱 - 虚拟手机号生成器</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="mail.css">
+    <style>
+        .cancellation-badge{background:#e74c3c;color:#fff;font-size:10px;padding:2px 6px;border-radius:20px;margin-left:8px}
+        .admin-badge{background:#8e44ad;color:#fff;font-size:10px;padding:2px 6px;border-radius:20px;margin-left:8px}
+        .ai-reissue-badge{background:#9b59b6;color:#fff;font-size:10px;padding:2px 6px;border-radius:20px;margin-left:8px}
+        .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:40px;font-size:14px;z-index:2000;animation:fadeInOut 2s;max-width:90%;text-align:center}
+        .toast.success{background:#27ae60;color:#fff}
+        .toast.error{background:#e74c3c;color:#fff}
+        .toast.warning{background:#f39c12;color:#fff}
+        @keyframes fadeInOut{0%{opacity:0;transform:translateX(-50%) translateY(10px)}15%{opacity:1;transform:translateX(-50%) translateY(0)}85%{opacity:1;transform:translateX(-50%) translateY(0)}100%{opacity:0;transform:translateX(-50%) translateY(-10px)}}
+        .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-radius:50%;border-top-color:#fff;animation:spin 0.6s linear infinite;vertical-align:middle;margin-right:8px}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .mail-item .mail-title .badge.ai-reissue{background:#9b59b620;color:#9b59b6}
+        .mail-item .mail-title .badge.admin{background:#8e44ad20;color:#8e44ad}
+    </style>
+</head>
+<body>
+    <div class="mail-container">
+        <div class="mail-header">
+            <div class="mail-header-left">
+                <h1><i class="fas fa-envelope"></i> 我的邮箱</h1>
+                <span class="user-info" id="userInfo">👤 加载中...</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                <span class="points-display" id="pointsDisplay">⭐ 0 积分</span>
+                <button class="refresh-btn" id="refreshBtn"><i class="fas fa-sync-alt"></i> 刷新</button>
+                <a href="/" class="back-link">← 返回</a>
+            </div>
+        </div>
+
+        <div id="identityWarning" class="identity-warning" style="display:none;">
+            <div>
+                <strong>⚠️ 身份认证未完成</strong>
+                <span>完成身份认证后可使用全部功能</span>
+            </div>
+            <a href="/identity_verification.html" class="identity-warning-btn">立即认证</a>
+        </div>
+
+        <div class="mail-stats" id="mailStats">
+            <div class="stat-item">
+                <span class="stat-label">📬 未领取</span>
+                <span class="stat-value" id="unclaimedCount">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">⏰ 8小时内有效</span>
+                <span class="stat-value" id="expireInfo">-</span>
+            </div>
+        </div>
+
+        <div class="mail-notice" id="mailNotice" style="display:none;">
+            <i class="fas fa-info-circle"></i>
+            <span>邮件附件有效期为8小时，请及时领取</span>
+        </div>
+
+        <div id="mainContent" style="display:none;">
+            <div id="mailList" class="mail-list">
+                <div class="loading-spinner"></div>
+            </div>
+        </div>
+
+        <div id="emptyState" class="empty-state" style="display:none;">
+            <i class="fas fa-inbox" style="font-size:48px;color:#ddd;margin-bottom:16px;"></i>
+            <p>📭 邮箱为空</p>
+            <p style="font-size:13px;color:#999;">签到奖励、商城购买、管理员发放的物品都会出现在这里</p>
+            <a href="/" class="empty-btn">返回主控台</a>
+        </div>
+    </div>
+
+    <div class="performance-badge" id="perfBadge">⏱️ 响应时间: --ms</div>
+
+    <div id="claimModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <h3>📬 领取物品</h3>
+            <p id="claimModalMessage" style="color:#666;margin-bottom:20px;">确认领取此邮件附件？</p>
+            <div style="display:flex;gap:12px;justify-content:center;">
+                <button id="confirmClaimBtn" class="btn-primary">确认领取</button>
+                <button id="cancelClaimBtn" class="close-modal">取消</button>
+            </div>
+            <div id="claimResult" style="margin-top:12px;font-size:13px;text-align:center;"></div>
+        </div>
+    </div>
+
+    <script src="mail.js"></script>
+</body>
+</html>

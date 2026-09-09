@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>自助退款</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI','PingFang SC',Roboto,'Helvetica Neue',sans-serif;background:linear-gradient(135deg,#0b0e1a 0%,#1a1f35 100%);min-height:100vh;padding:20px;display:flex;justify-content:center;align-items:center}
+        .refund-container{background:rgba(255,255,255,0.98);border-radius:32px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);width:100%;max-width:700px;margin:0 auto;animation:slideUp 0.6s ease-out;padding:32px}
+        @keyframes slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+        .refund-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #f0f0f0}
+        .refund-header h1{font-size:24px;color:#333;display:flex;align-items:center;gap:10px}
+        .refund-header h1 i{color:#e74c3c}
+        .refund-header .user-info{font-size:14px;color:#666}
+        .refund-header .back-link{color:#888;text-decoration:none;font-size:14px;padding:6px 16px;border-radius:20px;transition:all 0.3s}
+        .refund-header .back-link:hover{color:#667eea;background:rgba(102,126,234,0.1)}
+        .refund-search{background:#f8f9fa;border-radius:16px;padding:24px;margin-bottom:24px;border:2px solid #e8e8e8}
+        .refund-search .search-label{font-size:14px;font-weight:600;color:#333;margin-bottom:8px}
+        .refund-search .search-desc{font-size:13px;color:#888;margin-bottom:16px}
+        .refund-search .search-row{display:flex;gap:12px;flex-wrap:wrap}
+        .refund-search .search-row input{flex:1;padding:12px 18px;border:2px solid #e0e0e0;border-radius:40px;font-size:15px;outline:none;min-width:150px;transition:all 0.3s;font-family:monospace}
+        .refund-search .search-row input:focus{border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,0.1)}
+        .refund-search .search-row input::placeholder{font-family:'Segoe UI','PingFang SC',Roboto,sans-serif}
+        .refund-search .search-row button{padding:12px 32px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;border:none;border-radius:40px;font-size:15px;font-weight:600;cursor:pointer;transition:all 0.3s;white-space:nowrap}
+        .refund-search .search-row button:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 4px 12px rgba(102,126,234,0.3)}
+        .refund-search .search-row button:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+        .refund-search .search-row .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-radius:50%;border-top-color:white;animation:spin 0.6s linear infinite;margin-right:8px}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .refund-rules{background:#fef9e7;border-radius:12px;padding:14px 18px;margin-bottom:20px;border-left:4px solid #f39c12;font-size:13px;color:#555;line-height:1.6}
+        .refund-rules .title{font-weight:700;color:#e67e22;margin-bottom:4px}
+        .refund-rules .rule-item{padding:2px 0;font-size:12px}
+        .refund-rules .rule-item i{color:#f39c12;margin-right:6px}
+        .order-detail-card{background:#f8f9fa;border-radius:16px;padding:20px;border:2px solid #e8e8e8;display:none;margin-bottom:20px}
+        .order-detail-card .status-badge{display:inline-block;padding:2px 12px;border-radius:20px;font-size:12px;font-weight:600}
+        .status-badge.pending{background:#f39c1220;color:#f39c12}
+        .status-badge.paid{background:#27ae6020;color:#27ae60}
+        .status-badge.cancelled{background:#e74c3c20;color:#e74c3c}
+        .status-badge.expired{background:#e74c3c20;color:#e74c3c}
+        .status-badge.refunded{background:#f39c1220;color:#f39c12}
+        .status-badge.frozen{background:#a78bfa20;color:#a78bfa}
+        .order-detail-card .row{display:flex;justify-content:space-between;padding:6px 0;font-size:14px;border-bottom:1px solid #f0f0f0;flex-wrap:wrap;gap:4px}
+        .order-detail-card .row:last-child{border-bottom:none}
+        .order-detail-card .label{color:#888}
+        .order-detail-card .value{color:#333;font-weight:500}
+        .order-detail-card .value.highlight{color:#667eea;font-weight:700}
+        .order-detail-card .value.success{color:#27ae60}
+        .order-detail-card .value.danger{color:#e74c3c}
+        .order-detail-card .value.warning{color:#f39c12}
+        .order-detail-card .refund-preview{background:#667eea10;border-radius:12px;padding:12px 16px;margin-top:12px;border:1px solid #667eea20}
+        .order-detail-card .refund-preview .preview-title{font-size:13px;font-weight:600;color:#333;margin-bottom:6px}
+        .order-detail-card .refund-preview .preview-row{display:flex;justify-content:space-between;padding:4px 0;font-size:13px;flex-wrap:wrap;gap:4px}
+        .order-detail-card .refund-preview .preview-row .amount{font-weight:700;color:#27ae60}
+        .order-detail-card .refund-preview .preview-row .reason{color:#888;font-size:12px}
+        .gateway-card-info{background:#fef9e7;border-radius:12px;padding:12px 16px;margin-top:12px;border-left:4px solid #f39c12}
+        .gateway-card-info .info-row{display:flex;justify-content:space-between;padding:4px 0;font-size:13px;flex-wrap:wrap;gap:4px}
+        .gateway-card-info .info-row .label{color:#888}
+        .gateway-card-info .info-row .value{font-weight:600;color:#333}
+        .gateway-card-info .info-row .value.highlight{color:#f39c12}
+        .gateway-card-info .order-ref-link{background:#667eea15;border-radius:8px;padding:8px 12px;margin-bottom:8px;border-left:3px solid #667eea;font-size:12px}
+        .gateway-card-info .order-ref-link .link-label{color:#8892b0}
+        .gateway-card-info .order-ref-link .link-value{color:#7c8cff;font-family:monospace}
+        .gateway-card-info .order-ref-link .link-status{margin-left:8px;font-size:11px}
+        .gateway-card-info .order-ref-link .link-status.success{color:#4ade80}
+        .gateway-card-info .order-ref-link .link-status.warning{color:#f7c948}
+        .gateway-card-info .order-ref-link .link-status.danger{color:#f87171}
+        .refund-btn{width:100%;padding:14px;background:linear-gradient(135deg,#e74c3c,#c0392b);color:white;border:none;border-radius:40px;font-size:16px;font-weight:700;cursor:pointer;transition:all 0.3s;margin-top:12px;display:none}
+        .refund-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 25px rgba(231,76,60,0.3)}
+        .refund-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+        .refund-btn .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-radius:50%;border-top-color:white;animation:spin 0.6s linear infinite;margin-right:8px}
+        .refund-btn.refunded{background:#27ae60;cursor:default}
+        .refund-btn.refunded:hover{transform:none;box-shadow:none}
+        .refund-btn.risk-checking{background:linear-gradient(135deg,#667eea,#764ba2);cursor:wait}
+        .refund-btn.risk-checking:hover{transform:none;box-shadow:none}
+        .refund-btn.risk-failed{background:#f39c12;cursor:default}
+        .refund-btn.risk-failed:hover{transform:none;box-shadow:none}
+        .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#27ae60;color:white;padding:10px 20px;border-radius:40px;font-size:14px;z-index:2000;animation:fadeInOut 2s;max-width:90%;text-align:center}
+        .toast.error{background:#e74c3c}
+        .toast.warning{background:#f39c12}
+        .toast.info{background:#667eea}
+        @keyframes fadeInOut{0%{opacity:0;transform:translateX(-50%) translateY(10px)}15%{opacity:1;transform:translateX(-50%) translateY(0)}85%{opacity:1;transform:translateX(-50%) translateY(0)}100%{opacity:0;transform:translateX(-50%) translateY(-10px)}}
+        .no-result{text-align:center;padding:30px 20px;color:#999;display:none}
+        .no-result i{font-size:48px;color:#ddd;margin-bottom:12px}
+        .loading-shimmer{text-align:center;padding:20px;color:#999;display:none}
+        .loading-shimmer .spinner{display:inline-block;width:24px;height:24px;border:3px solid #f0f0f0;border-radius:50%;border-top-color:#667eea;animation:spin 0.6s linear infinite;margin-bottom:8px}
+        .quick-examples{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+        .quick-examples .example-btn{padding:4px 14px;background:#f0f0f0;border:1px solid #e0e0e0;border-radius:20px;font-size:11px;color:#666;cursor:pointer;transition:all 0.2s}
+        .quick-examples .example-btn:hover{background:#667eea20;border-color:#667eea;color:#667eea}
+        .refund-disclaimer{font-size:11px;color:#999;text-align:center;margin-top:12px;line-height:1.6}
+        .refund-disclaimer i{color:#f39c12}
+        .fund-link-btn{display:inline-block;padding:4px 12px;background:rgba(102,126,234,0.1);border-radius:20px;color:#667eea;text-decoration:none;font-size:12px;transition:all 0.3s;margin-left:4px}
+        .fund-link-btn:hover{background:rgba(102,126,234,0.2)}
+        .gateway-type-badge{display:inline-block;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600;background:#f39c1220;color:#f39c12;margin-left:6px}
+        .error-boundary{background:#fef2f2;border:2px solid #fecaca;border-radius:16px;padding:20px;margin-bottom:20px;text-align:center;display:none}
+        .error-boundary .error-icon{font-size:48px;color:#dc2626;margin-bottom:12px}
+        .error-boundary .error-title{font-size:18px;font-weight:700;color:#dc2626;margin-bottom:8px}
+        .error-boundary .error-desc{font-size:14px;color:#666;margin-bottom:16px}
+        .error-boundary .retry-btn{padding:10px 32px;background:#dc2626;color:white;border:none;border-radius:40px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s}
+        .error-boundary .retry-btn:hover{background:#b91c1c;transform:translateY(-2px);box-shadow:0 4px 12px rgba(220,38,38,0.3)}
+        .risk-progress-container{display:none;margin-top:16px;padding:20px 24px;background:linear-gradient(135deg,#f0f4ff,#e8edff);border-radius:16px;border:2px solid #667eea40;box-shadow:0 4px 20px rgba(102,126,234,0.15)}
+        .risk-progress-container.show{display:block;animation:slideUp 0.5s ease-out}
+        .risk-progress-title{font-size:15px;font-weight:700;color:#333;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+        .risk-progress-title i{color:#667eea;font-size:18px}
+        .risk-progress-title .spinner-small{display:inline-block;width:18px;height:18px;border:2px solid #e8e8e8;border-radius:50%;border-top-color:#667eea;animation:spin 0.8s linear infinite}
+        .risk-progress-bar{width:100%;height:10px;background:#e8e8e8;border-radius:8px;overflow:hidden;position:relative;box-shadow:inset 0 1px 3px rgba(0,0,0,0.1)}
+        .risk-progress-bar .progress-fill{height:100%;background:linear-gradient(90deg,#667eea,#764ba2,#667eea);background-size:200% 100%;border-radius:8px;transition:width 0.4s ease;width:0%;animation:shimmer 2s infinite}
+        @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+        .risk-progress-text{font-size:13px;color:#667eea;margin-top:10px;text-align:center;font-weight:600;letter-spacing:0.5px}
+        .risk-progress-status{font-size:13px;color:#333;margin-top:12px;text-align:center;padding:10px 16px;border-radius:10px;background:white;border:1px solid #e8e8e8;display:none;min-height:40px;display:flex;align-items:center;justify-content:center;gap:8px}
+        .risk-progress-status.show{display:flex}
+        .risk-progress-status.success{background:#d4edda;border-color:#27ae60;color:#155724}
+        .risk-progress-status.success i{color:#27ae60}
+        .risk-progress-status.error{background:#f8d7da;border-color:#e74c3c;color:#721c24}
+        .risk-progress-status.error i{color:#e74c3c}
+        .risk-progress-status.warning{background:#fff3cd;border-color:#f39c12;color:#856404}
+        .risk-progress-status.warning i{color:#f39c12}
+        .risk-progress-status.info{background:#d1ecf1;border-color:#17a2b8;color:#0c5460}
+        .risk-progress-status.info i{color:#17a2b8}
+        .risk-check-badge{display:inline-block;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600;margin-left:8px}
+        .risk-check-badge.passed{background:#27ae6020;color:#27ae60}
+        .risk-check-badge.failed{background:#e74c3c20;color:#e74c3c}
+        .risk-check-badge.checking{background:#667eea20;color:#667eea;animation:pulse 1.5s ease-in-out infinite}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+        .risk-steps{display:flex;justify-content:space-between;margin-top:14px;padding:0 4px;position:relative}
+        .risk-steps::before{content:'';position:absolute;top:12px;left:20px;right:20px;height:2px;background:#e0e0e0;z-index:0}
+        .risk-step{display:flex;flex-direction:column;align-items:center;gap:6px;z-index:1;flex:1}
+        .risk-step .step-circle{width:24px;height:24px;border-radius:50%;border:2px solid #d0d0d0;background:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#aaa;transition:all 0.5s ease}
+        .risk-step .step-circle.active{border-color:#667eea;background:#667eea;color:white;box-shadow:0 0 0 4px rgba(102,126,234,0.2)}
+        .risk-step .step-circle.done{border-color:#27ae60;background:#27ae60;color:white}
+        .risk-step .step-label{font-size:10px;color:#999;text-align:center;max-width:50px;line-height:1.2}
+        .risk-step .step-label.active{color:#667eea;font-weight:600}
+        .risk-step .step-label.done{color:#27ae60}
+        .risk-notice{font-size:12px;color:#667eea;margin-top:6px;display:flex;align-items:center;gap:6px;justify-content:center}
+        .risk-notice i{font-size:14px}
+        .risk-detail-list{margin-top:12px;padding:12px 16px;background:white;border-radius:10px;border:1px solid #e8e8e8;display:none}
+        .risk-detail-list.show{display:block}
+        .risk-detail-list .detail-title{font-size:12px;font-weight:600;color:#333;margin-bottom:6px}
+        .risk-detail-list .detail-item{font-size:11px;color:#666;padding:3px 0;border-bottom:1px solid #f5f5f5;display:flex;justify-content:space-between}
+        .risk-detail-list .detail-item:last-child{border-bottom:none}
+        .risk-detail-list .detail-item .score{font-weight:600;color:#667eea}
+        .risk-detail-list .detail-item .score.high{color:#e74c3c}
+        .risk-detail-list .detail-item .score.medium{color:#f39c12}
+        .risk-detail-list .detail-item .score.low{color:#27ae60}
+        .risk-score-display{display:flex;align-items:center;gap:12px;margin-top:10px;padding:10px 16px;background:white;border-radius:10px;border:1px solid #e8e8e8}
+        .risk-score-display .score-number{font-size:28px;font-weight:700;color:#667eea}
+        .risk-score-display .score-number.passed{color:#27ae60}
+        .risk-score-display .score-number.failed{color:#e74c3c}
+        .risk-score-display .score-number.warning{color:#f39c12}
+        .risk-score-display .score-label{font-size:12px;color:#888}
+        .risk-score-display .score-status{font-size:13px;font-weight:600}
+        .risk-score-display .score-status.passed{color:#27ae60}
+        .risk-score-display .score-status.failed{color:#e74c3c}
+        .risk-score-display .score-status.warning{color:#f39c12}
+        .risk-score-display .score-detail{font-size:11px;color:#999;margin-left:auto;text-align:right}
+        @media(max-width:600px){.refund-container{padding:20px}.refund-search .search-row{flex-direction:column}.refund-search .search-row input{min-width:unset}.refund-search .search-row button{width:100%;justify-content:center}.order-detail-card .row{flex-direction:column;align-items:flex-start}.refund-header{flex-direction:column;text-align:center}.gateway-card-info .info-row{flex-direction:column;align-items:flex-start}.gateway-card-info .order-ref-link{flex-direction:column;align-items:flex-start}.risk-steps{flex-wrap:wrap;gap:8px;justify-content:center}.risk-steps::before{display:none}.risk-step{flex:0 0 auto;min-width:60px}.risk-score-display{flex-wrap:wrap}.risk-score-display .score-detail{margin-left:0;text-align:left;width:100%}}
+    </style>
+</head>
+<body>
+    <div class="refund-container" id="app">
+        <div id="errorBoundary" class="error-boundary">
+            <div class="error-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="error-title">⚠️ 加载失败</div>
+            <div class="error-desc" id="errorDesc">网络连接失败，请检查网络后重试</div>
+            <button class="retry-btn" onclick="location.reload()">🔄 重新加载</button>
+        </div>
+
+        <div class="refund-header">
+            <div>
+                <h1><i class="fas fa-undo-alt"></i> 自助退款</h1>
+                <span class="user-info" id="userInfo">👤 加载中...</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                <a href="/fund.html" class="fund-link-btn">🏦 理财账户</a>
+                <a href="/" class="back-link">← 返回</a>
+            </div>
+        </div>
+
+        <div class="refund-rules">
+            <div class="title">📋 退款规则简述</div>
+            <div class="rule-item"><i class="fas fa-check-circle"></i> 退款金额存入 <b>理财账户</b>，可随时提取</div>
+            <div class="rule-item"><i class="fas fa-check-circle"></i> 卡密全部未使用 → <b>100%</b> 退款</div>
+            <div class="rule-item"><i class="fas fa-check-circle"></i> 卡密全部已使用 → <b>20%</b> 退款</div>
+            <div class="rule-item"><i class="fas fa-check-circle"></i> 卡密部分已使用 → 未使用部分 <b>100%</b> + 已使用部分 <b>20%</b></div>
+            <div class="rule-item"><i class="fas fa-check-circle"></i> 通行卡密：小时卡100% / 天卡和周卡按剩余时间 / 永久卡60%</div>
+            <div class="rule-item"><i class="fas fa-exclamation-triangle" style="color:#e74c3c;"></i> 转账订单、代付订单、已过期通行卡密 <b>不可退款</b></div>
+            <div class="rule-item"><i class="fas fa-exclamation-triangle" style="color:#e74c3c;"></i> 已退款的订单 <b>不可再次退款</b></div>
+            <div class="rule-item"><i class="fas fa-info-circle" style="color:#667eea;"></i> PL支付订单按 <b>当前汇率</b> 换算成积分退款</div>
+            <div class="rule-item"><i class="fas fa-shield-alt" style="color:#667eea;"></i> 退款金额超过 <b>100积分</b> 将触发 <b>30秒风控审查</b></div>
+        </div>
+
+        <div class="refund-search">
+            <div class="search-label"><i class="fas fa-search"></i> 查询订单或通行卡密</div>
+            <div class="search-desc">输入 <b>订单号</b>、<b>防伪码</b> 或 <b>通行卡密</b> 查询，确认后可申请退款</div>
+            <div class="search-row">
+                <input type="text" id="searchInput" placeholder="订单号 / 防伪码 / 通行卡密 (XXXX-XXXX-XXXX-XXXX)" maxlength="50">
+                <button id="searchBtn"><i class="fas fa-search"></i> 查询</button>
+            </div>
+            <div class="quick-examples">
+                <span style="font-size:12px;color:#999;margin-right:4px;">快速输入:</span>
+                <button class="example-btn" data-type="order">示例订单号</button>
+                <button class="example-btn" data-type="fake">示例防伪码</button>
+                <button class="example-btn" data-type="gateway">示例通行卡密</button>
+            </div>
+        </div>
+
+        <div id="loadingState" class="loading-shimmer">
+            <div class="spinner"></div>
+            <div>查询中...</div>
+        </div>
+
+        <div id="noResultState" class="no-result">
+            <i class="fas fa-inbox"></i>
+            <p>未找到匹配结果</p>
+            <p style="font-size:13px;color:#bbb;">请检查输入是否正确</p>
+            <p style="font-size:12px;color:#ddd;margin-top:8px;">提示：已退款的订单可能已被系统清理</p>
+        </div>
+
+        <div id="orderDetail" class="order-detail-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+                <span style="font-weight:700;font-size:16px;color:#333;" id="orderTitle">订单详情</span>
+                <span>
+                    <span class="status-badge" id="orderStatusBadge">待支付</span>
+                    <span class="gateway-type-badge" id="gatewayBadge" style="display:none;">🎟️ 通行卡密</span>
+                    <span class="risk-check-badge" id="riskBadge" style="display:none;"></span>
+                </span>
+            </div>
+            <div class="row"><span class="label">📦 商品</span><span class="value" id="odProduct">-</span></div>
+            <div class="row"><span class="label">📋 订单号</span><span class="value" id="odOrderId" style="font-family:monospace;font-size:12px;">-</span></div>
+            <div class="row"><span class="label">🔐 防伪码</span><span class="value" id="odAntiFake" style="font-family:monospace;font-weight:700;color:#667eea;">-</span></div>
+            <div class="row"><span class="label">💰 实付金额</span><span class="value highlight" id="odPrice">-</span></div>
+            <div class="row"><span class="label">💳 支付方式</span><span class="value" id="odPayment">-</span></div>
+            <div class="row"><span class="label">📅 支付时间</span><span class="value" id="odPaidAt">-</span></div>
+            <div class="row"><span class="label">📅 创建时间</span><span class="value" id="odCreatedAt">-</span></div>
+            <div class="row" id="refundStatusRow"><span class="label">💳 退款状态</span><span class="value" id="odRefundStatus">-</span></div>
+            <div class="row" id="refundReasonRow"><span class="label">📝 退款原因</span><span class="value" id="odRefundReason" style="color:#f39c12;font-size:13px;">-</span></div>
+            <div class="row" id="refundAmountRow"><span class="label">💳 退款金额</span><span class="value success" id="odRefundAmount">-</span></div>
+            <div class="row" id="orderLockedRow" style="display:none;"><span class="label">🔒 状态</span><span class="value danger" id="odLockedReason">-</span></div>
+            <div class="row" id="riskCheckRow" style="display:none;"><span class="label">🛡️ 风控状态</span><span class="value" id="odRiskStatus">-</span></div>
+
+            <div id="gatewayInfoContainer"></div>
+
+            <div class="refund-preview" id="refundPreview">
+                <div class="preview-title">📊 退款预估</div>
+                <div class="preview-row"><span>预计退款金额</span><span class="amount" id="previewAmount">0.00 积分</span></div>
+                <div class="preview-row" id="previewRateRow" style="display:none;"><span class="reason" id="previewRateInfo" style="font-size:11px;color:#667eea;"></span></div>
+                <div class="preview-row"><span class="reason" id="previewReason">等待计算...</span></div>
+                <div class="preview-row" id="previewDetailRow" style="display:none;"><span class="reason" id="previewDetail" style="font-size:11px;"></span></div>
+                <div style="font-size:11px;color:#999;margin-top:4px;"><i class="fas fa-info-circle"></i> 退款将存入您的理财账户</div>
+                <div class="risk-notice" id="riskNotice" style="display:none;"><i class="fas fa-shield-alt"></i> 退款金额超过100积分，需进行30秒风控审查</div>
+            </div>
+
+            <div class="risk-progress-container" id="riskProgress">
+                <div class="risk-progress-title">
+                    <span class="spinner-small"></span>
+                    风控审查进行中
+                </div>
+                <div class="risk-progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="risk-progress-text" id="progressText">0%</div>
+                <div class="risk-steps" id="riskSteps">
+                    <div class="risk-step" data-step="0">
+                        <div class="step-circle" id="step0">1</div>
+                        <div class="step-label" id="label0">身份验证</div>
+                    </div>
+                    <div class="risk-step" data-step="1">
+                        <div class="step-circle" id="step1">2</div>
+                        <div class="step-label" id="label1">行为分析</div>
+                    </div>
+                    <div class="risk-step" data-step="2">
+                        <div class="step-circle" id="step2">3</div>
+                        <div class="step-label" id="label2">安全检测</div>
+                    </div>
+                    <div class="risk-step" data-step="3">
+                        <div class="step-circle" id="step3">4</div>
+                        <div class="step-label" id="label3">合理性评估</div>
+                    </div>
+                </div>
+                <div class="risk-progress-status" id="progressStatus"></div>
+            </div>
+
+            <div id="riskResult" style="display:none;margin-top:12px;">
+                <div class="risk-score-display" id="riskScoreDisplay">
+                    <span class="score-number" id="scoreNumber">0</span>
+                    <span class="score-label">风控评分</span>
+                    <span class="score-status" id="scoreStatus">-</span>
+                    <span class="score-detail" id="scoreDetail"></span>
+                </div>
+                <div class="risk-detail-list" id="riskDetailList">
+                    <div class="detail-title">📋 审查明细</div>
+                    <div id="riskDetailItems"></div>
+                </div>
+            </div>
+
+            <button class="refund-btn" id="refundBtn"><i class="fas fa-undo-alt"></i> 确认退款</button>
+        </div>
+
+        <div class="refund-disclaimer">
+            <i class="fas fa-shield-alt"></i> 退款后对应卡密将被移除，已使用的卡密不会回收但会扣除相应退款<br>
+            <i class="fas fa-clock"></i> 退款通常即时到账，请前往理财账户查看
+        </div>
+    </div>
+
+    <script>
+        var csrfToken = null;
+        var csrfTokenRefreshPromise = null;
+        var csrfTokenLastFetch = 0;
+        var CSRF_TOKEN_TTL = 300000;
+
+        function getCsrfTokenFromCookie() {
+            try {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = cookies[i].trim();
+                    if (cookie.indexOf('csrf_token=') === 0) {
+                        return cookie.substring('csrf_token='.length, cookie.length);
+                    }
+                }
+                return null;
+            } catch (e) { return null; }
+        }
+
+        function setCsrfTokenCookie(token) {
+            try {
+                var expires = new Date(Date.now() + CSRF_TOKEN_TTL).toUTCString();
+                document.cookie = 'csrf_token=' + token + '; expires=' + expires + '; path=/; SameSite=Strict; Secure';
+            } catch (e) {}
+        }
+
+        function fetchCsrfToken() {
+            if (csrfTokenRefreshPromise) { return csrfTokenRefreshPromise; }
+            if (csrfToken && (Date.now() - csrfTokenLastFetch) < CSRF_TOKEN_TTL) { return Promise.resolve(csrfToken); }
+            var cookieToken = getCsrfTokenFromCookie();
+            if (cookieToken) { csrfToken = cookieToken;
+                csrfTokenLastFetch = Date.now(); return Promise.resolve(csrfToken); }
+            csrfTokenRefreshPromise = fetch('/api/csrf-token', {
+                method: 'GET',
+                credentials: 'include',
+                headers: { 'Accept': 'application/json', 'Cache-Control': 'no-cache' }
+            }).then(function(response) {
+                if (!response.ok) { throw new Error('Failed to fetch CSRF token: HTTP ' + response.status); }
+                return response.json();
+            }).then(function(data) {
+                if (!data.csrf_token) { throw new Error('No CSRF token in response'); }
+                csrfToken = data.csrf_token;
+                csrfTokenLastFetch = Date.now();
+                setCsrfTokenCookie(csrfToken);
+                csrfTokenRefreshPromise = null;
+                return csrfToken;
+            }).catch(function(error) {
+                csrfTokenRefreshPromise = null;
+                csrfToken = null;
+                throw error;
+            });
+            return csrfTokenRefreshPromise;
+        }
+
+        function apiRequest(url, options) {
+            if (!options) options = {};
+            options.credentials = 'include';
+            if (!options.headers) options.headers = {};
+            options.headers['Content-Type'] = 'application/json';
+            options.headers['Accept'] = 'application/json';
+            var method = (options.method || 'GET').toUpperCase();
+            if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') {
+                return fetch(url, options).then(function(response) {
+                    return response.json().then(function(data) {
+                        if (!response.ok) { throw new Error(data.error || '请求失败: ' + response.status); }
+                        return data;
+                    });
+                });
+            }
+            return fetchCsrfToken().then(function(token) {
+                options.headers['X-CSRF-Token'] = token;
+                return fetch(url, options);
+            }).then(function(response) {
+                return response.json().then(function(data) {
+                    if (!response.ok) {
+                        if (response.status === 403 && data.error && data.error.includes('CSRF')) {
+                            csrfToken = null;
+                            csrfTokenLastFetch = 0;
+                            return fetchCsrfToken().then(function(newToken) {
+                                options.headers['X-CSRF-Token'] = newToken;
+                                return fetch(url, options);
+                            }).then(function(retryResponse) {
+                                return retryResponse.json().then(function(retryData) {
+                                    if (!retryResponse.ok) { throw new Error(retryData.error || '请求失败: ' + retryResponse.status); }
+                                    return retryData;
+                                });
+                            });
+                        }
+                        throw new Error(data.error || '请求失败: ' + response.status);
+                    }
+                    return data;
+                });
+            });
+        }
+
+        var currentUser = null;
+        var currentOrder = null;
+        var currentOrderId = null;
+        var isProcessing = false;
+        var isRefunded = false;
+        var isGatewayMode = false;
+        var gatewayCardData = null;
+        var currentRate = 0.07;
+        var initRetryCount = 0;
+        var MAX_INIT_RETRIES = 3;
+        var isInitialized = false;
+        var riskCheckInProgress = false;
+        var riskProgressInterval = null;
+        var riskCheckCompleted = false;
+        var riskScore = 0;
+        var riskDetails = [];
+
+        function showErrorBoundary(message) {
+            var el = document.getElementById('errorBoundary');
+            var desc = document.getElementById('errorDesc');
+            if (el && desc) { desc.textContent = message || '网络连接失败，请检查网络后重试';
+                el.style.display = 'block'; }
+        }
+
+        function hideErrorBoundary() { var el = document.getElementById('errorBoundary'); if (el) el.style.display = 'none'; }
+
+        function showToast(message, type) {
+            type = type || 'success';
+            var toast = document.createElement('div');
+            toast.className = 'toast' + (type === 'error' ? ' error' : '') + (type === 'warning' ? ' warning' : '') + (type === 'info' ? ' info' : '');
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(function() { toast.remove(); }, 3000);
+        }
+
+        function formatTime(timestamp) {
+            if (!timestamp) return '-';
+            try { return new Date(timestamp).toLocaleString('zh-CN'); } catch (e) { return '-'; }
+        }
+
+        function getStatusInfo(status) {
+            var map = { 'pending': { label: '待支付', className: 'pending' }, 'paid': { label: '已支付', className: 'paid' }, 'cancelled': { label: '已取消', className: 'cancelled' }, 'expired': { label: '已过期', className: 'expired' }, 'refunded': { label: '已退款', className: 'refunded' }, 'frozen': { label: '已冻结', className: 'frozen' } };
+            return map[status] || { label: status || '未知', className: 'pending' };
+        }
+
+        function getPaymentLabel(method) {
+            if (method === 'points') return '⭐ 积分支付';
+            if (method === 'pl') return '💎 PL支付';
+            return method || '-';
+        }
+
+        function getProductTypeLabel(type) {
+            var map = { 'reset': '重置密码卡', 'point': '普通积分卡', 'premium_point': '高级积分卡', 'boost': '积分加成卡', 'cancellation': '注销卡', 'special_point': '特殊积分卡', 'makeup': '补签卡', 'gamblers': '赌神积分卡', 'gateway': '通行卡密', 'pl_transfer': 'PL转账' };
+            return map[type] || type || '未知商品';
+        }
+
+        function getCardTypeLabel(type) {
+            var labels = { 'hour': '小时卡', 'day': '天卡', 'permanent': '永久卡' };
+            return labels[type] || type || '未知';
+        }
+
+        function formatPrice(price, method) {
+            if (method === 'pl') { return price.toFixed(4) + ' PL'; }
+            return price.toFixed(2) + ' 积分';
+        }
+
+        async function loadUserInfo() {
+            try {
+                var data = await apiRequest('/api/check-auth');
+                if (data.authenticated) {
+                    currentUser = data.username;
+                    document.getElementById('userInfo').textContent = '👤 ' + currentUser;
+                    return true;
+                } else {
+                    document.getElementById('userInfo').textContent = '👤 未登录';
+                    showToast('请先登录再申请退款', 'warning');
+                    setTimeout(function() { window.location.href = '/login.html?redirect=refund.html'; }, 2000);
+                    return false;
+                }
+            } catch (error) {
+                document.getElementById('userInfo').textContent = '👤 未登录';
+                return false;
+            }
+        }
+
+        function displayGatewayDetail(data) {
+            isGatewayMode = true;
+            gatewayCardData = data;
+            riskCheckCompleted = false;
+            riskScore = 0;
+            riskDetails = [];
+            document.getElementById('orderTitle').textContent = '🎟️ 通行卡密详情';
+            document.getElementById('orderStatusBadge').textContent = data.status || '有效';
+            document.getElementById('orderStatusBadge').className = 'status-badge ' + (data.status === '已过期' ? 'expired' : 'paid');
+            document.getElementById('gatewayBadge').style.display = 'inline-block';
+            document.getElementById('odProduct').textContent = '通行卡密';
+            document.getElementById('odOrderId').textContent = data.is_virtual_order ? '无需订单' : (data.order_id || '-');
+            document.getElementById('odAntiFake').textContent = '-';
+            document.getElementById('odPrice').textContent = (data.card_price || 0).toFixed(2) + ' 积分';
+            document.getElementById('odPayment').textContent = '积分支付';
+            document.getElementById('odPaidAt').textContent = formatTime(data.created_at);
+            document.getElementById('odCreatedAt').textContent = formatTime(data.created_at);
+            document.getElementById('refundStatusRow').style.display = 'none';
+            document.getElementById('refundReasonRow').style.display = 'none';
+            document.getElementById('refundAmountRow').style.display = 'none';
+            document.getElementById('orderLockedRow').style.display = 'none';
+            document.getElementById('riskCheckRow').style.display = 'none';
+            document.getElementById('riskBadge').style.display = 'none';
+            document.getElementById('riskResult').style.display = 'none';
+            var gatewayContainer = document.getElementById('gatewayInfoContainer');
+            gatewayContainer.innerHTML = '';
+            var orderInfoHtml = '';
+            if (data.is_refunded) {
+                orderInfoHtml = '<div style="background:#f8717115;border-radius:8px;padding:8px 12px;margin-bottom:8px;border-left:3px solid #f87171;"><span style="font-size:12px;color:#8892b0;">📋 关联订单:</span><span style="font-size:12px;color:#f87171;font-family:monospace;">' + data.original_order_id + '</span><span class="link-status danger" style="font-size:11px;margin-left:8px;">❌ 该订单已退款</span></div>';
+            } else if (data.has_original_order && data.original_order_id) {
+                orderInfoHtml = '<div style="background:#667eea15;border-radius:8px;padding:8px 12px;margin-bottom:8px;border-left:3px solid #667eea;"><span style="font-size:12px;color:#8892b0;">📋 关联订单:</span><span style="font-size:12px;color:#7c8cff;font-family:monospace;">' + data.original_order_id + '</span><span class="link-status success" style="font-size:11px;margin-left:8px;">✅ 将使用订单退款</span></div>';
+            } else {
+                orderInfoHtml = '<div style="background:#f7c94815;border-radius:8px;padding:8px 12px;margin-bottom:8px;border-left:3px solid #f7c948;"><span style="font-size:12px;color:#8892b0;">📋 关联订单:</span><span style="font-size:12px;color:#f7c948;">无关联订单</span><span class="link-status warning" style="font-size:11px;margin-left:8px;">⚠️ 将使用无订单模式退款</span></div>';
+            }
+            var gatewayHtml = '<div class="gateway-card-info">' + orderInfoHtml + '<div class="info-row"><span class="label">🔑 卡密</span><span class="value highlight" style="font-family:monospace;">' + data.card_key + '</span></div><div class="info-row"><span class="label">📋 卡密类型</span><span class="value">' + getCardTypeLabel(data.card_type) + '</span></div><div class="info-row"><span class="label">💰 购买价格</span><span class="value">' + (data.card_price || 0).toFixed(2) + ' 积分</span></div><div class="info-row"><span class="label">📅 创建时间</span><span class="value">' + formatTime(data.created_at) + '</span></div><div class="info-row"><span class="label">📅 过期时间</span><span class="value">' + (data.expire_at ? formatTime(data.expire_at) : '永久有效') + '</span></div></div>';
+            gatewayContainer.innerHTML = gatewayHtml;
+            if (data.can_refund && !data.is_refunded) {
+                document.getElementById('refundBtn').style.display = 'block';
+                document.getElementById('refundBtn').disabled = false;
+                document.getElementById('refundBtn').innerHTML = '<i class="fas fa-undo-alt"></i> 确认退款';
+                document.getElementById('refundBtn').className = 'refund-btn';
+                document.getElementById('previewAmount').textContent = (data.refund_points || data.refund_amount || 0).toFixed(2) + ' 积分';
+                document.getElementById('previewReason').textContent = data.refund_reason || data.reason;
+                if (data.is_pl_payment && data.rate_used) {
+                    document.getElementById('previewRateRow').style.display = 'flex';
+                    document.getElementById('previewRateInfo').textContent = '💎 ' + data.refund_amount.toFixed(4) + ' PL × 汇率 ' + data.rate_used.toFixed(4) + ' = ' + (data.refund_points || 0).toFixed(2) + ' 积分';
+                } else { document.getElementById('previewRateRow').style.display = 'none'; }
+                document.getElementById('previewDetailRow').style.display = 'none';
+                var refundPoints = data.refund_points || data.refund_amount || 0;
+                var riskNotice = document.getElementById('riskNotice');
+                if (refundPoints >= 100) {
+                    riskNotice.style.display = 'flex';
+                } else {
+                    riskNotice.style.display = 'none';
+                }
+                document.getElementById('riskBadge').style.display = 'none';
+                document.getElementById('riskResult').style.display = 'none';
+            } else {
+                document.getElementById('refundBtn').style.display = 'none';
+                document.getElementById('orderLockedRow').style.display = 'flex';
+                document.getElementById('odLockedReason').textContent = data.reason || (data.is_refunded ? '该卡密对应的订单已退款' : '不可退款');
+            }
+        }
+
+        function displayOrderDetail(order) {
+            isGatewayMode = false;
+            gatewayCardData = null;
+            riskCheckCompleted = false;
+            riskScore = 0;
+            riskDetails = [];
+            document.getElementById('gatewayBadge').style.display = 'none';
+            var statusInfo = getStatusInfo(order.status);
+            var paymentMethod = order.payment_method || 'points';
+            var productType = order.product_type || '';
+            var productName = order.product_name || getProductTypeLabel(productType);
+            var isPlPayment = paymentMethod === 'pl';
+            document.getElementById('orderTitle').textContent = '📋 订单详情 #' + (order.order_id ? order.order_id.slice(0, 20) + '...' : '');
+            document.getElementById('orderStatusBadge').textContent = statusInfo.label;
+            document.getElementById('orderStatusBadge').className = 'status-badge ' + statusInfo.className;
+            document.getElementById('odProduct').textContent = productName + (order.quantity > 1 ? ' x' + order.quantity : '');
+            document.getElementById('odOrderId').textContent = order.order_id || '-';
+            document.getElementById('odAntiFake').textContent = order.anti_fake_code || '-';
+            if (isPlPayment) {
+                document.getElementById('odPrice').textContent = formatPrice(order.product_price || 0, 'pl');
+                document.getElementById('odPayment').textContent = '💎 PL支付';
+            } else {
+                document.getElementById('odPrice').textContent = formatPrice(order.product_price || 0, 'points');
+                document.getElementById('odPayment').textContent = '⭐ 积分支付';
+            }
+            document.getElementById('odPaidAt').textContent = formatTime(order.paid_at);
+            document.getElementById('odCreatedAt').textContent = formatTime(order.created_at);
+            var refundStatusRow = document.getElementById('refundStatusRow');
+            var refundReasonRow = document.getElementById('refundReasonRow');
+            var refundAmountRow = document.getElementById('refundAmountRow');
+            if (order.refunded) {
+                refundStatusRow.style.display = 'flex';
+                document.getElementById('odRefundStatus').textContent = '✅ 已退款';
+                document.getElementById('odRefundStatus').className = 'value success';
+                if (order.refund_reason) {
+                    refundReasonRow.style.display = 'flex';
+                    document.getElementById('odRefundReason').textContent = order.refund_reason;
+                } else { refundReasonRow.style.display = 'none'; }
+                if (order.refund_amount || order.refund_points) {
+                    refundAmountRow.style.display = 'flex';
+                    if (isPlPayment) {
+                        document.getElementById('odRefundAmount').textContent = (order.refund_points || 0).toFixed(2) + ' 积分 (原 ' + (order.refund_amount || 0).toFixed(4) + ' PL)';
+                    } else {
+                        document.getElementById('odRefundAmount').textContent = (order.refund_points || order.refund_amount || 0).toFixed(2) + ' 积分';
+                    }
+                } else { refundAmountRow.style.display = 'none'; }
+            } else {
+                refundStatusRow.style.display = 'none';
+                refundReasonRow.style.display = 'none';
+                refundAmountRow.style.display = 'none';
+            }
+            document.getElementById('orderLockedRow').style.display = 'none';
+            document.getElementById('riskCheckRow').style.display = 'none';
+            document.getElementById('riskBadge').style.display = 'none';
+            document.getElementById('riskResult').style.display = 'none';
+            var gatewayContainer = document.getElementById('gatewayInfoContainer');
+            gatewayContainer.innerHTML = '';
+        }
+
+        function updateRiskStep(stepIndex, status) {
+            var circle = document.getElementById('step' + stepIndex);
+            var label = document.getElementById('label' + stepIndex);
+            if (!circle || !label) return;
+            circle.className = 'step-circle';
+            label.className = 'step-label';
+            if (status === 'active') {
+                circle.classList.add('active');
+                label.classList.add('active');
+            } else if (status === 'done') {
+                circle.classList.add('done');
+                circle.textContent = '✓';
+                label.classList.add('done');
+            }
+        }
+
+        function resetRiskSteps() {
+            for (var i = 0; i < 4; i++) {
+                var circle = document.getElementById('step' + i);
+                var label = document.getElementById('label' + i);
+                if (circle) { circle.className = 'step-circle';
+                    circle.textContent = i + 1; }
+                if (label) { label.className = 'step-label'; }
+            }
+        }
+
+        function updateRiskProgress(percent, status, statusClass) {
+            var fill = document.getElementById('progressFill');
+            var text = document.getElementById('progressText');
+            var statusEl = document.getElementById('progressStatus');
+            if (fill) fill.style.width = Math.min(percent, 100) + '%';
+            if (text) text.textContent = Math.min(percent, 100) + '%';
+            if (statusEl) {
+                statusEl.innerHTML = status || '';
+                statusEl.className = 'risk-progress-status show ' + (statusClass || 'info');
+            }
+            var stepIndex = Math.floor(percent / 25);
+            if (stepIndex > 3) stepIndex = 3;
+            for (var i = 0; i < 4; i++) {
+                if (i < stepIndex) {
+                    updateRiskStep(i, 'done');
+                } else if (i === stepIndex && percent < 100) {
+                    updateRiskStep(i, 'active');
+                } else {
+                    updateRiskStep(i, '');
+                }
+            }
+            if (percent >= 100) {
+                for (var j = 0; j < 4; j++) {
+                    updateRiskStep(j, 'done');
+                }
+                riskCheckCompleted = true;
+                showRiskResult(riskScore, riskDetails);
+            }
+        }
+
+        function showRiskResult(score, details) {
+            var resultDiv = document.getElementById('riskResult');
+            resultDiv.style.display = 'block';
+            var scoreNumber = document.getElementById('scoreNumber');
+            var scoreStatus = document.getElementById('scoreStatus');
+            var scoreDetail = document.getElementById('scoreDetail');
+            var detailList = document.getElementById('riskDetailList');
+            var detailItems = document.getElementById('riskDetailItems');
+            
+            scoreNumber.textContent = score;
+            
+            if (score < 25) {
+                scoreNumber.className = 'score-number passed';
+                scoreStatus.textContent = '✅ 安全';
+                scoreStatus.className = 'score-status passed';
+                scoreDetail.textContent = '账户状态良好，无风险';
+                detailList.className = 'risk-detail-list';
+            } else if (score < 45) {
+                scoreNumber.className = 'score-number passed';
+                scoreStatus.textContent = '✅ 低风险';
+                scoreStatus.className = 'score-status passed';
+                scoreDetail.textContent = '存在少量风险项，可正常退款';
+                detailList.className = 'risk-detail-list show';
+            } else if (score < 65) {
+                scoreNumber.className = 'score-number warning';
+                scoreStatus.textContent = '⚠️ 中风险';
+                scoreStatus.className = 'score-status warning';
+                scoreDetail.textContent = '存在多项风险，请确认后操作';
+                detailList.className = 'risk-detail-list show';
+            } else {
+                scoreNumber.className = 'score-number failed';
+                scoreStatus.textContent = '❌ 高风险';
+                scoreStatus.className = 'score-status failed';
+                scoreDetail.textContent = '风险过高，禁止退款';
+                detailList.className = 'risk-detail-list show';
+            }
+            
+            if (details && details.length > 0) {
+                detailItems.innerHTML = '';
+                details.forEach(function(item) {
+                    var div = document.createElement('div');
+                    div.className = 'detail-item';
+                    var scoreClass = 'low';
+                    var scoreVal = item.score || 0;
+                    if (scoreVal >= 15) scoreClass = 'high';
+                    else if (scoreVal >= 8) scoreClass = 'medium';
+                    div.innerHTML = '<span>' + (item.text || item) + '</span><span class="score ' + scoreClass + '">+' + scoreVal + '</span>';
+                    detailItems.appendChild(div);
+                });
+            }
+        }
+
+        function showRiskProgress() {
+            var container = document.getElementById('riskProgress');
+            container.className = 'risk-progress-container show';
+            resetRiskSteps();
+            riskCheckCompleted = false;
+            document.getElementById('riskResult').style.display = 'none';
+            updateRiskProgress(0, '🔍 正在启动风控审查...', 'info');
+            var btn = document.getElementById('refundBtn');
+            btn.className = 'refund-btn risk-checking';
+            btn.innerHTML = '<span class="spinner"></span> 风控审查中 (30s)';
+            btn.disabled = true;
+            riskCheckInProgress = true;
+            var progress = 0;
+            var stepTexts = ['🔍 正在验证账户身份...', '📊 正在分析交易行为...', '🛡️ 正在检查安全状态...', '⚖️ 正在评估退款合理性...'];
+            if (riskProgressInterval) clearInterval(riskProgressInterval);
+            riskProgressInterval = setInterval(function() {
+                progress += 2;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(riskProgressInterval);
+                    riskProgressInterval = null;
+                    updateRiskProgress(100, '✅ 风控审查完成', 'success');
+                    var btn2 = document.getElementById('refundBtn');
+                    btn2.className = 'refund-btn';
+                    btn2.innerHTML = '<i class="fas fa-undo-alt"></i> 确认退款';
+                    btn2.disabled = false;
+                    riskCheckInProgress = false;
+                    showToast('✅ 风控审查完成，请点击确认退款', 'success');
+                } else {
+                    var stepIdx = Math.floor(progress / 25);
+                    if (stepIdx > 3) stepIdx = 3;
+                    var statusText = stepTexts[stepIdx] || '审查中...';
+                    updateRiskProgress(progress, statusText, 'info');
+                }
+            }, 600);
+        }
+
+        function hideRiskProgress() {
+            var container = document.getElementById('riskProgress');
+            container.className = 'risk-progress-container';
+            if (riskProgressInterval) {
+                clearInterval(riskProgressInterval);
+                riskProgressInterval = null;
+            }
+            riskCheckInProgress = false;
+            resetRiskSteps();
+        }
+
+        function updateRiskBadge(passed, message) {
+            var badge = document.getElementById('riskBadge');
+            badge.style.display = 'inline-block';
+            if (passed) {
+                badge.textContent = '✅ 风控通过';
+                badge.className = 'risk-check-badge passed';
+            } else {
+                badge.textContent = '❌ 风控未通过';
+                badge.className = 'risk-check-badge failed';
+            }
+            var row = document.getElementById('riskCheckRow');
+            row.style.display = 'flex';
+            document.getElementById('odRiskStatus').textContent = message || (passed ? '风控审查通过' : '风控审查未通过');
+            document.getElementById('odRiskStatus').className = 'value ' + (passed ? 'success' : 'danger');
+        }
+
+        async function searchOrder() {
+            var keyword = document.getElementById('searchInput').value.trim();
+            if (!keyword) { showToast('请输入订单号、防伪码或通行卡密', 'warning'); return; }
+            var btn = document.getElementById('searchBtn');
+            var loading = document.getElementById('loadingState');
+            var noResult = document.getElementById('noResultState');
+            var detail = document.getElementById('orderDetail');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> 查询中...';
+            loading.style.display = 'block';
+            noResult.style.display = 'none';
+            detail.style.display = 'none';
+            document.getElementById('refundBtn').style.display = 'none';
+            document.getElementById('gatewayInfoContainer').innerHTML = '';
+            document.getElementById('gatewayBadge').style.display = 'none';
+            document.getElementById('riskBadge').style.display = 'none';
+            document.getElementById('riskCheckRow').style.display = 'none';
+            document.getElementById('riskResult').style.display = 'none';
+            hideRiskProgress();
+            riskCheckCompleted = false;
+            isRefunded = false;
+            isGatewayMode = false;
+            gatewayCardData = null;
+            riskScore = 0;
+            riskDetails = [];
+            try {
+                var data = await apiRequest('/api/order/search?keyword=' + encodeURIComponent(keyword));
+                if (data.type === 'gateway') {
+                    if (!data.exists) {
+                        loading.style.display = 'none';
+                        noResult.style.display = 'block';
+                        noResult.querySelector('p').textContent = '通行卡密不存在或已被使用';
+                        showToast('通行卡密不存在或已被使用', 'warning');
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fas fa-search"></i> 查询';
+                        return;
+                    }
+                    if (data.username !== currentUser) {
+                        loading.style.display = 'none';
+                        noResult.style.display = 'block';
+                        noResult.querySelector('p').textContent = '该卡密不属于当前账号';
+                        showToast('该卡密不属于当前账号', 'error');
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fas fa-search"></i> 查询';
+                        return;
+                    }
+                    displayGatewayDetail(data);
+                    loading.style.display = 'none';
+                    detail.style.display = 'block';
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-search"></i> 查询';
+                    return;
+                }
+                var orders = data.orders || [];
+                if (orders.length === 0) {
+                    loading.style.display = 'none';
+                    noResult.style.display = 'block';
+                    showToast('未找到匹配的订单，请检查输入', 'warning');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-search"></i> 查询';
+                    return;
+                }
+                var foundOrder = orders[0];
+                if (foundOrder.username !== currentUser && foundOrder.owner !== currentUser) {
+                    loading.style.display = 'none';
+                    noResult.style.display = 'block';
+                    noResult.querySelector('p').textContent = '该订单不属于当前账号';
+                    showToast('该订单不属于当前账号', 'error');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-search"></i> 查询';
+                    return;
+                }
+                currentOrder = foundOrder;
+                currentOrderId = foundOrder.order_id;
+                displayOrderDetail(foundOrder);
+                loading.style.display = 'none';
+                detail.style.display = 'block';
+                var status = foundOrder.status || 'pending';
+                if (status === 'refunded') {
+                    isRefunded = true;
+                    var refundBtn = document.getElementById('refundBtn');
+                    refundBtn.textContent = '✅ 已退款';
+                    refundBtn.className = 'refund-btn refunded';
+                    refundBtn.disabled = true;
+                    refundBtn.style.display = 'block';
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-search"></i> 查询';
+                    return;
+                }
+                if (status === 'pending') {
+                    showToast('该订单尚未支付，无需退款', 'warning');
+                    document.getElementById('refundBtn').style.display = 'none';
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-search"></i> 查询';
+                    return;
+                }
+                if (status === 'cancelled' || status === 'expired') {
+                    showToast('该订单已取消或过期，无法退款', 'warning');
+                    document.getElementById('refundBtn').style.display = 'none';
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-search"></i> 查询';
+                    return;
+                }
+                if (status === 'frozen') {
+                    showToast('该订单已冻结，请联系管理员', 'warning');
+                    document.getElementById('refundBtn').style.display = 'none';
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-search"></i> 查询';
+                    return;
+                }
+                if (status === 'paid') {
+                    await checkRefundEligibility(foundOrder.order_id);
+                }
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-search"></i> 查询';
+            } catch (error) {
+                loading.style.display = 'none';
+                showToast('查询失败: ' + error.message, 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-search"></i> 查询';
+            }
+        }
+
+        async function checkRefundEligibility(orderId) {
+            try {
+                var data = await apiRequest('/api/order/' + orderId + '/refund-check');
+                if (data.is_refunded) {
+                    document.getElementById('refundBtn').style.display = 'none';
+                    document.getElementById('orderLockedRow').style.display = 'flex';
+                    document.getElementById('odLockedReason').textContent = '该订单已退款，不可重复操作';
+                    showToast('该订单已退款', 'warning');
+                    return;
+                }
+                if (data.risk_check_failed) {
+                    document.getElementById('refundBtn').style.display = 'none';
+                    document.getElementById('orderLockedRow').style.display = 'flex';
+                    document.getElementById('odLockedReason').textContent = data.risk_message || '风控审查未通过';
+                    updateRiskBadge(false, data.risk_message || '风控审查未通过');
+                    showToast('❌ ' + (data.risk_message || '风控审查未通过'), 'error');
+                    return;
+                }
+                if (data.can_refund) {
+                    document.getElementById('refundBtn').style.display = 'block';
+                    document.getElementById('refundBtn').disabled = false;
+                    document.getElementById('refundBtn').innerHTML = '<i class="fas fa-undo-alt"></i> 确认退款';
+                    document.getElementById('refundBtn').className = 'refund-btn';
+                    var displayPoints = data.refund_points || data.refund_amount || 0;
+                    document.getElementById('previewAmount').textContent = displayPoints.toFixed(2) + ' 积分';
+                    document.getElementById('previewReason').textContent = data.reason;
+                    if (data.is_pl_payment && data.rate_used) {
+                        document.getElementById('previewRateRow').style.display = 'flex';
+                        document.getElementById('previewRateInfo').textContent = '💎 ' + data.refund_amount.toFixed(4) + ' PL × 汇率 ' + data.rate_used.toFixed(4) + ' = ' + displayPoints.toFixed(2) + ' 积分';
+                    } else { document.getElementById('previewRateRow').style.display = 'none'; }
+                    if (data.detail) {
+                        document.getElementById('previewDetailRow').style.display = 'block';
+                        document.getElementById('previewDetail').textContent = data.detail;
+                    } else { document.getElementById('previewDetailRow').style.display = 'none'; }
+                    document.getElementById('orderLockedRow').style.display = 'none';
+                    var riskNotice = document.getElementById('riskNotice');
+                    if (displayPoints >= 100) {
+                        riskNotice.style.display = 'flex';
+                    } else {
+                        riskNotice.style.display = 'none';
+                    }
+                    if (data.risk_check_passed) {
+                        updateRiskBadge(true, data.risk_message || '风控审查通过');
+                        if (data.risk_score !== undefined) {
+                            riskScore = data.risk_score;
+                            riskDetails = data.risk_details || [];
+                            showRiskResult(riskScore, riskDetails);
+                        }
+                    } else {
+                        document.getElementById('riskBadge').style.display = 'none';
+                        document.getElementById('riskCheckRow').style.display = 'none';
+                        document.getElementById('riskResult').style.display = 'none';
+                    }
+                } else {
+                    document.getElementById('refundBtn').style.display = 'none';
+                    document.getElementById('orderLockedRow').style.display = 'flex';
+                    document.getElementById('odLockedReason').textContent = data.reason || '不可退款';
+                    if (data.has_unclaimed) {
+                        showToast('⚠️ 该订单的卡密尚未从邮箱领取，请先领取后再申请退款', 'warning');
+                    } else {
+                        showToast('该订单不可退款: ' + data.reason, 'warning');
+                    }
+                }
+            } catch (error) {
+                document.getElementById('refundBtn').style.display = 'none';
+                document.getElementById('orderLockedRow').style.display = 'flex';
+                document.getElementById('odLockedReason').textContent = '检查退款状态失败: ' + error.message;
+                console.error('Check refund failed:', error);
+            }
+        }
+
+        async function processGatewayRefund() {
+            if (isProcessing || isRefunded) return;
+            if (riskCheckInProgress) {
+                showToast('⏳ 风控审查进行中，请等待完成', 'info');
+                return;
+            }
+            var btn = document.getElementById('refundBtn');
+            if (btn.disabled) return;
+            if (!gatewayCardData || !gatewayCardData.card_key) { showToast('请先查询卡密', 'warning'); return; }
+            if (!gatewayCardData.can_refund) { showToast('该卡密不可退款', 'warning'); return; }
+            if (gatewayCardData.is_refunded) { showToast('该卡密对应的订单已退款', 'warning'); return; }
+            if (!gatewayCardData.order_id) { showToast('系统错误，无法获取退款标识', 'error'); return; }
+            var previewAmount = document.getElementById('previewAmount').textContent;
+            var previewReason = document.getElementById('previewReason').textContent;
+            var refundPoints = parseFloat(previewAmount) || 0;
+            if (refundPoints >= 100 && !riskCheckCompleted) {
+                showRiskProgress();
+                return;
+            }
+            var confirmMessage = '';
+            if (refundPoints >= 100 && riskCheckCompleted) {
+                confirmMessage = '✅ 风控审查已完成 (评分: ' + riskScore + ')\n\n';
+            }
+            confirmMessage += '卡密: ' + gatewayCardData.card_key + '\n';
+            confirmMessage += '预计退款: ' + previewAmount + '\n';
+            confirmMessage += '退款原因: ' + previewReason + '\n\n';
+            if (gatewayCardData.has_original_order) {
+                confirmMessage += '📋 关联订单: ' + gatewayCardData.original_order_id + '\n';
+                confirmMessage += '✅ 将使用订单退款方式\n\n';
+            } else {
+                confirmMessage += '⚠️ 无关联订单，将使用无订单模式退款\n\n';
+            }
+            confirmMessage += '退款将存入理财账户，确认继续？';
+            if (!confirm(confirmMessage)) return;
+            isProcessing = true;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> 退款处理中...';
+            try {
+                var data = await apiRequest('/api/order/' + gatewayCardData.order_id + '/refund-self', {
+                    method: 'POST',
+                    body: JSON.stringify({ is_gateway_refund: true, card_key: gatewayCardData.card_key })
+                });
+                if (data.success) {
+                    var successMsg = '✅ 退款成功！' + data.message;
+                    if (data.order_refunded) { successMsg += ' (已标记订单为已退款)'; }
+                    showToast(successMsg, 'success');
+                    isRefunded = true;
+                    btn.textContent = '✅ 已退款';
+                    btn.className = 'refund-btn refunded';
+                    btn.disabled = true;
+                    document.getElementById('refundStatusRow').style.display = 'flex';
+                    document.getElementById('odRefundStatus').textContent = '✅ 已退款';
+                    document.getElementById('odRefundStatus').className = 'value success';
+                    document.getElementById('refundReasonRow').style.display = 'flex';
+                    document.getElementById('odRefundReason').textContent = data.reason;
+                    document.getElementById('refundAmountRow').style.display = 'flex';
+                    document.getElementById('odRefundAmount').textContent = (data.refund_points || 0).toFixed(2) + ' 积分';
+                    document.getElementById('previewAmount').textContent = (data.refund_points || 0).toFixed(2) + ' 积分';
+                    document.getElementById('previewReason').textContent = data.reason;
+                    if (data.is_pl_payment && data.rate_used) {
+                        document.getElementById('previewRateRow').style.display = 'flex';
+                        document.getElementById('previewRateInfo').textContent = '💎 ' + data.refund_amount.toFixed(4) + ' PL × 汇率 ' + data.rate_used.toFixed(4) + ' = ' + (data.refund_points || 0).toFixed(2) + ' 积分';
+                    }
+                    document.getElementById('refundBtn').style.display = 'none';
+                    hideRiskProgress();
+                    if (data.risk_score !== undefined) {
+                        riskScore = data.risk_score;
+                        riskDetails = data.risk_details || [];
+                        showRiskResult(riskScore, riskDetails);
+                    }
+                }
+            } catch (error) {
+                showToast('❌ 退款失败: ' + error.message, 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-undo-alt"></i> 确认退款';
+                btn.className = 'refund-btn';
+                hideRiskProgress();
+            } finally { isProcessing = false; }
+        }
+
+        async function processOrderRefund() {
+            if (isProcessing || isRefunded) return;
+            if (riskCheckInProgress) {
+                showToast('⏳ 风控审查进行中，请等待完成', 'info');
+                return;
+            }
+            var btn = document.getElementById('refundBtn');
+            if (btn.disabled) return;
+            if (!currentOrder || !currentOrderId) { showToast('请先查询订单', 'warning'); return; }
+            if (currentOrder.status !== 'paid') { showToast('该订单状态不支持退款', 'warning'); return; }
+            if (currentOrder.refunded) { showToast('该订单已退款', 'warning'); return; }
+            var previewAmount = document.getElementById('previewAmount').textContent;
+            var previewReason = document.getElementById('previewReason').textContent;
+            var refundPoints = parseFloat(previewAmount) || 0;
+            if (refundPoints >= 100 && !riskCheckCompleted) {
+                showRiskProgress();
+                return;
+            }
+            var confirmMessage = '';
+            if (refundPoints >= 100 && riskCheckCompleted) {
+                confirmMessage = '✅ 风控审查已完成 (评分: ' + riskScore + ')\n\n';
+            }
+            confirmMessage += '预计退款: ' + previewAmount + '\n';
+            confirmMessage += '退款原因: ' + previewReason + '\n\n';
+            confirmMessage += '退款将存入理财账户，确认继续？';
+            if (!confirm(confirmMessage)) return;
+            isProcessing = true;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> 退款处理中...';
+            try {
+                var data = await apiRequest('/api/order/' + currentOrderId + '/refund-self', { method: 'POST', body: JSON.stringify({}) });
+                if (data.success) {
+                    showToast('✅ 退款成功！' + data.message, 'success');
+                    isRefunded = true;
+                    btn.textContent = '✅ 已退款';
+                    btn.className = 'refund-btn refunded';
+                    btn.disabled = true;
+                    currentOrder.refunded = true;
+                    currentOrder.refund_amount = data.refund_amount;
+                    currentOrder.refund_points = data.refund_points;
+                    currentOrder.refund_reason = data.reason;
+                    currentOrder.status = 'refunded';
+                    displayOrderDetail(currentOrder);
+                    document.getElementById('previewAmount').textContent = (data.refund_points || 0).toFixed(2) + ' 积分';
+                    document.getElementById('previewReason').textContent = data.reason;
+                    if (data.is_pl_payment && data.rate_used) {
+                        document.getElementById('previewRateRow').style.display = 'flex';
+                        document.getElementById('previewRateInfo').textContent = '💎 ' + data.refund_amount.toFixed(4) + ' PL × 汇率 ' + data.rate_used.toFixed(4) + ' = ' + (data.refund_points || 0).toFixed(2) + ' 积分';
+                    }
+                    document.getElementById('refundStatusRow').style.display = 'flex';
+                    document.getElementById('odRefundStatus').textContent = '✅ 已退款';
+                    document.getElementById('odRefundStatus').className = 'value success';
+                    document.getElementById('refundReasonRow').style.display = 'flex';
+                    document.getElementById('odRefundReason').textContent = data.reason;
+                    document.getElementById('refundAmountRow').style.display = 'flex';
+                    if (data.is_pl_payment) {
+                        document.getElementById('odRefundAmount').textContent = (data.refund_points || 0).toFixed(2) + ' 积分 (原 ' + (data.refund_amount || 0).toFixed(4) + ' PL)';
+                    } else {
+                        document.getElementById('odRefundAmount').textContent = (data.refund_points || 0).toFixed(2) + ' 积分';
+                    }
+                    hideRiskProgress();
+                    if (data.risk_score !== undefined) {
+                        riskScore = data.risk_score;
+                        riskDetails = data.risk_details || [];
+                        showRiskResult(riskScore, riskDetails);
+                    }
+                }
+            } catch (error) {
+                showToast('❌ 退款失败: ' + error.message, 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-undo-alt"></i> 确认退款';
+                btn.className = 'refund-btn';
+                hideRiskProgress();
+            } finally { isProcessing = false; }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('searchBtn').addEventListener('click', searchOrder);
+            document.getElementById('searchInput').addEventListener('keypress', function(e) { if (e.key === 'Enter') searchOrder(); });
+            document.getElementById('refundBtn').addEventListener('click', function() {
+                if (isGatewayMode && gatewayCardData) { processGatewayRefund(); } else { processOrderRefund(); }
+            });
+            document.querySelectorAll('.example-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var type = this.getAttribute('data-type');
+                    if (type === 'order') { document.getElementById('searchInput').value = 'MUP_1785906769629_H59JUL'; } else if (type === 'fake') { document.getElementById('searchInput').value = '123456'; } else if (type === 'gateway') { document.getElementById('searchInput').value = 'ABCD-EFGH-IJKL-MNOP'; }
+                    searchOrder();
+                });
+            });
+            init();
+        });
+
+        async function init() {
+            if (isInitialized) return;
+            isInitialized = true;
+            try {
+                await fetchCsrfToken().catch(function(e) { console.warn('CSRF pre-fetch failed:', e); });
+                var ok = await loadUserInfo();
+                if (!ok) return;
+                var urlParams = new URLSearchParams(window.location.search);
+                var orderId = urlParams.get('order_id');
+                if (orderId) {
+                    document.getElementById('searchInput').value = orderId;
+                    setTimeout(searchOrder, 500);
+                }
+                hideErrorBoundary();
+            } catch (error) {
+                console.error('Init error:', error);
+                showErrorBoundary('初始化失败: ' + (error.message || '网络连接失败'));
+                if (initRetryCount < MAX_INIT_RETRIES) {
+                    initRetryCount++;
+                    isInitialized = false;
+                    setTimeout(init, 3000);
+                }
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

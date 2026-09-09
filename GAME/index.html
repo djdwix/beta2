@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎮 游戏中心</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI','PingFang SC',sans-serif;background:linear-gradient(135deg,#0a0a1a 0%,#1a1a3e 50%,#0d0d2b 100%);min-height:100vh;color:#e8e8f0;padding:20px}
+        .container{max-width:1200px;margin:0 auto}
+        .header{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;background:rgba(255,255,255,0.06);border-radius:20px;border:1px solid rgba(255,255,255,0.08);margin-bottom:24px;flex-wrap:wrap;gap:12px}
+        .header h1{font-size:24px;background:linear-gradient(135deg,#fbbf24,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+        .header .stats{display:flex;gap:20px;flex-wrap:wrap;font-size:13px;color:rgba(255,255,255,0.6)}
+        .header .stats span{background:rgba(255,255,255,0.06);padding:4px 14px;border-radius:20px}
+        .header .stats .highlight{color:#fbbf24}
+        .header .back-btn{padding:8px 20px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:40px;color:#d1d5db;cursor:pointer;transition:all 0.3s;font-size:13px;text-decoration:none}
+        .header .back-btn:hover{background:rgba(255,255,255,0.15)}
+        .game-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:30px}
+        .game-card{background:rgba(255,255,255,0.04);border-radius:20px;padding:20px;border:1px solid rgba(255,255,255,0.06);cursor:pointer;transition:all 0.3s;text-align:center}
+        .game-card:hover{background:rgba(255,255,255,0.08);border-color:rgba(251,191,36,0.3);transform:translateY(-4px);box-shadow:0 8px 30px rgba(0,0,0,0.3)}
+        .game-card .emoji{font-size:48px;display:block;margin-bottom:10px}
+        .game-card .name{font-size:18px;font-weight:600;color:#fff;margin-bottom:4px}
+        .game-card .desc{font-size:13px;color:rgba(255,255,255,0.4);margin-bottom:8px}
+        .game-card .reward{font-size:12px;color:#fbbf24}
+        .game-card.disabled{opacity:0.4;cursor:not-allowed;pointer-events:none}
+        .game-area{background:rgba(255,255,255,0.04);border-radius:20px;padding:24px;border:1px solid rgba(255,255,255,0.06);display:none}
+        .game-area.active{display:block}
+        .game-area .game-title{font-size:20px;font-weight:600;color:#fff;margin-bottom:16px;display:flex;align-items:center;gap:12px}
+        .game-area .game-title .back{background:rgba(255,255,255,0.08);border:none;color:rgba(255,255,255,0.6);padding:4px 16px;border-radius:20px;cursor:pointer;font-size:13px;transition:all 0.2s}
+        .game-area .game-title .back:hover{background:rgba(255,255,255,0.15);color:#fff}
+        .game-area .game-content{color:rgba(255,255,255,0.8);line-height:1.8}
+        .game-area .game-content .result-box{background:rgba(255,255,255,0.04);border-radius:16px;padding:20px;margin:16px 0;text-align:center}
+        .game-area .game-content .result-box .big{font-size:32px;font-weight:700;margin:8px 0}
+        .game-area .game-content .result-box .win{color:#34d399}
+        .game-area .game-content .result-box .lose{color:#f87171}
+        .game-area .game-content .dice-row{display:flex;gap:16px;justify-content:center;margin:12px 0;flex-wrap:wrap}
+        .game-area .game-content .dice{width:60px;height:60px;background:rgba(255,255,255,0.06);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:#fff;border:1px solid rgba(255,255,255,0.08)}
+        .game-area .game-content .cards-row{display:flex;gap:12px;justify-content:center;margin:12px 0;flex-wrap:wrap}
+        .game-area .game-content .card{width:50px;height:70px;background:rgba(255,255,255,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#fff;border:1px solid rgba(255,255,255,0.1)}
+        .game-area .game-content .card.red{color:#f87171}
+        .game-area .game-content .card.black{color:#fff}
+        .game-area .game-content .rps-row{display:flex;gap:20px;justify-content:center;margin:12px 0;flex-wrap:wrap}
+        .game-area .game-content .rps-move{font-size:42px;padding:12px 24px;background:rgba(255,255,255,0.04);border-radius:12px;border:1px solid rgba(255,255,255,0.06);cursor:pointer;transition:all 0.2s}
+        .game-area .game-content .rps-move:hover{background:rgba(255,255,255,0.12);transform:scale(1.05)}
+        .game-area .game-content .rps-move.win{border-color:#34d399;background:rgba(52,211,153,0.1)}
+        .game-area .game-content .rps-move.lose{border-color:#f87171;background:rgba(248,113,113,0.1)}
+        .game-area .game-content .rps-move.selected{border-color:#667eea;background:rgba(102,126,234,0.2)}
+        .game-area .game-content .roulette-result{font-size:56px;font-weight:700;text-align:center;padding:16px;background:rgba(255,255,255,0.04);border-radius:16px;margin:12px 0}
+        .game-area .game-content .roulette-result.red{color:#f87171}
+        .game-area .game-content .roulette-result.black{color:#fff}
+        .game-area .game-content .roulette-result.green{color:#34d399}
+        .btn{display:inline-block;padding:10px 28px;border:none;border-radius:40px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s}
+        .btn-primary{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
+        .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(102,126,234,0.3)}
+        .btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+        .btn-success{background:linear-gradient(135deg,#34d399,#059669);color:#fff}
+        .btn-success:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(52,211,153,0.3)}
+        .btn-danger{background:linear-gradient(135deg,#f87171,#dc2626);color:#fff}
+        .btn-danger:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(248,113,113,0.3)}
+        .btn-warning{background:linear-gradient(135deg,#fbbf24,#d97706);color:#1a1a2e}
+        .btn-warning:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(251,191,36,0.3)}
+        .btn-outline{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#d1d5db}
+        .btn-outline:hover{background:rgba(255,255,255,0.12)}
+        .btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+        .bet-options{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+        .bet-options button{padding:6px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:20px;color:rgba(255,255,255,0.6);cursor:pointer;transition:all 0.2s;font-size:13px}
+        .bet-options button:hover{background:rgba(255,255,255,0.12)}
+        .bet-options button.active{background:rgba(102,126,234,0.3);border-color:#667eea;color:#a78bfa}
+        .loading{text-align:center;padding:40px;color:rgba(255,255,255,0.3)}
+        .loading i{font-size:28px;display:block;margin-bottom:12px;color:#667eea}
+        .message{position:fixed;bottom:24px;right:24px;padding:14px 24px;border-radius:16px;z-index:9999;animation:slideUp 0.35s ease;max-width:420px;box-shadow:0 12px 40px rgba(0,0,0,0.5);font-size:14px;display:flex;align-items:center;gap:10px}
+        .message-success{background:#065f46;color:#a7f3d0;border:1px solid rgba(52,211,153,0.2)}
+        .message-error{background:#7f1d1d;color:#fca5a5;border:1px solid rgba(239,68,68,0.2)}
+        .message-warning{background:#78350f;color:#fde68a;border:1px solid rgba(251,191,36,0.2)}
+        @keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+        .history-item{display:flex;gap:12px;padding:8px 12px;background:rgba(255,255,255,0.03);border-radius:8px;margin-bottom:4px;font-size:13px;align-items:center;flex-wrap:wrap}
+        .history-item .h-win{color:#34d399}
+        .history-item .h-lose{color:#f87171}
+        .history-item .h-tie{color:#fbbf24}
+        .roulette-bet-options{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+        .roulette-bet-options button{padding:6px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:20px;color:rgba(255,255,255,0.6);cursor:pointer;transition:all 0.2s;font-size:13px}
+        .roulette-bet-options button:hover{background:rgba(255,255,255,0.12)}
+        .roulette-bet-options button.active-roulette{border-color:#667eea;background:rgba(102,126,234,0.2);color:#a78bfa}
+        .guess-input-area{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0}
+        .guess-input-area input{width:120px;padding:10px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:#fff;font-size:18px;outline:none;text-align:center}
+        .guess-input-area input:focus{border-color:#667eea}
+        .guess-input-area input:disabled{opacity:0.4}
+        .guess-hint{font-size:16px;padding:8px 16px;background:rgba(255,255,255,0.04);border-radius:10px;margin:6px 0}
+        .guess-hint.high{color:#f87171}
+        .guess-hint.low{color:#60a5fa}
+        .rps-choice-area{display:flex;gap:16px;justify-content:center;margin:12px 0;flex-wrap:wrap}
+        .rps-choice-btn{font-size:48px;padding:16px 28px;background:rgba(255,255,255,0.04);border:2px solid rgba(255,255,255,0.08);border-radius:16px;cursor:pointer;transition:all 0.3s}
+        .rps-choice-btn:hover{background:rgba(255,255,255,0.12);transform:scale(1.08)}
+        .rps-choice-btn:disabled{opacity:0.3;cursor:not-allowed;transform:none}
+        .rps-choice-btn.selected{background:rgba(102,126,234,0.2);border-color:#667eea}
+        .rps-score{font-size:18px;font-weight:600;margin:8px 0;padding:12px;background:rgba(255,255,255,0.04);border-radius:12px}
+        @media(max-width:768px){.game-grid{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}.game-area{padding:16px}.dice{width:45px;height:45px;font-size:20px}.card{width:40px;height:60px;font-size:16px}.rps-choice-btn{font-size:36px;padding:12px 20px}}
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🎮 游戏中心</h1>
+        <div class="stats" id="statsBar">
+            <span>🎯 今日游戏: <span id="todayPlays">0</span>/<span id="maxPlays">5</span></span>
+            <span>🏆 胜率: <span id="winRate">0</span>%</span>
+            <span>⭐ 总胜场: <span id="totalWins">0</span></span>
+        </div>
+        <a href="/" class="back-btn">← 返回主控台</a>
+    </div>
+
+    <div class="game-grid" id="gameGrid"></div>
+
+    <div class="game-area" id="gameArea">
+        <div class="game-title">
+            <span id="gameTitle">游戏</span>
+            <button class="back" onclick="backToGames()">← 返回</button>
+        </div>
+        <div class="game-content" id="gameContent"></div>
+    </div>
+</div>
+
+<script>
+    var csrfToken = null;
+    var csrfTokenLastFetch = 0;
+    var currentUser = null;
+    var currentGame = null;
+    var gameData = {};
+    var guessGameActive = false;
+    var rpsGameActive = false;
+
+    function getCsrfTokenFromCookie() {
+        try {
+            var c = document.cookie.split(';');
+            for (var i = 0; i < c.length; i++) {
+                var cookie = c[i].trim();
+                if (cookie.indexOf('csrf_token=') === 0) {
+                    return cookie.substring('csrf_token='.length, cookie.length);
+                }
+            }
+        } catch (e) {}
+        return null;
+    }
+
+    function setCsrfTokenCookie(token) {
+        try {
+            var expires = new Date(Date.now() + 300000).toUTCString();
+            document.cookie = 'csrf_token=' + token + '; expires=' + expires + '; path=/; SameSite=Strict; Secure';
+        } catch (e) {}
+    }
+
+    async function fetchCsrfToken() {
+        if (csrfToken && (Date.now() - csrfTokenLastFetch) < 300000) return csrfToken;
+        var cookieToken = getCsrfTokenFromCookie();
+        if (cookieToken) {
+            csrfToken = cookieToken;
+            csrfTokenLastFetch = Date.now();
+            return csrfToken;
+        }
+        try {
+            var res = await fetch('/api/csrf-token', {
+                method: 'GET',
+                credentials: 'include',
+                headers: { 'Accept': 'application/json' }
+            });
+            var data = await res.json();
+            if (data.csrf_token) {
+                csrfToken = data.csrf_token;
+                csrfTokenLastFetch = Date.now();
+                setCsrfTokenCookie(csrfToken);
+                return csrfToken;
+            }
+            throw new Error('No CSRF token');
+        } catch (e) {
+            throw new Error('Failed to fetch CSRF token');
+        }
+    }
+
+    async function apiRequest(url, options) {
+        if (!options) options = {};
+        options.credentials = 'include';
+        if (!options.headers) options.headers = {};
+        options.headers['Content-Type'] = 'application/json';
+        options.headers['Accept'] = 'application/json';
+        var method = (options.method || 'GET').toUpperCase();
+        if (method === 'GET' || method === 'HEAD') {
+            var res = await fetch(url, options);
+            var data = await res.json();
+            if (!res.ok) throw new Error(data.error || '请求失败: ' + res.status);
+            return data;
+        }
+        var token = await fetchCsrfToken();
+        options.headers['X-CSRF-Token'] = token;
+        var res = await fetch(url, options);
+        var data = await res.json();
+        if (!res.ok) {
+            if (res.status === 403 && data.error && data.error.indexOf('CSRF') !== -1) {
+                csrfToken = null;
+                var newToken = await fetchCsrfToken();
+                options.headers['X-CSRF-Token'] = newToken;
+                var retryRes = await fetch(url, options);
+                var retryData = await retryRes.json();
+                if (!retryRes.ok) throw new Error(retryData.error || '请求失败: ' + retryRes.status);
+                return retryData;
+            }
+            throw new Error(data.error || '请求失败: ' + res.status);
+        }
+        return data;
+    }
+
+    function showMessage(msg, type) {
+        var d = document.createElement('div');
+        d.className = 'message message-' + type;
+        var icon = type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-times-circle' : 'fa-exclamation-triangle';
+        d.innerHTML = '<i class="fas ' + icon + '"></i> ' + msg;
+        document.body.appendChild(d);
+        setTimeout(function() { d.remove(); }, 3500);
+    }
+
+    function escapeHtml(t) {
+        if (!t) return '';
+        var d = document.createElement('div');
+        d.textContent = t;
+        return d.innerHTML;
+    }
+
+    async function loadStats() {
+        try {
+            var data = await apiRequest('/api/game/stats');
+            document.getElementById('todayPlays').textContent = data.today_plays || 0;
+            document.getElementById('maxPlays').textContent = data.max_plays || 5;
+            document.getElementById('winRate').textContent = data.win_rate || 0;
+            document.getElementById('totalWins').textContent = data.total_wins || 0;
+        } catch (e) {
+            console.error('Stats error:', e);
+        }
+    }
+
+    async function loadGames() {
+        try {
+            var data = await apiRequest('/api/game/list');
+            var grid = document.getElementById('gameGrid');
+            var html = '';
+            var remaining = data.stats.remaining_plays || 0;
+            data.games.forEach(function(g) {
+                var disabled = remaining <= 0 ? 'disabled' : '';
+                html += '<div class="game-card ' + disabled + '" onclick="startGame(\'' + g.id + '\')">';
+                html += '<span class="emoji">' + g.emoji + '</span>';
+                html += '<div class="name">' + escapeHtml(g.name) + '</div>';
+                html += '<div class="desc">' + escapeHtml(g.description) + '</div>';
+                html += '<div class="reward">🎁 ' + g.min_points + '~' + g.max_points + ' 积分</div>';
+                html += '</div>';
+            });
+            grid.innerHTML = html;
+            await loadStats();
+        } catch (e) {
+            console.error('Load games error:', e);
+            document.getElementById('gameGrid').innerHTML = '<div class="loading"><i class="fas fa-exclamation-triangle" style="color:#f87171;"></i>加载失败: ' + escapeHtml(e.message) + '</div>';
+        }
+    }
+
+    function backToGames() {
+        document.getElementById('gameArea').classList.remove('active');
+        document.getElementById('gameGrid').style.display = 'grid';
+        gameData = {};
+        guessGameActive = false;
+        rpsGameActive = false;
+        loadStats();
+        loadGames();
+    }
+
+    function startGame(gameId) {
+        currentGame = gameId;
+        document.getElementById('gameGrid').style.display = 'none';
+        var area = document.getElementById('gameArea');
+        area.classList.add('active');
+        var names = {
+            'dice': '🎲 骰子大战',
+            'blackjack': '🃏 二十一点',
+            'guess_number': '🎯 猜数字',
+            'rock_paper_scissors': '🤖 石头剪刀布',
+            'roulette': '🎡 轮盘赌'
+        };
+        document.getElementById('gameTitle').textContent = names[gameId] || '游戏';
+        var content = document.getElementById('gameContent');
+        if (gameId === 'dice') renderDice(content);
+        else if (gameId === 'blackjack') renderBlackjack(content);
+        else if (gameId === 'guess_number') renderGuessNumber(content);
+        else if (gameId === 'rock_paper_scissors') renderRPS(content);
+        else if (gameId === 'roulette') renderRoulette(content);
+        else content.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i>加载中...</div>';
+    }
+
+    function renderDice(el) {
+        gameData.betType = 'high';
+        el.innerHTML = '<p style="margin-bottom:12px;">🎲 你和AI各掷3个骰子，点数大者获胜！</p>' +
+            '<div class="bet-options">' +
+            '<button class="active" data-bet="high" onclick="selectDiceBet(this, \'high\')">📈 比大</button>' +
+            '<button data-bet="low" onclick="selectDiceBet(this, \'low\')">📉 比小</button>' +
+            '<button data-bet="over" onclick="selectDiceBet(this, \'over\')">⬆ 超过7点</button>' +
+            '<button data-bet="under" onclick="selectDiceBet(this, \'under\')">⬇ 低于7点</button>' +
+            '</div>' +
+            '<button class="btn btn-primary" id="dicePlayBtn" onclick="playDice()">🎲 掷骰子</button>' +
+            '<div id="diceResult" style="margin-top:16px;"></div>';
+    }
+
+    function selectDiceBet(el, type) {
+        var parent = el.parentElement;
+        if (parent) {
+            var btns = parent.querySelectorAll('button');
+            btns.forEach(function(b) { b.classList.remove('active'); });
+        }
+        el.classList.add('active');
+        gameData.betType = type;
+    }
+
+    async function playDice() {
+        var btn = document.getElementById('dicePlayBtn');
+        if (!btn) return;
+        btn.disabled = true;
+        btn.textContent = '🎲 掷骰中...';
+        try {
+            var data = await apiRequest('/api/game/play/dice', {
+                method: 'POST',
+                body: JSON.stringify({ bet_type: gameData.betType || 'high' })
+            });
+            var el = document.getElementById('diceResult');
+            if (!el) return;
+            var playerDiceHtml = data.player_dice.map(function(d) { return '<div class="dice">' + d + '</div>'; }).join('');
+            var aiDiceHtml = data.ai_dice.map(function(d) { return '<div class="dice">' + d + '</div>'; }).join('');
+            var winClass = data.won ? 'win' : 'lose';
+            el.innerHTML = '<div class="result-box">' +
+                '<div style="font-size:14px;color:rgba(255,255,255,0.5);">🧑 你的骰子 (合计 ' + data.player_total + ')</div>' +
+                '<div class="dice-row">' + playerDiceHtml + '</div>' +
+                '<div style="font-size:14px;color:rgba(255,255,255,0.5);margin-top:12px;">🤖 AI的骰子 (合计 ' + data.ai_total + ')</div>' +
+                '<div class="dice-row">' + aiDiceHtml + '</div>' +
+                '<div class="big ' + winClass + '">' + data.message + '</div>' +
+                (data.won ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' 积分</div>' : '') +
+                '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + '</div>' +
+                '</div>';
+            if (data.won) showMessage('🎉 赢了！+' + data.points_earned + ' 积分', 'success');
+            else showMessage('😔 输了，再试一次！', 'warning');
+            loadStats();
+        } catch (e) {
+            showMessage(e.message || '游戏失败', 'error');
+        }
+        btn.disabled = false;
+        btn.textContent = '🎲 掷骰子';
+    }
+
+    function renderBlackjack(el) {
+        el.innerHTML = '<p style="margin-bottom:12px;">🃏 你和庄家比21点，点数大者获胜（超过21点爆牌）</p>' +
+            '<button class="btn btn-primary" id="bjPlayBtn" onclick="playBlackjack()">🃏 发牌</button>' +
+            '<div id="bjResult" style="margin-top:16px;"></div>';
+    }
+
+    async function playBlackjack() {
+        var btn = document.getElementById('bjPlayBtn');
+        if (!btn) return;
+        btn.disabled = true;
+        btn.textContent = '🃏 发牌中...';
+        try {
+            var data = await apiRequest('/api/game/play/blackjack', {
+                method: 'POST',
+                body: JSON.stringify({})
+            });
+            var el = document.getElementById('bjResult');
+            if (!el) return;
+            var playerCards = data.player_hand.map(function(c) {
+                var val = c === 11 ? 'A' : c;
+                var cls = c === 11 ? 'red' : 'black';
+                return '<div class="card ' + cls + '">' + val + '</div>';
+            }).join('');
+            var dealerCards = data.dealer_hand.map(function(c) {
+                var val = c === 11 ? 'A' : c;
+                var cls = c === 11 ? 'red' : 'black';
+                return '<div class="card ' + cls + '">' + val + '</div>';
+            }).join('');
+            var winClass = data.won ? 'win' : 'lose';
+            el.innerHTML = '<div class="result-box">' +
+                '<div style="font-size:14px;color:rgba(255,255,255,0.5);">🧑 你的手牌 (合计 ' + data.player_total + ')</div>' +
+                '<div class="cards-row">' + playerCards + '</div>' +
+                '<div style="font-size:14px;color:rgba(255,255,255,0.5);margin-top:12px;">🤖 庄家的手牌 (合计 ' + data.dealer_total + ')</div>' +
+                '<div class="cards-row">' + dealerCards + '</div>' +
+                (data.dealer_hit_count > 0 ? '<div style="font-size:12px;color:rgba(255,255,255,0.3);">庄家补了 ' + data.dealer_hit_count + ' 张牌</div>' : '') +
+                '<div class="big ' + winClass + '">' + data.message + '</div>' +
+                (data.won ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' 积分</div>' : '') +
+                '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + '</div>' +
+                '</div>';
+            if (data.won) showMessage('🎉 赢了！+' + data.points_earned + ' 积分', 'success');
+            else showMessage('😔 输了，再试一次！', 'warning');
+            loadStats();
+        } catch (e) {
+            showMessage(e.message || '游戏失败', 'error');
+        }
+        btn.disabled = false;
+        btn.textContent = '🃏 发牌';
+    }
+
+    function renderGuessNumber(el) {
+        guessGameActive = false;
+        el.innerHTML = '<p style="margin-bottom:12px;">🎯 1-100之间猜数字，你有7次机会！</p>' +
+            '<button class="btn btn-primary" id="gnStartBtn" onclick="startGuessGame()">🎯 开始新游戏</button>' +
+            '<div id="guessGameArea" style="display:none;margin-top:12px;">' +
+            '<div id="guessStatus" style="margin-bottom:10px;font-size:14px;color:rgba(255,255,255,0.6);"></div>' +
+            '<div class="guess-input-area">' +
+            '<input type="number" id="guessInput" min="1" max="100" placeholder="1-100" disabled>' +
+            '<button class="btn btn-success" id="guessSubmitBtn" onclick="submitGuess()" disabled>猜</button>' +
+            '<button class="btn btn-outline" id="guessResetBtn" onclick="resetGuessGame()" style="display:none;">重新开始</button>' +
+            '</div>' +
+            '<div id="guessHintArea"></div>' +
+            '<div id="guessResult" style="margin-top:12px;"></div>' +
+            '</div>';
+    }
+
+    async function startGuessGame() {
+        var startBtn = document.getElementById('gnStartBtn');
+        if (!startBtn) return;
+        startBtn.disabled = true;
+        startBtn.textContent = '⏳ 准备中...';
+        try {
+            var data = await apiRequest('/api/game/play/guess_number', {
+                method: 'POST',
+                body: JSON.stringify({})
+            });
+            if (data.success) {
+                guessGameActive = true;
+                document.getElementById('guessGameArea').style.display = 'block';
+                document.getElementById('guessInput').disabled = false;
+                document.getElementById('guessSubmitBtn').disabled = false;
+                document.getElementById('guessResetBtn').style.display = 'none';
+                document.getElementById('guessStatus').textContent = '🎯 游戏已开始！剩余 ' + data.max_attempts + ' 次机会';
+                document.getElementById('guessHintArea').innerHTML = '';
+                document.getElementById('guessResult').innerHTML = '';
+                document.getElementById('guessInput').value = '';
+                document.getElementById('guessInput').focus();
+                startBtn.textContent = '🔄 重新开始';
+                startBtn.disabled = false;
+                showMessage('🎯 游戏已开始！输入1-100之间的数字', 'success');
+            } else {
+                showMessage(data.error || '启动失败', 'error');
+                startBtn.disabled = false;
+                startBtn.textContent = '🎯 开始新游戏';
+            }
+        } catch (e) {
+            showMessage(e.message || '启动失败', 'error');
+            startBtn.disabled = false;
+            startBtn.textContent = '🎯 开始新游戏';
+        }
+    }
+
+    async function submitGuess() {
+        var input = document.getElementById('guessInput');
+        var submitBtn = document.getElementById('guessSubmitBtn');
+        if (!input || !submitBtn) return;
+        var val = parseInt(input.value);
+        if (isNaN(val) || val < 1 || val > 100) {
+            showMessage('请输入1-100之间的数字', 'error');
+            return;
+        }
+        submitBtn.disabled = true;
+        input.disabled = true;
+        try {
+            var data = await apiRequest('/api/game/play/guess_number', {
+                method: 'POST',
+                body: JSON.stringify({ guess: val })
+            });
+            var hintArea = document.getElementById('guessHintArea');
+            var resultArea = document.getElementById('guessResult');
+            var status = document.getElementById('guessStatus');
+            if (data.game_over) {
+                var winClass = data.won ? 'win' : 'lose';
+                resultArea.innerHTML = '<div class="result-box"><div class="big ' + winClass + '">' + data.message + '</div>' +
+                    (data.won ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' 积分</div>' : '') +
+                    '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + '</div></div>';
+                guessGameActive = false;
+                input.disabled = true;
+                submitBtn.disabled = true;
+                document.getElementById('guessResetBtn').style.display = 'inline-block';
+                status.textContent = data.won ? '🎉 游戏结束！你赢了！' : '😔 游戏结束！你输了！';
+                if (data.won) loadStats();
+            } else if (data.hint) {
+                var hintClass = data.hint.indexOf('太大') !== -1 ? 'high' : 'low';
+                hintArea.innerHTML = '<div class="guess-hint ' + hintClass + '">' + data.hint + '</div>';
+                status.textContent = '剩余 ' + data.remaining_attempts + ' 次机会';
+                input.value = '';
+                input.disabled = false;
+                submitBtn.disabled = false;
+                input.focus();
+            } else {
+                resultArea.innerHTML = '<div class="result-box"><div class="big lose">' + data.message + '</div></div>';
+                guessGameActive = false;
+                input.disabled = true;
+                submitBtn.disabled = true;
+                document.getElementById('guessResetBtn').style.display = 'inline-block';
+                status.textContent = '😔 游戏结束！';
+            }
+        } catch (e) {
+            showMessage(e.message || '提交失败', 'error');
+            input.disabled = false;
+            submitBtn.disabled = false;
+        }
+    }
+
+    function resetGuessGame() {
+        guessGameActive = false;
+        document.getElementById('guessInput').value = '';
+        document.getElementById('guessInput').disabled = true;
+        document.getElementById('guessSubmitBtn').disabled = true;
+        document.getElementById('guessHintArea').innerHTML = '';
+        document.getElementById('guessResult').innerHTML = '';
+        document.getElementById('guessStatus').textContent = '';
+        document.getElementById('guessResetBtn').style.display = 'none';
+        document.getElementById('guessGameArea').style.display = 'none';
+        document.getElementById('gnStartBtn').textContent = '🎯 开始新游戏';
+        document.getElementById('gnStartBtn').disabled = false;
+        showMessage('游戏已重置', 'warning');
+    }
+
+    function renderRPS(el) {
+        rpsGameActive = false;
+        el.innerHTML = '<p style="margin-bottom:12px;">🤖 石头剪刀布，三局两胜！选择你的出拳</p>' +
+            '<button class="btn btn-primary" id="rpsStartBtn" onclick="startRPSGame()">🤖 开始对战</button>' +
+            '<div id="rpsGameArea" style="display:none;margin-top:12px;">' +
+            '<div id="rpsStatus" style="margin-bottom:10px;font-size:14px;color:rgba(255,255,255,0.6);"></div>' +
+            '<div class="rps-choice-area">' +
+            '<button class="rps-choice-btn" data-move="rock" onclick="rpsChoice(\'rock\')" disabled>🪨</button>' +
+            '<button class="rps-choice-btn" data-move="paper" onclick="rpsChoice(\'paper\')" disabled>📄</button>' +
+            '<button class="rps-choice-btn" data-move="scissors" onclick="rpsChoice(\'scissors\')" disabled>✂️</button>' +
+            '</div>' +
+            '<div id="rpsScore" class="rps-score">比分: 你 0 : 0 AI</div>' +
+            '<div id="rpsHistory" style="margin-top:8px;max-height:150px;overflow-y:auto;"></div>' +
+            '<div id="rpsResult" style="margin-top:12px;"></div>' +
+            '<button class="btn btn-outline" id="rpsResetBtn" onclick="resetRPSGame()" style="display:none;margin-top:8px;">重新开始</button>' +
+            '</div>';
+    }
+
+    async function startRPSGame() {
+        var startBtn = document.getElementById('rpsStartBtn');
+        if (!startBtn) return;
+        startBtn.disabled = true;
+        startBtn.textContent = '⏳ 准备中...';
+        try {
+            var data = await apiRequest('/api/game/play/rock_paper_scissors', {
+                method: 'POST',
+                body: JSON.stringify({})
+            });
+            if (data.success) {
+                rpsGameActive = true;
+                document.getElementById('rpsGameArea').style.display = 'block';
+                document.getElementById('rpsStatus').textContent = '🤖 请选择你的出拳！';
+                document.querySelectorAll('.rps-choice-btn').forEach(function(b) { b.disabled = false; });
+                document.getElementById('rpsScore').textContent = '比分: 你 0 : 0 AI';
+                document.getElementById('rpsHistory').innerHTML = '';
+                document.getElementById('rpsResult').innerHTML = '';
+                document.getElementById('rpsResetBtn').style.display = 'none';
+                startBtn.textContent = '🔄 重新开始';
+                startBtn.disabled = false;
+                showMessage('🤖 游戏已开始！选择石头、剪刀或布', 'success');
+            } else {
+                showMessage(data.error || '启动失败', 'error');
+                startBtn.disabled = false;
+                startBtn.textContent = '🤖 开始对战';
+            }
+        } catch (e) {
+            showMessage(e.message || '启动失败', 'error');
+            startBtn.disabled = false;
+            startBtn.textContent = '🤖 开始对战';
+        }
+    }
+
+    async function rpsChoice(move) {
+        var btns = document.querySelectorAll('.rps-choice-btn');
+        btns.forEach(function(b) { b.disabled = true; });
+        var status = document.getElementById('rpsStatus');
+        status.textContent = '⏳ AI思考中...';
+        try {
+            var data = await apiRequest('/api/game/play/rock_paper_scissors', {
+                method: 'POST',
+                body: JSON.stringify({ move: move })
+            });
+            if (data.game_over) {
+                rpsGameActive = false;
+                var historyHtml = '';
+                if (data.round_history) {
+                    data.round_history.forEach(function(r) {
+                        var cls = r.result === 'win' ? 'h-win' : r.result === 'lose' ? 'h-lose' : 'h-tie';
+                        historyHtml += '<div class="history-item"><span>第' + r.round + '轮</span>' +
+                            '<span>' + r.player_emoji + ' ' + r.player_name + '</span>' +
+                            '<span style="color:rgba(255,255,255,0.3);">vs</span>' +
+                            '<span>' + r.ai_emoji + ' ' + r.ai_name + '</span>' +
+                            '<span class="' + cls + '">' + r.round_result + '</span></div>';
+                    });
+                }
+                var winClass = data.won ? 'win' : 'lose';
+                document.getElementById('rpsHistory').innerHTML = historyHtml;
+                document.getElementById('rpsResult').innerHTML = '<div class="result-box"><div class="big ' + winClass + '">' + data.message + '</div>' +
+                    (data.won ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' 积分</div>' : '') +
+                    '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + '</div></div>';
+                document.getElementById('rpsScore').textContent = '最终比分: 你 ' + data.player_wins + ' : ' + data.ai_wins + ' AI';
+                document.getElementById('rpsStatus').textContent = '🏁 游戏结束！';
+                document.getElementById('rpsResetBtn').style.display = 'inline-block';
+                btns.forEach(function(b) { b.disabled = true; });
+                if (data.won) loadStats();
+            } else {
+                var cls = data.result === 'win' ? 'h-win' : data.result === 'lose' ? 'h-lose' : 'h-tie';
+                var historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                historyItem.innerHTML = '<span>第' + data.rounds_played + '轮</span>' +
+                    '<span>' + data.player_emoji + ' ' + data.player_name + '</span>' +
+                    '<span style="color:rgba(255,255,255,0.3);">vs</span>' +
+                    '<span>' + data.ai_emoji + ' ' + data.ai_name + '</span>' +
+                    '<span class="' + cls + '">' + data.round_result + '</span>';
+                document.getElementById('rpsHistory').appendChild(historyItem);
+                document.getElementById('rpsScore').textContent = '比分: 你 ' + data.player_wins + ' : ' + data.ai_wins + ' AI';
+                document.getElementById('rpsStatus').textContent = data.message;
+                btns.forEach(function(b) { b.disabled = false; });
+            }
+        } catch (e) {
+            showMessage(e.message || '出拳失败', 'error');
+            btns.forEach(function(b) { b.disabled = false; });
+        }
+    }
+
+    function resetRPSGame() {
+        rpsGameActive = false;
+        document.getElementById('rpsGameArea').style.display = 'none';
+        document.getElementById('rpsResult').innerHTML = '';
+        document.getElementById('rpsHistory').innerHTML = '';
+        document.getElementById('rpsScore').textContent = '比分: 你 0 : 0 AI';
+        document.getElementById('rpsStatus').textContent = '';
+        document.getElementById('rpsResetBtn').style.display = 'none';
+        document.querySelectorAll('.rps-choice-btn').forEach(function(b) { b.disabled = true; });
+        document.getElementById('rpsStartBtn').textContent = '🤖 开始对战';
+        document.getElementById('rpsStartBtn').disabled = false;
+        showMessage('游戏已重置', 'warning');
+    }
+
+    function renderRoulette(el) {
+        gameData.rouletteBet = { type: 'number', value: 7 };
+        el.innerHTML = '<p style="margin-bottom:12px;">🎡 猜数字（0-36）、颜色（红/黑）、奇偶、大小</p>' +
+            '<div class="roulette-bet-options" id="rouletteBetOptions">' +
+            '<button class="active-roulette" data-type="number" onclick="setRouletteBet(\'number\', 0, this)">🎯 数字</button>' +
+            '<button data-type="red" onclick="setRouletteBet(\'red\', 0, this)">🔴 红色</button>' +
+            '<button data-type="black" onclick="setRouletteBet(\'black\', 0, this)">⚫ 黑色</button>' +
+            '<button data-type="even" onclick="setRouletteBet(\'even\', 0, this)">偶数</button>' +
+            '<button data-type="odd" onclick="setRouletteBet(\'odd\', 0, this)">奇数</button>' +
+            '<button data-type="high" onclick="setRouletteBet(\'high\', 0, this)">大(19-36)</button>' +
+            '<button data-type="low" onclick="setRouletteBet(\'low\', 0, this)">小(1-18)</button>' +
+            '</div>' +
+            '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0;">' +
+            '<span style="font-size:13px;color:rgba(255,255,255,0.5);">数字下注:</span>' +
+            '<input type="number" id="rouletteNumber" min="0" max="36" value="7" style="width:80px;padding:6px 10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#fff;font-size:14px;">' +
+            '</div>' +
+            '<button class="btn btn-primary" id="roulettePlayBtn" onclick="playRoulette()">🎡 转轮盘</button>' +
+            '<div id="rouletteResult" style="margin-top:16px;"></div>';
+    }
+
+    function setRouletteBet(type, value, el) {
+        var container = document.getElementById('rouletteBetOptions');
+        if (container) {
+            var btns = container.querySelectorAll('button');
+            btns.forEach(function(b) {
+                b.classList.remove('active-roulette');
+            });
+            el.classList.add('active-roulette');
+        }
+        gameData.rouletteBet = { type: type, value: value || parseInt(document.getElementById('rouletteNumber').value) || 7 };
+        var numInput = document.getElementById('rouletteNumber');
+        if (numInput) {
+            numInput.disabled = (type !== 'number');
+        }
+    }
+
+    async function playRoulette() {
+        var btn = document.getElementById('roulettePlayBtn');
+        if (!btn) return;
+        btn.disabled = true;
+        btn.textContent = '🎡 转轮盘中...';
+        try {
+            var bet = gameData.rouletteBet || { type: 'number', value: 7 };
+            var numInput = document.getElementById('rouletteNumber');
+            if (bet.type === 'number' && numInput) {
+                var val = parseInt(numInput.value);
+                if (isNaN(val) || val < 0 || val > 36) {
+                    showMessage('请输入0-36之间的数字', 'error');
+                    btn.disabled = false;
+                    btn.textContent = '🎡 转轮盘';
+                    return;
+                }
+                bet.value = val;
+            }
+            var data = await apiRequest('/api/game/play/roulette', {
+                method: 'POST',
+                body: JSON.stringify({ bet_type: bet.type, bet_value: bet.value })
+            });
+            var el = document.getElementById('rouletteResult');
+            if (!el) return;
+            var colorClass = '';
+            if (data.result === 0) colorClass = 'green';
+            else if (data.color && data.color.indexOf('红色') !== -1) colorClass = 'red';
+            else colorClass = 'black';
+            var winClass = data.won ? 'win' : 'lose';
+            el.innerHTML = '<div class="result-box">' +
+                '<div class="roulette-result ' + colorClass + '">' + data.result + '</div>' +
+                '<div style="font-size:14px;color:rgba(255,255,255,0.5);">' + data.color + '</div>' +
+                '<div class="big ' + winClass + '">' + data.message + '</div>' +
+                (data.won ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' 积分</div>' : '') +
+                '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + '</div>' +
+                '</div>';
+            if (data.won) showMessage('🎉 赢了！+' + data.points_earned + ' 积分', 'success');
+            else showMessage('😔 输了，再试一次！', 'warning');
+            loadStats();
+        } catch (e) {
+            showMessage(e.message || '游戏失败', 'error');
+        }
+        btn.disabled = false;
+        btn.textContent = '🎡 转轮盘';
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadGames();
+    });
+</script>
+</body>
+</html>

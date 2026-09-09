@@ -1,0 +1,1698 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>支付中心 · 虚拟手机号</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js">
+    </script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI','PingFang SC',Roboto,sans-serif;background:linear-gradient(145deg,#0b0e1a 0%,#1a1f35 100%);min-height:100vh;display:flex;justify-content:center;align-items:center;padding:20px}
+        .container{background:rgba(22,28,50,0.85);backdrop-filter:blur(18px);border-radius:40px;box-shadow:0 30px 60px rgba(0,0,0,0.7);max-width:500px;width:100%;padding:32px 28px;border:1px solid rgba(255,255,255,0.08);transition:all 0.25s}
+        .header{text-align:center;margin-bottom:28px}
+        .header h2{color:#f0f3ff;font-size:24px;font-weight:600;letter-spacing:1px;display:flex;align-items:center;justify-content:center;gap:10px}
+        .header h2 i{color:#7c8cff;font-size:26px}
+        .order-id{color:#8892b0;font-size:13px;font-family:monospace;background:rgba(255,255,255,0.04);padding:6px 14px;border-radius:40px;display:inline-block;margin-top:6px;letter-spacing:1px;border:1px solid rgba(255,255,255,0.04)}
+        .order-info{background:rgba(255,255,255,0.03);border-radius:24px;padding:18px 20px;margin-bottom:24px;border:1px solid rgba(255,255,255,0.05)}
+        .order-info .row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:14px;color:#ccd6f6}
+        .order-info .row:last-child{border-bottom:none}
+        .order-info .label{color:#8892b0}
+        .order-info .value{color:#e6f1ff;font-weight:500}
+        .order-info .value.price{color:#f7c948;font-weight:700;font-size:20px;letter-spacing:0.5px}
+        .order-info .value.pl-price{color:#7c8cff;font-weight:700;font-size:18px}
+        .order-info .value.transfer-info{color:#4ade80;font-weight:600;font-size:14px}
+        .order-info .value.original{color:#8892b0;text-decoration:line-through;font-size:16px}
+        .order-info .value.discount{color:#4ade80;font-weight:600}
+        .order-info .value.final{color:#4ade80;font-weight:700;font-size:20px}
+        .order-info .value.daifu-owner{color:#7c8cff;font-weight:600}
+        .order-info .value.daifu-payer{color:#4ade80;font-weight:600}
+        .order-info .value.status-cancelled{color:#f87171;font-weight:600}
+        .order-info .value.status-expired{color:#f87171;font-weight:600}
+        .order-info .value.status-refunded{color:#f7c948;font-weight:600}
+        .order-info .value.status-frozen{color:#a78bfa;font-weight:600}
+        .status-badge{display:inline-block;padding:4px 14px;border-radius:40px;font-size:12px;font-weight:600}
+        .status-badge.pending{background:#f7c94820;color:#f7c948;border:1px solid #f7c94830}
+        .status-badge.paid{background:#4ade8020;color:#4ade80;border:1px solid #4ade8030}
+        .status-badge.expired{background:#f8717120;color:#f87171;border:1px solid #f8717130}
+        .status-badge.cancelled{background:#f8717120;color:#f87171;border:1px solid #f8717130}
+        .status-badge.refunded{background:#f7c94820;color:#f7c948;border:1px solid #f7c94830}
+        .status-badge.frozen{background:#a78bfa20;color:#a78bfa;border:1px solid #a78bfa30}
+        .status-badge.daifu-paid{background:#4ade8020;color:#4ade80;border:1px solid #4ade8030}
+        .order-expired{background:#f8717115;border-radius:20px;padding:14px;margin-bottom:20px;text-align:center;color:#f87171;font-size:14px;border:1px solid #f8717130;display:none}
+        .order-cancelled{background:#f8717115;border-radius:20px;padding:14px;margin-bottom:20px;text-align:center;color:#f87171;font-size:14px;border:1px solid #f8717130;display:none}
+        .order-refunded{background:#f7c94815;border-radius:20px;padding:14px;margin-bottom:20px;text-align:center;color:#f7c948;font-size:14px;border:1px solid #f7c94830;display:none}
+        .order-frozen{background:#a78bfa15;border-radius:20px;padding:14px;margin-bottom:20px;text-align:center;color:#a78bfa;font-size:14px;border:1px solid #a78bfa30;display:none}
+        .anti-fake-tip{background:#7c8cff10;border-radius:16px;padding:14px 16px;margin-bottom:20px;border-left:3px solid #7c8cff;font-size:13px;color:#a5b4fc;line-height:1.6;display:none}
+        .anti-fake-tip i{color:#7c8cff;margin-right:8px}
+        .anti-fake-tip strong{color:#7c8cff}
+        .qr-section{text-align:center;margin:16px 0;padding:16px;background:rgba(255,255,255,0.03);border-radius:20px;border:1px solid rgba(255,255,255,0.05);display:none}
+        .qr-section .qr-header{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
+        .qr-section .qr-header .qr-left{display:flex;flex-direction:column;align-items:center}
+        .qr-section .qr-header .qr-left .qr-label{font-size:12px;color:#8892b0;margin-bottom:6px}
+        .qr-section .qr-header .qr-left .qr-label i{color:#7c8cff;margin-right:4px}
+        .qr-section .qr-header .qr-left #qrcodeContainer{display:inline-block;background:white;padding:8px;border-radius:12px;min-width:140px;min-height:140px}
+        .qr-section .qr-header .qr-info{font-size:12px;color:#6a7a9a;max-width:180px;text-align:left;line-height:1.8}
+        .qr-section .qr-header .qr-info .highlight{color:#f7c948}
+        .qr-section .qr-footer{margin-top:10px;font-size:11px;color:#6a7a9a;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+        .qr-section .qr-footer #qrTokenDisplay{font-family:monospace;font-size:10px;word-break:break-all;color:#6a7a9a;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .qr-section .qr-footer .copy-qr-btn{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:2px 12px;color:#8892b0;cursor:pointer;font-size:11px;transition:all 0.2s}
+        .qr-section .qr-footer .copy-qr-btn:hover{background:rgba(255,255,255,0.1)}
+        .password-section{margin-bottom:22px}
+        .password-section label{display:block;font-size:13px;color:#8892b0;margin-bottom:6px}
+        .password-section input{width:100%;padding:14px 18px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:18px;font-size:18px;letter-spacing:6px;text-align:center;color:#f0f3ff;transition:all 0.25s;outline:none}
+        .password-section input:focus{border-color:#7c8cff;box-shadow:0 0 0 4px #7c8cff20;background:rgba(255,255,255,0.06)}
+        .password-section .hint{font-size:12px;color:#6a7a9a;margin-top:6px;text-align:center}
+        .set-password-section{background:#f7c94810;border-radius:20px;padding:18px;margin-bottom:20px;border:1px solid #f7c94820;display:none}
+        .set-password-section p{font-size:13px;color:#f7c948cc;margin-bottom:12px}
+        .set-password-section input{width:100%;padding:14px 18px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:18px;font-size:18px;letter-spacing:6px;text-align:center;color:#f0f3ff;outline:none}
+        .set-password-section input:focus{border-color:#7c8cff;box-shadow:0 0 0 4px #7c8cff20}
+        .set-password-section button{width:100%;padding:14px;margin-top:12px;background:linear-gradient(135deg,#4ade80,#22d3ee);color:#0b0e1a;border:none;border-radius:40px;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.2s}
+        .set-password-section button:hover{transform:scale(1.01);box-shadow:0 8px 25px #4ade8030}
+        .pay-btn{width:100%;padding:16px;background:linear-gradient(135deg,#7c8cff,#a78bfa);color:#fff;border:none;border-radius:60px;font-size:17px;font-weight:700;cursor:pointer;transition:all 0.25s;letter-spacing:0.5px}
+        .pay-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 12px 30px #7c8cff40}
+        .pay-btn:disabled{opacity:0.5;cursor:not-allowed}
+        .pay-btn.loading{opacity:0.7}
+        .pay-btn.transfer-btn{background:linear-gradient(135deg,#4ade80,#22d3ee);color:#0b0e1a}
+        .pay-btn.transfer-btn:hover:not(:disabled){box-shadow:0 12px 30px #4ade8040}
+        .pay-btn.daifu-btn{background:linear-gradient(135deg,#f7c948,#f39c12);color:#0b0e1a}
+        .pay-btn.daifu-btn:hover:not(:disabled){box-shadow:0 12px 30px #f7c94840}
+        .status-msg{text-align:center;margin-top:16px;font-size:14px;padding:14px;border-radius:20px;display:none;backdrop-filter:blur(4px)}
+        .status-msg.success{display:block;background:#4ade8020;color:#4ade80;border:1px solid #4ade8030}
+        .status-msg.error{display:block;background:#f8717120;color:#f87171;border:1px solid #f8717130}
+        .status-msg.info{display:block;background:#7c8cff20;color:#a5b4fc;border:1px solid #7c8cff30}
+        .status-msg.warning{display:block;background:#f7c94820;color:#f7c948;border:1px solid #f7c94830}
+        .back-link{display:block;text-align:center;margin-top:20px;color:#7c8cff;text-decoration:none;font-size:14px;opacity:0.8;transition:opacity 0.2s}
+        .back-link:hover{opacity:1;text-decoration:underline}
+        .delivered-code{background:#4ade8015;border-radius:20px;padding:18px;margin-top:18px;text-align:center;border:1px solid #4ade8020;display:none}
+        .delivered-code .code{font-family:monospace;font-size:16px;font-weight:700;color:#4ade80;letter-spacing:1px;word-break:break-all}
+        .delivered-code .label{font-size:13px;color:#8892b0}
+        .copy-btn{margin-top:10px;padding:8px 28px;background:#4ade80;color:#0b0e1a;border:none;border-radius:40px;cursor:pointer;font-size:13px;font-weight:600;transition:all 0.2s}
+        .copy-btn:hover{background:#6ee7a0;transform:scale(1.02)}
+        .security-badge{font-size:11px;color:#6a7a9a;text-align:center;margin-top:18px;display:flex;align-items:center;justify-content:center;gap:6px}
+        .security-badge i{color:#4ade80}
+        .product-number-display{font-size:12px;color:#6a7a9a;background:rgba(255,255,255,0.03);padding:4px 12px;border-radius:20px;display:inline-block;margin-top:4px;font-family:monospace}
+        .coupon-section{background:#f7c94810;border-radius:16px;padding:12px 16px;margin-bottom:16px;border:1px solid #f7c94820;display:none}
+        .coupon-section .label{color:#f7c948;font-size:13px;font-weight:600}
+        .coupon-section .coupon-select-wrapper{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+        .coupon-section .coupon-select-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:rgba(255,255,255,0.03);border-radius:12px;padding:6px 10px}
+        .coupon-section .coupon-select-row select{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:6px 10px;color:#f0f3ff;font-size:12px;flex:1;min-width:130px;outline:none}
+        .coupon-section .coupon-select-row select option{background:#1a1f35;color:#f0f3ff}
+        .coupon-section .coupon-select-row .remove-btn{background:rgba(231,76,60,0.3);color:#f87171;border:1px solid rgba(231,76,60,0.2);border-radius:16px;padding:2px 10px;cursor:pointer;font-size:11px;transition:all 0.2s}
+        .coupon-section .coupon-select-row .remove-btn:hover{background:rgba(231,76,60,0.5)}
+        .coupon-section .add-coupon-btn{padding:6px 16px;background:rgba(124,140,255,0.2);color:#7c8cff;border:1px solid rgba(124,140,255,0.2);border-radius:20px;cursor:pointer;font-size:12px;transition:all 0.2s}
+        .coupon-section .add-coupon-btn:hover{background:rgba(124,140,255,0.3)}
+        .coupon-section .coupon-total-discount{font-size:13px;color:#4ade80;margin-top:8px;text-align:right}
+        .coupon-type-badge{font-size:10px;padding:1px 6px;border-radius:10px;margin-left:4px;background:rgba(124,140,255,0.2);color:#7c8cff}
+        .coupon-type-badge.product{background:rgba(155,89,182,0.3);color:#a78bfa}
+        .coupon-type-badge.full{background:rgba(124,140,255,0.2);color:#7c8cff}
+        .coupon-type-badge.unconditional{background:rgba(247,201,72,0.2);color:#f7c948}
+        .coupon-type-badge.pl_discount{background:rgba(74,222,128,0.2);color:#4ade80}
+        .coupon-type-label{font-size:10px;color:#8892b0;margin-left:4px}
+        .value-pl{color:#7c8cff;font-weight:700}
+        .multi-code{font-size:13px;color:#8892b0;margin-top:4px}
+        .captcha-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:10002;justify-content:center;align-items:center}
+        .captcha-modal.active{display:flex}
+        .captcha-modal-content{background:#1a1f35;border-radius:24px;padding:32px;max-width:440px;width:90%;border:1px solid rgba(255,255,255,0.1)}
+        .captcha-modal-content h3{color:#f0f3ff;text-align:center;margin-bottom:8px}
+        .captcha-modal-content p{color:#8892b0;text-align:center;font-size:13px;margin-bottom:20px}
+        .captcha-display{background:#0b0e1a;border-radius:16px;padding:20px;text-align:center;margin-bottom:16px;border:1px solid rgba(255,255,255,0.05)}
+        .captcha-display img{display:block;margin:0 auto;border-radius:8px;background:#0b0e1a;width:400px;height:160px;max-width:100%}
+        .captcha-refresh-btn{background:rgba(124,140,255,0.2);color:#7c8cff;border:1px solid rgba(124,140,255,0.2);border-radius:40px;padding:6px 16px;cursor:pointer;font-size:12px;transition:all 0.2s;margin-top:8px}
+        .captcha-refresh-btn:hover{background:rgba(124,140,255,0.3)}
+        .captcha-input{margin:12px 0}
+        .captcha-input input{width:100%;padding:14px 18px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:18px;font-size:28px;letter-spacing:10px;text-align:center;color:#f0f3ff;outline:none;transition:all 0.25s;text-transform:uppercase}
+        .captcha-input input:focus{border-color:#7c8cff;box-shadow:0 0 0 4px #7c8cff20}
+        .captcha-buttons{display:flex;gap:12px;margin-top:12px}
+        .captcha-buttons button{flex:1;padding:12px;border:none;border-radius:40px;font-size:15px;font-weight:600;cursor:pointer;transition:all 0.2s}
+        .captcha-buttons .confirm-captcha{background:linear-gradient(135deg,#4ade80,#22d3ee);color:#0b0e1a}
+        .captcha-buttons .confirm-captcha:hover{transform:scale(1.02)}
+        .captcha-buttons .cancel-captcha{background:rgba(255,255,255,0.05);color:#8892b0}
+        .captcha-buttons .cancel-captcha:hover{background:rgba(255,255,255,0.1)}
+        .captcha-error{color:#f87171;font-size:13px;text-align:center;margin-top:8px;display:none}
+        .reset-pw-section{background:#4ade8010;border-radius:16px;padding:12px 16px;margin-bottom:12px;border:1px solid #4ade8020;display:none}
+        .reset-pw-section .label{color:#4ade80;font-size:13px;font-weight:600}
+        .reset-pw-section .reset-btn{padding:6px 16px;background:rgba(231,76,60,0.2);color:#f87171;border:1px solid rgba(231,76,60,0.2);border-radius:20px;cursor:pointer;font-size:12px;transition:all 0.2s;margin-left:8px}
+        .reset-pw-section .reset-btn:hover{background:rgba(231,76,60,0.4)}
+        .daifu-notice{background:#f7c94815;border-radius:16px;padding:14px 18px;margin-bottom:16px;border:1px solid #f7c94820;display:none}
+        .daifu-notice .title{color:#f7c948;font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}
+        .daifu-notice .title i{color:#f7c948}
+        .daifu-notice .detail{color:#a5b4fc;font-size:13px;margin-top:4px}
+        .daifu-notice .detail span{color:#f0f3ff;font-weight:600}
+        .daifu-notice .warning-text{color:#f87171;font-size:12px;margin-top:8px}
+        .points-info{background:#4ade8015;border-radius:12px;padding:10px 14px;margin-bottom:12px;border:1px solid #4ade8030;font-size:13px;color:#8892b0;display:none}
+        .points-info .highlight{color:#4ade80;font-weight:600}
+        .status-icon{font-size:48px;display:block;text-align:center;margin-bottom:12px}
+        .status-icon.pending{color:#f7c948}
+        .status-icon.paid{color:#4ade80}
+        .status-icon.cancelled{color:#f87171}
+        .status-icon.expired{color:#f87171}
+        .status-icon.refunded{color:#f7c948}
+        .status-icon.frozen{color:#a78bfa}
+        .error-boundary{background:#f8717115;border-radius:16px;padding:20px;margin-bottom:20px;text-align:center;display:none}
+        .error-boundary .error-icon{font-size:48px;color:#f87171;margin-bottom:12px}
+        .error-boundary .error-title{font-size:18px;font-weight:700;color:#f87171;margin-bottom:8px}
+        .error-boundary .error-desc{font-size:14px;color:#8892b0;margin-bottom:16px}
+        .error-boundary .retry-btn{padding:10px 32px;background:#f87171;color:white;border:none;border-radius:40px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s}
+        .error-boundary .retry-btn:hover{background:#dc2626;transform:translateY(-2px)}
+        @media(max-width:480px){.container{padding:20px 16px}.captcha-display img{width:100%;height:auto}.captcha-modal-content{padding:20px}.qr-section .qr-header{flex-direction:column;align-items:center}.qr-section .qr-header .qr-info{max-width:100%;text-align:center}.qr-section .qr-footer #qrTokenDisplay{max-width:160px}}
+    </style>
+</head>
+<body>
+    <div class="container" id="app">
+        <div id="errorBoundary" class="error-boundary">
+            <div class="error-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="error-title">⚠️ 加载失败</div>
+            <div class="error-desc" id="errorDesc">网络连接失败，请检查网络后重试</div>
+            <button class="retry-btn" onclick="location.reload()">🔄 重新加载</button>
+        </div>
+
+        <div class="header">
+            <h2><i class="fas fa-shield-alt"></i> 支付中心</h2>
+            <div class="order-id" id="orderIdDisplay">订单号: 加载中...</div>
+            <div class="product-number-display" id="productNumberDisplay">商品编号: 加载中...</div>
+        </div>
+
+        <div id="orderStatusIcon" class="status-icon pending"><i class="fas fa-clock"></i></div>
+
+        <div id="orderExpired" class="order-expired"><i class="fas fa-exclamation-triangle"></i> 订单已过期（超过5分钟），请重新下单</div>
+        <div id="orderCancelled" class="order-cancelled"><i class="fas fa-times-circle"></i> 订单已取消</div>
+        <div id="orderRefunded" class="order-refunded"><i class="fas fa-undo-alt"></i> 订单已退款</div>
+        <div id="orderFrozen" class="order-frozen"><i class="fas fa-snowflake"></i> 订单已冻结</div>
+
+        <div id="antiFakeTip" class="anti-fake-tip"><i class="fas fa-info-circle"></i><strong>防伪码</strong> 是订单的重要组成部分，如果你不小心退出了支付页面，并且没有复制订单号，可把防伪码交给管理员帮助查询。</div>
+
+        <div id="daifuNotice" class="daifu-notice">
+            <div class="title"><i class="fas fa-hand-holding-usd"></i> 🤝 代付订单</div>
+            <div class="detail">商品归属: <span id="daifuOwner">-</span></div>
+            <div class="detail">支付状态: <span id="daifuStatus">等待支付</span></div>
+            <div class="warning-text"><i class="fas fa-exclamation-circle"></i> 商品归属人不能自己支付，请让朋友扫码支付</div>
+        </div>
+
+        <div id="qrSection" class="qr-section">
+            <div class="qr-header">
+                <div class="qr-left">
+                    <div class="qr-label"><i class="fas fa-qrcode"></i> 扫码支付</div>
+                    <div id="qrcodeContainer"></div>
+                </div>
+                <div class="qr-info">
+                    <div>📱 使用任意浏览器扫描</div>
+                    <div>⏰ 二维码有效期 <span class="highlight">4小时</span></div>
+                    <div>⏱️ 订单支付有效期 <span class="highlight">5分钟</span></div>
+                </div>
+            </div>
+            <div class="qr-footer">
+                <span id="qrTokenDisplay"></span>
+                <button class="copy-qr-btn" id="copyQrBtn"><i class="fas fa-copy"></i> 复制链接</button>
+            </div>
+        </div>
+
+        <div class="order-info" id="orderInfo">
+            <div class="row"><span class="label">商品</span><span class="value" id="productName">-</span></div>
+            <div class="row"><span class="label">支付方式</span><span class="value" id="paymentMethod">-</span></div>
+            <div class="row" id="pointsPriceRow"><span class="label">积分价格</span><span class="value price" id="pointsPrice">-</span></div>
+            <div class="row" id="plPriceRow" style="display:none;"><span class="label">PL价格</span><span class="value pl-price" id="plPrice">-</span></div>
+            <div class="row" id="transferInfoRow" style="display:none;"><span class="label">转账信息</span><span class="value transfer-info" id="transferInfo">-</span></div>
+            <div class="row" id="originalPriceRow" style="display:none;"><span class="label">原价</span><span class="value original" id="originalPriceDisplay">-</span></div>
+            <div class="row" id="discountRow" style="display:none;"><span class="label">优惠减免</span><span class="value discount" id="discountDisplay">-</span></div>
+            <div class="row" id="finalPriceRow" style="display:none;"><span class="label">实付金额</span><span class="value final" id="finalPriceDisplay">-</span></div>
+            <div class="row"><span class="label">状态</span><span class="value"><span class="status-badge pending" id="orderStatus">待支付</span></span></div>
+            <div class="row"><span class="label">防伪码</span><span class="value" id="antiFakeCode" style="font-family:monospace;letter-spacing:2px;color:#7c8cff;">-</span></div>
+            <div class="row"><span class="label">创建时间</span><span class="value" id="createdAt">-</span></div>
+            <div class="row"><span class="label">剩余时间</span><span class="value" id="remainingTime">-</span></div>
+            <div class="row" id="quantityRow" style="display:none;"><span class="label">数量</span><span class="value" id="orderQuantity">1</span></div>
+            <div class="row" id="refundInfoRow" style="display:none;"><span class="label">退款信息</span><span class="value" id="refundInfo" style="color:#f7c948;">-</span></div>
+        </div>
+
+        <div id="pointsInfo" class="points-info">
+            💰 可用积分: <span class="highlight" id="availablePointsDisplay">0.00</span>
+            （原账户 <span id="mainPointsDisplay">0.00</span>，理财账户 <span id="fundPointsDisplay">0.00</span>）
+        </div>
+
+        <div id="resetPasswordSection" class="reset-pw-section">
+            <span class="label"><i class="fas fa-key"></i> 支付密码管理</span>
+            <button class="reset-btn" id="resetPayPasswordBtn">重置支付密码（15积分）</button>
+        </div>
+
+        <div id="couponSection" class="coupon-section">
+            <div class="label"><i class="fas fa-ticket-alt"></i> 优惠券（每种类型限用1张）</div>
+            <div class="coupon-select-wrapper" id="couponSelectWrapper">
+                <div class="coupon-select-row" id="couponSelectRow">
+                    <select id="couponSelect"><option value="">选择优惠券...</option></select>
+                    <button class="add-coupon-btn" id="addCouponBtn"><i class="fas fa-plus"></i> 添加</button>
+                </div>
+            </div>
+            <div id="selectedCouponsContainer"></div>
+            <div class="coupon-total-discount" id="totalCouponDiscount">已优惠: 0</div>
+        </div>
+
+        <div id="paymentSection">
+            <div class="password-section"><label><i class="fas fa-lock"></i> 支付密码</label><input type="password" id="payPassword" maxlength="6" inputmode="numeric" placeholder="••••••">
+                <div class="hint">6位数字支付密码</div>
+            </div>
+            <button class="pay-btn" id="payBtn"><i class="fas fa-check-circle"></i> 确认支付</button>
+        </div>
+
+        <div id="setPasswordSection" class="set-password-section">
+            <p><i class="fas fa-info-circle"></i> 首次使用请设置6位支付密码</p>
+            <p style="font-size:12px;color:#f7c94888;margin-top:4px;margin-bottom:12px;">需要验证绑定的QQ号</p>
+            <input type="password" id="newPayPassword" maxlength="6" inputmode="numeric" placeholder="设置6位数字密码">
+            <input type="text" id="newPayPasswordQq" placeholder="请输入绑定的QQ号验证" style="width:100%;padding:14px 18px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:18px;font-size:16px;text-align:center;color:#f0f3ff;outline:none;margin-top:8px;">
+            <button id="setPasswordBtn">设置支付密码</button>
+        </div>
+
+        <div id="statusMsg" class="status-msg"></div>
+        <div id="deliveredCode" class="delivered-code">
+            <div class="label">商品已发放</div>
+            <div class="code" id="deliveredCodeValue">-</div>
+            <div class="multi-code" id="deliveredCodeCount"></div>
+            <button class="copy-btn" id="copyDeliveredBtn"><i class="fas fa-copy"></i> 复制卡密</button>
+        </div>
+
+        <a href="/gateway.html" class="back-link" id="backToMallLink"><i class="fas fa-arrow-left"></i> 返回商城</a>
+        <div class="security-badge"><i class="fas fa-lock"></i> 安全支付 · 防伪验证</div>
+    </div>
+
+    <div id="captchaModal" class="captcha-modal">
+        <div class="captcha-modal-content">
+            <h3><i class="fas fa-shield-alt"></i> 安全验证</h3>
+            <p>请输入下方显示的图形验证码以完成支付</p>
+            <div class="captcha-display">
+                <img id="captchaImage" src="" alt="验证码" width="400" height="160">
+                <button class="captcha-refresh-btn" id="refreshCaptchaBtn"><i class="fas fa-sync-alt"></i> 刷新验证码</button>
+            </div>
+            <div class="captcha-input">
+                <input type="text" id="captchaInput" placeholder="输入验证码" maxlength="6" autocomplete="off">
+            </div>
+            <div id="captchaError" class="captcha-error">验证码错误，请重新输入</div>
+            <div class="captcha-buttons">
+                <button class="cancel-captcha" id="cancelCaptchaBtn">取消</button>
+                <button class="confirm-captcha" id="confirmCaptchaBtn">确认支付</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="resetPasswordModal" class="captcha-modal">
+        <div class="captcha-modal-content">
+            <h3><i class="fas fa-key"></i> 重置支付密码</h3>
+            <p style="color:#f87171;font-size:13px;margin-bottom:12px;">⚠️ 重置支付密码需要消耗15积分，请确认</p>
+            <p style="color:#8892b0;font-size:13px;margin-bottom:16px;">请输入绑定的QQ号验证身份</p>
+            <div class="captcha-input">
+                <input type="text" id="resetQqInput" placeholder="请输入绑定的QQ号" maxlength="15" style="width:100%;padding:14px 18px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:18px;font-size:16px;text-align:center;color:#f0f3ff;outline:none;">
+            </div>
+            <div style="margin-top:12px;">
+                <input type="password" id="resetPasswordInput" placeholder="请输入登录密码验证" style="width:100%;padding:14px 18px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:18px;font-size:16px;text-align:center;color:#f0f3ff;outline:none;">
+            </div>
+            <div id="resetError" class="captcha-error">操作失败</div>
+            <div class="captcha-buttons">
+                <button class="cancel-captcha" id="cancelResetBtn">取消</button>
+                <button class="confirm-captcha" id="confirmResetBtn">确认重置</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var csrfToken = null;
+        var csrfTokenRefreshPromise = null;
+        var csrfTokenLastFetch = 0;
+        var CSRF_TOKEN_TTL = 300000;
+
+        function getCsrfTokenFromCookie() {
+            try {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = cookies[i].trim();
+                    if (cookie.indexOf('csrf_token=') === 0) {
+                        return cookie.substring('csrf_token='.length, cookie.length);
+                    }
+                }
+                return null;
+            } catch (e) { return null; }
+        }
+
+        function setCsrfTokenCookie(token) {
+            try {
+                var expires = new Date(Date.now() + CSRF_TOKEN_TTL).toUTCString();
+                document.cookie = 'csrf_token=' + token + '; expires=' + expires + '; path=/; SameSite=Strict; Secure';
+            } catch (e) {}
+        }
+
+        function fetchCsrfToken() {
+            if (csrfTokenRefreshPromise) { return csrfTokenRefreshPromise; }
+            if (csrfToken && (Date.now() - csrfTokenLastFetch) < CSRF_TOKEN_TTL) { return Promise.resolve(csrfToken); }
+            var cookieToken = getCsrfTokenFromCookie();
+            if (cookieToken) { csrfToken = cookieToken;
+                csrfTokenLastFetch = Date.now(); return Promise.resolve(csrfToken); }
+            csrfTokenRefreshPromise = fetch('/api/csrf-token', {
+                method: 'GET',
+                credentials: 'include',
+                headers: { 'Accept': 'application/json', 'Cache-Control': 'no-cache' }
+            }).then(function(response) {
+                if (!response.ok) { throw new Error('Failed to fetch CSRF token: HTTP ' + response.status); }
+                return response.json();
+            }).then(function(data) {
+                if (!data.csrf_token) { throw new Error('No CSRF token in response'); }
+                csrfToken = data.csrf_token;
+                csrfTokenLastFetch = Date.now();
+                setCsrfTokenCookie(csrfToken);
+                csrfTokenRefreshPromise = null;
+                return csrfToken;
+            }).catch(function(error) {
+                csrfTokenRefreshPromise = null;
+                csrfToken = null;
+                throw error;
+            });
+            return csrfTokenRefreshPromise;
+        }
+
+        function apiRequest(url, options) {
+            if (!options) options = {};
+            options.credentials = 'include';
+            if (!options.headers) options.headers = {};
+            options.headers['Content-Type'] = 'application/json';
+            options.headers['Accept'] = 'application/json';
+            var method = (options.method || 'GET').toUpperCase();
+            if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') {
+                return fetch(url, options).then(function(response) {
+                    return response.json().then(function(data) {
+                        if (!response.ok) { throw new Error(data.error || '请求失败: ' + response.status); }
+                        return data;
+                    });
+                });
+            }
+            return fetchCsrfToken().then(function(token) {
+                options.headers['X-CSRF-Token'] = token;
+                return fetch(url, options);
+            }).then(function(response) {
+                return response.json().then(function(data) {
+                    if (!response.ok) {
+                        if (response.status === 403 && data.error && data.error.includes('CSRF')) {
+                            csrfToken = null;
+                            csrfTokenLastFetch = 0;
+                            return fetchCsrfToken().then(function(newToken) {
+                                options.headers['X-CSRF-Token'] = newToken;
+                                return fetch(url, options);
+                            }).then(function(retryResponse) {
+                                return retryResponse.json().then(function(retryData) {
+                                    if (!retryResponse.ok) { throw new Error(retryData.error || '请求失败: ' + retryResponse.status); }
+                                    return retryData;
+                                });
+                            });
+                        }
+                        throw new Error(data.error || '请求失败: ' + response.status);
+                    }
+                    return data;
+                });
+            });
+        }
+
+        var orderId = null,
+            orderData = null,
+            hasPassword = false,
+            remainingInterval = null,
+            availableCoupons = [],
+            selectedCoupons = [],
+            orderType = null;
+        var usedCouponTypes = new Set();
+        var currentRate = 0;
+        var orderPlPrice = 0;
+        var orderPointsPrice = 0;
+        var pendingPayCallback = null;
+        var currentCaptchaId = '';
+        var isProcessingPayment = false;
+        var currentOrderCaptchaId = '';
+        var isDaifu = false;
+        var daifuOwner = '';
+        var currentUsername = '';
+        var availablePoints = 0;
+        var mainPoints = 0;
+        var fundPoints = 0;
+        var gatewayCardKey = null;
+        var initRetryCount = 0;
+        var MAX_INIT_RETRIES = 3;
+        var isInitialized = false;
+
+        function showErrorBoundary(message) {
+            var el = document.getElementById('errorBoundary');
+            var desc = document.getElementById('errorDesc');
+            if (el && desc) { desc.textContent = message || '网络连接失败，请检查网络后重试';
+                el.style.display = 'block'; }
+        }
+
+        function hideErrorBoundary() { var el = document.getElementById('errorBoundary'); if (el) el.style.display = 'none'; }
+
+        var statusMap = {
+            'pending': { label: '待支付', className: 'pending', icon: 'fa-clock', iconClass: 'pending' },
+            'paid': { label: '已支付', className: 'paid', icon: 'fa-check-circle', iconClass: 'paid' },
+            'cancelled': { label: '已取消', className: 'cancelled', icon: 'fa-times-circle', iconClass: 'cancelled' },
+            'expired': { label: '已过期', className: 'expired', icon: 'fa-hourglass-end', iconClass: 'expired' },
+            'refunded': { label: '已退款', className: 'refunded', icon: 'fa-undo-alt', iconClass: 'refunded' },
+            'frozen': { label: '已冻结', className: 'frozen', icon: 'fa-snowflake', iconClass: 'frozen' }
+        };
+
+        var productTypeToIdMap = {
+            'reset': 'reset_code',
+            'point': 'point_code',
+            'premium_point': 'premium_point_code',
+            'boost': 'boost_code',
+            'cancellation': 'cancellation_code',
+            'special_point': 'special_point_code',
+            'makeup': 'makeup_code',
+            'gamblers': 'gamblers_code',
+            'box': 'box_code',
+            'plcard': 'plcard_code',
+            'premium_boost': 'premium_boost_code'
+        };
+
+        function getOrderIdFromUrl() {
+            var e = window.location.pathname.match(/\/pay\/(.+)/);
+            return e ? e[1] : null;
+        }
+
+        function updateBackLink() {
+            var backLink = document.getElementById('backToMallLink');
+            if (!backLink) return;
+            if (gatewayCardKey) {
+                backLink.href = '/mall.html?key=' + encodeURIComponent(gatewayCardKey);
+            } else {
+                backLink.href = '/gateway.html';
+            }
+        }
+
+        function showStatus(e, t) {
+            var n = document.getElementById('statusMsg');
+            n.textContent = e;
+            n.className = 'status-msg ' + t;
+            n.style.display = 'block';
+        }
+
+        function hideStatus() {
+            var e = document.getElementById('statusMsg');
+            e.className = 'status-msg';
+            e.style.display = 'none';
+        }
+
+        function formatTime(e) {
+            if (!e) return '-';
+            try { return new Date(e).toLocaleString('zh-CN'); } catch (t) { return '-'; }
+        }
+
+        function formatRemaining(e) {
+            var t = Date.now(),
+                n = 300000 - (t - e);
+            if (n <= 0) return '已过期';
+            var r = Math.floor(n / 60000),
+                o = Math.floor((n % 60000) / 1000);
+            return r + '分 ' + o + '秒';
+        }
+
+        function isPlPayment() {
+            if (!orderData) return false;
+            if (orderData.payment_method === 'pl') return true;
+            if (orderType === 'pl_transfer') return true;
+            return false;
+        }
+
+        function getOrderProductIdForMatch() {
+            if (!orderData) return '';
+            var productId = orderData.product_id || '';
+            var productType = orderData.product_type || '';
+            if (productId) return productId;
+            return productTypeToIdMap[productType] || '';
+        }
+
+        function deleteCaptcha(captchaId) {
+            if (!captchaId) return;
+            fetch('/api/captcha/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken || '' },
+                credentials: 'include',
+                body: JSON.stringify({ captcha_id: captchaId })
+            }).catch(function(e) {});
+            document.cookie = 'captcha_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        }
+
+        function clearCaptchaData() {
+            if (currentCaptchaId) {
+                deleteCaptcha(currentCaptchaId);
+                currentCaptchaId = '';
+            }
+            currentOrderCaptchaId = '';
+            document.getElementById('captchaInput').value = '';
+            document.getElementById('captchaError').style.display = 'none';
+            var img = document.getElementById('captchaImage');
+            if (img) img.src = '';
+        }
+
+        function loadCaptcha() {
+            var img = document.getElementById('captchaImage');
+            var timestamp = Date.now();
+            var url = '/api/captcha/generate?_=' + timestamp;
+            var bodyData = { order_id: orderId || '' };
+            fetch(url, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken || '' },
+                body: JSON.stringify(bodyData)
+            }).then(function(response) {
+                var id = response.headers.get('X-Captcha-Id') || '';
+                if (id) { currentCaptchaId = id;
+                    currentOrderCaptchaId = id; } else { console.warn('No X-Captcha-Id header received'); }
+                return response.blob();
+            }).then(function(blob) {
+                var objectUrl = URL.createObjectURL(blob);
+                img.src = objectUrl;
+                img.setAttribute('data-captcha-id', currentCaptchaId);
+                document.getElementById('captchaError').style.display = 'none';
+            }).catch(function(e) {
+                console.error('Fetch captcha failed:', e);
+                document.getElementById('captchaError').style.display = 'block';
+                document.getElementById('captchaError').textContent = '验证码加载失败，请点击刷新重试';
+            });
+        }
+
+        function refreshCaptcha() {
+            clearCaptchaData();
+            loadCaptcha();
+            document.getElementById('captchaInput').focus();
+            document.getElementById('confirmCaptchaBtn').disabled = false;
+            document.getElementById('confirmCaptchaBtn').textContent = '确认支付';
+        }
+
+        function showCaptchaModal(callback) {
+            pendingPayCallback = callback;
+            document.getElementById('captchaInput').value = '';
+            document.getElementById('captchaError').style.display = 'none';
+            document.getElementById('captchaModal').classList.add('active');
+            document.getElementById('captchaModal').style.display = 'flex';
+            loadCaptcha();
+            setTimeout(function() { document.getElementById('captchaInput').focus(); }, 300);
+        }
+
+        function showCaptchaModalDirect(callback) {
+            pendingPayCallback = callback;
+            document.getElementById('captchaInput').value = '';
+            document.getElementById('captchaError').style.display = 'none';
+            document.getElementById('captchaModal').classList.add('active');
+            document.getElementById('captchaModal').style.display = 'flex';
+            loadCaptcha();
+            setTimeout(function() { document.getElementById('captchaInput').focus(); }, 300);
+        }
+
+        function hideCaptchaModal() {
+            clearCaptchaData();
+            document.getElementById('captchaModal').classList.remove('active');
+            document.getElementById('captchaModal').style.display = 'none';
+            document.getElementById('confirmCaptchaBtn').disabled = false;
+            document.getElementById('confirmCaptchaBtn').textContent = '确认支付';
+            pendingPayCallback = null;
+        }
+
+        function getCouponTypeLabel(e) {
+            if (e === 'full_reduction') return '<span class="coupon-type-badge full">满减</span>';
+            if (e === 'unconditional') return '<span class="coupon-type-badge unconditional">无门槛</span>';
+            if (e === 'product_specific') return '<span class="coupon-type-badge product">指定商品</span>';
+            if (e === 'pl_discount') return '<span class="coupon-type-badge pl_discount">PL立减</span>';
+            if (e === 'makeup_specific') return '<span class="coupon-type-badge product">补签卡</span>';
+            if (e === 'gamblers_specific') return '<span class="coupon-type-badge product">赌神卡</span>';
+            return '';
+        }
+
+        function getCouponDisplayText(e) {
+            if (e.type === 'full_reduction') return '满' + e.threshold + '减' + e.discount;
+            if (e.type === 'unconditional') return '无门槛减' + e.discount;
+            if (e.type === 'product_specific') return '指定商品(' + (e.product_id || '') + ')减' + e.discount;
+            if (e.type === 'pl_discount') return 'PL立减' + e.discount + 'PL';
+            if (e.type === 'makeup_specific') return '补签卡减' + e.discount;
+            if (e.type === 'gamblers_specific') return '赌神卡减' + e.discount;
+            return '';
+        }
+
+        function getCouponTypeName(e) {
+            if (e === 'full_reduction') return '满减券';
+            if (e === 'unconditional') return '无门槛券';
+            if (e === 'product_specific') return '指定商品券';
+            if (e === 'pl_discount') return 'PL立减金';
+            if (e === 'makeup_specific') return '补签卡券';
+            if (e === 'gamblers_specific') return '赌神卡券';
+            return e;
+        }
+
+        function renderSelectedCoupons() {
+            var container = document.getElementById('selectedCouponsContainer');
+            if (selectedCoupons.length === 0) {
+                container.innerHTML = '<div style="font-size:12px;color:#6a7a9a;padding:4px 0;">暂未选择优惠券</div>';
+                updateTotalDiscount();
+                return;
+            }
+            var html = '';
+            selectedCoupons.forEach(function(c, index) {
+                var typeLabel = getCouponTypeLabel(c.type);
+                var displayText = getCouponDisplayText(c);
+                var typeName = getCouponTypeName(c.type);
+                html += '<div class="coupon-select-row"><span>' + typeLabel + ' ' + displayText +
+                    ' <span class="coupon-type-label">(' + typeName +
+                    ')</span> <span style="font-size:11px;color:#8892b0;">有效期至 ' + new Date(c.expire_at)
+                    .toLocaleDateString() + '</span></span><button class="remove-btn" data-index="' + index +
+                    '">移除</button></div>';
+            });
+            container.innerHTML = html;
+            container.querySelectorAll('.remove-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var idx = parseInt(this.dataset.index);
+                    var removed = selectedCoupons[idx];
+                    if (removed) { usedCouponTypes.delete(removed.type); }
+                    selectedCoupons.splice(idx, 1);
+                    renderSelectedCoupons();
+                    updateCouponSelect();
+                    updateTotalDiscount();
+                    updatePriceDisplay();
+                });
+            });
+            updateTotalDiscount();
+        }
+
+        function calculateDiscountDetails() {
+            var pointsPrice = orderData ? (orderData.points_price || orderData.product_price) : 0;
+            var isPl = isPlPayment();
+            var totalDiscountPl = 0;
+            var totalDiscountPoints = 0;
+            var currentPlPrice = orderPlPrice;
+            var currentPointsPrice = pointsPrice;
+            var usedCoupons = [];
+            var matchId = getOrderProductIdForMatch();
+            selectedCoupons.forEach(function(c) {
+                if (c.type === 'pl_discount') {
+                    if (isPl && currentPlPrice > c.discount) {
+                        totalDiscountPl += c.discount;
+                        currentPlPrice -= c.discount;
+                        usedCoupons.push(c);
+                    }
+                } else if (c.type === 'full_reduction') {
+                    if (currentPointsPrice >= c.threshold) {
+                        var d = Math.min(c.discount, currentPointsPrice);
+                        totalDiscountPoints += d;
+                        currentPointsPrice -= d;
+                        usedCoupons.push(c);
+                    }
+                } else if (c.type === 'unconditional') {
+                    var d = Math.min(c.discount, currentPointsPrice);
+                    totalDiscountPoints += d;
+                    currentPointsPrice -= d;
+                    usedCoupons.push(c);
+                } else if (c.type === 'product_specific' || c.type === 'makeup_specific' || c.type === 'gamblers_specific') {
+                    var couponProductId = c.product_id || '';
+                    if (couponProductId && (couponProductId === matchId || couponProductId === (orderData ? orderData.product_id : '') || couponProductId === (orderData ? orderData.product_type : ''))) {
+                        var d = Math.min(c.discount, currentPointsPrice);
+                        totalDiscountPoints += d;
+                        currentPointsPrice -= d;
+                        usedCoupons.push(c);
+                    }
+                }
+            });
+            if (isPl) {
+                var pointsInPl = totalDiscountPoints / (currentRate || 1);
+                var totalPlDiscount = totalDiscountPl + pointsInPl;
+                var finalPl = Math.max(0, orderPlPrice - totalPlDiscount);
+                return { totalDiscountPl: totalPlDiscount, totalDiscountPoints: totalDiscountPoints, finalPricePl: finalPl, finalPricePoints: finalPl * (currentRate || 1), isPl: true, usedCoupons: usedCoupons };
+            } else {
+                var plInPoints = totalDiscountPl * (currentRate || 1);
+                var totalPointsDiscount = totalDiscountPoints + plInPoints;
+                var finalPoints = Math.max(0, pointsPrice - totalPointsDiscount);
+                return { totalDiscountPl: totalDiscountPl, totalDiscountPoints: totalPointsDiscount, finalPricePl: finalPoints / (currentRate || 1), finalPricePoints: finalPoints, isPl: false, usedCoupons: usedCoupons };
+            }
+        }
+
+        function updateTotalDiscount() {
+            var details = calculateDiscountDetails();
+            var discountText = '已优惠: ';
+            if (details.isPl) { discountText += details.totalDiscountPl.toFixed(4) + ' PL'; } else { discountText += details.totalDiscountPoints.toFixed(1) + ' 积分'; }
+            document.getElementById('totalCouponDiscount').textContent = discountText;
+            return details;
+        }
+
+        function updateCouponSelect() {
+            var select = document.getElementById('couponSelect');
+            var usedIds = selectedCoupons.map(function(c) { return c.id; });
+            var isPl = isPlPayment();
+            var matchId = getOrderProductIdForMatch();
+            var productId = orderData ? orderData.product_id : '';
+            var productType = orderData ? orderData.product_type : '';
+            var available = availableCoupons.filter(function(c) {
+                if (usedIds.indexOf(c.id) !== -1) return false;
+                if (usedCouponTypes.has(c.type)) return false;
+                if (c.type === 'pl_discount') { if (!isPl) return false; if (orderPlPrice <= c.discount) return false; }
+                if (c.type === 'full_reduction') { var pointsPrice = orderData ? orderData.points_price || orderData.product_price : 0; if (pointsPrice < c.threshold) return false; }
+                if (c.type === 'product_specific' || c.type === 'makeup_specific' || c.type === 'gamblers_specific') {
+                    var couponProductId = c.product_id || '';
+                    if (!couponProductId) return false;
+                    if (couponProductId !== matchId && couponProductId !== productId && couponProductId !== productType) { return false; }
+                }
+                return true;
+            });
+            select.innerHTML = '<option value="">选择优惠券...</option>';
+            if (available.length === 0) {
+                var opt = document.createElement('option');
+                opt.value = '';
+                if (selectedCoupons.length > 0 && availableCoupons.some(function(c) { return usedCouponTypes.has(c.type); })) {
+                    opt.textContent = '每种类型仅限使用1张';
+                } else if (!isPl && availableCoupons.some(function(c) { return c.type === 'pl_discount'; })) {
+                    opt.textContent = 'PL立减金仅限PL支付时使用';
+                } else if (isPl && availableCoupons.some(function(c) { return c.type === 'pl_discount'; })) {
+                    var plCoupon = availableCoupons.find(function(c) { return c.type === 'pl_discount'; });
+                    if (plCoupon && orderPlPrice <= plCoupon.discount) {
+                        opt.textContent = '订单金额(' + orderPlPrice.toFixed(4) + 'PL)需大于立减金(' + plCoupon.discount + 'PL)';
+                    } else {
+                        opt.textContent = '没有更多可用优惠券';
+                    }
+                } else {
+                    opt.textContent = '没有更多可用优惠券';
+                }
+                select.appendChild(opt);
+            } else {
+                available.forEach(function(c) {
+                    var opt = document.createElement('option');
+                    opt.value = c.id;
+                    var label = getCouponDisplayText(c);
+                    var typeName = getCouponTypeName(c.type);
+                    if (c.type === 'full_reduction') label = '[满减] ' + label;
+                    else if (c.type === 'unconditional') label = '[无门槛] ' + label;
+                    else if (c.type === 'product_specific') label = '[指定商品] ' + label;
+                    else if (c.type === 'pl_discount') label = '[PL立减] ' + label;
+                    else if (c.type === 'makeup_specific') label = '[补签卡] ' + label;
+                    else if (c.type === 'gamblers_specific') label = '[赌神卡] ' + label;
+                    opt.textContent = label + ' (' + typeName + ')';
+                    select.appendChild(opt);
+                });
+            }
+        }
+
+        function updatePriceDisplay() {
+            if (!orderData) return;
+            var details = calculateDiscountDetails();
+            var pointsPrice = orderData.points_price || orderData.product_price;
+            var isPl = isPlPayment();
+            var pointsPriceEl = document.getElementById('pointsPrice');
+            var plPriceEl = document.getElementById('plPrice');
+            if (isPl) {
+                if (pointsPriceEl) pointsPriceEl.textContent = '⭐ ' + pointsPrice.toFixed(1) + ' 积分';
+                if (plPriceEl) {
+                    var displayPl = details.finalPricePl.toFixed(4) + ' PL';
+                    if (currentRate > 0) { displayPl += ' (汇率 1积分 ' + currentRate.toFixed(4) + ' PL)'; }
+                    plPriceEl.textContent = ' ' + displayPl;
+                    document.getElementById('plPriceRow').style.display = 'flex';
+                    document.getElementById('pointsPriceRow').style.display = 'flex';
+                }
+            } else {
+                if (pointsPriceEl) pointsPriceEl.textContent = '⭐ ' + details.finalPricePoints.toFixed(1) + ' 积分';
+                document.getElementById('plPriceRow').style.display = 'none';
+                document.getElementById('pointsPriceRow').style.display = 'flex';
+            }
+            var originalRow = document.getElementById('originalPriceRow');
+            var discountRow = document.getElementById('discountRow');
+            var finalRow = document.getElementById('finalPriceRow');
+            var originalDisplay = document.getElementById('originalPriceDisplay');
+            var discountDisplay = document.getElementById('discountDisplay');
+            var finalDisplay = document.getElementById('finalPriceDisplay');
+            var hasDiscount = (details.totalDiscountPl > 0.0001 || details.totalDiscountPoints > 0.001);
+            if (isPl) {
+                var originalPl = orderData.original_price ? orderData.original_price / (currentRate || 1) : orderPlPrice + details.totalDiscountPl;
+                if (hasDiscount) {
+                    originalRow.style.display = 'flex';
+                    originalDisplay.textContent = '💎 ' + originalPl.toFixed(4) + ' PL';
+                    discountRow.style.display = 'flex';
+                    discountDisplay.textContent = '-💎 ' + details.totalDiscountPl.toFixed(4) + ' PL (优惠券)';
+                    finalRow.style.display = 'flex';
+                    finalDisplay.textContent = '💎 ' + details.finalPricePl.toFixed(4) + ' PL';
+                    finalDisplay.className = 'value-pl';
+                } else {
+                    originalRow.style.display = 'none';
+                    discountRow.style.display = 'none';
+                    finalRow.style.display = 'none';
+                }
+            } else {
+                if (hasDiscount) {
+                    originalRow.style.display = 'flex';
+                    originalDisplay.textContent = '⭐ ' + (orderData.original_price || pointsPrice).toFixed(1) + ' 积分';
+                    discountRow.style.display = 'flex';
+                    discountDisplay.textContent = '-⭐ ' + details.totalDiscountPoints.toFixed(1) + ' 积分 (优惠券)';
+                    finalRow.style.display = 'flex';
+                    finalDisplay.textContent = '⭐ ' + details.finalPricePoints.toFixed(1) + ' 积分';
+                    finalDisplay.className = 'value';
+                } else {
+                    originalRow.style.display = 'none';
+                    discountRow.style.display = 'none';
+                    finalRow.style.display = 'none';
+                }
+            }
+            var totalDiscountEl = document.getElementById('totalCouponDiscount');
+            if (totalDiscountEl) {
+                var discountText = '已优惠: ';
+                if (isPl) { discountText += details.totalDiscountPl.toFixed(4) + ' PL'; } else { discountText += details.totalDiscountPoints.toFixed(1) + ' 积分'; }
+                totalDiscountEl.textContent = discountText;
+            }
+        }
+
+        function displayDeliveredCodes(codes) {
+            var codeEl = document.getElementById('deliveredCodeValue');
+            var countEl = document.getElementById('deliveredCodeCount');
+            if (!codes || codes.length === 0) {
+                codeEl.textContent = '-';
+                countEl.textContent = '';
+                return;
+            }
+            if (typeof codes === 'string') {
+                codeEl.textContent = codes;
+                countEl.textContent = '';
+            } else if (Array.isArray(codes)) {
+                codeEl.textContent = codes.join(' | ');
+                countEl.textContent = '共 ' + codes.length + ' 张卡密';
+            } else {
+                codeEl.textContent = String(codes);
+                countEl.textContent = '';
+            }
+            document.getElementById('deliveredCode').style.display = 'block';
+        }
+
+        function hideQRCode() { document.getElementById('qrSection').style.display = 'none'; }
+
+        function generateQRCode() {
+            var container = document.getElementById('qrcodeContainer');
+            if (!orderData) return;
+            var orderId = orderData.order_id || '';
+            var productNumber = orderData.product_number || '';
+            var baseUrl = window.location.origin;
+            container.innerHTML = '<div style="padding:20px;color:#8892b0;font-size:13px;">生成二维码中...</div>';
+            fetch('/api/order/qr/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken || '' },
+                credentials: 'include',
+                body: JSON.stringify({ order_id: orderId, product_number: productNumber })
+            }).then(function(response) { return response.json(); }).then(function(data) {
+                if (data.token) {
+                    var qrUrl = baseUrl + '/qr/' + data.token;
+                    document.getElementById('qrTokenDisplay').textContent = qrUrl;
+                    document.getElementById('qrSection').style.display = 'block';
+                    container.innerHTML = '';
+                    try {
+                        if (typeof QRCode !== 'undefined') {
+                            new QRCode(container, { text: qrUrl, width: 140, height: 140, colorDark: '#0b0e1a', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.H });
+                        } else {
+                            var fallback = document.createElement('div');
+                            fallback.style.cssText = 'width:140px;height:140px;background:#f0f0f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#666;';
+                            fallback.textContent = 'QR库未加载';
+                            container.appendChild(fallback);
+                        }
+                    } catch (e) {
+                        console.error('QRCode generation failed:', e);
+                        var fallback = document.createElement('div');
+                        fallback.style.cssText = 'width:140px;height:140px;background:#f0f0f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#666;';
+                        fallback.textContent = '二维码生成失败';
+                        container.appendChild(fallback);
+                    }
+                } else {
+                    container.innerHTML = '<div style="padding:20px;color:#f87171;font-size:13px;">二维码生成失败: ' + (data.error || '未知错误') + '</div>';
+                }
+            }).catch(function(error) {
+                console.error('Failed to generate QR token:', error);
+                container.innerHTML = '<div style="padding:20px;color:#f87171;font-size:13px;">二维码生成失败</div>';
+            });
+        }
+
+        function updatePointsDisplay() {
+            var pointsInfo = document.getElementById('pointsInfo');
+            if (availablePoints > 0 || mainPoints > 0 || fundPoints > 0) {
+                pointsInfo.style.display = 'block';
+                document.getElementById('availablePointsDisplay').textContent = availablePoints.toFixed(2);
+                document.getElementById('mainPointsDisplay').textContent = mainPoints.toFixed(2);
+                document.getElementById('fundPointsDisplay').textContent = fundPoints.toFixed(2);
+            } else {
+                pointsInfo.style.display = 'none';
+            }
+        }
+
+        function updateOrderStatusDisplay(status, extraInfo) {
+            var statusInfo = statusMap[status] || statusMap['pending'];
+            var statusEl = document.getElementById('orderStatus');
+            var iconEl = document.getElementById('orderStatusIcon');
+            statusEl.textContent = statusInfo.label;
+            statusEl.className = 'status-badge ' + statusInfo.className;
+            iconEl.innerHTML = '<i class="fas ' + statusInfo.icon + '"></i>';
+            iconEl.className = 'status-icon ' + statusInfo.iconClass;
+            document.getElementById('orderExpired').style.display = 'none';
+            document.getElementById('orderCancelled').style.display = 'none';
+            document.getElementById('orderRefunded').style.display = 'none';
+            document.getElementById('orderFrozen').style.display = 'none';
+            if (status === 'expired') { document.getElementById('orderExpired').style.display = 'block'; } else if (status === 'cancelled') { document.getElementById('orderCancelled').style.display = 'block'; } else if (status === 'refunded') { document.getElementById('orderRefunded').style.display = 'block'; if (extraInfo) { document.getElementById('orderRefunded').innerHTML = '<i class="fas fa-undo-alt"></i> ' + extraInfo; } } else if (status === 'frozen') { document.getElementById('orderFrozen').style.display = 'block'; }
+        }
+
+        function updateRefundInfo(order) {
+            var refundRow = document.getElementById('refundInfoRow');
+            var refundInfoEl = document.getElementById('refundInfo');
+            if (order.refunded && order.refund_amount) {
+                refundRow.style.display = 'flex';
+                var reason = order.refund_reason || '管理员退款';
+                refundInfoEl.textContent = '退款金额: ' + order.refund_amount.toFixed(2) + ' 积分 | 原因: ' + reason;
+            } else if (order.status === 'refunded') {
+                refundRow.style.display = 'flex';
+                refundInfoEl.textContent = '已退款';
+            } else {
+                refundRow.style.display = 'none';
+            }
+        }
+
+        function hideAllStatusMessages() {
+            document.getElementById('orderExpired').style.display = 'none';
+            document.getElementById('orderCancelled').style.display = 'none';
+            document.getElementById('orderRefunded').style.display = 'none';
+            document.getElementById('orderFrozen').style.display = 'none';
+        }
+
+        async function loadOrder() {
+            try {
+                var t = await apiRequest('/api/order/' + orderId);
+                orderData = t.order;
+                if (!orderData) {
+                    document.getElementById('orderIdDisplay').textContent = '订单不存在';
+                    showStatus('订单不存在或已被清理', 'error');
+                    return;
+                }
+                orderType = orderData.order_type || 'mall';
+                hasPassword = t.has_pay_password === true;
+                currentRate = t.current_rate || 0.07;
+                isDaifu = orderData.is_daifu || false;
+                daifuOwner = orderData.owner || orderData.username || '';
+                availablePoints = t.total_available_points || 0;
+                mainPoints = t.main_points || 0;
+                fundPoints = t.fund_balance || 0;
+                updatePointsDisplay();
+                var currentUserData = await apiRequest('/api/check-auth');
+                if (currentUserData.authenticated) { currentUsername = currentUserData.username; }
+                try {
+                    var gatewayStatus = await apiRequest('/api/gateway/status');
+                    if (gatewayStatus && gatewayStatus.cardKey) {
+                        gatewayCardKey = gatewayStatus.cardKey;
+                        updateBackLink();
+                    }
+                } catch (e) { gatewayCardKey = null;
+                    updateBackLink(); }
+                var status = orderData.status || 'pending';
+                if (status === 'cancelled' || status === 'expired' || status === 'refunded' || status === 'frozen') {
+                    hideAllStatusMessages();
+                    document.getElementById('paymentSection').style.display = 'none';
+                    document.getElementById('couponSection').style.display = 'none';
+                    document.getElementById('setPasswordSection').style.display = 'none';
+                    document.getElementById('antiFakeTip').style.display = 'none';
+                    document.getElementById('resetPasswordSection').style.display = 'none';
+                    document.getElementById('daifuNotice').style.display = 'none';
+                    hideQRCode();
+                    if (remainingInterval) clearInterval(remainingInterval);
+                    var extraInfo = '';
+                    if (status === 'refunded' && orderData.refund_amount) { extraInfo = '退款金额: ' + orderData.refund_amount.toFixed(2) + ' 积分'; }
+                    updateOrderStatusDisplay(status, extraInfo);
+                    updateRefundInfo(orderData);
+                    document.getElementById('remainingTime').textContent = '-';
+                    document.getElementById('orderIdDisplay').textContent = '订单号: ' + orderData.order_id;
+                    if (orderData.delivered && orderData.delivered_code) {
+                        var deliveredCodes = orderData.delivered_codes || orderData.delivered_code;
+                        displayDeliveredCodes(deliveredCodes);
+                    }
+                    document.getElementById('productName').textContent = orderData.product_name || '-';
+                    document.getElementById('paymentMethod').textContent = orderData.payment_method || '-';
+                    document.getElementById('createdAt').textContent = formatTime(orderData.created_at);
+                    document.getElementById('antiFakeCode').textContent = orderData.anti_fake_code || '-';
+                    document.getElementById('productNumberDisplay').textContent = '商品编号: ' + (orderData.product_number || '未分配');
+                    document.getElementById('payBtn').style.display = 'none';
+                    updateBackLink();
+                    return;
+                }
+                var daifuNotice = document.getElementById('daifuNotice');
+                if (isDaifu) {
+                    daifuNotice.style.display = 'block';
+                    document.getElementById('daifuOwner').textContent = daifuOwner;
+                    var statusText = orderData.daifu_status === 'paid' ? '已支付' : '等待支付';
+                    document.getElementById('daifuStatus').textContent = statusText;
+                    if (orderData.daifu_status === 'paid') { document.getElementById('daifuStatus').style.color = '#4ade80'; } else { document.getElementById('daifuStatus').style.color = '#f7c948'; }
+                    if (currentUsername === daifuOwner && orderData.daifu_status !== 'paid') {
+                        document.getElementById('payBtn').disabled = true;
+                        document.getElementById('payBtn').textContent = '🚫 请让朋友扫码支付';
+                        document.getElementById('payBtn').style.opacity = '0.5';
+                        document.getElementById('payBtn').style.cursor = 'not-allowed';
+                        document.getElementById('payBtn').className = 'pay-btn';
+                        document.querySelector('.password-section').style.display = 'none';
+                    } else if (currentUsername !== daifuOwner && orderData.daifu_status !== 'paid') {
+                        document.getElementById('payBtn').disabled = false;
+                        document.getElementById('payBtn').textContent = '🤝 代付';
+                        document.getElementById('payBtn').className = 'pay-btn daifu-btn';
+                        document.getElementById('payBtn').dataset.payType = 'mall';
+                        document.querySelector('.password-section').style.display = 'block';
+                    }
+                    if (orderData.daifu_status === 'paid') {
+                        document.getElementById('paymentSection').style.display = 'none';
+                        updateOrderStatusDisplay('paid');
+                        document.getElementById('remainingTime').textContent = '已完成';
+                        document.getElementById('antiFakeTip').style.display = 'none';
+                        document.getElementById('couponSection').style.display = 'none';
+                        document.getElementById('setPasswordSection').style.display = 'none';
+                        document.getElementById('resetPasswordSection').style.display = 'none';
+                        hideQRCode();
+                        if (orderData.delivered && orderData.delivered_code) {
+                            var deliveredCodes = orderData.delivered_codes || orderData.delivered_code;
+                            displayDeliveredCodes(deliveredCodes);
+                        }
+                        if (remainingInterval) clearInterval(remainingInterval);
+                        updateBackLink();
+                        return;
+                    }
+                } else {
+                    daifuNotice.style.display = 'none';
+                    document.querySelector('.password-section').style.display = 'block';
+                }
+                var resetSection = document.getElementById('resetPasswordSection');
+                if (hasPassword) { resetSection.style.display = 'block'; } else { resetSection.style.display = 'none'; }
+                orderPointsPrice = orderData.points_price || orderData.product_price;
+                if (isPlPayment()) { orderPlPrice = orderData.product_price; } else { orderPlPrice = orderPointsPrice / (currentRate || 1); }
+                usedCouponTypes = new Set();
+                if (orderData.used_coupon_ids) {
+                    for (var i = 0; i < orderData.used_coupon_ids.length; i++) {
+                        var cid = orderData.used_coupon_ids[i];
+                        var coupon = orderData.used_coupons ? orderData.used_coupons.find(function(c) { return c.id === cid; }) : null;
+                        if (coupon && coupon.type) { usedCouponTypes.add(coupon.type); }
+                    }
+                }
+                document.getElementById('orderIdDisplay').textContent = '订单号: ' + orderData.order_id;
+                if (orderType === 'pl_transfer') {
+                    document.getElementById('productName').textContent = 'PL转账';
+                    document.getElementById('paymentMethod').textContent = 'PL支付';
+                    document.getElementById('pointsPriceRow').style.display = 'none';
+                    document.getElementById('plPriceRow').style.display = 'flex';
+                    document.getElementById('plPrice').textContent = ' ' + orderData.product_price.toFixed(4) + ' PL';
+                    document.getElementById('transferInfoRow').style.display = 'flex';
+                    document.getElementById('transferInfo').textContent = '转到: ' + (orderData.transfer_target || '');
+                    document.getElementById('productNumberDisplay').textContent = '转账订单';
+                    document.getElementById('payBtn').textContent = ' 确认转账';
+                    document.getElementById('payBtn').className = 'pay-btn transfer-btn';
+                    document.getElementById('payBtn').dataset.payType = 'pl_transfer';
+                    document.getElementById('couponSection').style.display = 'block';
+                    orderPlPrice = orderData.product_price;
+                } else {
+                    document.getElementById('productName').textContent = orderData.product_name;
+                    document.getElementById('productNumberDisplay').textContent = '商品编号: ' + (orderData.product_number || '未分配');
+                    var r = orderData.payment_method === 'points' ? '积分支付' : 'PL支付';
+                    document.getElementById('paymentMethod').textContent = r;
+                    if (isPlPayment()) {
+                        document.getElementById('plPriceRow').style.display = 'flex';
+                        document.getElementById('pointsPriceRow').style.display = 'flex';
+                        document.getElementById('plPrice').textContent = ' ' + orderPlPrice.toFixed(4) + ' PL (汇率 1积分 ' + currentRate.toFixed(4) + ' PL)';
+                        document.getElementById('pointsPrice').textContent = '⭐ ' + orderPointsPrice.toFixed(1) + ' 积分';
+                    } else {
+                        document.getElementById('plPriceRow').style.display = 'none';
+                        document.getElementById('pointsPriceRow').style.display = 'flex';
+                        document.getElementById('pointsPrice').textContent = '⭐ ' + orderPointsPrice.toFixed(1) + ' 积分';
+                    }
+                    if (isDaifu && orderData.daifu_status !== 'paid' && currentUsername !== daifuOwner) {
+                        document.getElementById('payBtn').textContent = '🤝 代付';
+                        document.getElementById('payBtn').className = 'pay-btn daifu-btn';
+                        document.getElementById('payBtn').dataset.payType = 'mall';
+                    } else if (isDaifu && orderData.daifu_status !== 'paid' && currentUsername === daifuOwner) {
+                        document.getElementById('payBtn').textContent = '🚫 请让朋友扫码支付';
+                        document.getElementById('payBtn').className = 'pay-btn';
+                        document.getElementById('payBtn').disabled = true;
+                        document.getElementById('payBtn').style.opacity = '0.5';
+                        document.getElementById('payBtn').style.cursor = 'not-allowed';
+                    } else if (isDaifu && orderData.daifu_status === 'paid') {
+                        document.getElementById('payBtn').style.display = 'none';
+                    } else {
+                        document.getElementById('payBtn').textContent = ' 确认支付';
+                        document.getElementById('payBtn').className = 'pay-btn';
+                        document.getElementById('payBtn').dataset.payType = 'mall';
+                    }
+                    document.getElementById('transferInfoRow').style.display = 'none';
+                    if (!isDaifu || (isDaifu && orderData.daifu_status !== 'paid')) { document.getElementById('couponSection').style.display = 'block'; } else { document.getElementById('couponSection').style.display = 'none'; }
+                }
+                document.getElementById('createdAt').textContent = formatTime(orderData.created_at);
+                document.getElementById('antiFakeCode').textContent = orderData.anti_fake_code || Math.floor(100000 + Math.random() * 900000).toString();
+                var now = Date.now(),
+                    expired = (now - orderData.created_at) > 300000;
+                updateOrderStatusDisplay(status);
+                updateRefundInfo(orderData);
+                if (expired && status === 'pending') {
+                    document.getElementById('orderExpired').style.display = 'block';
+                    document.getElementById('paymentSection').style.display = 'none';
+                    updateOrderStatusDisplay('expired');
+                    document.getElementById('remainingTime').textContent = '已过期';
+                    document.getElementById('antiFakeTip').style.display = 'none';
+                    document.getElementById('couponSection').style.display = 'none';
+                    document.getElementById('setPasswordSection').style.display = 'none';
+                    document.getElementById('resetPasswordSection').style.display = 'none';
+                    hideQRCode();
+                    if (isDaifu) { document.getElementById('daifuNotice').style.display = 'none'; }
+                    if (remainingInterval) clearInterval(remainingInterval);
+                    updateBackLink();
+                    return;
+                }
+                if (status === 'pending') {
+                    if (isDaifu && orderData.daifu_status === 'paid') {
+                        updateOrderStatusDisplay('paid');
+                        document.getElementById('paymentSection').style.display = 'none';
+                        document.getElementById('orderExpired').style.display = 'none';
+                        document.getElementById('remainingTime').textContent = '已完成';
+                        document.getElementById('antiFakeTip').style.display = 'none';
+                        document.getElementById('couponSection').style.display = 'none';
+                        document.getElementById('setPasswordSection').style.display = 'none';
+                        document.getElementById('resetPasswordSection').style.display = 'none';
+                        hideQRCode();
+                        if (orderData.delivered && orderData.delivered_code) {
+                            var deliveredCodes = orderData.delivered_codes || orderData.delivered_code;
+                            displayDeliveredCodes(deliveredCodes);
+                        }
+                        if (remainingInterval) clearInterval(remainingInterval);
+                        updateBackLink();
+                        return;
+                    }
+                    document.getElementById('orderExpired').style.display = 'none';
+                    document.getElementById('antiFakeTip').style.display = 'block';
+                    if (!isDaifu || (isDaifu && orderData.daifu_status !== 'paid')) { document.getElementById('couponSection').style.display = 'block'; }
+                    if (isDaifu && orderData.daifu_status !== 'paid') { generateQRCode(); } else if (!isDaifu) { generateQRCode(); }
+                    if (!hasPassword) {
+                        document.getElementById('setPasswordSection').style.display = 'block';
+                        document.getElementById('paymentSection').style.display = 'none';
+                    } else {
+                        document.getElementById('setPasswordSection').style.display = 'none';
+                        document.getElementById('paymentSection').style.display = 'block';
+                    }
+                    if (remainingInterval) clearInterval(remainingInterval);
+                    remainingInterval = setInterval(function() {
+                        var e = formatRemaining(orderData.created_at);
+                        document.getElementById('remainingTime').textContent = e;
+                        if (e === '已过期') {
+                            clearInterval(remainingInterval);
+                            document.getElementById('orderExpired').style.display = 'block';
+                            document.getElementById('paymentSection').style.display = 'none';
+                            updateOrderStatusDisplay('expired');
+                            document.getElementById('antiFakeTip').style.display = 'none';
+                            document.getElementById('couponSection').style.display = 'none';
+                            document.getElementById('setPasswordSection').style.display = 'none';
+                            document.getElementById('resetPasswordSection').style.display = 'none';
+                            hideQRCode();
+                            if (isDaifu) { document.getElementById('daifuNotice').style.display = 'none'; }
+                            updateBackLink();
+                        }
+                    }, 1000);
+                } else if (status === 'paid') {
+                    updateOrderStatusDisplay('paid');
+                    document.getElementById('paymentSection').style.display = 'none';
+                    document.getElementById('orderExpired').style.display = 'none';
+                    document.getElementById('remainingTime').textContent = '已完成';
+                    document.getElementById('antiFakeTip').style.display = 'none';
+                    document.getElementById('couponSection').style.display = 'none';
+                    document.getElementById('setPasswordSection').style.display = 'none';
+                    document.getElementById('resetPasswordSection').style.display = 'none';
+                    hideQRCode();
+                    if (isDaifu) { document.getElementById('daifuNotice').style.display = 'none'; }
+                    if (orderData.delivered && orderData.delivered_code) {
+                        var deliveredCodes = orderData.delivered_codes || orderData.delivered_code;
+                        displayDeliveredCodes(deliveredCodes);
+                    }
+                    if (remainingInterval) clearInterval(remainingInterval);
+                    updateBackLink();
+                } else if (status === 'cancelled') {
+                    updateOrderStatusDisplay('cancelled');
+                    document.getElementById('paymentSection').style.display = 'none';
+                    document.getElementById('couponSection').style.display = 'none';
+                    document.getElementById('setPasswordSection').style.display = 'none';
+                    document.getElementById('resetPasswordSection').style.display = 'none';
+                    document.getElementById('antiFakeTip').style.display = 'none';
+                    hideQRCode();
+                    if (remainingInterval) clearInterval(remainingInterval);
+                    updateBackLink();
+                } else if (status === 'expired') {
+                    updateOrderStatusDisplay('expired');
+                    document.getElementById('paymentSection').style.display = 'none';
+                    document.getElementById('couponSection').style.display = 'none';
+                    document.getElementById('setPasswordSection').style.display = 'none';
+                    document.getElementById('resetPasswordSection').style.display = 'none';
+                    document.getElementById('antiFakeTip').style.display = 'none';
+                    hideQRCode();
+                    if (remainingInterval) clearInterval(remainingInterval);
+                    updateBackLink();
+                } else if (status === 'frozen') {
+                    updateOrderStatusDisplay('frozen');
+                    document.getElementById('paymentSection').style.display = 'none';
+                    document.getElementById('couponSection').style.display = 'none';
+                    document.getElementById('setPasswordSection').style.display = 'none';
+                    document.getElementById('resetPasswordSection').style.display = 'none';
+                    document.getElementById('antiFakeTip').style.display = 'none';
+                    hideQRCode();
+                    if (remainingInterval) clearInterval(remainingInterval);
+                    updateBackLink();
+                }
+                if (orderData.quantity && orderData.quantity > 1) {
+                    document.getElementById('quantityRow').style.display = 'flex';
+                    document.getElementById('orderQuantity').textContent = orderData.quantity;
+                }
+                await loadCoupons();
+                if (orderData.delivered && orderData.delivered_code && (orderData.status === 'paid' || orderData.status === 'refunded')) {
+                    var deliveredCodes = orderData.delivered_codes || orderData.delivered_code;
+                    displayDeliveredCodes(deliveredCodes);
+                    hideQRCode();
+                }
+                updatePriceDisplay();
+                updateBackLink();
+                hideErrorBoundary();
+            } catch (err) {
+                showStatus('加载订单失败: ' + err.message, 'error');
+                showErrorBoundary('加载订单失败: ' + err.message);
+                updateBackLink();
+            }
+        }
+
+        async function loadCoupons() {
+            try {
+                var e = await apiRequest('/api/coupons/list');
+                availableCoupons = e.coupons.filter(function(c) { return !c.used && c.expire_at > Date.now(); });
+                var orderUsedIds = orderData && orderData.used_coupon_ids ? orderData.used_coupon_ids : [];
+                selectedCoupons = availableCoupons.filter(function(c) { return orderUsedIds.indexOf(c.id) !== -1; });
+                usedCouponTypes = new Set();
+                selectedCoupons.forEach(function(c) { if (c.type) usedCouponTypes.add(c.type); });
+                renderSelectedCoupons();
+                updateCouponSelect();
+                if (availableCoupons.length > 0 && !isDaifu) {
+                    document.getElementById('couponSection').style.display = 'block';
+                } else if (isDaifu && orderData && orderData.daifu_status === 'paid') {
+                    document.getElementById('couponSection').style.display = 'none';
+                } else {
+                    document.getElementById('couponSection').style.display = 'none';
+                }
+                updatePriceDisplay();
+            } catch (e) {
+                console.error('Load coupons error:', e);
+                document.getElementById('couponSection').style.display = 'none';
+            }
+        }
+
+        document.getElementById('addCouponBtn').addEventListener('click', function() {
+            var select = document.getElementById('couponSelect');
+            var id = select.value;
+            if (!id) { showStatus('请选择一张优惠券', 'info'); return; }
+            var coupon = availableCoupons.find(function(c) { return c.id === id; });
+            if (!coupon) { showStatus('优惠券无效', 'error'); return; }
+            if (selectedCoupons.some(function(c) { return c.id === id; })) { showStatus('该优惠券已添加', 'info'); return; }
+            if (usedCouponTypes.has(coupon.type)) { showStatus('该类型优惠券已使用，每种类型限用1张', 'info'); return; }
+            if (selectedCoupons.length >= 5) { showStatus('最多同时使用5张优惠券', 'info'); return; }
+            if (coupon.type === 'pl_discount') {
+                if (!isPlPayment()) { showStatus('PL立减金仅限PL支付时使用', 'info'); return; }
+                if (orderPlPrice <= coupon.discount) { showStatus('订单PL金额(' + orderPlPrice.toFixed(4) + 'PL)需大于立减金(' + coupon.discount + 'PL)', 'info'); return; }
+            }
+            if (coupon.type === 'full_reduction') {
+                var pointsPrice = orderData ? orderData.points_price || orderData.product_price : 0;
+                if (pointsPrice < coupon.threshold) { showStatus('订单金额(' + pointsPrice + '积分)需大于门槛(' + coupon.threshold + '积分)', 'info'); return; }
+            }
+            if (coupon.type === 'product_specific' || coupon.type === 'makeup_specific' || coupon.type === 'gamblers_specific') {
+                var matchId = getOrderProductIdForMatch();
+                var couponProductId = coupon.product_id || '';
+                var productId = orderData ? orderData.product_id : '';
+                var productType = orderData ? orderData.product_type : '';
+                if (!couponProductId || (couponProductId !== matchId && couponProductId !== productId && couponProductId !== productType)) {
+                    showStatus('该优惠券不适用于当前商品', 'info');
+                    return;
+                }
+            }
+            selectedCoupons.push({ ...coupon });
+            usedCouponTypes.add(coupon.type);
+            renderSelectedCoupons();
+            updateCouponSelect();
+            updatePriceDisplay();
+            select.value = '';
+            var details = calculateDiscountDetails();
+            if (details.isPl) { showStatus('已添加优惠券，优惠 ' + details.totalDiscountPl.toFixed(4) + ' PL', 'success'); } else { showStatus('已添加优惠券，优惠 ' + details.totalDiscountPoints.toFixed(1) + ' 积分', 'success'); }
+        });
+
+        document.getElementById('setPasswordBtn').addEventListener('click', async function() {
+            var e = document.getElementById('newPayPassword').value.trim();
+            var qq = document.getElementById('newPayPasswordQq').value.trim();
+            if (e.length !== 6 || !/^\d{6}$/.test(e)) { showStatus('支付密码必须为6位数字', 'error'); return; }
+            if (!qq) { showStatus('请输入绑定的QQ号验证', 'error'); return; }
+            var t = document.getElementById('setPasswordBtn');
+            t.disabled = true;
+            t.textContent = '设置中...';
+            try {
+                await apiRequest('/api/order/' + orderId + '/set-password', {
+                    method: 'POST',
+                    body: JSON.stringify({ pay_password: e, qq_number: qq })
+                });
+                showStatus('支付密码设置成功！', 'success');
+                hasPassword = true;
+                document.getElementById('setPasswordSection').style.display = 'none';
+                document.getElementById('paymentSection').style.display = 'block';
+                document.getElementById('resetPasswordSection').style.display = 'block';
+                document.getElementById('newPayPassword').value = '';
+                document.getElementById('newPayPasswordQq').value = '';
+            } catch (err) { showStatus('设置失败: ' + err.message, 'error'); } finally { t.disabled = false;
+                t.textContent = '设置支付密码'; }
+        });
+
+        document.getElementById('resetPayPasswordBtn').addEventListener('click', function() {
+            document.getElementById('resetPasswordModal').classList.add('active');
+            document.getElementById('resetPasswordModal').style.display = 'flex';
+            document.getElementById('resetQqInput').value = '';
+            document.getElementById('resetPasswordInput').value = '';
+            document.getElementById('resetError').style.display = 'none';
+        });
+
+        document.getElementById('cancelResetBtn').addEventListener('click', function() {
+            document.getElementById('resetPasswordModal').classList.remove('active');
+            document.getElementById('resetPasswordModal').style.display = 'none';
+        });
+
+        document.getElementById('confirmResetBtn').addEventListener('click', async function() {
+            var qq = document.getElementById('resetQqInput').value.trim();
+            var password = document.getElementById('resetPasswordInput').value;
+            var errorEl = document.getElementById('resetError');
+            if (!qq) { errorEl.textContent = '请输入绑定的QQ号';
+                errorEl.style.display = 'block'; return; }
+            if (!password) { errorEl.textContent = '请输入登录密码';
+                errorEl.style.display = 'block'; return; }
+            errorEl.style.display = 'none';
+            var btn = document.getElementById('confirmResetBtn');
+            btn.disabled = true;
+            btn.textContent = '处理中...';
+            try {
+                var result = await apiRequest('/api/debug/clear-pay-password', {
+                    method: 'POST',
+                    body: JSON.stringify({ qq_number: qq, password: password })
+                });
+                if (result.success) {
+                    errorEl.textContent = '✅ ' + result.message;
+                    errorEl.style.color = '#4ade80';
+                    errorEl.style.display = 'block';
+                    hasPassword = false;
+                    document.getElementById('resetPasswordSection').style.display = 'none';
+                    document.getElementById('setPasswordSection').style.display = 'block';
+                    document.getElementById('paymentSection').style.display = 'none';
+                    setTimeout(function() {
+                        document.getElementById('resetPasswordModal').classList.remove('active');
+                        document.getElementById('resetPasswordModal').style.display = 'none';
+                        errorEl.style.display = 'none';
+                    }, 2000);
+                } else {
+                    errorEl.textContent = '❌ ' + result.message;
+                    errorEl.style.color = '#f87171';
+                    errorEl.style.display = 'block';
+                }
+            } catch (err) {
+                errorEl.textContent = '❌ ' + err.message;
+                errorEl.style.color = '#f87171';
+                errorEl.style.display = 'block';
+            } finally { btn.disabled = false;
+                btn.textContent = '确认重置'; }
+        });
+
+        document.getElementById('resetPasswordModal').addEventListener('click', function(e) {
+            if (e.target === this) { this.classList.remove('active');
+                this.style.display = 'none'; }
+        });
+
+        document.getElementById('payBtn').addEventListener('click', function() {
+            if (isProcessingPayment) return;
+            if (this.disabled) return;
+            if (isDaifu && currentUsername === daifuOwner) {
+                showStatus('这是代付订单，请让朋友扫码支付，您不能自己支付', 'error');
+                return;
+            }
+            var payPassword = document.getElementById('payPassword').value.trim();
+            if (payPassword.length !== 6 || !/^\d{6}$/.test(payPassword)) { showStatus('请输入6位数字支付密码', 'error'); return; }
+            hideStatus();
+            var couponIds = selectedCoupons.map(function(c) { return c.id; });
+            var payType = this.dataset.payType || 'mall';
+            if (currentCaptchaId) {
+                isProcessingPayment = true;
+                showCaptchaModalDirect(function(captchaInput) {
+                    var captchaInputValue = captchaInput.trim().toUpperCase();
+                    if (!captchaInputValue) { document.getElementById('captchaError').style.display = 'block';
+                        document.getElementById('captchaError').textContent = '请输入验证码'; return false; }
+                    if (captchaInputValue.length < 6) { document.getElementById('captchaError').style.display = 'block';
+                        document.getElementById('captchaError').textContent = '验证码为6位字符'; return false; }
+                    document.getElementById('captchaError').style.display = 'none';
+                    document.getElementById('confirmCaptchaBtn').disabled = true;
+                    document.getElementById('confirmCaptchaBtn').textContent = '支付中...';
+                    executePayment(payPassword, couponIds, payType, captchaInputValue);
+                    return true;
+                });
+                setTimeout(function() { isProcessingPayment = false; }, 500);
+                return;
+            }
+            showStatus('正在加载验证码，请稍后...', 'info');
+            loadCaptcha();
+            var checkInterval = setInterval(function() {
+                if (currentCaptchaId) {
+                    clearInterval(checkInterval);
+                    hideStatus();
+                    isProcessingPayment = true;
+                    showCaptchaModalDirect(function(captchaInput) {
+                        var captchaInputValue = captchaInput.trim().toUpperCase();
+                        if (!captchaInputValue) { document.getElementById('captchaError').style.display = 'block';
+                            document.getElementById('captchaError').textContent = '请输入验证码'; return false; }
+                        if (captchaInputValue.length < 6) { document.getElementById('captchaError').style.display = 'block';
+                            document.getElementById('captchaError').textContent = '验证码为6位字符'; return false; }
+                        document.getElementById('captchaError').style.display = 'none';
+                        document.getElementById('confirmCaptchaBtn').disabled = true;
+                        document.getElementById('confirmCaptchaBtn').textContent = '支付中...';
+                        executePayment(payPassword, couponIds, payType, captchaInputValue);
+                        return true;
+                    });
+                    setTimeout(function() { isProcessingPayment = false; }, 500);
+                }
+            }, 200);
+            setTimeout(function() {
+                clearInterval(checkInterval);
+                if (!currentCaptchaId) { showStatus('验证码加载超时，请点击刷新验证码', 'error'); }
+            }, 5000);
+        });
+
+        async function executePayment(payPassword, couponIds, payType, captchaCode) {
+            var btn = document.getElementById('payBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 支付中...';
+            btn.className = 'pay-btn loading';
+            var captchaIdToSend = currentCaptchaId;
+            try {
+                var n = await apiRequest('/api/order/' + orderId + '/pay', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        pay_password: payPassword,
+                        coupon_ids: couponIds,
+                        order_type: payType,
+                        captcha_code: captchaCode,
+                        captcha_id: captchaIdToSend
+                    })
+                });
+                if (n.success) {
+                    var msg = n.message;
+                    if (n.is_daifu) { msg = '🤝 ' + n.message; }
+                    showStatus(' ' + msg, 'success');
+                    clearCaptchaData();
+                    hideCaptchaModal();
+                    document.getElementById('paymentSection').style.display = 'none';
+                    updateOrderStatusDisplay(n.is_daifu ? 'paid' : 'paid');
+                    document.getElementById('remainingTime').textContent = '已完成';
+                    document.getElementById('antiFakeTip').style.display = 'none';
+                    document.getElementById('couponSection').style.display = 'none';
+                    document.getElementById('setPasswordSection').style.display = 'none';
+                    document.getElementById('resetPasswordSection').style.display = 'none';
+                    hideQRCode();
+                    if (n.delivered_code) {
+                        var deliveredCodes = n.delivered_codes || n.delivered_code;
+                        displayDeliveredCodes(deliveredCodes);
+                    }
+                    document.getElementById('payPassword').value = '';
+                    if (remainingInterval) clearInterval(remainingInterval);
+                    if (payType === 'pl_transfer') {
+                        document.getElementById('productName').textContent = ' PL转账完成';
+                        document.getElementById('payBtn').style.display = 'none';
+                    }
+                    if (n.is_daifu) { document.getElementById('daifuNotice').style.display = 'none'; }
+                    currentCaptchaId = '';
+                    document.getElementById('confirmCaptchaBtn').disabled = false;
+                    document.getElementById('confirmCaptchaBtn').textContent = '确认支付';
+                    updateBackLink();
+                }
+            } catch (err) {
+                var errorMsg = err.message;
+                if (errorMsg.includes('验证码')) {
+                    showStatus('验证码错误，请重新输入', 'error');
+                    document.getElementById('captchaError').style.display = 'block';
+                    document.getElementById('captchaError').textContent = '验证码错误，请重新输入';
+                    clearCaptchaData();
+                    refreshCaptcha();
+                    document.getElementById('confirmCaptchaBtn').disabled = false;
+                    document.getElementById('confirmCaptchaBtn').textContent = '确认支付';
+                } else if (errorMsg.includes('代付订单')) {
+                    showStatus(errorMsg, 'error');
+                    document.getElementById('confirmCaptchaBtn').disabled = false;
+                    document.getElementById('confirmCaptchaBtn').textContent = '确认支付';
+                } else {
+                    showStatus('支付失败: ' + errorMsg, 'error');
+                    document.getElementById('confirmCaptchaBtn').disabled = false;
+                    document.getElementById('confirmCaptchaBtn').textContent = '确认支付';
+                }
+            } finally {
+                btn.disabled = false;
+                if (btn.dataset.payType === 'pl_transfer') {
+                    btn.innerHTML = ' 确认转账';
+                    btn.className = 'pay-btn transfer-btn';
+                } else if (isDaifu && currentUsername !== daifuOwner) {
+                    btn.innerHTML = '🤝 代付';
+                    btn.className = 'pay-btn daifu-btn';
+                } else {
+                    btn.innerHTML = '<i class="fas fa-check-circle"></i> 确认支付';
+                    btn.className = 'pay-btn';
+                }
+            }
+        }
+
+        document.getElementById('refreshCaptchaBtn').addEventListener('click', function() {
+            clearCaptchaData();
+            loadCaptcha();
+        });
+
+        document.getElementById('confirmCaptchaBtn').addEventListener('click', function() {
+            var input = document.getElementById('captchaInput').value.trim().toUpperCase();
+            if (!input) { document.getElementById('captchaError').style.display = 'block';
+                document.getElementById('captchaError').textContent = '请输入验证码'; return; }
+            if (input.length < 6) { document.getElementById('captchaError').style.display = 'block';
+                document.getElementById('captchaError').textContent = '验证码为6位字符'; return; }
+            document.getElementById('captchaError').style.display = 'none';
+            if (pendingPayCallback) {
+                var result = pendingPayCallback(input);
+                if (result !== false) {
+                    document.getElementById('confirmCaptchaBtn').disabled = true;
+                    document.getElementById('confirmCaptchaBtn').textContent = '支付中...';
+                }
+            }
+        });
+
+        document.getElementById('cancelCaptchaBtn').addEventListener('click', function() {
+            clearCaptchaData();
+            hideCaptchaModal();
+            if (pendingPayCallback) { pendingPayCallback(null);
+                pendingPayCallback = null; }
+            var btn = document.getElementById('payBtn');
+            btn.disabled = false;
+            if (btn.dataset.payType === 'pl_transfer') {
+                btn.innerHTML = ' 确认转账';
+                btn.className = 'pay-btn transfer-btn';
+            } else if (isDaifu && currentUsername !== daifuOwner) {
+                btn.innerHTML = '🤝 代付';
+                btn.className = 'pay-btn daifu-btn';
+            } else {
+                btn.innerHTML = '<i class="fas fa-check-circle"></i> 确认支付';
+                btn.className = 'pay-btn';
+            }
+        });
+
+        document.getElementById('captchaModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                clearCaptchaData();
+                hideCaptchaModal();
+                if (pendingPayCallback) { pendingPayCallback(null);
+                    pendingPayCallback = null; }
+                var btn = document.getElementById('payBtn');
+                btn.disabled = false;
+                if (btn.dataset.payType === 'pl_transfer') {
+                    btn.innerHTML = ' 确认转账';
+                    btn.className = 'pay-btn transfer-btn';
+                } else if (isDaifu && currentUsername !== daifuOwner) {
+                    btn.innerHTML = '🤝 代付';
+                    btn.className = 'pay-btn daifu-btn';
+                } else {
+                    btn.innerHTML = '<i class="fas fa-check-circle"></i> 确认支付';
+                    btn.className = 'pay-btn';
+                }
+            }
+        });
+
+        document.getElementById('captchaInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') { document.getElementById('confirmCaptchaBtn').click(); }
+        });
+
+        document.getElementById('captchaInput').addEventListener('input', function(e) {
+            var value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            e.target.value = value;
+            if (value.length === 6) { document.getElementById('confirmCaptchaBtn').click(); }
+        });
+
+        document.getElementById('copyDeliveredBtn').addEventListener('click', async function() {
+            var codeEl = document.getElementById('deliveredCodeValue');
+            var text = codeEl.textContent;
+            if (text && text !== '-') {
+                try {
+                    await navigator.clipboard.writeText(text);
+                    showStatus(' 卡密已复制', 'success');
+                } catch (e) {
+                    var range = document.createRange();
+                    range.selectNode(codeEl);
+                    window.getSelection().removeAllRanges();
+                    window.getSelection().addRange(range);
+                    document.execCommand('copy');
+                    showStatus(' 卡密已复制', 'success');
+                }
+            }
+        });
+
+        document.getElementById('copyQrBtn').addEventListener('click', function() {
+            var text = document.getElementById('qrTokenDisplay').textContent;
+            if (text) {
+                navigator.clipboard.writeText(text).then(function() {
+                    showStatus(' 二维码链接已复制', 'success');
+                }).catch(function() {
+                    var range = document.createRange();
+                    var el = document.getElementById('qrTokenDisplay');
+                    range.selectNode(el);
+                    window.getSelection().removeAllRanges();
+                    window.getSelection().addRange(range);
+                    document.execCommand('copy');
+                    showStatus(' 二维码链接已复制', 'success');
+                });
+            }
+        });
+
+        document.getElementById('payPassword').addEventListener('input', function() {
+            this.value = this.value.replace(/\D/g, '').slice(0, 6);
+            hideStatus();
+        });
+
+        document.getElementById('newPayPassword').addEventListener('input', function() {
+            this.value = this.value.replace(/\D/g, '').slice(0, 6);
+            hideStatus();
+        });
+
+        async function init() {
+            if (isInitialized) return;
+            isInitialized = true;
+            try {
+                await fetchCsrfToken().catch(function(e) { console.warn('CSRF pre-fetch failed:', e); });
+                orderId = getOrderIdFromUrl();
+                if (!orderId) {
+                    document.getElementById('orderIdDisplay').textContent = '无效订单';
+                    showStatus('订单不存在或已过期', 'error');
+                    return;
+                }
+                await loadOrder();
+                hideErrorBoundary();
+            } catch (error) {
+                console.error('Init error:', error);
+                showErrorBoundary('初始化失败: ' + (error.message || '网络连接失败'));
+                if (initRetryCount < MAX_INIT_RETRIES) {
+                    initRetryCount++;
+                    isInitialized = false;
+                    setTimeout(init, 3000);
+                }
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

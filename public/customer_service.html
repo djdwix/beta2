@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能客服</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI','PingFang SC',sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;display:flex;justify-content:center;align-items:center;padding:20px}
+        .container{background:rgba(255,255,255,0.98);border-radius:32px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);width:100%;max-width:600px;height:85vh;display:flex;flex-direction:column;overflow:hidden;animation:slideUp 0.5s ease-out}
+        @keyframes slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+        .header{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;padding:20px 24px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+        .header h2{font-size:20px;display:flex;align-items:center;gap:10px}
+        .header h2 span{font-size:14px;font-weight:400;opacity:0.8}
+        .header .close-btn{background:rgba(255,255,255,0.2);border:none;color:#fff;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:18px;transition:all 0.3s;display:flex;align-items:center;justify-content:center}
+        .header .close-btn:hover{background:rgba(255,255,255,0.3);transform:rotate(90deg)}
+        .chat-area{flex:1;overflow-y:auto;padding:20px 24px;background:#f8f9fa;display:flex;flex-direction:column;gap:12px}
+        .chat-area::-webkit-scrollbar{width:4px}
+        .chat-area::-webkit-scrollbar-thumb{background:#667eea;border-radius:10px}
+        .message{max-width:88%;padding:12px 16px;border-radius:16px;animation:msgIn 0.3s ease-out;word-wrap:break-word;line-height:1.8;font-size:14px}
+        @keyframes msgIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+        .message.user{align-self:flex-end;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border-bottom-right-radius:4px}
+        .message.bot{align-self:flex-start;background:#fff;color:#333;border-bottom-left-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,0.06);max-width:92%}
+        .message.bot .title{font-weight:700;color:#667eea;margin-bottom:6px;font-size:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+        .message.bot .title .engine-tag{font-size:11px;font-weight:400;background:#e8f0fe;color:#667eea;padding:2px 10px;border-radius:12px;margin-left:8px}
+        .message.bot .content{color:#444;line-height:1.9}
+        .message.bot .content .highlight{color:#667eea;font-weight:600}
+        .message.bot .content .status-yes{color:#27ae60;font-weight:600}
+        .message.bot .content .status-no{color:#e74c3c;font-weight:600}
+        .message.bot .content .news-image{max-width:100%;border-radius:12px;margin-top:8px;border:1px solid #e8e8e8}
+        .message.bot .content .search-result{background:#f8f9fa;border-radius:12px;padding:12px 16px;border-left:4px solid #667eea;margin-top:6px}
+        .message.bot .content .search-result .result-title{font-weight:600;color:#1a0dab;margin-bottom:4px;font-size:15px}
+        .message.bot .content .search-result .result-desc{color:#545454;font-size:13px;line-height:1.6;margin-bottom:4px}
+        .message.bot .content .search-result .result-url{color:#006621;font-size:12px;word-break:break-all}
+        .message.bot .content .search-result .result-url a{color:#006621;text-decoration:none;word-break:break-all}
+        .message.bot .content .search-result .result-url a:hover{text-decoration:underline}
+        .message.bot .content .time-card{background:linear-gradient(135deg,#667eea25,#764ba225);border-radius:16px;padding:16px 20px;margin-top:6px;border:1px solid rgba(102,126,234,0.2)}
+        .message.bot .content .time-card .time-city{font-size:20px;font-weight:700;color:#333;margin-bottom:4px}
+        .message.bot .content .time-card .time-city .city-icon{font-size:22px}
+        .message.bot .content .time-card .time-main{display:flex;align-items:center;gap:20px;padding:12px 0;border-bottom:1px solid #f0f0f0}
+        .message.bot .content .time-card .time-main .time-display{font-size:48px;font-weight:700;color:#667eea;font-family:monospace}
+        .message.bot .content .time-card .time-main .time-info{font-size:16px;color:#333}
+        .message.bot .content .time-card .time-main .time-info .date{font-weight:600}
+        .message.bot .content .time-card .time-main .time-info .weekday{color:#666;font-size:14px}
+        .message.bot .content .time-card .time-details{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px 0}
+        .message.bot .content .time-card .time-details .item{text-align:center}
+        .message.bot .content .time-card .time-details .item .label{font-size:11px;color:#999}
+        .message.bot .content .time-card .time-details .item .value{font-size:14px;font-weight:600;color:#333}
+        .message.bot .content .cancellation-card{background:#f0f4ff;border-radius:16px;padding:16px 20px;margin-top:6px;border-left:4px solid #667eea}
+        .message.bot .content .cancellation-card .card-code{background:#f8f9fa;padding:8px 14px;border-radius:8px;font-family:monospace;font-size:14px;margin:6px 0;word-break:break-all}
+        .message.bot .content .cancellation-card .suggestion-btn{display:inline-block;padding:8px 20px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;margin-top:8px;transition:all 0.3s}
+        .message.bot .content .cancellation-card .suggestion-btn:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(102,126,234,0.3)}
+        .message.bot .content .cancellation-card .detail-box{background:#f8f9fa;padding:8px 12px;border-radius:8px;margin:6px 0;font-size:13px;color:#666;white-space:pre-wrap}
+        .message.bot .content .cdk-card{background:#f0f4ff;border-radius:16px;padding:16px 20px;margin-top:6px;border-left:4px solid #f39c12}
+        .message.bot .content .cdk-card .cdk-item{background:#fff;border-radius:10px;padding:10px 14px;margin-bottom:8px;border:1px solid #e8e8e8}
+        .message.bot .content .cdk-card .cdk-item:last-child{margin-bottom:0}
+        .message.bot .content .cdk-card .cdk-item .cdk-name{font-weight:600;color:#333}
+        .message.bot .content .cdk-card .cdk-item .cdk-reward{font-size:12px;color:#666;margin:2px 0}
+        .message.bot .content .cdk-card .cdk-item .cdk-req{font-size:11px;color:#999;margin:2px 0}
+        .message.bot .matched-tag{display:inline-block;font-size:10px;background:#e8f0fe;color:#667eea;padding:2px 10px;border-radius:12px;margin-top:6px}
+        .message.bot .suggestions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+        .message.bot .suggestions .sug{background:#f0f0f0;padding:4px 14px;border-radius:20px;font-size:12px;cursor:pointer;transition:all 0.2s;color:#666}
+        .message.bot .suggestions .sug:hover{background:#667eea;color:#fff;transform:scale(1.05)}
+        .message.bot .data-card{background:#f8f9fa;border-radius:12px;padding:12px 16px;margin-top:8px;border-left:4px solid #667eea}
+        .message.bot .data-card .row{display:flex;justify-content:space-between;padding:4px 0;font-size:13px;border-bottom:1px solid #f0f0f0}
+        .message.bot .data-card .row:last-child{border-bottom:none}
+        .message.bot .data-card .row .label{color:#888}
+        .message.bot .data-card .row .value{font-weight:600;color:#333;text-align:right}
+        .message.bot .data-card .row .value.milestone{font-size:12px;color:#667eea;font-weight:500}
+        .typing-indicator{align-self:flex-start;background:#fff;padding:12px 20px;border-radius:16px;border-bottom-left-radius:4px;display:flex;gap:4px;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+        .typing-indicator .dot{width:8px;height:8px;background:#667eea;border-radius:50%;animation:bounce 1.4s infinite}
+        .typing-indicator .dot:nth-child(2){animation-delay:0.2s}
+        .typing-indicator .dot:nth-child(3){animation-delay:0.4s}
+        @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+        .input-area{display:flex;gap:12px;padding:16px 24px;background:#fff;border-top:1px solid #eee;flex-shrink:0}
+        .input-area input{flex:1;padding:12px 18px;border:2px solid #e0e0e0;border-radius:60px;font-size:15px;outline:none;transition:all 0.3s}
+        .input-area input:focus{border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,0.1)}
+        .input-area button{padding:12px 28px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:60px;font-size:15px;font-weight:600;cursor:pointer;transition:all 0.3s;white-space:nowrap}
+        .input-area button:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 4px 12px rgba(102,126,234,0.3)}
+        .input-area button:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+        .quick-questions{display:flex;gap:8px;padding:8px 24px 16px;flex-wrap:wrap;background:#fff;flex-shrink:0;border-top:1px solid #f0f0f0}
+        .quick-questions .quick-btn{padding:6px 16px;border:1px solid #e0e0e0;border-radius:20px;background:#fafafa;font-size:12px;color:#666;cursor:pointer;transition:all 0.2s}
+        .quick-questions .quick-btn:hover{border-color:#667eea;color:#667eea;background:#f0f4ff}
+        .welcome-msg{text-align:center;color:#999;font-size:14px;padding:30px 0;line-height:2.2}
+        .welcome-msg .icon{font-size:48px;display:block;margin-bottom:12px}
+        .welcome-msg .highlight{color:#667eea;font-weight:600}
+        .welcome-msg .examples{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px}
+        .welcome-msg .examples .ex{padding:4px 14px;background:#f0f0f0;border-radius:20px;font-size:13px;color:#666;cursor:pointer;transition:all 0.2s}
+        .welcome-msg .examples .ex:hover{background:#667eea;color:#fff}
+        .note-text{text-align:center;font-size:12px;color:#667eea;padding:8px 12px;margin:4px 0;cursor:pointer;background:#f0f4ff;border-radius:20px;border:1px solid rgba(102,126,234,0.2);transition:all 0.3s;display:inline-block;align-self:center}
+        .note-text:hover{background:#667eea;color:#fff;border-color:#667eea;transform:scale(1.02)}
+        .note-text .arrow{display:inline-block;transition:transform 0.3s}
+        .note-text:hover .arrow{transform:translateX(4px)}
+        .knowledge-divider{margin:12px 0 8px 0;border-top:1px dashed #e0e0e0}
+        .search-tag{display:inline-block;font-size:10px;background:#e8f0fe;color:#667eea;padding:2px 10px;border-radius:12px;margin-top:6px}
+        .typing-dots{display:inline-flex;gap:4px;align-items:center;padding:0 4px}
+        .typing-dots span{width:6px;height:6px;background:#667eea;border-radius:50%;display:inline-block;animation:dotBounce 1.4s infinite}
+        .typing-dots span:nth-child(2){animation-delay:0.2s}
+        .typing-dots span:nth-child(3){animation-delay:0.4s}
+        @keyframes dotBounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-4px)}}
+        @media(max-width:600px){.container{height:100vh;border-radius:0;max-width:100%}.header{padding:16px 20px}.chat-area{padding:16px}.input-area{padding:12px 16px}.quick-questions{padding:8px 16px 12px}.message{max-width:92%}}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>🤖 智能客服 <span>24h在线</span></h2>
+            <button class="close-btn" onclick="goHome()" title="返回主控台">✕</button>
+        </div>
+        <div class="chat-area" id="chatArea">
+            <div class="welcome-msg" id="welcomeMsg">
+                <span class="icon">👋</span>
+                你好！我是智能客服助手<br>
+                输入你的问题，我会从知识库中查找答案<br>
+                输入「搜索+内容」自动获取搜索结果<br>
+                <span class="highlight">试试输入：今日签到、积分余额、美国时间</span>
+                <div class="examples">
+                    <span class="ex" onclick="sendQuick('今日签到')">📅 今日签到</span>
+                    <span class="ex" onclick="sendQuick('积分余额')">⭐ 积分余额</span>
+                    <span class="ex" onclick="sendQuick('PL余额')">💎 PL余额</span>
+                    <span class="ex" onclick="sendQuick('查询CDK')">🎫 查询CDK</span>
+                    <span class="ex" onclick="sendQuick('注销卡密')">🗑️ 注销卡密</span>
+                    <span class="ex" onclick="sendQuick('新闻')">📰 今日新闻</span>
+                    <span class="ex" onclick="sendQuick('当前时间')">🕐 中国时间</span>
+                </div>
+            </div>
+        </div>
+        <div class="quick-questions">
+            <span class="quick-btn" onclick="sendQuick('今日签到')">📅 今日签到</span>
+            <span class="quick-btn" onclick="sendQuick('积分余额')">⭐ 积分余额</span>
+            <span class="quick-btn" onclick="sendQuick('PL余额')">💎 PL余额</span>
+            <span class="quick-btn" onclick="sendQuick('CDK')">🎫 查询CDK</span>
+            <span class="quick-btn" onclick="sendQuick('注销卡密')">🗑️ 注销卡密</span>
+            <span class="quick-btn" onclick="sendQuick('新闻')">📰 今日新闻</span>
+            <span class="quick-btn" onclick="sendQuick('当前时间')">🕐 时间</span>
+            <span class="quick-btn" onclick="sendQuick('怎么签到')">📖 签到规则</span>
+            <span class="quick-btn" onclick="sendQuick('怎么购买卡密')">🛒 商城</span>
+            <span class="quick-btn" onclick="sendQuick('平台规则')">📋 平台规则</span>
+        </div>
+        <div class="input-area">
+            <input id="msgInput" placeholder="输入你的问题..." onkeydown="if(event.key==='Enter')sendMessage()">
+            <button id="sendBtn" onclick="sendMessage()">发送</button>
+        </div>
+    </div>
+
+    <script>
+        var csrfToken = null;
+        var csrfTokenLastFetch = 0;
+        var currentUser = null;
+        var pendingExtraResults = null;
+        var isFirstLoad = true;
+
+        function goHome() {
+            window.location.href = '/';
+        }
+
+        function getCsrfTokenFromCookie() {
+            try {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = cookies[i].trim();
+                    if (cookie.indexOf('csrf_token=') === 0) {
+                        return cookie.substring('csrf_token='.length, cookie.length);
+                    }
+                }
+                return null;
+            } catch (e) { return null; }
+        }
+
+        async function fetchCsrfToken() {
+            if (csrfToken && (Date.now() - csrfTokenLastFetch) < 300000) {
+                return csrfToken;
+            }
+            var cookieToken = getCsrfTokenFromCookie();
+            if (cookieToken) {
+                csrfToken = cookieToken;
+                csrfTokenLastFetch = Date.now();
+                return csrfToken;
+            }
+            try {
+                var res = await fetch('/api/csrf-token', {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: { 'Accept': 'application/json' }
+                });
+                var data = await res.json();
+                if (data.csrf_token) {
+                    csrfToken = data.csrf_token;
+                    csrfTokenLastFetch = Date.now();
+                    return csrfToken;
+                }
+                throw new Error('No CSRF token');
+            } catch (e) {
+                throw new Error('Failed to fetch CSRF token');
+            }
+        }
+
+        async function apiRequest(url, options) {
+            if (!options) options = {};
+            options.credentials = 'include';
+            if (!options.headers) options.headers = {};
+            options.headers['Content-Type'] = 'application/json';
+            options.headers['Accept'] = 'application/json';
+            var method = (options.method || 'GET').toUpperCase();
+            if (method === 'GET' || method === 'HEAD') {
+                var res = await fetch(url, options);
+                var data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.error || '请求失败: ' + res.status);
+                }
+                return data;
+            }
+            var token = await fetchCsrfToken();
+            options.headers['X-CSRF-Token'] = token;
+            var res = await fetch(url, options);
+            var data = await res.json();
+            if (!res.ok) {
+                if (res.status === 403 && data.error && data.error.includes('CSRF')) {
+                    csrfToken = null;
+                    var newToken = await fetchCsrfToken();
+                    options.headers['X-CSRF-Token'] = newToken;
+                    var retryRes = await fetch(url, options);
+                    var retryData = await retryRes.json();
+                    if (!retryRes.ok) {
+                        throw new Error(retryData.error || '请求失败: ' + retryRes.status);
+                    }
+                    return retryData;
+                }
+                throw new Error(data.error || '请求失败: ' + res.status);
+            }
+            return data;
+        }
+
+        var chatArea = document.getElementById('chatArea');
+        var msgInput = document.getElementById('msgInput');
+        var sendBtn = document.getElementById('sendBtn');
+        var welcomeMsg = document.getElementById('welcomeMsg');
+
+        function formatContent(content) {
+            var formatted = content;
+            formatted = formatted.replace(/\n\n/g, '\n');
+            formatted = formatted.replace(/\n/g, '<br>');
+            formatted = formatted.replace(/<br>(\d+\.)/g, '<br>$1');
+            formatted = formatted.replace(/<br>- /g, '<br>&nbsp;&nbsp;- ');
+            return formatted;
+        }
+
+        function getConsecutiveRewardDesc(day) {
+            var base = day % 30;
+            if (base === 0 || base === 30) return '高级积分卡密 ×3 + 积分加成卡 ×2 + 重置密码卡密 ×1';
+            if (base === 29) return '高级积分卡密 ×3 + 积分加成卡 ×2 + 重置密码卡密 ×1';
+            if (base === 14) return '高级积分卡密 ×3';
+            if (base === 6) return '高级积分卡密 ×2';
+            if (base === 4) return '高级积分卡密 ×1';
+            return '无';
+        }
+
+        function getTotalRewardDesc(day) {
+            var base = day % 30;
+            if (base === 0 || base === 30) return '8.8积分 + 积分加成卡 ×1';
+            if (base === 28) return '8.8积分 + 积分加成卡 ×1';
+            if (base === 15) return '3.0积分';
+            if (base === 7) return '1.8积分';
+            if (base === 3) return '1.0积分';
+            if (day >= 99 && base === 9) return '38.0积分 + 积分加成卡 ×3';
+            if (day >= 59 && base === 29) return '20.0积分 + 积分加成卡 ×2';
+            return '无';
+        }
+
+        function buildAttendanceCard(data) {
+            var att = data.attendance;
+            var statusText = att.has_attended_today ? '✅ 已签到' : '❌ 未签到';
+            var statusClass = att.has_attended_today ? 'status-yes' : 'status-no';
+            var rewardText = att.consecutive_rewards && att.consecutive_rewards.length > 0 && att.consecutive_rewards[0] !== '无' 
+                ? att.consecutive_rewards.join('、') 
+                : '无';
+            var totalRewardText = att.total_rewards && att.total_rewards.length > 0 && att.total_rewards[0] !== '无' 
+                ? att.total_rewards.join('、') 
+                : '无';
+            var milestoneText = '';
+            if (att.next_consecutive_milestone) {
+                var m = att.next_consecutive_milestone;
+                var cycle = Math.ceil(m / 30);
+                var rewardDesc = getConsecutiveRewardDesc(m);
+                milestoneText += '连续 ' + m + ' 天 → ' + rewardDesc + '（第' + cycle + '周期）';
+            }
+            if (att.next_total_milestone) {
+                if (milestoneText) milestoneText += '<br>';
+                var m = att.next_total_milestone;
+                var cycle = Math.ceil(m / 30);
+                var rewardDesc = getTotalRewardDesc(m);
+                milestoneText += '累计 ' + m + ' 天 → ' + rewardDesc + '（第' + cycle + '周期）';
+            }
+            if (!milestoneText) {
+                milestoneText = '🎉 继续签到，每30天循环获得奖励';
+            }
+
+            return '<div class="data-card">' +
+                '<div class="row"><span class="label">📅 签到状态</span><span class="value ' + statusClass + '">' + statusText + '</span></div>' +
+                '<div class="row"><span class="label">📊 累计签到</span><span class="value">' + att.total_days + ' 天</span></div>' +
+                '<div class="row"><span class="label">🔥 连续签到</span><span class="value">' + att.consecutive_days + ' 天</span></div>' +
+                '<div class="row"><span class="label">⭐ 固定签到奖励</span><span class="value">' + att.base_reward + ' 积分</span></div>' +
+                '<div class="row"><span class="label">🎁 连续签到额外奖励</span><span class="value" style="font-size:12px;">' + rewardText + '</span></div>' +
+                '<div class="row"><span class="label">🎁 累计签到额外奖励</span><span class="value" style="font-size:12px;">' + totalRewardText + '</span></div>' +
+                '<div class="row"><span class="label">📌 下一个里程碑</span><span class="value milestone">' + milestoneText + '</span></div>' +
+                '</div>';
+        }
+
+        function buildPointsCard(data) {
+            var pts = data.points;
+            return '<div class="data-card">' +
+                '<div class="row"><span class="label">⭐ 主账户积分</span><span class="value">' + pts.total_points.toFixed(2) + '</span></div>' +
+                '<div class="row"><span class="label">🏦 理财账户积分</span><span class="value">' + pts.fund_balance.toFixed(2) + '</span></div>' +
+                '<div class="row"><span class="label">💰 总可用积分</span><span class="value" style="color:#27ae60;">' + pts.combined_total.toFixed(2) + '</span></div>' +
+                '<div class="row"><span class="label">📅 今日已获积分</span><span class="value">' + pts.daily_earned.toFixed(1) + ' / ' + pts.daily_limit + '</span></div>' +
+                '<div class="row"><span class="label">📊 今日剩余可获取</span><span class="value">' + pts.remaining_today.toFixed(1) + ' 积分</span></div>' +
+                '</div>';
+        }
+
+        function buildPlCard(data) {
+            var pl = data.pl;
+            return '<div class="data-card">' +
+                '<div class="row"><span class="label">💎 PL余额</span><span class="value" style="color:#f39c12;">' + pl.balance.toFixed(4) + '</span></div>' +
+                '<div class="row"><span class="label">📊 当前汇率</span><span class="value">1积分 ≈ ' + pl.rate.toFixed(4) + ' PL</span></div>' +
+                '<div class="row"><span class="label">🔄 可兑换积分</span><span class="value">≈ ' + pl.points_value.toFixed(2) + ' 积分</span></div>' +
+                '</div>';
+        }
+
+        function buildTimeCard(data) {
+            var t = data.time_data;
+            if (!t) {
+                return '<div class="time-card"><div style="color:#e74c3c;padding:8px 0;">⏳ 时间数据加载失败，请稍后重试</div></div>';
+            }
+            var html = '<div class="time-card">';
+            html += '<div class="time-city"><span class="city-icon">🕐</span> ' + escapeHtml(t.location || '未知地点') + ' 当前时间</div>';
+            html += '<div class="time-main">';
+            html += '<div class="time-display">' + escapeHtml(t.time || '--:--:--') + '</div>';
+            html += '<div class="time-info">';
+            html += '<div class="date">' + escapeHtml(t.date || '----年--月--日') + '</div>';
+            var weekday = t.weekday || '未知';
+            html += '<div class="weekday">' + escapeHtml(weekday) + '</div>';
+            html += '</div>';
+            html += '</div>';
+            html += '<div class="time-details">';
+            html += '<div class="item"><div class="label">🌍 时区</div><div class="value">' + escapeHtml(t.timezone || 'Unknown') + '</div></div>';
+            html += '<div class="item"><div class="label">🕐 UTC偏移</div><div class="value">' + escapeHtml(t.offset || 'UTC') + '</div></div>';
+            html += '</div>';
+            html += '</div>';
+            return html;
+        }
+
+        function buildCancellationCard(data) {
+            var d = data;
+            if (!d) {
+                return '<div class="cancellation-card"><div style="color:#e74c3c;">数据加载失败</div></div>';
+            }
+            var html = '<div class="cancellation-card">';
+            html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">';
+            html += '<span style="font-size:24px;">' + (d.icon || '📋') + '</span>';
+            html += '<span style="font-size:18px;font-weight:700;color:#333;">' + (d.title || '注销卡密管理') + '</span>';
+            html += '</div>';
+            html += '<div style="font-size:14px;color:#444;margin-bottom:4px;">' + (d.message || '') + '</div>';
+            if (d.detail) {
+                html += '<div class="detail-box">' + escapeHtml(d.detail).replace(/\n/g, '<br>') + '</div>';
+            }
+            if (d.card_code) {
+                html += '<div class="card-code">🔑 ' + escapeHtml(d.card_code) + '</div>';
+            }
+            if (d.suggestion && d.suggestion_url) {
+                html += '<button class="suggestion-btn" onclick="window.location.href=\'' + d.suggestion_url + '\'">' + escapeHtml(d.suggestion) + ' →</button>';
+            }
+            html += '</div>';
+            return html;
+        }
+
+        function buildCdkCard(data) {
+            var d = data;
+            if (!d) {
+                return '<div class="cdk-card"><div style="color:#e74c3c;">数据加载失败</div></div>';
+            }
+            var html = '<div class="cdk-card">';
+            html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">';
+            html += '<span style="font-size:24px;">' + (d.icon || '🎫') + '</span>';
+            html += '<span style="font-size:18px;font-weight:700;color:#333;">' + (d.title || 'CDK礼包码') + '</span>';
+            html += '</div>';
+            html += '<div style="font-size:14px;color:#444;margin-bottom:8px;">' + (d.message || '') + '</div>';
+            if (d.cdks && d.cdks.length > 0) {
+                d.cdks.forEach(function(item) {
+                    html += '<div class="cdk-item">';
+                    html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+                    html += '<span class="cdk-name">📦 ' + escapeHtml(item.name || item.code) + '</span>';
+                    if (item.is_universal) {
+                        html += '<span style="font-size:10px;background:#e8f0fe;color:#667eea;padding:2px 10px;border-radius:12px;">🔄 通用</span>';
+                    }
+                    html += '</div>';
+                    var rewardType = item.reward_type || '未知';
+                    var rewardValue = item.reward_value || '';
+                    var rewardQty = item.reward_quantity || 1;
+                    html += '<div class="cdk-reward">🎁 奖励: ' + escapeHtml(rewardType) + ' × ' + rewardQty + ' (值: ' + escapeHtml(rewardValue) + ')</div>';
+                    var reqs = [];
+                    if (item.min_total_days > 0) reqs.push('📊 累计签到≥' + item.min_total_days + '天');
+                    if (item.min_consecutive_days > 0) reqs.push('🔥 连续签到≥' + item.min_consecutive_days + '天');
+                    if (reqs.length > 0) {
+                        html += '<div class="cdk-req">' + reqs.join(' | ') + '</div>';
+                    }
+                    if (item.expiry_time && item.expiry_time > 0) {
+                        var expiryDate = new Date(item.expiry_time);
+                        html += '<div class="cdk-req">⏰ 有效期至: ' + expiryDate.toLocaleString('zh-CN') + '</div>';
+                    }
+                    html += '</div>';
+                });
+            } else {
+                html += '<div style="color:#999;font-size:13px;padding:8px 0;">暂无CDK礼包码</div>';
+            }
+            html += '</div>';
+            return html;
+        }
+
+        function buildSearchResult(data) {
+            var results = data.results || [];
+            var html = '';
+            results.forEach(function(result, index) {
+                html += '<div class="search-result" style="margin-top:' + (index > 0 ? '8px' : '0') + ';">';
+                html += '<div class="result-title">' + escapeHtml(result.title) + '</div>';
+                html += '<div class="result-desc">' + escapeHtml(result.description) + '</div>';
+                html += '<div class="result-url"><a href="' + escapeHtml(result.url) + '" target="_blank" rel="noopener noreferrer">🔗 ' + escapeHtml(result.url) + '</a></div>';
+                html += '</div>';
+            });
+            return html;
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            var div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function addNewsMessage() {
+            if (welcomeMsg) welcomeMsg.style.display = 'none';
+            var div = document.createElement('div');
+            div.className = 'message bot';
+            var titleSpan = document.createElement('div');
+            titleSpan.className = 'title';
+            titleSpan.textContent = '📰 今日新闻快讯';
+            div.appendChild(titleSpan);
+            var contentDiv = document.createElement('div');
+            contentDiv.className = 'content';
+            contentDiv.innerHTML = '⏳ 正在加载新闻...';
+            div.appendChild(contentDiv);
+            chatArea.appendChild(div);
+            chatArea.scrollTop = chatArea.scrollHeight;
+            return div;
+        }
+
+        function updateNewsMessage(div, data) {
+            var contentDiv = div.querySelector('.content');
+            if (data.success && data.type === 'image') {
+                contentDiv.innerHTML = '<img src="data:image/' + data.format + ';base64,' + data.data + '" class="news-image" alt="今日新闻">';
+            } else if (data.success && data.type === 'text') {
+                contentDiv.innerHTML = '<div style="white-space:pre-wrap;font-size:13px;line-height:1.8;">' + data.data + '</div>';
+            } else {
+                contentDiv.innerHTML = '❌ ' + (data.error || '新闻加载失败，请稍后重试');
+            }
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function addMessage(role, content, extra) {
+            if (welcomeMsg) welcomeMsg.style.display = 'none';
+            var div = document.createElement('div');
+            div.className = 'message ' + role;
+            if (role === 'bot') {
+                if (extra && extra.title) {
+                    var titleSpan = document.createElement('div');
+                    titleSpan.className = 'title';
+                    var titleHtml = extra.title;
+                    if (extra.engine) {
+                        titleHtml += ' <span class="engine-tag">📍 ' + extra.engine + '</span>';
+                    }
+                    titleSpan.innerHTML = titleHtml;
+                    div.appendChild(titleSpan);
+                }
+                var contentDiv = document.createElement('div');
+                contentDiv.className = 'content';
+                
+                if (extra && extra.time_data) {
+                    contentDiv.innerHTML = buildTimeCard(extra);
+                } else if (extra && extra.cancellation_data) {
+                    contentDiv.innerHTML = buildCancellationCard(extra.cancellation_data);
+                } else if (extra && extra.cdk_data) {
+                    contentDiv.innerHTML = buildCdkCard(extra.cdk_data);
+                } else if (extra && extra.user_data) {
+                    var html = '';
+                    var hasPersonalData = false;
+                    if (extra.user_data.attendance) {
+                        html += buildAttendanceCard(extra.user_data);
+                        hasPersonalData = true;
+                    }
+                    if (extra.user_data.points) {
+                        if (hasPersonalData) html += '<br>';
+                        html += buildPointsCard(extra.user_data);
+                        hasPersonalData = true;
+                    }
+                    if (extra.user_data.pl) {
+                        if (hasPersonalData) html += '<br>';
+                        html += buildPlCard(extra.user_data);
+                        hasPersonalData = true;
+                    }
+                    if (extra.knowledge_content && !extra.is_personal_query) {
+                        if (html) html += '<div class="knowledge-divider"></div>';
+                        html += '📖 相关说明:<br>' + formatContent(extra.knowledge_content);
+                    } else if (extra.knowledge_content) {
+                        html += '<div class="knowledge-divider"></div>';
+                        html += '📖 ' + formatContent(extra.knowledge_content);
+                    }
+                    contentDiv.innerHTML = html;
+                } else if (extra && extra.search_data) {
+                    contentDiv.innerHTML = buildSearchResult(extra.search_data);
+                } else {
+                    contentDiv.innerHTML = formatContent(content);
+                }
+                div.appendChild(contentDiv);
+                
+                if (extra && extra.matched_keywords && extra.matched_keywords.length > 0 && !extra.is_personal_query && !extra.search_data && !extra.time_data && !extra.cancellation_data && !extra.cdk_data) {
+                    var tag = document.createElement('div');
+                    tag.className = 'matched-tag';
+                    tag.textContent = '🔍 匹配: ' + extra.matched_keywords.join('、');
+                    div.appendChild(tag);
+                }
+                if (extra && extra.suggestions && extra.suggestions.length > 0) {
+                    var suggDiv = document.createElement('div');
+                    suggDiv.className = 'suggestions';
+                    extra.suggestions.forEach(function(s) {
+                        var span = document.createElement('span');
+                        span.className = 'sug';
+                        span.textContent = s;
+                        span.onclick = function() { sendQuick(s); };
+                        suggDiv.appendChild(span);
+                    });
+                    div.appendChild(suggDiv);
+                }
+            } else {
+                div.textContent = content;
+            }
+            chatArea.appendChild(div);
+            chatArea.scrollTop = chatArea.scrollHeight;
+            return div;
+        }
+
+        function addTypingIndicator() {
+            var div = document.createElement('div');
+            div.className = 'typing-indicator';
+            div.id = 'typingIndicator';
+            for (var i = 0; i < 3; i++) {
+                var dot = document.createElement('span');
+                dot.className = 'dot';
+                div.appendChild(dot);
+            }
+            chatArea.appendChild(div);
+            chatArea.scrollTop = chatArea.scrollHeight;
+            return div;
+        }
+
+        function removeTypingIndicator() {
+            var el = document.getElementById('typingIndicator');
+            if (el) el.remove();
+        }
+
+        function sendQuick(text) {
+            msgInput.value = text;
+            sendMessage();
+        }
+
+        function showMoreResults() {
+            if (!pendingExtraResults || pendingExtraResults.length === 0) return;
+            var note = document.querySelector('.note-text');
+            if (note) note.remove();
+            pendingExtraResults.forEach(function(item) {
+                addMessage('bot', item.content, {
+                    title: '📚 ' + item.title,
+                    matched_keywords: item.matched_keywords || []
+                });
+            });
+            pendingExtraResults = null;
+        }
+
+        function autoSendRules() {
+            if (!isFirstLoad) return;
+            isFirstLoad = false;
+            setTimeout(function() {
+                msgInput.value = '平台规则';
+                sendMessage();
+            }, 600);
+        }
+
+        async function sendMessage() {
+            var query = msgInput.value.trim();
+            if (!query) return;
+            msgInput.value = '';
+            sendBtn.disabled = true;
+            addMessage('user', query);
+            
+            var isNewsQuery = query.includes('新闻') || query.includes('快讯') || query.includes('今日新闻') || query.includes('资讯');
+            
+            if (isNewsQuery) {
+                var newsDiv = addNewsMessage();
+                try {
+                    var data = await apiRequest('/api/customer-service/news', { method: 'GET' });
+                    updateNewsMessage(newsDiv, data);
+                } catch (error) {
+                    updateNewsMessage(newsDiv, { success: false, error: error.message || '新闻加载失败' });
+                }
+                sendBtn.disabled = false;
+                msgInput.focus();
+                return;
+            }
+            
+            var isSearchQuery = query.startsWith('搜索') || query.startsWith('搜') || query.startsWith('查找') || query.startsWith('查询');
+            var searchKeyword = isSearchQuery ? query.replace(/^(搜索|搜|查找|查询)\s*/, '').trim() : query;
+            
+            if ((isSearchQuery && searchKeyword && searchKeyword.length > 0) || query.includes('时间') || query.includes('几点')) {
+                var actualQuery = isSearchQuery ? searchKeyword : query;
+                var typing = addTypingIndicator();
+                try {
+                    var data = await apiRequest('/api/customer-service/search-web', {
+                        method: 'POST',
+                        body: JSON.stringify({ query: actualQuery })
+                    });
+                    removeTypingIndicator();
+                    
+                    if (data.success && data.time_data) {
+                        var location = data.time_data.location || '当前';
+                        addMessage('bot', '', {
+                            title: '🕐 ' + location + ' 当前时间',
+                            engine: data.engine || '时间服务',
+                            time_data: data.time_data,
+                            matched_keywords: [actualQuery]
+                        });
+                    } else if (data.success && data.first_result) {
+                        addMessage('bot', '', {
+                            title: '🔍 搜索结果: ' + actualQuery,
+                            engine: data.engine || '搜索引擎',
+                            search_data: data,
+                            matched_keywords: [actualQuery]
+                        });
+                    } else {
+                        addMessage('bot', data.error || '未找到相关结果', {
+                            title: '😅 搜索无结果',
+                            suggestions: ['今日签到', '积分余额', 'PL余额', '新闻', '美国时间']
+                        });
+                    }
+                } catch (error) {
+                    removeTypingIndicator();
+                    addMessage('bot', error.message || '搜索服务暂时不可用', {
+                        title: '❌ 搜索失败'
+                    });
+                }
+                sendBtn.disabled = false;
+                msgInput.focus();
+                return;
+            }
+            
+            var isCdkQuery = query.toLowerCase().includes('cdk') || query.toLowerCase().includes('礼包码') || query.toLowerCase().includes('兑换码') || query.toLowerCase().includes('查询cdk') || query.toLowerCase().includes('查看cdk');
+            if (isCdkQuery) {
+                var typing = addTypingIndicator();
+                try {
+                    var data = await apiRequest('/api/admin/cdk/list?from_ai=true', {
+                        method: 'GET'
+                    });
+                    removeTypingIndicator();
+                    if (data && data.success) {
+                        addMessage('bot', '', {
+                            title: '🎫 CDK礼包码查询',
+                            cdk_data: data,
+                            matched_keywords: ['CDK']
+                        });
+                    } else {
+                        addMessage('bot', (data && data.error) || 'CDK查询失败', {
+                            title: '❌ 查询失败'
+                        });
+                    }
+                } catch (error) {
+                    removeTypingIndicator();
+                    addMessage('bot', error.message || 'CDK查询失败', {
+                        title: '❌ 查询失败'
+                    });
+                }
+                sendBtn.disabled = false;
+                msgInput.focus();
+                return;
+            }
+            
+            var isCancellationQuery = query.includes('注销卡密') || query.includes('补发注销') || query.includes('注销卡');
+            if (isCancellationQuery) {
+                var typing = addTypingIndicator();
+                try {
+                    var data = await apiRequest('/api/admin/reissue-cancellation', {
+                        method: 'POST',
+                        body: JSON.stringify({ 
+                            username: currentUser, 
+                            from_ai: true 
+                        })
+                    });
+                    removeTypingIndicator();
+                    if (data && data.success) {
+                        addMessage('bot', '', {
+                            title: '🗑️ 注销卡密管理',
+                            cancellation_data: data,
+                            matched_keywords: ['注销卡密']
+                        });
+                    } else {
+                        addMessage('bot', (data && data.error) || '查询失败', {
+                            title: '❌ 查询失败'
+                        });
+                    }
+                } catch (error) {
+                    removeTypingIndicator();
+                    addMessage('bot', error.message || '查询失败', {
+                        title: '❌ 查询失败'
+                    });
+                }
+                sendBtn.disabled = false;
+                msgInput.focus();
+                return;
+            }
+            
+            var typing = addTypingIndicator();
+            try {
+                var data = await apiRequest('/api/customer-service/search', {
+                    method: 'POST',
+                    body: JSON.stringify({ query: query })
+                });
+                removeTypingIndicator();
+                
+                var userData = data.user_data || {};
+                var hasPersonalData = Object.keys(userData).length > 0;
+                
+                if (data.found && data.results && data.results.length > 0) {
+                    var firstResult = data.results[0];
+                    
+                    if (hasPersonalData) {
+                        addMessage('bot', '', {
+                            title: '📊 个人数据',
+                            user_data: userData,
+                            knowledge_content: firstResult.content,
+                            is_personal_query: true,
+                            matched_keywords: firstResult.matched_keywords || []
+                        });
+                    } else {
+                        addMessage('bot', firstResult.content, {
+                            title: '📚 ' + firstResult.title,
+                            matched_keywords: firstResult.matched_keywords || []
+                        });
+                    }
+                    
+                    if (data.results.length > 1) {
+                        pendingExtraResults = data.results.slice(1);
+                        var note = document.createElement('div');
+                        note.className = 'note-text';
+                        note.innerHTML = '📚 还有 ' + (data.results.length - 1) + ' 条相关内容 <span class="arrow">→</span>';
+                        note.onclick = showMoreResults;
+                        chatArea.appendChild(note);
+                        chatArea.scrollTop = chatArea.scrollHeight;
+                    }
+                } else {
+                    addMessage('bot', '没有找到相关内容，试试输入「搜索+内容」进行网页搜索', {
+                        title: '😅 未找到匹配结果',
+                        suggestions: ['今日签到', '积分余额', 'PL余额', '新闻', '美国时间', '查询CDK', '注销卡密']
+                    });
+                }
+            } catch (error) {
+                removeTypingIndicator();
+                addMessage('bot', error.message || '服务暂时不可用，请稍后重试', {
+                    title: '❌ 请求失败'
+                });
+            }
+            sendBtn.disabled = false;
+            msgInput.focus();
+        }
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                await fetchCsrfToken();
+                var authData = await apiRequest('/api/check-auth');
+                if (authData.authenticated) {
+                    currentUser = authData.username;
+                    autoSendRules();
+                } else {
+                    isFirstLoad = false;
+                }
+            } catch (e) {
+                console.warn('Auth check failed:', e);
+                isFirstLoad = false;
+            }
+            msgInput.focus();
+        });
+    </script>
+</body>
+</html>

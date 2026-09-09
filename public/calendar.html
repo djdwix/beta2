@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>签到日历</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI','PingFang SC',Roboto,sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;padding:20px}
+        .container{max-width:500px;margin:0 auto;background:rgba(255,255,255,0.98);border-radius:32px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);padding:24px;animation:slideUp 0.6s ease-out;position:relative}
+        @keyframes slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+        .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+        .header h2{font-size:22px;color:#333}
+        .header .stats{font-size:13px;color:#666;background:#f0f0f0;padding:6px 14px;border-radius:40px}
+        .header .stats span{font-weight:600;color:#667eea}
+        .month-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+        .month-nav button{padding:8px 16px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;border-radius:40px;cursor:pointer;font-size:14px;transition:all 0.3s}
+        .month-nav button:hover{transform:scale(1.05);box-shadow:0 4px 12px rgba(102,126,234,0.3)}
+        .month-nav .month-label{font-size:18px;font-weight:600;color:#333}
+        .weekday-header{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:8px;text-align:center;font-size:13px;color:#888;font-weight:500}
+        .weekday-header .weekend{color:#e74c3c}
+        .calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+        .calendar-day{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:12px;font-size:15px;font-weight:500;color:#333;background:#f8f9fa;transition:all 0.2s;position:relative;min-height:48px;cursor:pointer;user-select:none}
+        .calendar-day:hover{transform:scale(1.05);box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:5}
+        .calendar-day.empty{background:transparent;cursor:default}
+        .calendar-day.empty:hover{transform:none;box-shadow:none}
+        .calendar-day.today{background:linear-gradient(135deg,#667eea,#764ba2);color:white;font-weight:700;box-shadow:0 4px 12px rgba(102,126,234,0.3)}
+        .calendar-day.signed{background:linear-gradient(135deg,#27ae60,#2ecc71);color:white}
+        .calendar-day.signed.today{background:linear-gradient(135deg,#27ae60,#2ecc71);color:white}
+        .calendar-day.weekend:not(.signed):not(.today){color:#e74c3c}
+        .calendar-day .check-mark{font-size:10px;margin-top:1px}
+        .calendar-day .day-number{font-size:16px;font-weight:600}
+        .calendar-day.signed .day-number{color:white}
+        .calendar-day.today .day-number{color:white}
+        .calendar-day .reward-dot{width:6px;height:6px;border-radius:50%;background:#ffd700;position:absolute;bottom:4px;right:4px;box-shadow:0 0 6px rgba(255,215,0,0.6)}
+        .calendar-day.signed .reward-dot{background:#fff;box-shadow:0 0 6px rgba(255,255,255,0.6)}
+        .calendar-day.today .reward-dot{background:#fff;box-shadow:0 0 6px rgba(255,255,255,0.6)}
+        .legend{display:flex;justify-content:center;gap:24px;margin-top:20px;padding-top:16px;border-top:1px solid #eee}
+        .legend-item{display:flex;align-items:center;gap:8px;font-size:13px;color:#666}
+        .legend-dot{width:16px;height:16px;border-radius:4px}
+        .legend-dot.today-dot{background:linear-gradient(135deg,#667eea,#764ba2)}
+        .legend-dot.signed-dot{background:linear-gradient(135deg,#27ae60,#2ecc71)}
+        .legend-dot.empty-dot{background:#f0f0f0;border:1px solid #ddd}
+        .back-link{display:inline-block;margin-top:16px;padding:10px 24px;background:#764ba2;color:#333;border:none;border-radius:40px;cursor:pointer;font-size:14px;text-decoration:none;transition:all 0.3s;text-align:center;width:100%}
+        .back-link:hover{background:#764ba2}
+        .stats-row{display:flex;justify-content:space-around;padding:16px;background:#f8f9fa;border-radius:16px;margin-bottom:20px}
+        .stats-row .stat-item{text-align:center}
+        .stats-row .stat-item .num{font-size:24px;font-weight:700;color:#667eea}
+        .stats-row .stat-item .label{font-size:12px;color:#888;margin-top:4px}
+        .stats-row .stat-item .num.green{color:#27ae60}
+        .stats-row .stat-item .num.orange{color:#f39c12}
+        .tooltip{position:fixed;background:rgba(30,30,50,0.95);backdrop-filter:blur(12px);color:white;border-radius:16px;padding:20px;min-width:280px;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,0.5);z-index:1000;pointer-events:none;opacity:0;transition:opacity 0.25s ease,transform 0.25s ease;transform:translateY(8px) scale(0.97);border:1px solid rgba(255,255,255,0.1)}
+        .tooltip.visible{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+        .tooltip .close-btn{position:absolute;top:8px;right:12px;background:none;border:none;color:rgba(255,255,255,0.5);font-size:18px;cursor:pointer;pointer-events:auto;transition:color 0.2s}
+        .tooltip .close-btn:hover{color:white}
+        .tooltip .date-label{font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:4px}
+        .tooltip .day-label{font-size:20px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+        .tooltip .day-label .status-badge{font-size:12px;font-weight:600;padding:2px 12px;border-radius:20px;display:inline-block}
+        .tooltip .day-label .status-badge.signed{background:rgba(39,174,96,0.3);color:#2ecc71}
+        .tooltip .day-label .status-badge.unsigned{background:rgba(231,76,60,0.3);color:#e74c3c}
+        .tooltip .day-label .status-badge.future{background:rgba(102,126,234,0.3);color:#667eea}
+        .tooltip .day-label .status-badge.unsigned-past{background:rgba(231,76,60,0.2);color:#e74c3c}
+        .tooltip .reward-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06)}
+        .tooltip .reward-item:last-child{border-bottom:none}
+        .tooltip .reward-item .icon{font-size:18px;width:32px;text-align:center}
+        .tooltip .reward-item .info{flex:1}
+        .tooltip .reward-item .info .name{font-size:14px;font-weight:500}
+        .tooltip .reward-item .info .desc{font-size:11px;color:rgba(255,255,255,0.5)}
+        .tooltip .reward-item .value{font-size:13px;font-weight:600;color:#ffd700;text-align:right;min-width:80px}
+        .tooltip .no-reward{color:rgba(255,255,255,0.4);font-size:13px;text-align:center;padding:12px 0}
+        .tooltip .future-hint{font-size:11px;color:rgba(255,255,255,0.3);text-align:center;padding:8px 0 0 0;border-top:1px solid rgba(255,255,255,0.06);margin-top:8px}
+        .tooltip .streak-info{display:flex;gap:16px;padding:8px 0 12px 0;border-bottom:1px solid rgba(255,255,255,0.06);margin-bottom:8px}
+        .tooltip .streak-info .item{text-align:center}
+        .tooltip .streak-info .item .num{font-size:18px;font-weight:700;color:#ffd700}
+        .tooltip .streak-info .item .label{font-size:10px;color:rgba(255,255,255,0.4)}
+        .tooltip-overlay{position:fixed;top:0;left:0;width:100%;height:100%;z-index:999;display:none}
+        .tooltip-overlay.active{display:block}
+        .debug-info{font-size:11px;color:#999;background:#f5f5f5;padding:8px 12px;border-radius:8px;margin-top:12px;word-break:break-all}
+        .error-boundary{background:#fef2f2;border:2px solid #fecaca;border-radius:16px;padding:20px;margin-bottom:20px;text-align:center;display:none}
+        .error-boundary .error-icon{font-size:48px;color:#dc2626;margin-bottom:12px}
+        .error-boundary .error-title{font-size:18px;font-weight:700;color:#dc2626;margin-bottom:8px}
+        .error-boundary .error-desc{font-size:14px;color:#666;margin-bottom:16px}
+        .error-boundary .retry-btn{padding:10px 32px;background:#dc2626;color:white;border:none;border-radius:40px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s}
+        .error-boundary .retry-btn:hover{background:#b91c1c;transform:translateY(-2px);box-shadow:0 4px 12px rgba(220,38,38,0.3)}
+        @media(max-width:480px){.container{padding:16px;border-radius:24px}.calendar-day{font-size:13px;min-height:40px;border-radius:8px}.calendar-day .day-number{font-size:14px}.month-nav .month-label{font-size:16px}.stats-row .stat-item .num{font-size:20px}.header h2{font-size:18px}.tooltip{min-width:200px;max-width:280px;padding:16px;left:10px!important;right:10px!important;margin:0 auto}.tooltip .day-label{font-size:17px}.tooltip .reward-item .value{font-size:11px;min-width:60px}}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="errorBoundary" class="error-boundary">
+            <div class="error-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="error-title">⚠️ 加载失败</div>
+            <div class="error-desc" id="errorDesc">网络连接失败，请检查网络后重试</div>
+            <button class="retry-btn" onclick="location.reload()">🔄 重新加载</button>
+        </div>
+
+        <div class="header">
+            <h2>📅 签到日历</h2>
+            <div class="stats">🔥 <span id="consecutiveDaysDisplay">0</span>天连续</div>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat-item"><div class="num" id="totalDaysDisplay">0</div><div class="label">累计签到</div></div>
+            <div class="stat-item"><div class="num green" id="consecutiveDaysDisplay2">0</div><div class="label">连续签到</div></div>
+            <div class="stat-item"><div class="num orange" id="monthSignedDisplay">0</div><div class="label">本月签到</div></div>
+        </div>
+
+        <div class="month-nav">
+            <button id="prevMonth"><i class="fas fa-chevron-left"></i></button>
+            <span class="month-label" id="monthLabel">2026年1月</span>
+            <button id="nextMonth"><i class="fas fa-chevron-right"></i></button>
+        </div>
+
+        <div class="weekday-header">
+            <span class="weekend">日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span class="weekend">六</span>
+        </div>
+
+        <div class="calendar-grid" id="calendarGrid"></div>
+
+        <div class="legend">
+            <div class="legend-item"><div class="legend-dot empty-dot"></div><span>未签到</span></div>
+            <div class="legend-item"><div class="legend-dot today-dot"></div><span>今天</span></div>
+            <div class="legend-item"><div class="legend-dot signed-dot"></div><span>已签到</span></div>
+        </div>
+
+        <div class="debug-info" id="debugInfo">加载中...</div>
+
+        <a href="/" class="back-link"><i class="fas fa-arrow-left"></i> 返回</a>
+    </div>
+
+    <div class="tooltip-overlay" id="tooltipOverlay"></div>
+    <div class="tooltip" id="tooltip">
+        <button class="close-btn" id="tooltipClose">&times;</button>
+        <div class="date-label" id="tooltipDate">2026年1月1日</div>
+        <div class="day-label" id="tooltipDay">第 <span id="tooltipDayNumber">0</span> 天<span class="status-badge signed" id="tooltipStatus">已签到</span></div>
+        <div class="streak-info" id="tooltipStreak">
+            <div class="item"><div class="num" id="tooltipTotal">0</div><div class="label">累计签到</div></div>
+            <div class="item"><div class="num" id="tooltipConsecutive">0</div><div class="label">连续签到</div></div>
+        </div>
+        <div id="tooltipRewards"></div>
+        <div class="future-hint" id="tooltipFuture">💡 继续签到可解锁更多奖励</div>
+    </div>
+
+    <script>
+        var csrfToken = null;
+        var csrfTokenRefreshPromise = null;
+        var csrfTokenLastFetch = 0;
+        var CSRF_TOKEN_TTL = 300000;
+
+        function getCsrfTokenFromCookie() {
+            try {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = cookies[i].trim();
+                    if (cookie.indexOf('csrf_token=') === 0) {
+                        return cookie.substring('csrf_token='.length, cookie.length);
+                    }
+                }
+                return null;
+            } catch (e) { return null; }
+        }
+
+        function setCsrfTokenCookie(token) {
+            try {
+                var expires = new Date(Date.now() + CSRF_TOKEN_TTL).toUTCString();
+                document.cookie = 'csrf_token=' + token + '; expires=' + expires + '; path=/; SameSite=Strict; Secure';
+            } catch (e) {}
+        }
+
+        function fetchCsrfToken() {
+            if (csrfTokenRefreshPromise) { return csrfTokenRefreshPromise; }
+            if (csrfToken && (Date.now() - csrfTokenLastFetch) < CSRF_TOKEN_TTL) { return Promise.resolve(csrfToken); }
+            var cookieToken = getCsrfTokenFromCookie();
+            if (cookieToken) { csrfToken = cookieToken;
+                csrfTokenLastFetch = Date.now(); return Promise.resolve(csrfToken); }
+            csrfTokenRefreshPromise = fetch('/api/csrf-token', {
+                method: 'GET',
+                credentials: 'include',
+                headers: { 'Accept': 'application/json', 'Cache-Control': 'no-cache' }
+            }).then(function(response) {
+                if (!response.ok) { throw new Error('Failed to fetch CSRF token: HTTP ' + response.status); }
+                return response.json();
+            }).then(function(data) {
+                if (!data.csrf_token) { throw new Error('No CSRF token in response'); }
+                csrfToken = data.csrf_token;
+                csrfTokenLastFetch = Date.now();
+                setCsrfTokenCookie(csrfToken);
+                csrfTokenRefreshPromise = null;
+                return csrfToken;
+            }).catch(function(error) {
+                csrfTokenRefreshPromise = null;
+                csrfToken = null;
+                throw error;
+            });
+            return csrfTokenRefreshPromise;
+        }
+
+        function apiRequest(url, options) {
+            if (!options) options = {};
+            options.credentials = 'include';
+            if (!options.headers) options.headers = {};
+            options.headers['Content-Type'] = 'application/json';
+            options.headers['Accept'] = 'application/json';
+            var method = (options.method || 'GET').toUpperCase();
+            if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') {
+                return fetch(url, options).then(function(response) {
+                    return response.json().then(function(data) {
+                        if (!response.ok) { throw new Error(data.error || '请求失败: ' + response.status); }
+                        return data;
+                    });
+                });
+            }
+            return fetchCsrfToken().then(function(token) {
+                options.headers['X-CSRF-Token'] = token;
+                return fetch(url, options);
+            }).then(function(response) {
+                return response.json().then(function(data) {
+                    if (!response.ok) {
+                        if (response.status === 403 && data.error && data.error.includes('CSRF')) {
+                            csrfToken = null;
+                            csrfTokenLastFetch = 0;
+                            return fetchCsrfToken().then(function(newToken) {
+                                options.headers['X-CSRF-Token'] = newToken;
+                                return fetch(url, options);
+                            }).then(function(retryResponse) {
+                                return retryResponse.json().then(function(retryData) {
+                                    if (!retryResponse.ok) { throw new Error(retryData.error || '请求失败: ' + retryResponse.status); }
+                                    return retryData;
+                                });
+                            });
+                        }
+                        throw new Error(data.error || '请求失败: ' + response.status);
+                    }
+                    return data;
+                });
+            });
+        }
+
+        var currentYear = new Date().getFullYear();
+        var currentMonth = new Date().getMonth() + 1;
+        var tooltipVisible = false;
+        var currentData = null;
+        var initRetryCount = 0;
+        var MAX_INIT_RETRIES = 3;
+        var isInitialized = false;
+
+        function showErrorBoundary(message) {
+            var el = document.getElementById('errorBoundary');
+            var desc = document.getElementById('errorDesc');
+            if (el && desc) { desc.textContent = message || '网络连接失败，请检查网络后重试';
+                el.style.display = 'block'; }
+        }
+
+        function hideErrorBoundary() { var el = document.getElementById('errorBoundary'); if (el) el.style.display = 'none'; }
+
+        function getRewardForDay(dayIndex) {
+            if (dayIndex < 0) return [];
+            var rewards = [];
+            var total = dayIndex + 1;
+            var consec = dayIndex + 1;
+            if (total >= 3 && total % 30 === 3) { rewards.push({ icon: '⭐', name: '累计签到3天', desc: '每30天周期第3天', value: '1.0 积分' }); }
+            if (total >= 7 && total % 30 === 7) { rewards.push({ icon: '⭐', name: '累计签到7天', desc: '每30天周期第7天', value: '1.8 积分' }); }
+            if (total >= 15 && total % 30 === 15) { rewards.push({ icon: '⭐', name: '累计签到15天', desc: '每30天周期第15天', value: '3.0 积分' }); }
+            if (total >= 28 && total % 30 === 28) { rewards.push({ icon: '⭐', name: '累计签到28天', desc: '每30天周期第28天', value: '8.8 积分 + 加成卡' }); }
+            if (total >= 30 && total % 30 === 0) { rewards.push({ icon: '🎯', name: '累计签到30天', desc: '每30天周期第30天', value: '8.8 积分 + 加成卡' }); }
+            if (total >= 59 && total % 30 === 29) { rewards.push({ icon: '🏆', name: '累计签到59天', desc: '每30天周期第29天', value: '20.0 积分 + 2加成卡' }); }
+            if (total >= 99 && total % 30 === 9) { rewards.push({ icon: '👑', name: '累计签到99天', desc: '每30天周期第9天', value: '38.0 积分 + 3加成卡' }); }
+            if (consec >= 4 && consec % 30 === 4) { rewards.push({ icon: '🔥', name: '连续签到4天', desc: '每30天周期第4天', value: '高级积分卡密 x1' }); }
+            if (consec >= 6 && consec % 30 === 6) { rewards.push({ icon: '🔥', name: '连续签到6天', desc: '每30天周期第6天', value: '高级积分卡密 x2' }); }
+            if (consec >= 14 && consec % 30 === 14) { rewards.push({ icon: '🔥', name: '连续签到14天', desc: '每30天周期第14天', value: '高级积分卡密 x3' }); }
+            if (consec >= 29 && consec % 30 === 29) { rewards.push({ icon: '🔥', name: '连续签到29天', desc: '每30天周期第29天', value: '高级卡密 x3 + 加成卡 x2 + 重置卡' }); }
+            if (consec >= 30 && consec % 30 === 0) { rewards.push({ icon: '🔥', name: '连续签到30天', desc: '每30天周期第30天', value: '高级卡密 x3 + 加成卡 x2 + 重置卡' }); }
+            return rewards;
+        }
+
+        async function loadCalendar(year, month) {
+            try {
+                var data = await apiRequest('/api/attendance/calendar?year=' + year + '&month=' + month);
+                currentData = data;
+                renderCalendar(data);
+                var debugEl = document.getElementById('debugInfo');
+                debugEl.innerHTML = '🔍 调试信息:<br>首次签到: ' + (data.first_attendance_date || '未设置') + '<br>最后签到: ' + (data.last_attendance_date || '未设置') + '<br>累计签到: ' + (data.total_attendance_days || 0) + '天<br>连续签到: ' + (data.consecutive_days || 0) + '天<br>本月日期数: ' + data.days.length;
+                hideErrorBoundary();
+            } catch (error) {
+                console.error('Load calendar failed:', error);
+                showErrorBoundary('加载日历失败: ' + error.message);
+            }
+        }
+
+        function renderCalendar(data) {
+            document.getElementById('monthLabel').textContent = data.year + '年' + data.month + '月';
+            document.getElementById('consecutiveDaysDisplay').textContent = data.consecutive_days || 0;
+            document.getElementById('consecutiveDaysDisplay2').textContent = data.consecutive_days || 0;
+            var grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+            var firstDay = data.first_weekday;
+            var days = data.days;
+            var monthSigned = days.filter(function(d) { return d.is_signed; }).length;
+            document.getElementById('monthSignedDisplay').textContent = monthSigned;
+            var totalSigned = 0;
+            days.forEach(function(d) { if (d.is_signed) totalSigned++; });
+            document.getElementById('totalDaysDisplay').textContent = totalSigned;
+            for (var i = 0; i < firstDay; i++) {
+                var empty = document.createElement('div');
+                empty.className = 'calendar-day empty';
+                grid.appendChild(empty);
+            }
+            days.forEach(function(day, index) {
+                var div = document.createElement('div');
+                div.className = 'calendar-day';
+                div.dataset.day = day.day;
+                div.dataset.index = index;
+                if (day.is_signed) { div.classList.add('signed'); }
+                if (day.is_today) { div.classList.add('today'); }
+                if (day.is_weekend && !day.is_signed && !day.is_today) { div.classList.add('weekend'); }
+                var dayIndex = day.day_index;
+                var hasReward = false;
+                if (dayIndex >= 0) {
+                    var rewards = getRewardForDay(dayIndex);
+                    if (rewards.length > 0) {
+                        hasReward = true;
+                        var dot = document.createElement('span');
+                        dot.className = 'reward-dot';
+                        div.appendChild(dot);
+                    }
+                }
+                var numberSpan = document.createElement('span');
+                numberSpan.className = 'day-number';
+                numberSpan.textContent = day.day;
+                div.appendChild(numberSpan);
+                if (day.is_signed) {
+                    var check = document.createElement('span');
+                    check.className = 'check-mark';
+                    check.textContent = '✓';
+                    div.appendChild(check);
+                }
+                if (day.is_today && !day.is_signed) {
+                    var todayLabel = document.createElement('span');
+                    todayLabel.style.cssText = 'font-size:8px;font-weight:700;';
+                    todayLabel.textContent = '今天';
+                    div.appendChild(todayLabel);
+                }
+                if (day.is_today && day.is_signed) {
+                    var todayLabel = document.createElement('span');
+                    todayLabel.style.cssText = 'font-size:8px;font-weight:700;';
+                    todayLabel.textContent = '已签✓';
+                    div.appendChild(todayLabel);
+                }
+                div.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    showTooltip(e, day, index);
+                });
+                grid.appendChild(div);
+            });
+            var totalDays2 = 7 - (firstDay + days.length) % 7;
+            if (totalDays2 < 7) {
+                for (var j = 0; j < totalDays2; j++) {
+                    var empty2 = document.createElement('div');
+                    empty2.className = 'calendar-day empty';
+                    grid.appendChild(empty2);
+                }
+            }
+        }
+
+        function showTooltip(event, day, index) {
+            var tooltip = document.getElementById('tooltip');
+            var overlay = document.getElementById('tooltipOverlay');
+            if (tooltipVisible && tooltip.dataset.day == day.day && tooltip.dataset.month == currentMonth) {
+                hideTooltip();
+                return;
+            }
+            var dateObj = new Date(currentYear, currentMonth - 1, day.day);
+            var dateStr = dateObj.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+            document.getElementById('tooltipDate').textContent = dateStr;
+            var dayIndex = day.day_index;
+            var isFuture = false;
+            var displayTotal = 0;
+            var displayConsecutive = 0;
+            if (dayIndex >= 0) {
+                displayTotal = dayIndex + 1;
+                displayConsecutive = dayIndex + 1;
+                var today = new Date();
+                var todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+                if (day.date > todayStr) { isFuture = true; }
+            } else {
+                displayTotal = 0;
+                displayConsecutive = 0;
+            }
+            var statusText = '';
+            var statusClass = '';
+            if (day.is_signed) { statusText = '✅ 已签到';
+                statusClass = 'signed'; } else if (isFuture) { statusText = '⏳ 未来签到';
+                statusClass = 'future'; } else if (dayIndex >= 0 && !day.is_signed) { statusText = '❌ 未签到';
+                statusClass = 'unsigned'; } else { statusText = '📅 尚未开始';
+                statusClass = 'unsigned-past'; }
+            document.getElementById('tooltipDayNumber').textContent = displayTotal > 0 ? displayTotal : 0;
+            document.getElementById('tooltipStatus').textContent = statusText;
+            document.getElementById('tooltipStatus').className = 'status-badge ' + statusClass;
+            document.getElementById('tooltipTotal').textContent = displayTotal > 0 ? displayTotal : 0;
+            document.getElementById('tooltipConsecutive').textContent = displayConsecutive > 0 ? displayConsecutive : 0;
+            var rewardsContainer = document.getElementById('tooltipRewards');
+            rewardsContainer.innerHTML = '';
+            var rewards = [];
+            if (dayIndex >= 0) { rewards = getRewardForDay(dayIndex); }
+            if (rewards.length > 0) {
+                rewards.forEach(function(r) {
+                    var div = document.createElement('div');
+                    div.className = 'reward-item';
+                    div.innerHTML = '<span class="icon">' + r.icon + '</span><div class="info"><div class="name">' + r.name + '</div><div class="desc">' + r.desc + '</div></div><div class="value">' + r.value + '</div>';
+                    rewardsContainer.appendChild(div);
+                });
+                var futureHint = document.getElementById('tooltipFuture');
+                if (day.is_signed) {
+                    futureHint.textContent = '✅ 已领取以上奖励';
+                    futureHint.style.display = 'block';
+                } else if (isFuture) {
+                    futureHint.textContent = '💡 签到后可领取以上奖励';
+                    futureHint.style.display = 'block';
+                } else if (dayIndex >= 0 && !day.is_signed) {
+                    futureHint.textContent = '📅 签到后可领取以上奖励';
+                    futureHint.style.display = 'block';
+                } else {
+                    futureHint.textContent = '💡 继续签到可解锁更多奖励';
+                    futureHint.style.display = 'block';
+                }
+            } else {
+                if (dayIndex >= 0 && !day.is_signed && !isFuture) {
+                    rewardsContainer.innerHTML = '<div class="no-reward">📅 签到后可获得基础积分</div>';
+                } else if (dayIndex >= 0 && isFuture) {
+                    rewardsContainer.innerHTML = '<div class="no-reward">📅 继续签到，奖励在路上</div>';
+                } else if (dayIndex >= 0 && day.is_signed) {
+                    rewardsContainer.innerHTML = '<div class="no-reward">✅ 今日已签到，暂无额外奖励</div>';
+                } else {
+                    rewardsContainer.innerHTML = '<div class="no-reward">📅 尚未开始签到</div>';
+                }
+                document.getElementById('tooltipFuture').style.display = 'none';
+            }
+            var rect = event.target.getBoundingClientRect();
+            var tooltipWidth = Math.min(340, window.innerWidth - 40);
+            var left = rect.left + rect.width / 2 - tooltipWidth / 2;
+            var top = rect.bottom + 12;
+            if (top + 420 > window.innerHeight) { top = rect.top - 12 - 420; }
+            left = Math.max(20, Math.min(left, window.innerWidth - tooltipWidth - 20));
+            tooltip.style.left = left + 'px';
+            tooltip.style.top = top + 'px';
+            tooltip.style.width = tooltipWidth + 'px';
+            tooltip.dataset.day = day.day;
+            tooltip.dataset.month = currentMonth;
+            tooltip.classList.add('visible');
+            overlay.classList.add('active');
+            tooltipVisible = true;
+        }
+
+        function hideTooltip() {
+            document.getElementById('tooltip').classList.remove('visible');
+            document.getElementById('tooltipOverlay').classList.remove('active');
+            tooltipVisible = false;
+        }
+
+        document.getElementById('tooltipClose').addEventListener('click', function(e) {
+            e.stopPropagation();
+            hideTooltip();
+        });
+        document.getElementById('tooltipOverlay').addEventListener('click', function() { hideTooltip(); });
+        document.addEventListener('click', function() { if (tooltipVisible) { hideTooltip(); } });
+        document.getElementById('prevMonth').addEventListener('click', function() {
+            hideTooltip();
+            currentMonth--;
+            if (currentMonth < 1) { currentMonth = 12;
+                currentYear--; }
+            loadCalendar(currentYear, currentMonth);
+        });
+        document.getElementById('nextMonth').addEventListener('click', function() {
+            hideTooltip();
+            currentMonth++;
+            if (currentMonth > 12) { currentMonth = 1;
+                currentYear++; }
+            loadCalendar(currentYear, currentMonth);
+        });
+
+        async function init() {
+            if (isInitialized) return;
+            isInitialized = true;
+            try {
+                await fetchCsrfToken().catch(function(e) { console.warn('CSRF pre-fetch failed:', e); });
+                loadCalendar(currentYear, currentMonth);
+                hideErrorBoundary();
+            } catch (error) {
+                console.error('Init error:', error);
+                showErrorBoundary('初始化失败: ' + (error.message || '网络连接失败'));
+                if (initRetryCount < MAX_INIT_RETRIES) {
+                    initRetryCount++;
+                    isInitialized = false;
+                    setTimeout(init, 3000);
+                }
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
