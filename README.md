@@ -16,86 +16,38 @@ pip install -r requirements.txt
 
 ### 2. 环境变量配置
 
-在项目根目录创建 .env 文件，参考以下格式填写：
+在项目根目录创建 .env 文件，参考以下格式填写（所有 your-xxx-here 需替换为实际生成的值）：
 
-# ============================================================
-# 核心安全配置（必须修改）
-# ============================================================
-
-# Flask 会话密钥（使用 secrets.token_hex(32) 生成）
 SECRET_KEY=your-secret-key-here
-
-# 数据加密密钥（使用 Fernet.generate_key() 生成）
 ENCRYPTION_KEY=your-encryption-key-here
-
-# QR 码签名密钥（使用 secrets.token_hex(32) 生成）
 QR_SECRET=your-qr-secret-here
-
-# ============================================================
-# 管理员认证配置（必须修改）
-# ============================================================
-
-# 管理员用户名
 ADMIN_USERNAME=admin
-
-# 管理员密码哈希（使用 bcrypt 生成）
-# 生成命令: python -c "import bcrypt; print(bcrypt.generate_password_hash('your_password').decode('utf-8'))"
 ADMIN_PASSWORD_HASH=your-bcrypt-hash-here
-
-# ============================================================
-# CORS 跨域配置（必须修改）
-# ============================================================
-
 CORS_ALLOWED_ORIGINS=https://your-domain.com,https://localhost:3000,https://127.0.0.1:3000
-
-# ============================================================
-# 可选配置
-# ============================================================
-
-# 数据存储目录（默认 ./data）
-# DATA_DIR=./data
-
-# 管理员会话超时时间（秒，默认 3600）
-# ADMIN_SESSION_TIMEOUT=3600
-
-# 速率限制配置（使用默认值即可）
 RATELIMIT_STORAGE_URI=memory://
 RATELIMIT_STRATEGY=fixed-window
 RATELIMIT_DEFAULT=200 per day;50 per hour
-
-# 文件锁超时（秒，默认 10）
 FILE_LOCK_TIMEOUT=10
-
-# ============================================================
-# 反馈邮箱配置（可选）
-# ============================================================
-
-# 用于接收用户反馈的邮箱
 FEEDBACK_EMAIL=your-email@example.com
 FEEDBACK_EMAIL_PASSWORD=your-email-password
 FEEDBACK_SMTP_SERVER=smtp.example.com
 FEEDBACK_SMTP_PORT=465
-
-# ============================================================
-# 邮箱验证码配置（可选，使用默认值即可）
-# ============================================================
-
 VERIFICATION_CODE_EXPIRE_SECONDS=300
 VERIFICATION_CODE_LENGTH=6
 SMTP_USE_SSL=True
 
 ### 3. 密钥生成方法
 
-# 生成 SECRET_KEY
+生成 SECRET_KEY：
 python -c "import secrets; print(secrets.token_hex(32))"
 
-# 生成 ENCRYPTION_KEY
+生成 ENCRYPTION_KEY：
 python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 
-# 生成 QR_SECRET
+生成 QR_SECRET：
 python -c "import secrets; print(secrets.token_hex(32))"
 
-# 生成管理员密码哈希（将 your_password 替换为实际密码）
+生成管理员密码哈希（将 your_password 替换为实际密码）：
 python -c "import bcrypt; print(bcrypt.generate_password_hash('your_password').decode('utf-8'))"
 
 ### 4. 生成 SSL 证书（可使用自己域名的证书）
