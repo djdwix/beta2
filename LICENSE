@@ -1,0 +1,79 @@
+Business Source License 1.1
+
+Licensor: djdwix
+Licensed Work: beta2 虚拟手机号生成器系统
+The Licensed Work is copyright (c) 2026 djdwix
+
+====================================================================
+
+Additional Use Grant:
+
+You may use, reproduce, modify, and distribute the Licensed Work, subject to the following conditions:
+
+1. Personal and Non-Commercial Use
+   You may use the Licensed Work for personal, educational, research, or non-commercial purposes without restriction.
+
+2. Commercial Use Prohibition
+   You may not use the Licensed Work to operate a commercial service that is directly competitive with the Licensed Work. A "commercial service" is defined as any service offered to third parties for a fee, subscription, or any form of monetary compensation, including but not limited to:
+   - Hosting a public instance of the Licensed Work
+   - Offering the Licensed Work as a Software-as-a-Service (SaaS) product
+   - Using the Licensed Work as the backend for a commercial product or service
+   - Selling access to features or functionality of the Licensed Work
+
+3. Internal Business Use
+   You may use the Licensed Work internally within your organization for non-public, internal business operations, provided that such use does not constitute a commercial service offered to external third parties.
+
+4. Source Code Distribution
+   You may distribute the source code of the Licensed Work or any derivative works, provided that:
+   a) You retain all copyright notices, license terms, and attribution notices
+   b) You distribute the source code under the same terms as this License
+   c) You do not remove or alter any proprietary notices or labels
+
+5. No Sublicensing or Reselling
+   You may not sublicense, sell, rent, lease, or distribute the Licensed Work or any derivative works for a fee, except as expressly permitted by the Additional Use Grant.
+
+6. Attribution
+   Any distribution of the Licensed Work or derivative works must include clear attribution to the original author (djdwix) and a link to the original repository: https://github.com/djdwix/beta2
+
+7. Modifications
+   If you modify the Licensed Work, you must:
+   a) Clearly mark the modifications
+   b) Include a notice stating that you have modified the files
+   c) Distribute the modifications under the same terms as this License
+
+8. Patent Grant
+   Subject to the terms of this License, the Licensor hereby grants to you a non-exclusive, worldwide, royalty-free patent license to make, have made, use, offer to sell, sell, import, and otherwise transfer the Licensed Work, where such license applies only to those patent claims licensable by the Licensor that are necessarily infringed by the Licensed Work alone.
+
+9. Termination
+   This License and the rights granted hereunder will terminate automatically if you fail to comply with any of its terms and conditions. Upon termination, you must cease all use and distribution of the Licensed Work and destroy all copies in your possession.
+
+Change Date: 2036-01-01
+
+Change License: GNU General Public License v3.0 or later
+
+====================================================================
+
+Disclaimer of Warranty:
+
+THE LICENSED WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE LICENSED WORK IS WITH YOU.
+
+Limitation of Liability:
+
+IN NO EVENT SHALL THE LICENSOR OR ANY CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS LICENSED WORK, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+====================================================================
+
+Definitions:
+
+- "Licensed Work" means the source code, object code, documentation, and any other materials provided under this License.
+- "Derivative Works" means any work, whether in source or object form, that is based on or derived from the Licensed Work, including but not limited to modifications, translations, adaptations, and compilations.
+- "Commercial Service" means any service offered to third parties for a fee, subscription, or any form of monetary compensation, including but not limited to hosting, SaaS, API services, and managed services.
+- "You" means the individual or legal entity exercising permissions granted by this License.
+
+====================================================================
+
+This Business Source License is based on the Business Source License 1.1 from MariaDB Corporation, with additional terms specific to the beta2 project.
+
+---
+
+For commercial licensing inquiries, please contact: https://github.com/djdwix/beta2
