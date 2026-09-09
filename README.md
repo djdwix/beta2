@@ -65,13 +65,21 @@ python server.py
 
 项目根目录/
 ├── server.py              # 主服务器
+
 ├── game.py                # 游戏模块
+
 ├── email_service.py       # 邮件服务
+
 ├── knowledge_base.json    # 知识库数据（可编辑）
+
 ├── requirements.txt       # Python 依赖
+
 ├── .env                   # 环境配置（不提交，需自行创建）
+
 ├── data/                  # 数据存储（自动生成，不提交）
+
 ├── public/                # 前端静态文件
+
 └── GAME/                  # 游戏中心前端
 
 重要提示：
