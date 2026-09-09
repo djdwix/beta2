@@ -9,7 +9,6 @@ __pycache__/
 *.egg-info/
 dist/
 build/
-admin.py
 
 # 数据文件（重要！不要提交用户数据）
 data/
@@ -47,3 +46,5 @@ Thumbs.db
 # 备份文件
 *.bak
 *.backup
+
+admin.py
