@@ -103,3 +103,4 @@ python server.py
 1. 以上所有 your-xxx-here 占位符均需替换为实际生成的值
 2. 建议定期更换密钥，特别是 SECRET_KEY 和 ENCRYPTION_KEY
 3. 生产环境请使用强密码并妥善保管
+4. wiki双语指南:https://github.com/djdwix/beta2.wiki
