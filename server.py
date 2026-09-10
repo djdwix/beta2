@@ -13363,28 +13363,14 @@ def play_game(game_id):
         return jsonify({'error': '游戏服务未初始化'}), 500
     if game_id not in gm.games:
         return jsonify({'error': '游戏不存在'}), 400
-    
-    # 添加请求锁，防止同一用户并发请求
-    import threading
-    lock_key = f'game_lock_{username}'
-    if not hasattr(threading, 'local'):
-        threading.local = threading.local()
-    if not hasattr(threading.local, 'game_locks'):
-        threading.local.game_locks = {}
-    
-    if lock_key in threading.local.game_locks:
-        return jsonify({'error': '请等待当前游戏操作完成'}), 429
-    
-    threading.local.game_locks[lock_key] = True
-    
+    if not gm.can_play(username):
+        return jsonify({'error': '今日游戏次数已达上限'}), 400
     try:
         data = request.get_json()
         if data is None:
             data = {}
-    except Exception as e:
-        threading.local.game_locks.pop(lock_key, None)
-        return jsonify({'error': '无效的请求数据'}), 400
-    
+    except Exception:
+        data = {}
     try:
         if game_id == 'dice':
             bet_type = data.get('bet_type', 'high')
@@ -13398,7 +13384,6 @@ def play_game(game_id):
                 try:
                     guess = int(guess)
                 except:
-                    threading.local.game_locks.pop(lock_key, None)
                     return jsonify({'error': '请输入有效的数字'}), 400
             result = gm.play_guess_number(username, guess)
         elif game_id == 'rock_paper_scissors':
@@ -13409,24 +13394,16 @@ def play_game(game_id):
             bet_value = int(data.get('bet_value', 0))
             result = gm.play_roulette(username, bet_type, bet_value)
         else:
-            threading.local.game_locks.pop(lock_key, None)
             return jsonify({'error': '游戏不存在'}), 400
-        
-        threading.local.game_locks.pop(lock_key, None)
-        
         if result.get('success'):
             result['responseTime'] = int((time.time() - start_time) * 1000)
             return jsonify(result)
         else:
             return jsonify({'error': result.get('error', '游戏失败')}), 400
     except ValueError as e:
-        threading.local.game_locks.pop(lock_key, None)
         return jsonify({'error': '参数格式错误: ' + str(e)}), 400
     except Exception as e:
-        threading.local.game_locks.pop(lock_key, None)
         log.error(f"Game error for {username} in {game_id}: {e}")
-        import traceback
-        traceback.print_exc()
         return jsonify({'error': '游戏执行异常，请稍后重试'}), 500
 
 @app.route('/api/game/guess/state', methods=['GET'])
