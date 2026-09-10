@@ -78,6 +78,18 @@ python server.py
 
 服务器将在 https://0.0.0.0:3000 启动。
 
+
+### 6.快速认证说明
+
+创建data/id_cards.csv文件
+
+文件格式参照:
+姓名,身份证号
+宫雅,XXXXXXXXXXXXXX
+[每行1个]
+
+
+
 ## 项目根目录结构
 
 项目根目录/
