@@ -143,7 +143,6 @@
     var rpsGameActive = false;
     var isMember = false;
     var memberBonusRate = 0;
-    var gameLock = false;
 
     function getCsrfTokenFromCookie() {
         try {
@@ -193,48 +192,35 @@
     }
 
     async function apiRequest(url, options) {
-        if (gameLock) {
-            showMessage('请等待当前操作完成', 'warning');
-            throw new Error('操作正在进行中');
-        }
-        gameLock = true;
-        try {
-            if (!options) options = {};
-            options.credentials = 'include';
-            if (!options.headers) options.headers = {};
-            options.headers['Content-Type'] = 'application/json';
-            options.headers['Accept'] = 'application/json';
-            var method = (options.method || 'GET').toUpperCase();
-            if (method === 'GET' || method === 'HEAD') {
-                var res = await fetch(url, options);
-                var data = await res.json();
-                if (!res.ok) throw new Error(data.error || '请求失败: ' + res.status);
-                gameLock = false;
-                return data;
-            }
-            var token = await fetchCsrfToken();
-            options.headers['X-CSRF-Token'] = token;
+        if (!options) options = {};
+        options.credentials = 'include';
+        if (!options.headers) options.headers = {};
+        options.headers['Content-Type'] = 'application/json';
+        options.headers['Accept'] = 'application/json';
+        var method = (options.method || 'GET').toUpperCase();
+        if (method === 'GET' || method === 'HEAD') {
             var res = await fetch(url, options);
             var data = await res.json();
-            if (!res.ok) {
-                if (res.status === 403 && data.error && data.error.indexOf('CSRF') !== -1) {
-                    csrfToken = null;
-                    var newToken = await fetchCsrfToken();
-                    options.headers['X-CSRF-Token'] = newToken;
-                    var retryRes = await fetch(url, options);
-                    var retryData = await retryRes.json();
-                    if (!retryRes.ok) throw new Error(retryData.error || '请求失败: ' + retryRes.status);
-                    gameLock = false;
-                    return retryData;
-                }
-                throw new Error(data.error || '请求失败: ' + res.status);
-            }
-            gameLock = false;
+            if (!res.ok) throw new Error(data.error || '请求失败: ' + res.status);
             return data;
-        } catch (e) {
-            gameLock = false;
-            throw e;
         }
+        var token = await fetchCsrfToken();
+        options.headers['X-CSRF-Token'] = token;
+        var res = await fetch(url, options);
+        var data = await res.json();
+        if (!res.ok) {
+            if (res.status === 403 && data.error && data.error.indexOf('CSRF') !== -1) {
+                csrfToken = null;
+                var newToken = await fetchCsrfToken();
+                options.headers['X-CSRF-Token'] = newToken;
+                var retryRes = await fetch(url, options);
+                var retryData = await retryRes.json();
+                if (!retryRes.ok) throw new Error(retryData.error || '请求失败: ' + retryRes.status);
+                return retryData;
+            }
+            throw new Error(data.error || '请求失败: ' + res.status);
+        }
+        return data;
     }
 
     function showMessage(msg, type) {
@@ -299,12 +285,11 @@
             var grid = document.getElementById('gameGrid');
             var html = '';
             var remaining = data.stats.remaining_plays || 0;
-            var isMember = data.stats.is_member || false;
-            var bonusRate = data.stats.member_bonus_rate || 0;
+            var isMemberFlag = data.stats.is_member || false;
             data.games.forEach(function(g) {
                 var disabled = remaining <= 0 ? 'disabled' : '';
-                var memberTag = isMember ? ' <span style="font-size:10px;color:#fbbf24;">👑</span>' : '';
-                var bonusTag = isMember ? ' <span style="font-size:10px;color:#34d399;">+30%</span>' : '';
+                var memberTag = isMemberFlag ? ' <span style="font-size:10px;color:#fbbf24;">👑</span>' : '';
+                var bonusTag = isMemberFlag ? ' <span style="font-size:10px;color:#34d399;">+30%</span>' : '';
                 html += '<div class="game-card ' + disabled + '" onclick="startGame(\'' + g.id + '\')">';
                 html += '<span class="emoji">' + g.emoji + '</span>';
                 html += '<div class="name">' + escapeHtml(g.name) + memberTag + '</div>';

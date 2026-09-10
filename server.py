@@ -79,7 +79,7 @@ RATE_LIMITS = {
     'admin_login': '18 per minute'
 }
 
-LOCK_TIMEOUT = 10
+LOCK_TIMEOUT = 30
 
 QR_SECRET = os.getenv('QR_SECRET')
 if not QR_SECRET:
@@ -233,33 +233,47 @@ def load_data(file_path, default_value=None):
         default_value = {}
     if not os.path.exists(file_path):
         return default_value
-    try:
-        lock = get_file_lock(file_path)
-        with lock.acquire(timeout=LOCK_TIMEOUT):
-            with open(file_path, 'rb') as f:
-                encrypted_data = f.read()
-                return decrypt_data(encrypted_data)
-    except Timeout:
-        log.error(f"Lock timeout loading {file_path}")
-        return default_value
-    except Exception as e:
-        log.error(f"Error loading {file_path}: {e}")
-        return default_value
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            lock = get_file_lock(file_path)
+            with lock.acquire(timeout=LOCK_TIMEOUT):
+                with open(file_path, 'rb') as f:
+                    encrypted_data = f.read()
+                    return decrypt_data(encrypted_data)
+        except Timeout:
+            log.warning(f"Lock timeout loading {file_path}, attempt {attempt + 1}/{max_retries}")
+            if attempt < max_retries - 1:
+                time.sleep(0.5 * (attempt + 1))
+            else:
+                log.error(f"Lock timeout loading {file_path} after {max_retries} attempts")
+                return default_value
+        except Exception as e:
+            log.error(f"Error loading {file_path}: {e}")
+            return default_value
+    return default_value
 
 def save_data(file_path, data):
-    try:
-        lock = get_file_lock(file_path)
-        with lock.acquire(timeout=LOCK_TIMEOUT):
-            encrypted_data = encrypt_data(data)
-            with open(file_path, 'wb') as f:
-                f.write(encrypted_data)
-            return True
-    except Timeout:
-        log.error(f"Lock timeout saving {file_path}")
-        return False
-    except Exception as e:
-        log.error(f"Error saving {file_path}: {e}")
-        return False
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            lock = get_file_lock(file_path)
+            with lock.acquire(timeout=LOCK_TIMEOUT):
+                encrypted_data = encrypt_data(data)
+                with open(file_path, 'wb') as f:
+                    f.write(encrypted_data)
+                return True
+        except Timeout:
+            log.warning(f"Lock timeout saving {file_path}, attempt {attempt + 1}/{max_retries}")
+            if attempt < max_retries - 1:
+                time.sleep(0.5 * (attempt + 1))
+            else:
+                log.error(f"Lock timeout saving {file_path} after {max_retries} attempts")
+                return False
+        except Exception as e:
+            log.error(f"Error saving {file_path}: {e}")
+            return False
+    return False
 
 # ======================= DYNAMIC PRICING SYSTEM =======================
 
@@ -13316,10 +13330,13 @@ def get_game_list():
     if is_login_restricted(username):
         return jsonify({'error': '账号已被限制'}), 403
     gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
     return jsonify({
         'games': gm.get_game_list(),
         'stats': gm.get_stats(username)
     })
+
 
 @app.route('/api/game/stats', methods=['GET'])
 @login_required
@@ -13328,6 +13345,8 @@ def get_game_stats():
     if is_login_restricted(username):
         return jsonify({'error': '账号已被限制'}), 403
     gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
     return jsonify(gm.get_stats(username))
 
 @app.route('/api/game/play/<game_id>', methods=['POST'])

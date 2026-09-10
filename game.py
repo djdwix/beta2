@@ -8,6 +8,7 @@ NORMAL_MAX_PLAYS = 5
 MEMBER_MAX_PLAYS = 10
 MEMBER_BONUS_RATE = 0.30
 
+
 def get_membership_data(users, username):
     if username not in users:
         return None
@@ -20,6 +21,7 @@ def get_membership_data(users, username):
             'lifetime': True
         }
     return user_data['membership']
+
 
 def is_game_member(users, username):
     membership = get_membership_data(users, username)
@@ -34,15 +36,18 @@ def is_game_member(users, username):
             return False
     return False
 
+
 def get_member_max_plays(users, username):
     if is_game_member(users, username):
         return MEMBER_MAX_PLAYS
     return NORMAL_MAX_PLAYS
 
+
 def get_member_bonus_rate(users, username):
     if is_game_member(users, username):
         return MEMBER_BONUS_RATE
     return 0.0
+
 
 def activate_game_membership(users, save_users_func, username):
     if username not in users:
@@ -61,6 +66,7 @@ def activate_game_membership(users, save_users_func, username):
     user_data['membership']['lifetime'] = True
     save_users_func()
     return True, '游戏会员开通成功！每日游戏次数提升至10次，获胜积分+30%'
+
 
 def migrate_game_membership_data(users, save_users_func):
     modified = False
@@ -87,6 +93,7 @@ def migrate_game_membership_data(users, save_users_func):
     if modified:
         save_users_func()
     return modified
+
 
 class GameManager:
     def __init__(self, users_data, save_users_func, add_points_func, get_user_data_func):
@@ -125,13 +132,11 @@ class GameManager:
                 'total_wins': 0,
                 'total_plays': 0
             }
-            self.save_users()
         stats = user_data['game_stats']
         today = self.get_today()
         if stats.get('today_date') != today:
             stats['today_plays'] = 0
             stats['today_date'] = today
-            self.save_users()
         return stats
 
     def can_play(self, username):
@@ -265,6 +270,7 @@ class GameManager:
         random.shuffle(deck)
         player_hand = [deck.pop(), deck.pop()]
         dealer_hand = [deck.pop(), deck.pop()]
+
         def hand_total(hand):
             total = sum(hand)
             aces = hand.count(11)
@@ -272,6 +278,7 @@ class GameManager:
                 total -= 10
                 aces -= 1
             return total
+
         player_total = hand_total(player_hand)
         dealer_total = hand_total(dealer_hand)
         dealer_hit_count = 0
@@ -634,12 +641,15 @@ class GameManager:
             {'id': 'roulette', 'name': '轮盘赌', 'emoji': '🎡', 'description': '猜数字/颜色/奇偶', 'min_points': 8, 'max_points': 100}
         ]
 
+
 game_manager = None
+
 
 def init_game_manager(users_data, save_users_func, add_points_func, get_user_data_func):
     global game_manager
     game_manager = GameManager(users_data, save_users_func, add_points_func, get_user_data_func)
     return game_manager
+
 
 def get_game_manager():
     return game_manager
