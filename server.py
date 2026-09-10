@@ -3392,6 +3392,168 @@ def get_id_cards_stats():
         'available': unique_total - used_count
     }
 
+def fetch_weather_from_openmeteo(latitude, longitude):
+    try:
+        import requests
+        from datetime import datetime
+        
+        url = (
+            f'https://api.open-meteo.com/v1/forecast'
+            f'?latitude={latitude}'
+            f'&longitude={longitude}'
+            f'&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m'
+            f'&hourly=temperature_2m,precipitation_probability'
+            f'&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,sunrise,sunset'
+            f'&timezone=auto'
+            f'&forecast_days=7'
+        )
+        
+        response = requests.get(url, timeout=10)
+        if response.status_code != 200:
+            return None
+        
+        data = response.json()
+        
+        weather_codes = {
+            0: '☀️ 晴天',
+            1: '🌤️ 主要晴朗',
+            2: '⛅ 部分多云',
+            3: '☁️ 多云',
+            45: '🌫️ 雾',
+            48: '🌫️ 雾凇',
+            51: '🌧️ 小雨',
+            53: '🌧️ 中雨',
+            55: '🌧️ 大雨',
+            61: '🌧️ 小雨',
+            63: '🌧️ 中雨',
+            65: '🌧️ 大雨',
+            71: '❄️ 小雪',
+            73: '❄️ 中雪',
+            75: '❄️ 大雪',
+            80: '🌧️ 阵雨',
+            81: '🌧️ 阵雨',
+            82: '🌧️ 强阵雨',
+            95: '⛈️ 雷暴',
+            96: '⛈️ 雷暴',
+            99: '⛈️ 强雷暴'
+        }
+        
+        current = data.get('current', {})
+        daily = data.get('daily', {})
+        hourly = data.get('hourly', {})
+        
+        current_code = current.get('weather_code', 0)
+        current_condition = weather_codes.get(current_code, '☁️ 多云')
+        
+        forecast = []
+        if daily.get('time'):
+            for i in range(min(7, len(daily['time']))):
+                code = daily['weather_code'][i] if i < len(daily.get('weather_code', [])) else 0
+                forecast.append({
+                    'date': daily['time'][i],
+                    'condition': weather_codes.get(code, '☁️'),
+                    'high': str(round(daily['temperature_2m_max'][i])) if i < len(daily.get('temperature_2m_max', [])) else '--',
+                    'low': str(round(daily['temperature_2m_min'][i])) if i < len(daily.get('temperature_2m_min', [])) else '--',
+                    'precipitation': str(daily['precipitation_sum'][i]) if i < len(daily.get('precipitation_sum', [])) else '0'
+                })
+        
+        hourly_data = []
+        if hourly.get('time'):
+            now = datetime.now()
+            now_hour = now.hour
+            target_index = -1
+            
+            for i, t in enumerate(hourly['time']):
+                try:
+                    dt = datetime.fromisoformat(t)
+                    if dt.date() == now.date() and dt.hour == now_hour:
+                        target_index = i
+                        break
+                except:
+                    continue
+            
+            if target_index == -1:
+                for i, t in enumerate(hourly['time']):
+                    try:
+                        dt = datetime.fromisoformat(t)
+                        if dt.date() == now.date() and dt.hour >= now_hour:
+                            target_index = i
+                            break
+                    except:
+                        continue
+            
+            if target_index != -1:
+                for i in range(min(8, len(hourly['time']) - target_index)):
+                    idx = target_index + i
+                    if idx >= len(hourly['time']):
+                        break
+                    try:
+                        dt = datetime.fromisoformat(hourly['time'][idx])
+                        temp = hourly['temperature_2m'][idx] if idx < len(hourly.get('temperature_2m', [])) else None
+                        rain = hourly['precipitation_probability'][idx] if idx < len(hourly.get('precipitation_probability', [])) else None
+                        if temp is not None:
+                            hourly_data.append({
+                                'time': f"{dt.hour:02d}:00",
+                                'temp': str(round(temp)),
+                                'rain': str(round(rain)) + '%' if rain is not None else ''
+                            })
+                    except:
+                        continue
+        
+        return {
+            'latitude': data.get('latitude'),
+            'longitude': data.get('longitude'),
+            'timezone': data.get('timezone', 'Unknown'),
+            'utc_offset_seconds': data.get('utc_offset_seconds', 0),
+            'current': {
+                'temperature': str(round(current.get('temperature_2m', 0))),
+                'feels_like': str(round(current.get('apparent_temperature', 0))),
+                'humidity': str(round(current.get('relative_humidity_2m', 0))) + '%',
+                'precipitation': str(current.get('precipitation', 0)),
+                'weather_code': current_code,
+                'condition': current_condition,
+                'cloud_cover': str(round(current.get('cloud_cover', 0))) + '%',
+                'wind_speed': str(round(current.get('wind_speed_10m', 0))) + ' km/h',
+                'wind_direction': str(round(current.get('wind_direction_10m', 0))) + '°',
+                'time': current.get('time', '')
+            },
+            'hourly': hourly_data,
+            'daily': forecast
+        }
+        
+    except Exception as e:
+        log.error(f"Open-Meteo weather fetch error: {e}")
+        return None
+
+
+def geocode_city_openmeteo(city_name):
+    try:
+        import requests
+        
+        url = f'https://geocoding-api.open-meteo.com/v1/search?name={requests.utils.quote(city_name)}&count=1&language=zh'
+        response = requests.get(url, timeout=10)
+        
+        if response.status_code != 200:
+            return None
+        
+        data = response.json()
+        if not data.get('results'):
+            return None
+        
+        result = data['results'][0]
+        return {
+            'name': result.get('name', city_name),
+            'latitude': result['latitude'],
+            'longitude': result['longitude'],
+            'country': result.get('country', ''),
+            'admin1': result.get('admin1', ''),
+            'timezone': result.get('timezone', 'auto')
+        }
+        
+    except Exception as e:
+        log.error(f"Open-Meteo geocoding error: {e}")
+        return None
+
 def add_game_points(username, points):
     if username in users:
         if 'totalPoints' not in users[username]:
@@ -12442,6 +12604,67 @@ def search_web():
     if not query:
         return jsonify({'error': '请输入搜索内容'}), 400
     
+    is_weather_query = any(kw in query for kw in ['天气', '气温', '温度', '降雨', '下雨', '晴天', '多云', '阴天', '风速'])
+    
+    if is_weather_query:
+        import re
+        cleaned = query
+        for prefix in ['搜索', '搜', '查询', '查找', '查']:
+            if cleaned.startswith(prefix):
+                cleaned = cleaned[len(prefix):].strip()
+                break
+        cleaned = cleaned.replace('天气预报', '').replace('天气', '').replace('气温', '').replace('温度', '').replace('降雨', '').replace('下雨', '').replace('晴天', '').replace('多云', '').replace('阴天', '').replace('风速', '').strip()
+        cleaned = cleaned.replace('的', '').replace('是', '').strip()
+        cleaned = re.sub(r'[^\u4e00-\u9fa5]', '', cleaned)
+        
+        if not cleaned or len(cleaned) < 2:
+            city = '北京'
+        else:
+            city = cleaned
+        
+        log.info(f"Weather query detected: original={query}, extracted_city={city}")
+        
+        geo_result = geocode_city_openmeteo(city)
+        
+        if not geo_result and len(city) > 2:
+            short_city = city[:2]
+            log.info(f"Trying shorter city name: {short_city}")
+            geo_result = geocode_city_openmeteo(short_city)
+        
+        if not geo_result and len(city) > 3:
+            short_city = city[:3]
+            log.info(f"Trying shorter city name: {short_city}")
+            geo_result = geocode_city_openmeteo(short_city)
+        
+        if geo_result:
+            weather_data = fetch_weather_from_openmeteo(geo_result['latitude'], geo_result['longitude'])
+            if weather_data:
+                return jsonify({
+                    'success': True,
+                    'query': query,
+                    'engine': 'Open-Meteo',
+                    'type': 'weather',
+                    'weather_data': {
+                        'city': geo_result['name'] + (', ' + geo_result.get('country', '') if geo_result.get('country') else ''),
+                        'current_temp': weather_data['current']['temperature'],
+                        'current_condition': weather_data['current']['condition'],
+                        'feels_like': weather_data['current']['feels_like'],
+                        'humidity': weather_data['current']['humidity'],
+                        'wind': weather_data['current']['wind_speed'],
+                        'precipitation': weather_data['current']['precipitation'],
+                        'high_temp': weather_data['daily'][0]['high'] if weather_data['daily'] else '--',
+                        'low_temp': weather_data['daily'][0]['low'] if weather_data['daily'] else '--',
+                        'forecast': weather_data['daily'],
+                        'hourly': weather_data['hourly'],
+                        'update_time': weather_data['current']['time']
+                    },
+                    'responseTime': int((time.time() - start_time) * 1000)
+                })
+        else:
+            log.warning(f"Geocode failed for city: {city}, falling back to search")
+    else:
+        city = None
+    
     is_time_query = any(kw in query for kw in ['时间', '几点', '现在几点', '当前时间', '时区', '几点了', '什么时间'])
     
     if is_time_query:
@@ -13261,6 +13484,97 @@ def buy_membership():
         })
     else:
         return jsonify({'error': message}), 400
+
+@app.route('/api/weather/current', methods=['GET'])
+@login_required
+def get_weather_current():
+    try:
+        city = request.args.get('city', '').strip()
+        latitude = request.args.get('latitude', type=float)
+        longitude = request.args.get('longitude', type=float)
+        
+        if not city and (latitude is None or longitude is None):
+            return jsonify({'error': '请提供城市名称或经纬度'}), 400
+        
+        if city and (latitude is None or longitude is None):
+            geo_result = geocode_city_openmeteo(city)
+            if not geo_result:
+                return jsonify({'error': f'未找到城市: {city}'}), 404
+            latitude = geo_result['latitude']
+            longitude = geo_result['longitude']
+            location_name = geo_result['name']
+            country = geo_result.get('country', '')
+        else:
+            location_name = f'{latitude}, {longitude}'
+            country = ''
+        
+        weather_data = fetch_weather_from_openmeteo(latitude, longitude)
+        if not weather_data:
+            return jsonify({'error': '天气数据获取失败'}), 500
+        
+        return jsonify({
+            'success': True,
+            'location': {
+                'name': location_name,
+                'country': country,
+                'latitude': latitude,
+                'longitude': longitude,
+                'timezone': weather_data['timezone']
+            },
+            'current': weather_data['current'],
+            'hourly': weather_data['hourly'],
+            'daily': weather_data['daily'],
+            'data_source': 'Open-Meteo',
+            'attribution': 'Weather data by Open-Meteo.com (CC BY 4.0)'
+        })
+        
+    except Exception as e:
+        log.error(f"Weather API error: {e}")
+        return jsonify({'error': '服务器错误: ' + str(e)}), 500
+
+
+@app.route('/api/weather/forecast', methods=['GET'])
+@login_required
+def get_weather_forecast():
+    try:
+        city = request.args.get('city', '').strip()
+        days = request.args.get('days', 7, type=int)
+        
+        if not city:
+            return jsonify({'error': '请提供城市名称'}), 400
+        
+        if days < 1:
+            days = 1
+        if days > 16:
+            days = 16
+        
+        geo_result = geocode_city_openmeteo(city)
+        if not geo_result:
+            return jsonify({'error': f'未找到城市: {city}'}), 404
+        
+        latitude = geo_result['latitude']
+        longitude = geo_result['longitude']
+        
+        weather_data = fetch_weather_from_openmeteo(latitude, longitude)
+        if not weather_data:
+            return jsonify({'error': '天气数据获取失败'}), 500
+        
+        return jsonify({
+            'success': True,
+            'location': {
+                'name': geo_result['name'],
+                'country': geo_result.get('country', ''),
+                'latitude': latitude,
+                'longitude': longitude
+            },
+            'forecast': weather_data['daily'][:days],
+            'data_source': 'Open-Meteo',
+            'attribution': 'Weather data by Open-Meteo.com (CC BY 4.0)'
+        })
+        
+    except Exception as e:
+        log.error(f"Weather forecast API error: {e}")
+        return jsonify({'error': '服务器错误: ' + str(e)}), 500
 
 @app.route('/')
 def index():
