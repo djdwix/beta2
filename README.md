@@ -1,3 +1,5 @@
+[![CC BY-ND 4.0](https://licensebuttons.net/l/by-nd/4.0/88x31.png)](https://creativecommons.org/licenses/by-nd/4.0/deed.en) 
+
 # 虚拟手机号生成器系统
 
 一个功能完整的虚拟手机号生成与管理平台，包含积分系统、PL系统、游戏中心、智能客服等功能模块。
