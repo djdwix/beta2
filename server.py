@@ -4,6 +4,7 @@ from flask_bcrypt import Bcrypt
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from functools import wraps
+from pypinyin import lazy_pinyin
 import json
 import os
 import time
@@ -3544,24 +3545,183 @@ def geocode_city_openmeteo(city_name):
     try:
         import requests
         
-        url = f'https://geocoding-api.open-meteo.com/v1/search?name={requests.utils.quote(city_name)}&count=1&language=zh'
-        response = requests.get(url, timeout=10)
+        def to_pinyin(text):
+            try:
+                from pypinyin import lazy_pinyin
+                parts = lazy_pinyin(text)
+                return ''.join(parts).capitalize()
+            except Exception as e:
+                log.error(f"Pinyin error: {e}")
+                return text
         
-        if response.status_code != 200:
+        def query_geocode(name, count=5):
+            url = f'https://geocoding-api.open-meteo.com/v1/search?name={requests.utils.quote(name)}&count={count}&language=zh'
+            try:
+                response = requests.get(url, timeout=10)
+                if response.status_code != 200:
+                    return None
+                data = response.json()
+                if data.get('results') and len(data['results']) > 0:
+                    return data['results']
+                return None
+            except Exception as e:
+                log.error(f"Geocode query error for {name}: {e}")
+                return None
+        
+        def is_match(user_input, result_name, result_admin1='', result_country=''):
+            if not result_name:
+                return False
+            if result_country and result_country not in ['中国', 'China', '']:
+                return False
+            user_suffix = ''
+            for s in ['省', '市', '区', '县', '镇', '乡']:
+                if user_input.endswith(s):
+                    user_suffix = s
+                    break
+            result_suffix = ''
+            for s in ['省', '市', '区', '县', '镇', '乡']:
+                if result_name.endswith(s):
+                    result_suffix = s
+                    break
+            if user_suffix and result_suffix and user_suffix != result_suffix:
+                return False
+            core = user_input.rstrip('省市区县镇乡')
+            if not core:
+                return True
+            if core in result_name:
+                return True
+            if result_name in core:
+                return True
+            return False
+        
+        def pick_best(results, user_input):
+            if not results:
+                return None
+            valid = []
+            for r in results:
+                rname = r.get('name', '')
+                radmin1 = r.get('admin1', '')
+                rcountry = r.get('country', '')
+                if is_match(user_input, rname, radmin1, rcountry):
+                    valid.append(r)
+            if not valid:
+                return None
+            def score(r):
+                s = 0
+                rname = r.get('name', '')
+                radmin1 = r.get('admin1', '')
+                core = user_input.rstrip('省市区县镇乡')
+                if core and core == rname:
+                    s += 100
+                elif core and core in rname:
+                    s += 50
+                if radmin1 and radmin1 in user_input:
+                    s += 30
+                if user_input.endswith('县') and rname.endswith('县'):
+                    s += 20
+                if user_input.endswith('市') and rname.endswith('市'):
+                    s += 20
+                if user_input.endswith('区') and rname.endswith('区'):
+                    s += 20
+                return s
+            valid.sort(key=score, reverse=True)
+            return valid[0]
+        
+        def try_query(name):
+            results = query_geocode(name)
+            return pick_best(results, city_name)
+        
+        result = None
+        matched_name = city_name
+        
+        result = try_query(city_name)
+        if result:
+            log.info(f"Found city by original name: {city_name} -> {result.get('name')}")
+        
+        if not result:
+            pinyin_name = to_pinyin(city_name)
+            log.info(f"Trying pinyin (keep suffix): {city_name} -> {pinyin_name}")
+            result = try_query(pinyin_name)
+            if result:
+                matched_name = pinyin_name
+        
+        if not result and len(city_name) > 2:
+            suffixes = ['县', '区', '镇', '乡']
+            for suffix in suffixes:
+                if city_name.endswith(suffix):
+                    core = city_name[:-1]
+                    if len(core) >= 2:
+                        full_core = core + suffix
+                        log.info(f"Trying core+keep: {full_core}")
+                        result = try_query(full_core)
+                        if result:
+                            matched_name = full_core
+                            break
+                        pinyin_core = to_pinyin(full_core)
+                        log.info(f"Trying pinyin core+suffix: {full_core} -> {pinyin_core}")
+                        result = try_query(pinyin_core)
+                        if result:
+                            matched_name = pinyin_core
+                            break
+                        log.info(f"Trying core-only pinyin: {core} -> {to_pinyin(core)}")
+                        result = try_query(to_pinyin(core))
+                        if result:
+                            matched_name = to_pinyin(core)
+                            break
+        
+        if not result and len(city_name) > 2:
+            suffixes = ['市', '省']
+            for suffix in suffixes:
+                if city_name.endswith(suffix):
+                    core = city_name[:-1]
+                    if len(core) >= 2:
+                        log.info(f"Trying core-only: {core}")
+                        result = try_query(core)
+                        if result:
+                            matched_name = core
+                            break
+                        pinyin_core = to_pinyin(core)
+                        log.info(f"Trying pinyin core-only: {core} -> {pinyin_core}")
+                        result = try_query(pinyin_core)
+                        if result:
+                            matched_name = pinyin_core
+                            break
+        
+        if not result and len(city_name) > 3:
+            for i in range(len(city_name) - 1, 2, -1):
+                prefix = city_name[:i]
+                if len(prefix) >= 3:
+                    log.info(f"Trying prefix: {prefix}")
+                    result = try_query(prefix)
+                    if result:
+                        matched_name = prefix
+                        break
+                    pinyin_prefix = to_pinyin(prefix)
+                    log.info(f"Trying pinyin prefix: {prefix} -> {pinyin_prefix}")
+                    result = try_query(pinyin_prefix)
+                    if result:
+                        matched_name = pinyin_prefix
+                        break
+        
+        if not result:
+            log.warning(f"All geocode attempts failed for {city_name}")
             return None
         
-        data = response.json()
-        if not data.get('results'):
-            return None
+        display_name = result.get('name', city_name)
+        country = result.get('country', '')
+        admin1 = result.get('admin1', '')
         
-        result = data['results'][0]
+        log.info(f"Geocode success: {city_name} -> {display_name} ({country}, {admin1}) [{matched_name}]")
+        
         return {
-            'name': result.get('name', city_name),
+            'name': display_name,
             'latitude': result['latitude'],
             'longitude': result['longitude'],
-            'country': result.get('country', ''),
-            'admin1': result.get('admin1', ''),
-            'timezone': result.get('timezone', 'auto')
+            'country': country,
+            'admin1': admin1,
+            'timezone': result.get('timezone', 'auto'),
+            'matched_name': matched_name,
+            'original_name': city_name
         }
         
     except Exception as e:
@@ -12622,62 +12782,124 @@ def search_web():
     
     if is_weather_query:
         import re
-        cleaned = query
-        for prefix in ['搜索', '搜', '查询', '查找', '查']:
-            if cleaned.startswith(prefix):
-                cleaned = cleaned[len(prefix):].strip()
-                break
-        cleaned = cleaned.replace('天气预报', '').replace('天气', '').replace('气温', '').replace('温度', '').replace('降雨', '').replace('下雨', '').replace('晴天', '').replace('多云', '').replace('阴天', '').replace('风速', '').strip()
-        cleaned = cleaned.replace('的', '').replace('是', '').strip()
-        cleaned = re.sub(r'[^\u4e00-\u9fa5]', '', cleaned)
         
-        if not cleaned or len(cleaned) < 2:
-            city = '北京'
-        else:
-            city = cleaned
+        lat_lng_pattern = r'(-?\d+\.?\d*)\s*[,，\s]\s*(-?\d+\.?\d*)'
+        lat_lng_match = re.search(lat_lng_pattern, query)
         
-        log.info(f"Weather query detected: original={query}, extracted_city={city}")
+        geo_result = None
+        display_city = ''
         
-        geo_result = geocode_city_openmeteo(city)
+        if lat_lng_match:
+            try:
+                latitude = float(lat_lng_match.group(1))
+                longitude = float(lat_lng_match.group(2))
+                
+                if -90 <= latitude <= 90 and -180 <= longitude <= 180:
+                    log.info(f"Weather query by coordinates: lat={latitude}, lng={longitude}")
+                    
+                    weather_data = fetch_weather_from_openmeteo(latitude, longitude)
+                    if weather_data:
+                        display_city = f'坐标 ({latitude}, {longitude})'
+                        
+                        geo_result = {
+                            'name': display_city,
+                            'latitude': latitude,
+                            'longitude': longitude,
+                            'country': '',
+                            'admin1': '',
+                            'timezone': weather_data.get('timezone', 'auto'),
+                            'matched_name': display_city
+                        }
+                        
+                        return jsonify({
+                            'success': True,
+                            'query': query,
+                            'engine': 'Open-Meteo',
+                            'type': 'weather',
+                            'weather_data': {
+                                'city': display_city,
+                                'search_city': query,
+                                'matched_name': display_city,
+                                'admin1': '',
+                                'latitude': latitude,
+                                'longitude': longitude,
+                                'current_temp': weather_data['current']['temperature'],
+                                'current_condition': weather_data['current']['condition'],
+                                'feels_like': weather_data['current']['feels_like'],
+                                'humidity': weather_data['current']['humidity'],
+                                'wind': weather_data['current']['wind_speed'],
+                                'precipitation': weather_data['current']['precipitation'],
+                                'high_temp': weather_data['daily'][0]['high'] if weather_data['daily'] else '--',
+                                'low_temp': weather_data['daily'][0]['low'] if weather_data['daily'] else '--',
+                                'forecast': weather_data['daily'],
+                                'hourly': weather_data['hourly'],
+                                'update_time': weather_data['current']['time']
+                            },
+                            'responseTime': int((time.time() - start_time) * 1000)
+                        })
+                    else:
+                        log.warning(f"Weather fetch failed for coordinates: {latitude}, {longitude}")
+                else:
+                    log.warning(f"Invalid coordinates: {latitude}, {longitude}")
+            except Exception as e:
+                log.error(f"Coordinate parse error: {e}")
         
-        if not geo_result and len(city) > 2:
-            short_city = city[:2]
-            log.info(f"Trying shorter city name: {short_city}")
-            geo_result = geocode_city_openmeteo(short_city)
-        
-        if not geo_result and len(city) > 3:
-            short_city = city[:3]
-            log.info(f"Trying shorter city name: {short_city}")
-            geo_result = geocode_city_openmeteo(short_city)
-        
-        if geo_result:
-            weather_data = fetch_weather_from_openmeteo(geo_result['latitude'], geo_result['longitude'])
-            if weather_data:
-                return jsonify({
-                    'success': True,
-                    'query': query,
-                    'engine': 'Open-Meteo',
-                    'type': 'weather',
-                    'weather_data': {
-                        'city': geo_result['name'] + (', ' + geo_result.get('country', '') if geo_result.get('country') else ''),
-                        'current_temp': weather_data['current']['temperature'],
-                        'current_condition': weather_data['current']['condition'],
-                        'feels_like': weather_data['current']['feels_like'],
-                        'humidity': weather_data['current']['humidity'],
-                        'wind': weather_data['current']['wind_speed'],
-                        'precipitation': weather_data['current']['precipitation'],
-                        'high_temp': weather_data['daily'][0]['high'] if weather_data['daily'] else '--',
-                        'low_temp': weather_data['daily'][0]['low'] if weather_data['daily'] else '--',
-                        'forecast': weather_data['daily'],
-                        'hourly': weather_data['hourly'],
-                        'update_time': weather_data['current']['time']
-                    },
-                    'responseTime': int((time.time() - start_time) * 1000)
-                })
-        else:
-            log.warning(f"Geocode failed for city: {city}, falling back to search")
-    else:
-        city = None
+        if not geo_result:
+            cleaned = query
+            for prefix in ['搜索', '搜', '查询', '查找', '查']:
+                if cleaned.startswith(prefix):
+                    cleaned = cleaned[len(prefix):].strip()
+                    break
+            cleaned = cleaned.replace('天气预报', '').replace('天气', '').replace('气温', '').replace('温度', '').replace('降雨', '').replace('下雨', '').replace('晴天', '').replace('多云', '').replace('阴天', '').replace('风速', '').strip()
+            cleaned = cleaned.replace('的', '').replace('是', '').strip()
+            cleaned = re.sub(r'[^\u4e00-\u9fa5]', '', cleaned)
+            
+            if not cleaned or len(cleaned) < 2:
+                city = '北京'
+            else:
+                city = cleaned
+            
+            log.info(f"Weather query detected: original={query}, extracted_city={city}")
+            
+            geo_result = geocode_city_openmeteo(city)
+            
+            if geo_result:
+                weather_data = fetch_weather_from_openmeteo(geo_result['latitude'], geo_result['longitude'])
+                if weather_data:
+                    city_display = geo_result['name']
+                    if geo_result.get('admin1') and geo_result['admin1'] != geo_result['name']:
+                        city_display += ' · ' + geo_result['admin1']
+                    if geo_result.get('country'):
+                        city_display += ', ' + geo_result['country']
+                    
+                    return jsonify({
+                        'success': True,
+                        'query': query,
+                        'engine': 'Open-Meteo',
+                        'type': 'weather',
+                        'weather_data': {
+                            'city': city_display,
+                            'search_city': city,
+                            'matched_name': geo_result.get('matched_name', city),
+                            'admin1': geo_result.get('admin1', ''),
+                            'latitude': geo_result['latitude'],
+                            'longitude': geo_result['longitude'],
+                            'current_temp': weather_data['current']['temperature'],
+                            'current_condition': weather_data['current']['condition'],
+                            'feels_like': weather_data['current']['feels_like'],
+                            'humidity': weather_data['current']['humidity'],
+                            'wind': weather_data['current']['wind_speed'],
+                            'precipitation': weather_data['current']['precipitation'],
+                            'high_temp': weather_data['daily'][0]['high'] if weather_data['daily'] else '--',
+                            'low_temp': weather_data['daily'][0]['low'] if weather_data['daily'] else '--',
+                            'forecast': weather_data['daily'],
+                            'hourly': weather_data['hourly'],
+                            'update_time': weather_data['current']['time']
+                        },
+                        'responseTime': int((time.time() - start_time) * 1000)
+                    })
+            else:
+                log.warning(f"Geocode failed for city: {city}, falling back to search")
     
     is_time_query = any(kw in query for kw in ['时间', '几点', '现在几点', '当前时间', '时区', '几点了', '什么时间'])
     
