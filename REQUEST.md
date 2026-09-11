@@ -1,3 +1,5 @@
+[![CC BY-ND 4.0](https://licensebuttons.net/l/by-nd/4.0/88x31.png)](https://creativecommons.org/licenses/by-nd/4.0/deed.en)
+
 # Virtual mobile number generation system
 
 A fully functional virtual mobile number generation and management platform, which includes functional modules such as points system, PL system, game center and intelligent customer service.
