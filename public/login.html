@@ -45,7 +45,6 @@
         .message.error{background:#f8d7da;color:#721c24}
         .message.warning{background:#fff3cd;color:#856404}
         .message.info{background:#d1ecf1;color:#0c5460}
-        .performance-badge{position:fixed;bottom:20px;right:20px;background:rgba(0,0,0,0.75);color:#0f0;padding:6px 14px;border-radius:40px;font-size:12px;font-family:monospace;font-weight:600;z-index:1000;backdrop-filter:blur(8px)}
         .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:10001;justify-content:center;align-items:center}
         .modal-content{background:#fff;border-radius:24px;padding:32px;max-width:450px;width:90%;max-height:80vh;overflow-y:auto}
         .modal-content h3{margin-bottom:20px;color:#333}
@@ -248,7 +247,6 @@
             </div>
         </div>
     </div>
-    <div class="performance-badge" id="perfBadge">⏱️ 响应时间: --ms</div>
 
     <div id="forgotModal" class="modal">
         <div class="modal-content">
@@ -395,16 +393,6 @@
             toast.textContent = msg;
             document.body.appendChild(toast);
             setTimeout(function() { if (toast) toast.remove(); }, 3000);
-        }
-
-        function updatePerformanceBadge(ms) {
-            var el = document.getElementById('perfBadge');
-            if (el) {
-                el.innerHTML = '⚡ ' + ms + 'ms';
-                if (ms <= 60) el.style.color = '#0f0';
-                else if (ms <= 100) el.style.color = '#ff0';
-                else el.style.color = '#f00';
-            }
         }
 
         function getCsrfTokenFromCookie() {
@@ -662,14 +650,10 @@
             this.disabled = true;
 
             try {
-                var startTime = Date.now();
                 var response = await apiRequest('/api/login', {
                     method: 'POST',
                     body: JSON.stringify({ username: username, password: password })
                 });
-
-                var elapsed = Date.now() - startTime;
-                updatePerformanceBadge(elapsed);
 
                 msg.textContent = response.message || '登录成功';
                 msg.className = 'message success';
@@ -769,7 +753,6 @@
             this.disabled = true;
 
             try {
-                var startTime = Date.now();
                 var response = await apiRequest('/api/register', {
                     method: 'POST',
                     body: JSON.stringify({
@@ -780,9 +763,6 @@
                         verification_code: verificationCode
                     })
                 });
-
-                var elapsed = Date.now() - startTime;
-                updatePerformanceBadge(elapsed);
 
                 msg.textContent = response.message || '注册成功，正在跳转...';
                 msg.className = 'message success';

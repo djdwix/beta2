@@ -126,16 +126,6 @@ var isVerified = false;
 var announcementCollapsed = false;
 var pendingVerificationData = null;
 
-function updatePerformanceBadge(timeMs) {
-    var badge = document.getElementById('perfBadge');
-    if (badge) {
-        badge.innerHTML = '⚡ ' + timeMs + 'ms';
-        if (timeMs <= 60) badge.style.color = '#0f0';
-        else if (timeMs <= 100) badge.style.color = '#ff0';
-        else badge.style.color = '#f00';
-    }
-}
-
 function updateGenerateButtonState(dailyEarned) {
     var generateBtn = document.getElementById('generateBtn');
     if (dailyEarned >= 14) {

@@ -117,16 +117,6 @@ var isVerified = false;
 var isCheckingAuth = false;
 var claimTargetId = null;
 
-function updatePerformanceBadge(timeMs) {
-    var badge = document.getElementById('perfBadge');
-    if (badge) {
-        badge.innerHTML = '⚡ ' + timeMs + 'ms';
-        if (timeMs <= 60) badge.style.color = '#0f0';
-        else if (timeMs <= 100) badge.style.color = '#ff0';
-        else badge.style.color = '#f00';
-    }
-}
-
 function showToast(message, type) {
     type = type || 'success';
     var toast = document.createElement('div');
