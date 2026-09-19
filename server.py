@@ -1767,21 +1767,17 @@ def update_earned_points(username, points_to_add, bypass_limit=False):
     today = datetime.now().strftime('%Y-%m-%d')
     if username not in users:
         return False
-
     user_data = users[username]
-
     if 'dailyEarnedPoints' not in user_data:
         user_data['dailyEarnedPoints'] = 0
     if 'lastEarnedDate' not in user_data:
         user_data['lastEarnedDate'] = today
-
     if user_data['lastEarnedDate'] != today:
         user_data['dailyEarnedPoints'] = 0
         user_data['lastEarnedDate'] = today
         if user_data.get('dailyBonusAwarded', False):
             user_data['dailyBonusAwarded'] = False
             user_data['dailyBonusCode'] = None
-
     bonus_mult = get_bonus_multiplier()
     boost_mult = get_user_boost_multiplier(username)
     if bonus_mult > 1.0 and boost_mult > 1.0:
@@ -1790,7 +1786,6 @@ def update_earned_points(username, points_to_add, bypass_limit=False):
         points_to_add = round(points_to_add * bonus_mult, 2)
     elif boost_mult > 1.0:
         points_to_add = round(points_to_add * boost_mult, 2)
-
     if not bypass_limit:
         current_daily = user_data['dailyEarnedPoints']
         new_daily = current_daily + points_to_add
@@ -1805,12 +1800,14 @@ def update_earned_points(username, points_to_add, bypass_limit=False):
         if 'unlimitedPoints' not in user_data:
             user_data['unlimitedPoints'] = 0
         user_data['unlimitedPoints'] = round(user_data.get('unlimitedPoints', 0) + points_to_add, 2)
-
+    net_points, tax = calculate_high_balance_tax(username, points_to_add)
     if 'totalPoints' not in user_data:
         user_data['totalPoints'] = 0
-    user_data['totalPoints'] = round(user_data['totalPoints'] + points_to_add, 2)
+    user_data['totalPoints'] = round(user_data['totalPoints'] + net_points, 2)
+    if tax > 0:
+        add_system_total_points(tax)
+        log.info(f"High balance tax applied (earned) for {username}: earned={points_to_add}, tax={tax}, net={net_points}")
     save_users()
-
     if not bypass_limit:
         check_and_award_daily_bonus(username)
     return True
@@ -1818,14 +1815,17 @@ def update_earned_points(username, points_to_add, bypass_limit=False):
 def add_points_without_limit(username, points_to_add):
     if username not in users:
         return False
-
     user_data = users[username]
+    net_points, tax = calculate_high_balance_tax(username, points_to_add)
     if 'totalPoints' not in user_data:
         user_data['totalPoints'] = 0
-    user_data['totalPoints'] = round(user_data['totalPoints'] + points_to_add, 2)
+    user_data['totalPoints'] = round(user_data['totalPoints'] + net_points, 2)
     if 'unlimitedPoints' not in user_data:
         user_data['unlimitedPoints'] = 0
-    user_data['unlimitedPoints'] = round(user_data.get('unlimitedPoints', 0) + points_to_add, 2)
+    user_data['unlimitedPoints'] = round(user_data.get('unlimitedPoints', 0) + net_points, 2)
+    if tax > 0:
+        add_system_total_points(tax)
+        log.info(f"High balance tax applied (unlimited) for {username}: earned={points_to_add}, tax={tax}, net={net_points}")
     save_users()
     return True
 
@@ -3016,6 +3016,51 @@ def claim_newbie_reward(username):
     
     return reward, None
 
+def get_nav_profit_tax_rate(profit, cost):
+    if cost <= 0:
+        return 0.08
+    profit_ratio = profit / cost
+    if profit_ratio <= 0.05:
+        return 0.08
+    elif profit_ratio <= 0.10:
+        return 0.10
+    elif profit_ratio <= 0.20:
+        return 0.12
+    elif profit_ratio <= 0.35:
+        return 0.15
+    elif profit_ratio <= 0.50:
+        return 0.18
+    else:
+        return 0.20
+
+
+def calculate_high_balance_tax(username, points_earned):
+    if username not in users:
+        return points_earned, 0
+    user_data = users.get(username, {})
+    main_points = user_data.get('totalPoints', 0)
+    fund_balance = get_user_fund_balance(username)
+    total_assets = main_points + fund_balance
+    if total_assets > 100000:
+        tax = round(points_earned * 0.14, 4)
+        net_points = round(points_earned - tax, 4)
+        return net_points, tax
+    return points_earned, 0
+
+
+def add_game_points(username, points):
+    if username in users:
+        if 'totalPoints' not in users[username]:
+            users[username]['totalPoints'] = 0
+        net_points, tax = calculate_high_balance_tax(username, points)
+        users[username]['totalPoints'] = round(users[username]['totalPoints'] + net_points, 2)
+        if tax > 0:
+            add_system_total_points(tax)
+            log.info(f"High balance tax applied for {username}: earned={points}, tax={tax}, net={net_points}")
+        save_users()
+        return True
+    return False
+
 def cleanup_all_expired_data():
     current_time = int(time.time() * 1000)
 
@@ -3728,15 +3773,6 @@ def geocode_city_openmeteo(city_name):
         log.error(f"Open-Meteo geocoding error: {e}")
         return None
 
-def add_game_points(username, points):
-    if username in users:
-        if 'totalPoints' not in users[username]:
-            users[username]['totalPoints'] = 0
-        users[username]['totalPoints'] = round(users[username]['totalPoints'] + points, 2)
-        save_users()
-        return True
-    return False
-
 def get_user_data_func(username):
     return users.get(username, {})
 
@@ -4282,33 +4318,26 @@ def nav_buy(username, amount):
 def nav_sell(username, shares_to_sell):
     if shares_to_sell <= 0:
         return None, '赎回份额必须大于0'
-    
     holdings = nav_holdings.get(username, [])
     total_shares = sum(h.get('shares', 0) for h in holdings)
     if total_shares < shares_to_sell:
         return None, f'持有份额不足，需要{shares_to_sell}份，当前持有{total_shares:.2f}份'
-    
     today_start = int(datetime.now().replace(hour=0, minute=0, second=0, microsecond=0).timestamp() * 1000)
     today_end = int(datetime.now().replace(hour=23, minute=59, second=59, microsecond=999999).timestamp() * 1000)
-    
     today_buy_records = []
     for h in holdings:
         buy_time = h.get('buy_time', 0)
         if today_start <= buy_time <= today_end:
             today_buy_records.append(h)
-    
     if today_buy_records:
         today_buy_count = len(today_buy_records)
         today_buy_shares = sum(h.get('shares', 0) for h in today_buy_records)
         return None, f'您今天有{today_buy_count}笔申购记录（共{today_buy_shares:.2f}份），申购当天不得进行赎回操作，请于次日00:00后再试'
-    
     current_nav = get_current_nav()
-    
     remaining_to_sell = shares_to_sell
     total_amount = 0
     total_cost = 0
     new_holdings = []
-    
     for h in holdings:
         if remaining_to_sell <= 0:
             new_holdings.append(h)
@@ -4325,16 +4354,14 @@ def nav_sell(username, shares_to_sell):
             h['shares'] = new_shares
             new_holdings.append(h)
             remaining_to_sell = 0
-    
     nav_holdings[username] = new_holdings
     save_nav_holdings()
-    
     profit = round(total_amount - total_cost, 4)
-    
     user_data = users.get(username)
     if user_data:
         if profit > 0:
-            profit_fee = round(profit * 0.08, 4)
+            tax_rate = get_nav_profit_tax_rate(profit, total_cost)
+            profit_fee = round(profit * tax_rate, 4)
             user_receive = round(total_amount - profit_fee, 4)
             user_data['totalPoints'] = round(user_data['totalPoints'] + user_receive, 2)
             add_system_total_points(profit_fee)
@@ -4343,7 +4370,6 @@ def nav_sell(username, shares_to_sell):
             user_data['totalPoints'] = round(user_data['totalPoints'] + total_amount, 2)
             add_system_total_points(loss_amount)
         save_users()
-    
     record_id = f"nav_{int(time.time()*1000)}_{random.randint(1000,9999)}"
     nav_history[record_id] = {
         'id': record_id,
@@ -4353,68 +4379,68 @@ def nav_sell(username, shares_to_sell):
         'nav': current_nav,
         'amount': total_amount,
         'profit': profit,
-        'profit_fee': round(profit * 0.08, 4) if profit > 0 else 0,
+        'profit_fee': round(profit * get_nav_profit_tax_rate(profit, total_cost), 4) if profit > 0 else 0,
         'loss_amount': abs(profit) if profit < 0 else 0,
-        'user_receive': round(total_amount - (profit * 0.08), 4) if profit > 0 else total_amount,
+        'user_receive': round(total_amount - (profit * get_nav_profit_tax_rate(profit, total_cost)), 4) if profit > 0 else total_amount,
         'timestamp': int(time.time() * 1000)
     }
     save_nav_history()
-    
+    tax_rate = get_nav_profit_tax_rate(profit, total_cost) if profit > 0 else 0
     return {
         'amount': round(total_amount, 2),
         'shares': shares_to_sell,
         'nav': current_nav,
         'profit': profit,
-        'profit_fee': round(profit * 0.08, 4) if profit > 0 else 0,
+        'profit_fee': round(profit * tax_rate, 4) if profit > 0 else 0,
         'loss_amount': abs(profit) if profit < 0 else 0,
-        'user_receive': round(total_amount - (profit * 0.08), 4) if profit > 0 else total_amount
+        'user_receive': round(total_amount - (profit * tax_rate), 4) if profit > 0 else total_amount,
+        'tax_rate': tax_rate
     }, None
 
 def nav_sell_single(username, index, shares):
     if shares <= 0:
         return None, '赎回份额必须大于0'
-    
     holdings = nav_holdings.get(username, [])
     if index < 0 or index >= len(holdings):
         return None, '持仓不存在'
-    
     holding = holdings[index]
     if holding.get('shares', 0) < shares:
         return None, f'持有份额不足，需要{shares}份，当前持有{holding.get("shares", 0):.2f}份'
-    
     today_start = int(datetime.now().replace(hour=0, minute=0, second=0, microsecond=0).timestamp() * 1000)
     today_end = int(datetime.now().replace(hour=23, minute=59, second=59, microsecond=999999).timestamp() * 1000)
     buy_time = holding.get('buy_time', 0)
-    
     if today_start <= buy_time <= today_end:
         return None, '申购当天不得进行赎回操作，请于次日00:00后再试'
-    
     current_nav = get_current_nav()
     total_amount = shares * current_nav
     total_cost = shares * holding.get('buy_nav', 0)
     profit = round(total_amount - total_cost, 4)
-    
     if shares >= holding.get('shares', 0):
         del holdings[index]
     else:
         holding['shares'] = round(holding['shares'] - shares, 2)
-    
     nav_holdings[username] = holdings
     save_nav_holdings()
-    
     user_data = users.get(username)
+    profit_fee = 0
+    loss_amount = 0
+    user_receive = total_amount
     if user_data:
         if profit > 0:
-            profit_fee = round(profit * 0.08, 4)
+            tax_rate = get_nav_profit_tax_rate(profit, total_cost)
+            profit_fee = round(profit * tax_rate, 4)
             user_receive = round(total_amount - profit_fee, 4)
             user_data['totalPoints'] = round(user_data['totalPoints'] + user_receive, 2)
             add_system_total_points(profit_fee)
-        else:
+        elif profit < 0:
             loss_amount = abs(profit)
+            user_receive = total_amount
             user_data['totalPoints'] = round(user_data['totalPoints'] + total_amount, 2)
             add_system_total_points(loss_amount)
+        else:
+            user_receive = total_amount
+            user_data['totalPoints'] = round(user_data['totalPoints'] + total_amount, 2)
         save_users()
-    
     record_id = f"nav_{int(time.time()*1000)}_{random.randint(1000,9999)}"
     nav_history[record_id] = {
         'id': record_id,
@@ -4424,21 +4450,22 @@ def nav_sell_single(username, index, shares):
         'nav': current_nav,
         'amount': total_amount,
         'profit': profit,
-        'profit_fee': round(profit * 0.08, 4) if profit > 0 else 0,
-        'loss_amount': abs(profit) if profit < 0 else 0,
-        'user_receive': round(total_amount - (profit * 0.08), 4) if profit > 0 else total_amount,
+        'profit_fee': profit_fee,
+        'loss_amount': loss_amount,
+        'user_receive': user_receive,
         'timestamp': int(time.time() * 1000)
     }
     save_nav_history()
-    
+    tax_rate = get_nav_profit_tax_rate(profit, total_cost) if profit > 0 else 0
     return {
         'amount': round(total_amount, 2),
         'shares': shares,
         'nav': current_nav,
         'profit': profit,
-        'profit_fee': round(profit * 0.08, 4) if profit > 0 else 0,
-        'loss_amount': abs(profit) if profit < 0 else 0,
-        'user_receive': round(total_amount - (profit * 0.08), 4) if profit > 0 else total_amount
+        'profit_fee': profit_fee,
+        'loss_amount': loss_amount,
+        'user_receive': user_receive,
+        'tax_rate': tax_rate
     }, None
 
 def migrate_auth_codes():
@@ -13694,10 +13721,19 @@ def buy_membership():
         return jsonify({'error': '您已是游戏会员'}), 400
     success, message = game.activate_game_membership(users, save_users, username)
     if success:
+        if username in users and 'game_stats' in users[username]:
+            stats = users[username]['game_stats']
+            today = datetime.now().strftime('%Y-%m-%d')
+            if stats.get('today_date') == today:
+                pass
+        reload_if_changed()
         response_time = int((time.time() - start_time) * 1000)
         return jsonify({
             'success': True,
             'message': message,
+            'is_member': True,
+            'max_plays': game.get_member_max_plays(users, username),
+            'bonus_rate': game.get_member_bonus_rate(users, username) * 100,
             'responseTime': response_time
         })
     else:

@@ -64,6 +64,14 @@
         .fund-actions .action-card .profit-preview .negative{color:#e74c3c;font-weight:700}
         .fund-actions .action-card .profit-preview .neutral{color:#888;font-weight:700}
         .fund-actions .action-card .profit-preview .detail{display:block;font-size:11px;color:#999;margin-top:4px}
+        .tax-tier-info{background:#f0f4ff;border-radius:12px;padding:10px 14px;margin-top:8px;border-left:3px solid #667eea;font-size:11px;color:#555;line-height:1.7}
+        .tax-tier-info .tier-row{display:flex;justify-content:space-between;padding:2px 0}
+        .tax-tier-info .tier-row .tier-range{color:#888}
+        .tax-tier-info .tier-row .tier-rate{font-weight:600;color:#667eea}
+        .tax-tier-info .tier-row .tier-rate.high{color:#e74c3c}
+        .tax-tier-info .tier-title{font-weight:600;color:#333;margin-bottom:4px}
+        .high-balance-warning{background:#fef2f2;border-radius:12px;padding:10px 14px;margin-bottom:16px;border-left:3px solid #e74c3c;font-size:12px;color:#c0392b;display:none}
+        .high-balance-warning.show{display:block}
         .fund-history{margin-top:16px}
         .fund-history .history-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
         .fund-history .history-header h3{font-size:16px;color:#333}
@@ -111,8 +119,6 @@
         .sell-single-btn:not(:disabled):hover{transform:scale(1.05)}
         .sell-single-btn:disabled{opacity:0.6;cursor:not-allowed}
         .nav-holdings-empty{text-align:center;color:#bbb;padding:30px;font-size:13px}
-        .nav-chart-placeholder{text-align:center;padding:30px;color:#999;background:#f8f9fa;border-radius:12px;font-size:13px}
-        .refund-tag{display:inline-block;background:#8e44ad20;color:#8e44ad;font-size:10px;padding:1px 8px;border-radius:10px;margin-left:4px;font-weight:600}
         .error-boundary{background:#fef2f2;border:2px solid #fecaca;border-radius:16px;padding:20px;margin-bottom:20px;text-align:center;display:none}
         .error-boundary .error-icon{font-size:48px;color:#dc2626;margin-bottom:12px}
         .error-boundary .error-title{font-size:18px;font-weight:700;color:#dc2626;margin-bottom:8px}
@@ -146,6 +152,11 @@
         <div class="pl-warning">
             <i class="fas fa-exclamation-triangle"></i>
             <span>理财账户中的积分可用于商城支付，但<b>禁止</b>用于PL兑换、PL转账等PL相关操作</span>
+        </div>
+
+        <div id="highBalanceWarning" class="high-balance-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            <b>高余额提示：</b>您的主资金+理财资金已超过 <b>100,000</b> 积分，每获得1积分将额外缴纳 <b>14%</b> 税费（实际到账86%），该税费可与原有税费叠加计算。
         </div>
 
         <div class="fund-tabs">
@@ -205,7 +216,16 @@
                         <div class="action-desc">卖出持有份额，按当前净值计算</div>
                         <div class="input-group"><input type="number" id="navSellShares" placeholder="输入份额数量" min="0.01" step="0.01"><button class="sell-nav" id="navSellBtn">赎回</button></div>
                         <div class="balance-info">持有份额: <span id="navHoldingsInfo">0.00</span> 份</div>
-                        <div class="profit-preview" id="navSellPreview">📊 预计获得: <span class="neutral" id="navSellPreviewAmount">0.00</span> 积分<span class="detail">收益的8%将归入系统池，亏损全额归入系统池</span></div>
+                        <div class="profit-preview" id="navSellPreview">📊 预计获得: <span class="neutral" id="navSellPreviewAmount">0.00</span> 积分</div>
+                        <div class="tax-tier-info" id="taxTierInfo">
+                            <div class="tier-title">📊 收益阶梯税费（收益/成本比例）</div>
+                            <div class="tier-row"><span class="tier-range">≤ 5%</span><span class="tier-rate">8%</span></div>
+                            <div class="tier-row"><span class="tier-range">5% ~ 10%</span><span class="tier-rate">10%</span></div>
+                            <div class="tier-row"><span class="tier-range">10% ~ 20%</span><span class="tier-rate">12%</span></div>
+                            <div class="tier-row"><span class="tier-range">20% ~ 35%</span><span class="tier-rate">15%</span></div>
+                            <div class="tier-row"><span class="tier-range">35% ~ 50%</span><span class="tier-rate">18%</span></div>
+                            <div class="tier-row"><span class="tier-range">&gt; 50%</span><span class="tier-rate high">20% (最高)</span></div>
+                        </div>
                         <div class="warning-tip danger"><i class="fas fa-exclamation-circle"></i> 申购当天不得进行赎回操作，请于次日00:00后再试</div>
                     </div>
                 </div>
@@ -334,6 +354,7 @@
         var currentTab = 'fixed';
         var initRetryCount = 0;
         var MAX_INIT_RETRIES = 3;
+        var userEffectivePoints = 0;
 
         function showToast(message, type) {
             type = type || 'success';
@@ -360,6 +381,18 @@
             if (el) el.style.display = 'none';
         }
 
+        function updateHighBalanceWarning(effectivePoints) {
+            userEffectivePoints = effectivePoints || 0;
+            var warningEl = document.getElementById('highBalanceWarning');
+            if (warningEl) {
+                if (userEffectivePoints > 100000) {
+                    warningEl.classList.add('show');
+                } else {
+                    warningEl.classList.remove('show');
+                }
+            }
+        }
+
         async function loadUserInfo() {
             try {
                 var data = await apiRequest('/api/check-auth');
@@ -369,6 +402,9 @@
                     document.getElementById('totalPointsDisplay').textContent = (data.totalPoints || 0).toFixed(2);
                     document.getElementById('availablePoints').textContent = (data.totalPoints || 0).toFixed(2);
                     document.getElementById('navAvailablePoints').textContent = (data.totalPoints || 0).toFixed(2);
+                    if (data.effectivePoints !== undefined) {
+                        updateHighBalanceWarning(data.effectivePoints);
+                    }
                     return true;
                 } else {
                     window.location.href = '/login.html';
@@ -395,6 +431,9 @@
                 document.getElementById('todayInterest').textContent = data.todayInterest.toFixed(4);
                 document.getElementById('availablePoints').textContent = data.availablePoints.toFixed(2);
                 document.getElementById('navAvailablePoints').textContent = data.availablePoints.toFixed(2);
+                if (data.effectivePoints !== undefined) {
+                    updateHighBalanceWarning(data.effectivePoints);
+                }
                 return data;
             } catch (error) {
                 console.error('Load fund data failed:', error);
@@ -436,11 +475,17 @@
                 var profitLabel = document.getElementById('navProfitLabel');
                 if (data.profit !== undefined && data.profit !== null) {
                     profitEl.textContent = (data.profit >= 0 ? '+' : '') + data.profit.toFixed(2);
-                    if (data.profit > 0) { profitEl.className = 'value green';
-                        profitLabel.textContent = '📈 未实现盈利'; } else if (data.profit < 0) { profitEl.className = 'value red';
-                        profitLabel.textContent = '📉 未实现亏损'; } else { profitEl.className = 'value';
+                    if (data.profit > 0) {
+                        profitEl.className = 'value green';
+                        profitLabel.textContent = '📈 未实现盈利';
+                    } else if (data.profit < 0) {
+                        profitEl.className = 'value red';
+                        profitLabel.textContent = '📉 未实现亏损';
+                    } else {
+                        profitEl.className = 'value';
                         profitEl.style.color = '#888';
-                        profitLabel.textContent = '➖ 持平'; }
+                        profitLabel.textContent = '➖ 持平';
+                    }
                 } else {
                     profitEl.textContent = '0.00';
                     profitEl.className = 'value';
@@ -510,8 +555,7 @@
             if (!shares || shares <= 0) { showToast('份额无效', 'error'); return; }
             if (!confirm('确认赎回 ' + shares.toFixed(2) + ' 份吗？')) return;
             var btn = document.querySelector('.sell-single-btn[data-index="' + index + '"]');
-            if (btn) { btn.disabled = true;
-                btn.textContent = '处理中...'; }
+            if (btn) { btn.disabled = true; btn.textContent = '处理中...'; }
             try {
                 var data = await apiRequest('/api/fund/nav/sell-single', { method: 'POST', body: JSON.stringify({ index: index, shares: shares }) });
                 showToast(data.message, 'success');
@@ -519,10 +563,23 @@
                 await loadNavData();
                 await loadHistory();
             } catch (error) {
-                if (error.message && error.message.includes('申购当天不得进行赎回操作')) { showToast('⚠️ ' + error.message, 'warning'); } else { showToast('赎回失败: ' + error.message, 'error'); }
-                if (btn) { btn.disabled = false;
-                    btn.textContent = '赎回'; }
+                if (error.message && error.message.includes('申购当天不得进行赎回操作')) {
+                    showToast('⚠️ ' + error.message, 'warning');
+                } else {
+                    showToast('赎回失败: ' + error.message, 'error');
+                }
+                if (btn) { btn.disabled = false; btn.textContent = '赎回'; }
             }
+        }
+
+        function calculateTaxRate(profitRatio) {
+            if (profitRatio <= 0) return 0.08;
+            if (profitRatio <= 0.05) return 0.08;
+            if (profitRatio <= 0.10) return 0.10;
+            if (profitRatio <= 0.20) return 0.12;
+            if (profitRatio <= 0.35) return 0.15;
+            if (profitRatio <= 0.50) return 0.18;
+            return 0.20;
         }
 
         function updateNavPreview() {
@@ -541,11 +598,45 @@
             var sellVal = parseFloat(sellInput.value) || 0;
             if (navPrice > 0 && sellVal > 0) {
                 var amount = sellVal * navPrice;
-                document.getElementById('navSellPreviewAmount').textContent = amount.toFixed(2);
+                var holdings = navData ? navData.holdings : [];
+                var totalShares = navData ? navData.total_shares : 0;
+                var avgCost = navData ? navData.avg_cost : 0;
+                var previewAmount = amount;
+                var detailHtml = '';
+                if (avgCost > 0 && totalShares > 0) {
+                    var sellRatio = sellVal / totalShares;
+                    var estimatedCost = avgCost * sellVal;
+                    var estimatedProfit = amount - estimatedCost;
+                    if (estimatedProfit > 0) {
+                        var profitRatio = estimatedProfit / estimatedCost;
+                        var taxRate = calculateTaxRate(profitRatio);
+                        var taxAmount = estimatedProfit * taxRate;
+                        previewAmount = amount - taxAmount;
+                        detailHtml = '<span class="detail">预计收益: +' + estimatedProfit.toFixed(2) + ' | 税率: ' + (taxRate * 100).toFixed(0) + '% | 税费: ' + taxAmount.toFixed(2) + '</span>';
+                    } else if (estimatedProfit < 0) {
+                        detailHtml = '<span class="detail">预计亏损: ' + estimatedProfit.toFixed(2) + ' | 亏损全额归入系统池</span>';
+                    } else {
+                        detailHtml = '<span class="detail">预计持平，无税费</span>';
+                    }
+                }
+                document.getElementById('navSellPreviewAmount').textContent = previewAmount.toFixed(2);
                 document.getElementById('navSellPreviewAmount').className = 'neutral';
+                var previewEl = document.getElementById('navSellPreview');
+                if (previewEl) {
+                    var existingDetail = previewEl.querySelector('.detail');
+                    if (existingDetail) existingDetail.remove();
+                    if (detailHtml) {
+                        previewEl.insertAdjacentHTML('beforeend', detailHtml);
+                    }
+                }
             } else {
                 document.getElementById('navSellPreviewAmount').textContent = '0.00';
                 document.getElementById('navSellPreviewAmount').className = 'neutral';
+                var previewEl2 = document.getElementById('navSellPreview');
+                if (previewEl2) {
+                    var existingDetail2 = previewEl2.querySelector('.detail');
+                    if (existingDetail2) existingDetail2.remove();
+                }
             }
         }
 
@@ -561,7 +652,10 @@
 
         function renderHistory(records) {
             var container = document.getElementById('historyList');
-            if (!records || records.length === 0) { container.innerHTML = '<div class="empty-state">暂无操作记录</div>'; return; }
+            if (!records || records.length === 0) {
+                container.innerHTML = '<div class="empty-state">暂无操作记录</div>';
+                return;
+            }
             var html = '';
             records.forEach(function(record) {
                 var typeClass = record.type;
@@ -574,8 +668,12 @@
                 html += '<div class="history-item">';
                 html += '<div class="h-left">';
                 html += '<span class="h-type ' + typeClass + '">' + typeLabel + '</span>';
-                if (record.type === 'refund' && record.reason) { html += '<span class="h-reason">' + record.reason + '</span>'; }
-                if (record.type === 'refund' && record.order_id) { html += '<span class="h-reason">订单: ' + record.order_id + '</span>'; }
+                if (record.type === 'refund' && record.reason) {
+                    html += '<span class="h-reason">' + record.reason + '</span>';
+                }
+                if (record.type === 'refund' && record.order_id) {
+                    html += '<span class="h-reason">订单: ' + record.order_id + '</span>';
+                }
                 html += '<span class="h-time">' + time + '</span>';
                 html += '</div>';
                 html += '<span class="h-amount ' + amountClass + '">' + sign + amountDisplay + '</span>';
@@ -599,9 +697,13 @@
                 await loadUserInfo();
                 await loadFundData();
                 await loadHistory();
-            } catch (error) { showToast('存入失败: ' + error.message, 'error'); } finally { btn.disabled = false;
+            } catch (error) {
+                showToast('存入失败: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
                 btn.textContent = '存入';
-                input.disabled = false; }
+                input.disabled = false;
+            }
         });
 
         document.getElementById('withdrawBtn').addEventListener('click', async function() {
@@ -619,9 +721,13 @@
                 await loadUserInfo();
                 await loadFundData();
                 await loadHistory();
-            } catch (error) { showToast('提取失败: ' + error.message, 'error'); } finally { btn.disabled = false;
+            } catch (error) {
+                showToast('提取失败: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
                 btn.textContent = '提取';
-                input.disabled = false; }
+                input.disabled = false;
+            }
         });
 
         document.getElementById('navBuyBtn').addEventListener('click', async function() {
@@ -639,9 +745,13 @@
                 await loadUserInfo();
                 await loadNavData();
                 await loadHistory();
-            } catch (error) { showToast('申购失败: ' + error.message, 'error'); } finally { btn.disabled = false;
+            } catch (error) {
+                showToast('申购失败: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
                 btn.textContent = '申购';
-                input.disabled = false; }
+                input.disabled = false;
+            }
         });
 
         document.getElementById('navSellBtn').addEventListener('click', async function() {
@@ -660,10 +770,16 @@
                 await loadNavData();
                 await loadHistory();
             } catch (error) {
-                if (error.message && error.message.includes('申购当天不得进行赎回操作')) { showToast('⚠️ ' + error.message, 'warning'); } else { showToast('赎回失败: ' + error.message, 'error'); }
-            } finally { btn.disabled = false;
+                if (error.message && error.message.includes('申购当天不得进行赎回操作')) {
+                    showToast('⚠️ ' + error.message, 'warning');
+                } else {
+                    showToast('赎回失败: ' + error.message, 'error');
+                }
+            } finally {
+                btn.disabled = false;
                 btn.textContent = '赎回';
-                input.disabled = false; }
+                input.disabled = false;
+            }
         });
 
         document.getElementById('clearHistoryBtn').addEventListener('click', async function() {
@@ -672,7 +788,9 @@
                 await apiRequest('/api/fund/history/clear', { method: 'DELETE' });
                 showToast('操作记录已清空', 'success');
                 await loadHistory();
-            } catch (error) { showToast('清空失败: ' + error.message, 'error'); }
+            } catch (error) {
+                showToast('清空失败: ' + error.message, 'error');
+            }
         });
 
         document.getElementById('navBuyAmount').addEventListener('input', updateNavPreview);
@@ -680,10 +798,17 @@
 
         function switchTab(tabName) {
             currentTab = tabName;
-            document.querySelectorAll('.fund-tabs .tab').forEach(function(el) { el.classList.remove('active'); if (el.dataset.tab === tabName) el.classList.add('active'); });
-            document.querySelectorAll('.tab-content').forEach(function(el) { el.classList.remove('active'); });
+            document.querySelectorAll('.fund-tabs .tab').forEach(function(el) {
+                el.classList.remove('active');
+                if (el.dataset.tab === tabName) el.classList.add('active');
+            });
+            document.querySelectorAll('.tab-content').forEach(function(el) {
+                el.classList.remove('active');
+            });
             document.getElementById('tab' + tabName.charAt(0).toUpperCase() + tabName.slice(1)).classList.add('active');
-            if (tabName === 'nav') { loadNavData(); }
+            if (tabName === 'nav') {
+                loadNavData();
+            }
         }
 
         document.querySelectorAll('.fund-tabs .tab').forEach(function(tab) {
@@ -697,8 +822,12 @@
                 try {
                     await loadFundData();
                     await loadRateData();
-                    if (currentTab === 'nav') { await loadNavData(); }
-                } catch (e) { console.error('Auto refresh failed:', e); }
+                    if (currentTab === 'nav') {
+                        await loadNavData();
+                    }
+                } catch (e) {
+                    console.error('Auto refresh failed:', e);
+                }
             }, 60000);
         }
 
@@ -726,10 +855,16 @@
             }
         }
 
-        window.addEventListener('beforeunload', function() { if (refreshInterval) { clearInterval(refreshInterval);
-                refreshInterval = null; } });
+        window.addEventListener('beforeunload', function() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+            }
+        });
         document.addEventListener('DOMContentLoaded', function() { init(); });
-        if (document.readyState === 'complete' || document.readyState === 'interactive') { init(); }
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            init();
+        }
     </script>
 </body>
 </html>

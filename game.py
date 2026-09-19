@@ -64,6 +64,12 @@ def activate_game_membership(users, save_users_func, username):
     user_data['membership']['activated_at'] = int(time.time() * 1000)
     user_data['membership']['expires_at'] = 0
     user_data['membership']['lifetime'] = True
+    if 'game_stats' in user_data:
+        stats = user_data['game_stats']
+        today = datetime.now().strftime('%Y-%m-%d')
+        if stats.get('today_date') == today:
+            if stats.get('today_plays', 0) > NORMAL_MAX_PLAYS:
+                pass
     save_users_func()
     return True, '游戏会员开通成功！每日游戏次数提升至10次，获胜积分+30%'
 
@@ -89,6 +95,9 @@ def migrate_game_membership_data(users, save_users_func):
                 modified = True
             if 'expires_at' not in membership:
                 membership['expires_at'] = 0
+                modified = True
+            if 'is_member' not in membership:
+                membership['is_member'] = False
                 modified = True
     if modified:
         save_users_func()

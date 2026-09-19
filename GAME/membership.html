@@ -42,7 +42,19 @@
         @keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
         .loading{text-align:center;padding:40px;color:rgba(255,255,255,0.3)}
         .loading i{font-size:28px;display:block;margin-bottom:12px;color:#667eea}
-        @media(max-width:768px){.membership-card{padding:20px}.membership-card .price{font-size:32px}.status-bar{flex-direction:column;align-items:flex-start}}
+        .member-active-card{background:linear-gradient(145deg,rgba(52,211,153,0.1),rgba(5,150,105,0.02));border-radius:24px;padding:32px;border:1px solid rgba(52,211,153,0.2);text-align:center;margin-bottom:24px}
+        .member-active-card .crown-active{font-size:64px;display:block;margin-bottom:12px}
+        .member-active-card .title-active{font-size:28px;font-weight:700;color:#34d399;margin-bottom:8px}
+        .member-active-card .subtitle-active{font-size:15px;color:rgba(255,255,255,0.5);margin-bottom:20px}
+        .member-active-card .perks-active{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:20px 0;text-align:left}
+        .member-active-card .perks-active .perk-active{background:rgba(52,211,153,0.08);padding:12px 16px;border-radius:12px;display:flex;align-items:center;gap:10px;font-size:14px;color:rgba(255,255,255,0.8)}
+        .member-active-card .perks-active .perk-active .icon{font-size:20px;flex-shrink:0}
+        .member-active-card .active-badge{display:inline-block;padding:8px 28px;background:linear-gradient(135deg,#34d399,#059669);color:#1a1a2e;border-radius:40px;font-size:16px;font-weight:700;margin-top:8px}
+        .bonus-info-box{background:rgba(251,191,36,0.08);border-radius:16px;padding:16px 20px;border:1px solid rgba(251,191,36,0.15);margin-bottom:24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+        .bonus-info-box .bonus-icon{font-size:28px}
+        .bonus-info-box .bonus-text{font-size:14px;color:rgba(255,255,255,0.7);line-height:1.6}
+        .bonus-info-box .bonus-text strong{color:#fbbf24}
+        @media(max-width:768px){.membership-card{padding:20px}.membership-card .price{font-size:32px}.status-bar{flex-direction:column;align-items:flex-start}.member-active-card{padding:20px}}
     </style>
 </head>
 <body>
@@ -74,19 +86,44 @@
             </div>
         </div>
 
-        <div class="membership-card" id="membershipCard">
-            <span class="crown">👑</span>
-            <div class="title">游戏终身会员</div>
-            <div class="subtitle">一次购买，永久享受会员权益</div>
-            <div class="price">288.88 <small>积分</small></div>
-            <div class="perks">
-                <div class="perk"><span class="icon">🎯</span> 每日游戏次数 <strong>10次</strong>（普通用户5次）</div>
-                <div class="perk"><span class="icon">⭐</span> 获胜积分 <strong>+30%</strong> 加成</div>
-                <div class="perk"><span class="icon">♾️</span> 永久有效，无需续费</div>
-                <div class="perk"><span class="icon">🏆</span> 专属会员标识</div>
+        <div id="notMemberSection">
+            <div class="bonus-info-box">
+                <span class="bonus-icon">💡</span>
+                <div class="bonus-text">
+                    开通会员后，每日游戏次数从 <strong>5次</strong> 提升至 <strong>10次</strong>，
+                    获胜积分额外获得 <strong>+30%</strong> 加成，一次购买永久有效。
+                </div>
             </div>
-            <button class="btn btn-gold" id="buyBtn" onclick="buyMembership()">👑 立即开通会员</button>
-            <div style="margin-top:12px;font-size:13px;color:rgba(255,255,255,0.3);">直接支付，无需创建订单</div>
+
+            <div class="membership-card" id="membershipCard">
+                <span class="crown">👑</span>
+                <div class="title">游戏终身会员</div>
+                <div class="subtitle">一次购买，永久享受会员权益</div>
+                <div class="price">288.88 <small>积分</small></div>
+                <div class="perks">
+                    <div class="perk"><span class="icon">🎯</span> 每日游戏次数 <strong>10次</strong>（普通用户5次）</div>
+                    <div class="perk"><span class="icon">⭐</span> 获胜积分 <strong>+30%</strong> 加成</div>
+                    <div class="perk"><span class="icon">♾️</span> 永久有效，无需续费</div>
+                    <div class="perk"><span class="icon">🏆</span> 专属会员标识</div>
+                </div>
+                <button class="btn btn-gold" id="buyBtn" onclick="buyMembership()">👑 立即开通会员</button>
+                <div style="margin-top:12px;font-size:13px;color:rgba(255,255,255,0.3);">直接支付，无需创建订单</div>
+            </div>
+        </div>
+
+        <div id="memberSection" style="display:none;">
+            <div class="member-active-card">
+                <span class="crown-active">👑</span>
+                <div class="title-active">游戏终身会员</div>
+                <div class="subtitle-active">您已享受全部会员权益</div>
+                <div class="perks-active">
+                    <div class="perk-active"><span class="icon">🎯</span> 每日游戏次数 <strong>10次</strong>（已生效）</div>
+                    <div class="perk-active"><span class="icon">⭐</span> 获胜积分 <strong>+30%</strong> 加成（已生效）</div>
+                    <div class="perk-active"><span class="icon">♾️</span> 永久有效，无需续费</div>
+                    <div class="perk-active"><span class="icon">🏆</span> 专属会员标识（已激活）</div>
+                </div>
+                <div class="active-badge">✅ 会员已激活</div>
+            </div>
         </div>
     </div>
 </div>
@@ -95,6 +132,7 @@
     var csrfToken = null;
     var csrfTokenLastFetch = 0;
     var membershipData = null;
+    var isMember = false;
 
     function getCsrfTokenFromCookie() {
         try {
@@ -195,10 +233,11 @@
         try {
             var data = await apiRequest('/api/membership/status');
             membershipData = data;
+            isMember = data.is_member || false;
+
             document.getElementById('loadingState').style.display = 'none';
             document.getElementById('mainContent').style.display = 'block';
 
-            var isMember = data.is_member || false;
             var statusEl = document.getElementById('membershipStatus');
             if (isMember) {
                 statusEl.textContent = '✅ 会员已开通';
@@ -213,25 +252,29 @@
             document.getElementById('dailyPlays').textContent = todayPlays + ' / ' + maxPlays;
 
             var bonusRate = isMember ? 30 : 0;
-            document.getElementById('bonusRate').textContent = '+' + bonusRate + '%';
-
-            var expiryEl = document.getElementById('expiryDate');
-            if (isMember && data.expires_at) {
-                var expDate = new Date(data.expires_at);
-                expiryEl.textContent = expDate.toLocaleDateString('zh-CN') + ' 永久';
+            var bonusEl = document.getElementById('bonusRate');
+            bonusEl.textContent = '+' + bonusRate + '%';
+            if (isMember) {
+                bonusEl.className = 'value green';
             } else {
-                expiryEl.textContent = '—';
+                bonusEl.className = 'value';
             }
 
-            var buyBtn = document.getElementById('buyBtn');
+            var expiryEl = document.getElementById('expiryDate');
             if (isMember) {
-                buyBtn.textContent = '✅ 已是会员';
-                buyBtn.disabled = true;
-                buyBtn.className = 'btn btn-outline';
+                expiryEl.textContent = '永久有效';
+                expiryEl.className = 'value gold';
             } else {
-                buyBtn.textContent = '👑 立即开通会员';
-                buyBtn.disabled = false;
-                buyBtn.className = 'btn btn-gold';
+                expiryEl.textContent = '—';
+                expiryEl.className = 'value';
+            }
+
+            if (isMember) {
+                document.getElementById('notMemberSection').style.display = 'none';
+                document.getElementById('memberSection').style.display = 'block';
+            } else {
+                document.getElementById('notMemberSection').style.display = 'block';
+                document.getElementById('memberSection').style.display = 'none';
             }
 
         } catch (e) {
@@ -254,10 +297,11 @@
 
             if (data.success) {
                 showMessage('🎉 ' + data.message, 'success');
+                isMember = true;
                 await loadMembershipStatus();
-                var maxPlays = 10;
-                document.getElementById('dailyPlays').textContent = '0 / ' + maxPlays;
-                document.getElementById('bonusRate').textContent = '+30%';
+                setTimeout(function() {
+                    window.location.reload();
+                }, 1500);
             } else {
                 showMessage(data.error || '购买失败', 'error');
                 btn.disabled = false;

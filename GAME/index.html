@@ -273,6 +273,7 @@
                 document.getElementById('memberStatus').style.color = '#fbbf24';
                 document.getElementById('bonusDisplay').textContent = '加成: +30%';
                 document.getElementById('bonusDisplay').style.color = '#34d399';
+                isMember = true;
             }
         } catch (e) {
             console.error('Stats error:', e);
@@ -286,6 +287,7 @@
             var html = '';
             var remaining = data.stats.remaining_plays || 0;
             var isMemberFlag = data.stats.is_member || false;
+            isMember = isMemberFlag;
             data.games.forEach(function(g) {
                 var disabled = remaining <= 0 ? 'disabled' : '';
                 var memberTag = isMemberFlag ? ' <span style="font-size:10px;color:#fbbf24;">👑</span>' : '';
@@ -299,6 +301,7 @@
             });
             grid.innerHTML = html;
             await loadStats();
+            await loadMemberStatus();
         } catch (e) {
             console.error('Load games error:', e);
             document.getElementById('gameGrid').innerHTML = '<div class="loading"><i class="fas fa-exclamation-triangle" style="color:#f87171;font-size:28px;display:block;margin-bottom:12px;"></i>加载失败: ' + escapeHtml(e.message) + '</div>';
@@ -734,10 +737,13 @@
             });
             el.classList.add('active-roulette');
         }
-        gameData.rouletteBet = { type: type, value: value || parseInt(document.getElementById('rouletteNumber').value) || 7 };
         var numInput = document.getElementById('rouletteNumber');
-        if (numInput) {
-            numInput.disabled = (type !== 'number');
+        if (type === 'number') {
+            numInput.disabled = false;
+            gameData.rouletteBet = { type: type, value: parseInt(numInput.value) || 7 };
+        } else {
+            numInput.disabled = true;
+            gameData.rouletteBet = { type: type, value: 0 };
         }
     }
 
@@ -749,7 +755,7 @@
         try {
             var bet = gameData.rouletteBet || { type: 'number', value: 7 };
             var numInput = document.getElementById('rouletteNumber');
-            if (bet.type === 'number' && numInput) {
+            if (bet.type === 'number') {
                 var val = parseInt(numInput.value);
                 if (isNaN(val) || val < 0 || val > 36) {
                     showMessage('请输入0-36之间的数字', 'error');
