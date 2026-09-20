@@ -48,3 +48,5 @@ Thumbs.db
 *.backup
 
 admin.py
+
+knowledge_base.json
