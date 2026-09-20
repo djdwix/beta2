@@ -430,6 +430,17 @@ def save_system_total_points(points):
 
 system_total_points = load_system_total_points()
 
+
+def burn_excess_system_points():
+    global system_total_points
+    if system_total_points >= SYSTEM_POINTS_BURN_THRESHOLD:
+        burned = system_total_points - SYSTEM_POINTS_BURN_THRESHOLD
+        system_total_points = SYSTEM_POINTS_BURN_THRESHOLD
+        save_system_total_points(system_total_points)
+        log.info(f"System points pool auto-burned: burned={burned}, remaining={system_total_points}")
+        return burned
+    return 0
+
 def load_newbie_pool_data():
     if os.path.exists(NEWBIE_POOL_FILE):
         try:
@@ -510,6 +521,10 @@ def deduct_system_total_points(amount):
 def add_system_total_points(amount):
     global system_total_points
     system_total_points = system_total_points + amount
+    if system_total_points >= SYSTEM_POINTS_BURN_THRESHOLD:
+        burned = system_total_points - SYSTEM_POINTS_BURN_THRESHOLD
+        system_total_points = SYSTEM_POINTS_BURN_THRESHOLD
+        log.info(f"System points pool auto-burned: burned={burned}, remaining={system_total_points}")
     save_system_total_points(system_total_points)
     return system_total_points
 
@@ -1091,6 +1106,7 @@ CHECKIN_BONUS_MIN = 300
 CHECKIN_BONUS_MAX = 1800
 NEW_USER_PROTECT_DAYS = 14
 NEW_USER_BONUS_RATIO = 0.15
+SYSTEM_POINTS_BURN_THRESHOLD = 85000
 
 def get_gateway_stock_today():
     today = datetime.now().strftime('%Y-%m-%d')
@@ -10058,6 +10074,10 @@ def cleanup_boost_checker():
     while True:
         time.sleep(60)
         cleanup_all_expired_data()
+        try:
+            burn_excess_system_points()
+        except Exception as e:
+            log.error(f"Burn excess system points error: {e}")
 
 boost_cleanup_thread = threading.Thread(target=cleanup_boost_checker, daemon=True)
 boost_cleanup_thread.start()
