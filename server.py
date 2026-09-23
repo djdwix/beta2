@@ -3601,6 +3601,119 @@ def fetch_weather_from_openmeteo(latitude, longitude):
         log.error(f"Open-Meteo weather fetch error: {e}")
         return None
 
+REGION_FILE = os.path.join(os.path.dirname(__file__), 'region.json')
+_region_index = None
+
+def build_region_index():
+    global _region_index
+    if _region_index is not None:
+        return _region_index
+
+    _region_index = {}
+    if not os.path.exists(REGION_FILE):
+        log.warning(f"region.json not found at {REGION_FILE}")
+        return _region_index
+
+    try:
+        with open(REGION_FILE, 'r', encoding='utf-8') as f:
+            region_data = json.load(f)
+    except Exception as e:
+        log.error(f"Failed to load region.json: {e}")
+        return _region_index
+
+    def walk(node, path):
+        name = node.get('name', '')
+        level = node.get('level', '')
+        center = node.get('center', {})
+        lng = center.get('longitude')
+        lat = center.get('latitude')
+        if name and lng is not None and lat is not None:
+            full_path = path + [name]
+            if name not in _region_index:
+                _region_index[name] = {
+                    'longitude': lng,
+                    'latitude': lat,
+                    'level': level,
+                    'full_path': full_path,
+                }
+            else:
+                level_order = {'country': 0, 'province': 1, 'city': 2, 'district': 3, 'street': 4}
+                existing = _region_index[name]
+                if level_order.get(level, 99) < level_order.get(existing.get('level'), 99):
+                    _region_index[name] = {
+                        'longitude': lng,
+                        'latitude': lat,
+                        'level': level,
+                        'full_path': full_path,
+                    }
+        for child in node.get('districts', []) or []:
+            walk(child, path + [name] if name else path)
+
+    walk(region_data, [])
+    log.info(f"Region index built: {len(_region_index)} entries")
+    return _region_index
+
+
+def lookup_region_coordinates(city_name):
+    index = build_region_index()
+    if not index:
+        return None
+
+    name = (city_name or '').strip()
+    if not name:
+        return None
+
+    if name in index:
+        info = index[name]
+        return {
+            'longitude': info['longitude'],
+            'latitude': info['latitude'],
+            'level': info['level'],
+            'full_path': info['full_path'],
+            'matched_name': name,
+        }
+
+    suffixes = ['特别行政区', '自治区', '自治州', '自治县', '省', '市', '区', '县', '镇', '乡', '盟', '地区']
+    core = name
+    for suf in suffixes:
+        if core.endswith(suf):
+            core = core[:-len(suf)]
+            break
+    if core and core in index:
+        info = index[core]
+        return {
+            'longitude': info['longitude'],
+            'latitude': info['latitude'],
+            'level': info['level'],
+            'full_path': info['full_path'],
+            'matched_name': core,
+        }
+
+    if core:
+        for suf in ['区', '市', '县', '镇', '乡', '省', '自治县', '自治州', '盟', '地区']:
+            candidate = core + suf
+            if candidate in index:
+                info = index[candidate]
+                return {
+                    'longitude': info['longitude'],
+                    'latitude': info['latitude'],
+                    'level': info['level'],
+                    'full_path': info['full_path'],
+                    'matched_name': candidate,
+                }
+
+    for key, info in index.items():
+        if key and key in name:
+            return {
+                'longitude': info['longitude'],
+                'latitude': info['latitude'],
+                'level': info['level'],
+                'full_path': info['full_path'],
+                'matched_name': key,
+            }
+
+    return None
+
 
 def geocode_city_openmeteo(city_name):
     try:
@@ -12908,7 +13021,23 @@ def search_web():
             
             log.info(f"Weather query detected: original={query}, extracted_city={city}")
             
-            geo_result = geocode_city_openmeteo(city)
+            region_result = lookup_region_coordinates(city)
+            if region_result:
+                log.info(f"Weather query matched in region.json: {city} -> {region_result['matched_name']} "
+                         f"({region_result['latitude']}, {region_result['longitude']})")
+                geo_result = {
+                    'name': region_result['matched_name'],
+                    'latitude': region_result['latitude'],
+                    'longitude': region_result['longitude'],
+                    'country': '中国',
+                    'admin1': region_result['full_path'][1] if len(region_result['full_path']) > 1 else '',
+                    'timezone': 'auto',
+                    'matched_name': region_result['matched_name'],
+                    'original_name': city,
+                    'source': 'region.json',
+                }
+            else:
+                geo_result = geocode_city_openmeteo(city)
             
             if geo_result:
                 weather_data = fetch_weather_from_openmeteo(geo_result['latitude'], geo_result['longitude'])
@@ -13771,13 +13900,20 @@ def get_weather_current():
             return jsonify({'error': '请提供城市名称或经纬度'}), 400
         
         if city and (latitude is None or longitude is None):
-            geo_result = geocode_city_openmeteo(city)
-            if not geo_result:
-                return jsonify({'error': f'未找到城市: {city}'}), 404
-            latitude = geo_result['latitude']
-            longitude = geo_result['longitude']
-            location_name = geo_result['name']
-            country = geo_result.get('country', '')
+            region_result = lookup_region_coordinates(city)
+            if region_result:
+                latitude = region_result['latitude']
+                longitude = region_result['longitude']
+                location_name = region_result['matched_name']
+                country = '中国'
+            else:
+                geo_result = geocode_city_openmeteo(city)
+                if not geo_result:
+                    return jsonify({'error': f'未找到城市: {city}'}), 404
+                latitude = geo_result['latitude']
+                longitude = geo_result['longitude']
+                location_name = geo_result['name']
+                country = geo_result.get('country', '')
         else:
             location_name = f'{latitude}, {longitude}'
             country = ''
@@ -13822,12 +13958,20 @@ def get_weather_forecast():
         if days > 16:
             days = 16
         
-        geo_result = geocode_city_openmeteo(city)
-        if not geo_result:
-            return jsonify({'error': f'未找到城市: {city}'}), 404
-        
-        latitude = geo_result['latitude']
-        longitude = geo_result['longitude']
+        region_result = lookup_region_coordinates(city)
+        if region_result:
+            latitude = region_result['latitude']
+            longitude = region_result['longitude']
+            location_name = region_result['matched_name']
+            country = '中国'
+        else:
+            geo_result = geocode_city_openmeteo(city)
+            if not geo_result:
+                return jsonify({'error': f'未找到城市: {city}'}), 404
+            latitude = geo_result['latitude']
+            longitude = geo_result['longitude']
+            location_name = geo_result['name']
+            country = geo_result.get('country', '')
         
         weather_data = fetch_weather_from_openmeteo(latitude, longitude)
         if not weather_data:
@@ -13836,8 +13980,8 @@ def get_weather_forecast():
         return jsonify({
             'success': True,
             'location': {
-                'name': geo_result['name'],
-                'country': geo_result.get('country', ''),
+                'name': location_name,
+                'country': country,
                 'latitude': latitude,
                 'longitude': longitude
             },
