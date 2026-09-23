@@ -5,6 +5,8 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from functools import wraps
 from pypinyin import lazy_pinyin
+import sys
+sys.dont_write_bytecode = True
 import json
 import os
 import time
@@ -15,7 +17,6 @@ import re
 import base64
 import ssl
 import signal
-import sys
 from datetime import datetime, timedelta
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
@@ -1822,7 +1823,7 @@ def update_earned_points(username, points_to_add, bypass_limit=False):
     user_data['totalPoints'] = round(user_data['totalPoints'] + net_points, 2)
     if tax > 0:
         add_system_total_points(tax)
-        log.info(f"High balance tax applied (earned) for {username}: earned={points_to_add}, tax={tax}, net={net_points}")
+        log.debug(f"High balance tax applied (earned) for {username}: earned={points_to_add}, tax={tax}, net={net_points}")
     save_users()
     if not bypass_limit:
         check_and_award_daily_bonus(username)
@@ -1841,7 +1842,7 @@ def add_points_without_limit(username, points_to_add):
     user_data['unlimitedPoints'] = round(user_data.get('unlimitedPoints', 0) + net_points, 2)
     if tax > 0:
         add_system_total_points(tax)
-        log.info(f"High balance tax applied (unlimited) for {username}: earned={points_to_add}, tax={tax}, net={net_points}")
+        log.debug(f"High balance tax applied (unlimited) for {username}: earned={points_to_add}, tax={tax}, net={net_points}")
     save_users()
     return True
 
@@ -3072,7 +3073,7 @@ def add_game_points(username, points):
         users[username]['totalPoints'] = round(users[username]['totalPoints'] + net_points, 2)
         if tax > 0:
             add_system_total_points(tax)
-            log.info(f"High balance tax applied for {username}: earned={points}, tax={tax}, net={net_points}")
+            log.debug(f"High balance tax applied for {username}: earned={points}, tax={tax}, net={net_points}")
         save_users()
         return True
     return False
@@ -4936,7 +4937,7 @@ def perform_refund_risk_check(username, refund_points):
 
     risk_score = min(risk_score, 100)
 
-    log.info(f"Refund risk check for {username}: score={risk_score}, details={risk_details}")
+    log.debug(f"Refund risk check for {username}: score={risk_score}, details={risk_details}")
 
     if risk_score < 15:
         return True, None, risk_score, risk_details
@@ -13019,11 +13020,11 @@ def search_web():
             else:
                 city = cleaned
             
-            log.info(f"Weather query detected: original={query}, extracted_city={city}")
+            log.debug(f"Weather query detected: original={query}, extracted_city={city}")
             
             region_result = lookup_region_coordinates(city)
             if region_result:
-                log.info(f"Weather query matched in region.json: {city} -> {region_result['matched_name']} "
+                log.debug(f"Weather query matched in region.json: {city} -> {region_result['matched_name']} "
                          f"({region_result['latitude']}, {region_result['longitude']})")
                 geo_result = {
                     'name': region_result['matched_name'],
