@@ -12741,6 +12741,7 @@ def quick_verify_status():
 
 @app.route('/api/customer-service/search', methods=['POST'])
 @login_required
+@limiter.limit('8 per minute')
 def customer_service_search():
     start_time = time.time()
     data = request.get_json()
@@ -12933,6 +12934,7 @@ def get_next_milestone(current, milestone_type):
 
 @app.route('/api/customer-service/news', methods=['GET'])
 @login_required
+@limiter.limit('1 per minute')
 def get_news():
     start_time = time.time()
     try:
@@ -12977,6 +12979,7 @@ def get_news():
 
 @app.route('/api/customer-service/search-web', methods=['POST'])
 @login_required
+@limiter.limit('10 per minute')
 def search_web():
     start_time = time.time()
     data = request.get_json()

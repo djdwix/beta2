@@ -81,9 +81,9 @@
         {
             "id": "makeup_code",
             "name": "📅 补签卡",
-            "description": "使用后可以补签最近未签到的一天，提升连续签到天数",
-            "warning": "⚠️ 1小时有效 | 永久限购3次 | 不可回收",
-            "recycleInfo": "💰 不可回收",
+            "description": "使用后可以补签最高30天的连续签到天数",
+            "warning": "⚠️ 1小时有效 | 永久使用3次 | 不可回收",
+            "recycleInfo": "💰 不可回收,购买即默认已使用",
             "price": 200,
             "plPrice": false,
             "type": "makeup",
