@@ -4,7 +4,6 @@ from flask_bcrypt import Bcrypt
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from functools import wraps
-from pypinyin import lazy_pinyin
 import sys
 sys.dont_write_bytecode = True
 import json
@@ -3473,7 +3472,7 @@ def fetch_weather_from_openmeteo(latitude, longitude):
     try:
         import requests
         from datetime import datetime
-        
+
         url = (
             f'https://api.open-meteo.com/v1/forecast'
             f'?latitude={latitude}'
@@ -3484,44 +3483,123 @@ def fetch_weather_from_openmeteo(latitude, longitude):
             f'&timezone=auto'
             f'&forecast_days=7'
         )
-        
+
         response = requests.get(url, timeout=10)
         if response.status_code != 200:
             return None
-        
+
         data = response.json()
-        
+
         weather_codes = {
             0: '☀️ 晴天',
             1: '🌤️ 主要晴朗',
             2: '⛅ 部分多云',
-            3: '☁️ 多云',
+            3: '☁️ 阴天',
+            4: '🌫️ 烟雾',
+            5: '🌫️ 霾',
+            6: '🌫️ 浮尘',
+            7: '🌫️ 扬尘',
+            8: '🌫️ 尘卷风',
+            9: '🌫️ 沙尘暴',
+            10: '🌫️ 轻雾',
+            11: '🌫️ 薄雾',
+            12: '🌫️ 浓雾',
+            13: '⚡ 闪电',
+            14: '🌧️ 小雨',
+            15: '🌧️ 中雨',
+            16: '🌧️ 大雨',
+            17: '⛈️ 雷暴',
+            18: '🌧️ 毛毛雨',
+            19: '🌧️ 冻雨',
+            20: '🌧️ 小阵雨',
+            21: '🌧️ 阵雨',
+            22: '🌧️ 大阵雨',
+            23: '🌨️ 小阵雪',
+            24: '🌨️ 阵雪',
+            25: '🌨️ 大阵雪',
+            26: '❄️ 小雪',
+            27: '❄️ 中雪',
+            28: '❄️ 大雪',
+            29: '❄️ 暴雪',
+            30: '🌫️ 轻雾',
+            31: '🌫️ 薄雾',
+            32: '🌫️ 浓雾',
+            33: '🌫️ 雾凇',
+            34: '🌫️ 轻雾凇',
+            35: '🌫️ 浓雾凇',
+            36: '🌫️ 轻雾',
+            37: '🌫️ 薄雾',
+            38: '🌫️ 浓雾',
+            39: '🌫️ 雾凇',
+            40: '🌧️ 小雨',
+            41: '🌧️ 中雨',
+            42: '🌧️ 大雨',
+            43: '🌧️ 暴雨',
+            44: '🌧️ 大暴雨',
             45: '🌫️ 雾',
+            46: '🌫️ 轻雾',
+            47: '🌫️ 浓雾',
             48: '🌫️ 雾凇',
+            49: '🌫️ 浓雾凇',
+            50: '🌧️ 小雨',
             51: '🌧️ 小雨',
+            52: '🌧️ 中雨',
             53: '🌧️ 中雨',
+            54: '🌧️ 大雨',
             55: '🌧️ 大雨',
+            56: '🌧️ 冻毛毛雨',
+            57: '🌧️ 强冻毛毛雨',
+            58: '🌧️ 小雨',
+            59: '🌧️ 中雨',
+            60: '🌧️ 小雨',
             61: '🌧️ 小雨',
+            62: '🌧️ 中雨',
             63: '🌧️ 中雨',
+            64: '🌧️ 大雨',
             65: '🌧️ 大雨',
+            66: '🌧️ 冻雨',
+            67: '🌧️ 强冻雨',
+            68: '🌧️ 小雨夹雪',
+            69: '🌧️ 大雨夹雪',
+            70: '❄️ 小雪',
             71: '❄️ 小雪',
+            72: '❄️ 中雪',
             73: '❄️ 中雪',
+            74: '❄️ 大雪',
             75: '❄️ 大雪',
+            76: '❄️ 雪粒',
+            77: '❄️ 雪粒',
+            78: '❄️ 雪粒',
+            79: '❄️ 雪粒',
             80: '🌧️ 阵雨',
             81: '🌧️ 阵雨',
             82: '🌧️ 强阵雨',
+            83: '🌧️ 阵雨夹雪',
+            84: '🌧️ 强阵雨夹雪',
+            85: '🌨️ 小阵雪',
+            86: '🌨️ 大阵雪',
+            87: '🌨️ 小阵雪',
+            88: '🌨️ 大阵雪',
+            89: '🌨️ 小阵雪',
+            90: '🌨️ 大阵雪',
+            91: '🌧️ 小雨',
+            92: '🌧️ 中雨',
+            93: '🌧️ 大雨',
+            94: '🌧️ 暴雨',
             95: '⛈️ 雷暴',
             96: '⛈️ 雷暴',
+            97: '⛈️ 强雷暴',
+            98: '⛈️ 雷暴伴沙尘',
             99: '⛈️ 强雷暴'
         }
-        
+
         current = data.get('current', {})
         daily = data.get('daily', {})
         hourly = data.get('hourly', {})
-        
+
         current_code = current.get('weather_code', 0)
-        current_condition = weather_codes.get(current_code, '☁️ 多云')
-        
+        current_condition = weather_codes.get(current_code, '☁️ 阴天')
+
         forecast = []
         if daily.get('time'):
             for i in range(min(7, len(daily['time']))):
@@ -3533,13 +3611,13 @@ def fetch_weather_from_openmeteo(latitude, longitude):
                     'low': str(round(daily['temperature_2m_min'][i])) if i < len(daily.get('temperature_2m_min', [])) else '--',
                     'precipitation': str(daily['precipitation_sum'][i]) if i < len(daily.get('precipitation_sum', [])) else '0'
                 })
-        
+
         hourly_data = []
         if hourly.get('time'):
             now = datetime.now()
             now_hour = now.hour
             target_index = -1
-            
+
             for i, t in enumerate(hourly['time']):
                 try:
                     dt = datetime.fromisoformat(t)
@@ -3548,7 +3626,7 @@ def fetch_weather_from_openmeteo(latitude, longitude):
                         break
                 except:
                     continue
-            
+
             if target_index == -1:
                 for i, t in enumerate(hourly['time']):
                     try:
@@ -3558,7 +3636,7 @@ def fetch_weather_from_openmeteo(latitude, longitude):
                             break
                     except:
                         continue
-            
+
             if target_index != -1:
                 for i in range(min(8, len(hourly['time']) - target_index)):
                     idx = target_index + i
@@ -3576,7 +3654,7 @@ def fetch_weather_from_openmeteo(latitude, longitude):
                             })
                     except:
                         continue
-        
+
         return {
             'latitude': data.get('latitude'),
             'longitude': data.get('longitude'),
@@ -3597,7 +3675,7 @@ def fetch_weather_from_openmeteo(latitude, longitude):
             'hourly': hourly_data,
             'daily': forecast
         }
-        
+
     except Exception as e:
         log.error(f"Open-Meteo weather fetch error: {e}")
         return None
@@ -3719,16 +3797,7 @@ def lookup_region_coordinates(city_name):
 def geocode_city_openmeteo(city_name):
     try:
         import requests
-        
-        def to_pinyin(text):
-            try:
-                from pypinyin import lazy_pinyin
-                parts = lazy_pinyin(text)
-                return ''.join(parts).capitalize()
-            except Exception as e:
-                log.error(f"Pinyin error: {e}")
-                return text
-        
+
         def query_geocode(name, count=5):
             url = f'https://geocoding-api.open-meteo.com/v1/search?name={requests.utils.quote(name)}&count={count}&language=zh'
             try:
@@ -3742,7 +3811,7 @@ def geocode_city_openmeteo(city_name):
             except Exception as e:
                 log.error(f"Geocode query error for {name}: {e}")
                 return None
-        
+
         def is_match(user_input, result_name, result_admin1='', result_country=''):
             if not result_name:
                 return False
@@ -3768,7 +3837,7 @@ def geocode_city_openmeteo(city_name):
             if result_name in core:
                 return True
             return False
-        
+
         def pick_best(results, user_input):
             if not results:
                 return None
@@ -3781,6 +3850,7 @@ def geocode_city_openmeteo(city_name):
                     valid.append(r)
             if not valid:
                 return None
+
             def score(r):
                 s = 0
                 rname = r.get('name', '')
@@ -3799,27 +3869,21 @@ def geocode_city_openmeteo(city_name):
                 if user_input.endswith('区') and rname.endswith('区'):
                     s += 20
                 return s
+
             valid.sort(key=score, reverse=True)
             return valid[0]
-        
+
         def try_query(name):
             results = query_geocode(name)
             return pick_best(results, city_name)
-        
+
         result = None
         matched_name = city_name
-        
+
         result = try_query(city_name)
         if result:
             log.info(f"Found city by original name: {city_name} -> {result.get('name')}")
-        
-        if not result:
-            pinyin_name = to_pinyin(city_name)
-            log.info(f"Trying pinyin (keep suffix): {city_name} -> {pinyin_name}")
-            result = try_query(pinyin_name)
-            if result:
-                matched_name = pinyin_name
-        
+
         if not result and len(city_name) > 2:
             suffixes = ['县', '区', '镇', '乡']
             for suffix in suffixes:
@@ -3832,18 +3896,12 @@ def geocode_city_openmeteo(city_name):
                         if result:
                             matched_name = full_core
                             break
-                        pinyin_core = to_pinyin(full_core)
-                        log.info(f"Trying pinyin core+suffix: {full_core} -> {pinyin_core}")
-                        result = try_query(pinyin_core)
+                        log.info(f"Trying core-only: {core}")
+                        result = try_query(core)
                         if result:
-                            matched_name = pinyin_core
+                            matched_name = core
                             break
-                        log.info(f"Trying core-only pinyin: {core} -> {to_pinyin(core)}")
-                        result = try_query(to_pinyin(core))
-                        if result:
-                            matched_name = to_pinyin(core)
-                            break
-        
+
         if not result and len(city_name) > 2:
             suffixes = ['市', '省']
             for suffix in suffixes:
@@ -3855,13 +3913,7 @@ def geocode_city_openmeteo(city_name):
                         if result:
                             matched_name = core
                             break
-                        pinyin_core = to_pinyin(core)
-                        log.info(f"Trying pinyin core-only: {core} -> {pinyin_core}")
-                        result = try_query(pinyin_core)
-                        if result:
-                            matched_name = pinyin_core
-                            break
-        
+
         if not result and len(city_name) > 3:
             for i in range(len(city_name) - 1, 2, -1):
                 prefix = city_name[:i]
@@ -3871,23 +3923,17 @@ def geocode_city_openmeteo(city_name):
                     if result:
                         matched_name = prefix
                         break
-                    pinyin_prefix = to_pinyin(prefix)
-                    log.info(f"Trying pinyin prefix: {prefix} -> {pinyin_prefix}")
-                    result = try_query(pinyin_prefix)
-                    if result:
-                        matched_name = pinyin_prefix
-                        break
-        
+
         if not result:
             log.warning(f"All geocode attempts failed for {city_name}")
             return None
-        
+
         display_name = result.get('name', city_name)
         country = result.get('country', '')
         admin1 = result.get('admin1', '')
-        
+
         log.info(f"Geocode success: {city_name} -> {display_name} ({country}, {admin1}) [{matched_name}]")
-        
+
         return {
             'name': display_name,
             'latitude': result['latitude'],
@@ -3898,7 +3944,7 @@ def geocode_city_openmeteo(city_name):
             'matched_name': matched_name,
             'original_name': city_name
         }
-        
+
     except Exception as e:
         log.error(f"Open-Meteo geocoding error: {e}")
         return None

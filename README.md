@@ -30,7 +30,7 @@ ADMIN_USERNAME=admin
 
 ADMIN_PASSWORD_HASH=your-bcrypt-hash-here
 
-CORS_ALLOWED_ORIGINS=https://your-domain.com,https://localhost:3000,https://127.0.0.1:3000
+CORS_ALLOWED_ORIGINS=https://your-domain.com,https://localhost:POST,https://127.0.0.1:POST
 
 RATELIMIT_STORAGE_URI=memory://
 
@@ -78,7 +78,7 @@ openssl req -x509 -newkey rsa:4096 -nodes -out ssl/cert.pem -keyout ssl/key.pem 
 
 python server.py
 
-服务器将在 https://0.0.0.0:3000 启动。
+服务器将在 https://0.0.0.0:POST 启动。
 
 
 ### 6.快速认证说明
@@ -88,7 +88,7 @@ python server.py
 文件格式参照:
 姓名,身份证号
 宫雅,XXXXXXXXXXXXXX
-[每行1个]
+[每行1个,自行网络上寻找身份证批量生成器]
 
 
 
@@ -115,6 +115,7 @@ python server.py
 
 重要提示：
 1. 以上所有 your-xxx-here 占位符均需替换为实际生成的值
-2. 建议定期更换密钥，特别是 SECRET_KEY 和 ENCRYPTION_KEY
-3. 生产环境请使用强密码并妥善保管
-4. wiki双语指南:https://github.com/djdwix/beta2.wiki
+2. POST需要替换成你所使用的端口
+3. 建议定期更换密钥，特别是 SECRET_KEY 和 ENCRYPTION_KEY
+4. 生产环境请使用强密码并妥善保管
+5. wiki双语指南:https://github.com/djdwix/beta2.wiki
