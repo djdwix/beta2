@@ -4132,8 +4132,8 @@ def get_product_type_label(product_id):
     return type_map.get(product_id, product_id)
 
 def grant_coupon_to_user(username, coupon_type, discount, threshold=0, duration_hours=24, product_id='', description=''):
-    if get_user_coupon_count(username) >= 9:
-        return False, '用户优惠券已达上限(9张)'
+    if get_user_coupon_count(username) >= 12:
+        return False, '用户优惠券已达上限(12张)'
     if duration_hours < 1:
         duration_hours = 1
     if duration_hours > 168:
@@ -4157,7 +4157,7 @@ def grant_coupon_to_user(username, coupon_type, discount, threshold=0, duration_
             discount = 7
         description = description or f'无门槛减{discount}'
     elif coupon_type == 'product_specific':
-        price_map = {'point_code': 1.2, 'premium_point_code': 3.5, 'reset_code': 8, 'boost_code': 8.8, 'special_point_code': 20, 'makeup_code': 200, 'gamblers_code': 100, 'box_code': 28.8, 'plcard_code': 35.8, 'premium_boost_code': 15.6}
+        price_map = {'point_code': 1.2, 'premium_point_code': 3.5, 'reset_code': 8, 'boost_code': 8.8, 'special_point_code': 20, 'gamblers_code': 100, 'box_code': 28.8, 'plcard_code': 35.8, 'premium_boost_code': 15.6}
         base_price = price_map.get(product_id, 0)
         if base_price <= 0:
             return False, '无效的商品ID'
@@ -4253,8 +4253,6 @@ def auto_grant_coupons():
         elif rand_val < 0.22:
             coupon_type = 'product_specific'
             product_ids = ['point_code', 'premium_point_code', 'reset_code', 'boost_code', 'special_point_code']
-            if makeup_remaining > 0:
-                product_ids.append('makeup_code')
             if not cancellation_purchased:
                 product_ids.append('cancellation_code')
             product_id = random.choice(product_ids)
