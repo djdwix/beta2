@@ -437,7 +437,7 @@ def burn_excess_system_points():
         burned = system_total_points - SYSTEM_POINTS_BURN_THRESHOLD
         system_total_points = SYSTEM_POINTS_BURN_THRESHOLD
         save_system_total_points(system_total_points)
-        log.info(f"System points pool auto-burned: burned={burned}, remaining={system_total_points}")
+        log.debug(f"System points pool auto-burned: burned={burned}, remaining={system_total_points}")
         return burned
     return 0
 
@@ -524,7 +524,7 @@ def add_system_total_points(amount):
     if system_total_points >= SYSTEM_POINTS_BURN_THRESHOLD:
         burned = system_total_points - SYSTEM_POINTS_BURN_THRESHOLD
         system_total_points = SYSTEM_POINTS_BURN_THRESHOLD
-        log.info(f"System points pool auto-burned: burned={burned}, remaining={system_total_points}")
+        log.debug(f"System points pool auto-burned: burned={burned}, remaining={system_total_points}")
     save_system_total_points(system_total_points)
     return system_total_points
 
@@ -11298,8 +11298,16 @@ def get_nav_status():
     username = session['user']['username']
     current_nav = get_current_nav()
     today = datetime.now().strftime('%Y-%m-%d')
-    
+
     holdings = nav_holdings.get(username, [])
+
+    cleaned = [h for h in holdings if h.get('shares', 0) > 0]
+    if len(cleaned) != len(holdings):
+        log.debug(f"Cleaned {len(holdings) - len(cleaned)} zero-share holdings for {username}")
+        nav_holdings[username] = cleaned
+        save_nav_holdings()
+    holdings = cleaned
+
     holdings_detail = []
     total_shares = 0
     total_profit = 0
@@ -11318,7 +11326,7 @@ def get_nav_status():
             'current_nav': current_nav,
             'profit': profit
         })
-    
+
     market_value = total_shares * current_nav
     avg_cost = 0
     total_cost = 0
@@ -11326,10 +11334,10 @@ def get_nav_status():
         total_cost += h.get('shares', 0) * h.get('buy_nav', 0)
     if total_shares > 0:
         avg_cost = round(total_cost / total_shares, 4)
-    
+
     next_update = datetime.strptime(today, '%Y-%m-%d') + timedelta(days=1)
     next_update = next_update.replace(hour=0, minute=0, second=0, microsecond=0)
-    
+
     return jsonify({
         'current_nav': current_nav,
         'nav_date': int(datetime.strptime(today, '%Y-%m-%d').timestamp() * 1000),
