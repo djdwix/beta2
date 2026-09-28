@@ -118,4 +118,4 @@ python server.py
 2. POST需要替换成你所使用的端口
 3. 建议定期更换密钥，特别是 SECRET_KEY 和 ENCRYPTION_KEY
 4. 生产环境请使用强密码并妥善保管
-5. wiki双语指南:https://github.com/djdwix/beta2.wiki
+5. wiki双语指南:https://github.com/djdwix/beta2/wiki/elcome-to-the-beta2-wiki!-%23-BETA2-%E6%9C%8D%E5%8A%A1%E5%99%A8-%E2%80%90-%E7%8E%A9%E5%AE%B6%E6%8C%87%E5%8D%97
