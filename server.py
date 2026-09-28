@@ -199,6 +199,7 @@ NAV_HISTORY_FILE = os.path.join(DATA_DIR, 'nav_history.enc')
 RESET_LIMITS_FILE = os.path.join(DATA_DIR, 'reset_limits.enc')
 FUND_RATE_FILE = os.path.join(DATA_DIR, 'fund_rate.enc')
 GATEWAY_STOCK_FILE = os.path.join(DATA_DIR, 'gateway_stock.enc')
+FEEDBACKS_FILE = os.path.join(DATA_DIR, 'feedbacks.enc')
 
 COUPON_TYPE_MAP = {
     'full_reduction': '满减券',
@@ -560,7 +561,7 @@ def save_fund_rate():
     FILE_MODIFICATION_TIMES['fund_rate'] = get_file_mtime(FUND_RATE_FILE)
 
 def reload_if_changed():
-    global users, phone_records, auth_codes, reset_codes, point_codes, premium_point_codes, boost_codes, special_point_codes, makeup_codes, gamblers_codes, box_codes, plcard_codes, premium_boost_codes, user_boosts, identity_verifications, cancellation_codes, restricted_users, cdk_packages, user_cdk_records, announcements, pl_exchange_records, pl_rate_data, user_pl_balances, system_total_points, orders, user_pay_passwords, user_code_limits, coupons, user_coupons, coupon_grants, pl_transfers, gateway_cards, mail_attachments, mail_read_receipts, pool_records, user_pool_claims, fund_data, fund_history, fund_rate, nav_data, nav_holdings, nav_history, gateway_stock
+    global users, phone_records, auth_codes, reset_codes, point_codes, premium_point_codes, boost_codes, special_point_codes, makeup_codes, gamblers_codes, box_codes, plcard_codes, premium_boost_codes, user_boosts, identity_verifications, cancellation_codes, restricted_users, cdk_packages, user_cdk_records, announcements, pl_exchange_records, pl_rate_data, user_pl_balances, system_total_points, orders, user_pay_passwords, user_code_limits, coupons, user_coupons, coupon_grants, pl_transfers, gateway_cards, mail_attachments, mail_read_receipts, pool_records, user_pool_claims, fund_data, fund_history, fund_rate, nav_data, nav_holdings, nav_history, gateway_stock, feedbacks
 
     users_mtime = get_file_mtime(USERS_FILE)
     phone_mtime = get_file_mtime(PHONE_RECORDS_FILE)
@@ -605,6 +606,7 @@ def reload_if_changed():
     nav_holdings_mtime = get_file_mtime(NAV_HOLDINGS_FILE)
     nav_history_mtime = get_file_mtime(NAV_HISTORY_FILE)
     gateway_stock_mtime = get_file_mtime(GATEWAY_STOCK_FILE)
+    feedbacks_mtime = get_file_mtime(FEEDBACKS_FILE)
 
     if users_mtime != FILE_MODIFICATION_TIMES.get('users', 0):
         users = load_data(USERS_FILE, {})
@@ -778,6 +780,10 @@ def reload_if_changed():
         gateway_stock = load_data(GATEWAY_STOCK_FILE, {})
         FILE_MODIFICATION_TIMES['gateway_stock'] = gateway_stock_mtime
 
+    if feedbacks_mtime != FILE_MODIFICATION_TIMES.get('feedbacks', 0):
+        feedbacks = load_data(FEEDBACKS_FILE, {})
+        FILE_MODIFICATION_TIMES['feedbacks'] = feedbacks_mtime
+
 users = load_data(USERS_FILE, {})
 phone_records = load_data(PHONE_RECORDS_FILE, {})
 auth_codes = load_data(AUTH_CODES_FILE, {})
@@ -821,6 +827,7 @@ nav_holdings = load_data(NAV_HOLDINGS_FILE, {})
 nav_history = load_data(NAV_HISTORY_FILE, {})
 fund_rate = load_data(FUND_RATE_FILE, {})
 gateway_stock = load_data(GATEWAY_STOCK_FILE, {})
+feedbacks = load_data(FEEDBACKS_FILE, {})
 
 FILE_MODIFICATION_TIMES['users'] = get_file_mtime(USERS_FILE)
 FILE_MODIFICATION_TIMES['phone'] = get_file_mtime(PHONE_RECORDS_FILE)
@@ -862,6 +869,7 @@ FILE_MODIFICATION_TIMES['fund_data'] = get_file_mtime(FUND_DATA_FILE)
 FILE_MODIFICATION_TIMES['fund_history'] = get_file_mtime(FUND_HISTORY_FILE)
 FILE_MODIFICATION_TIMES['fund_rate'] = get_file_mtime(FUND_RATE_FILE)
 FILE_MODIFICATION_TIMES['gateway_stock'] = get_file_mtime(GATEWAY_STOCK_FILE)
+FILE_MODIFICATION_TIMES['feedbacks'] = get_file_mtime(FEEDBACKS_FILE)
 
 def save_users():
     save_data(USERS_FILE, users)
@@ -870,6 +878,10 @@ def save_users():
 def save_phone_records():
     save_data(PHONE_RECORDS_FILE, phone_records)
     FILE_MODIFICATION_TIMES['phone'] = get_file_mtime(PHONE_RECORDS_FILE)
+
+def save_feedbacks():
+    save_data(FEEDBACKS_FILE, feedbacks)
+    FILE_MODIFICATION_TIMES['feedbacks'] = get_file_mtime(FEEDBACKS_FILE)
 
 def save_auth_codes():
     save_data(AUTH_CODES_FILE, auth_codes)
@@ -1636,6 +1648,11 @@ def generate_premium_boost_code():
         existing_codes = set(reset_codes.keys()) | set(point_codes.keys()) | set(premium_point_codes.keys()) | set(boost_codes.keys()) | set(cancellation_codes.keys()) | set(special_point_codes.keys()) | set(makeup_codes.keys()) | set(gamblers_codes.keys()) | set(box_codes.keys()) | set(plcard_codes.keys()) | set(premium_boost_codes.keys())
         if code not in existing_codes:
             return code
+
+def generate_feedback_id():
+    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+    random_part = ''.join(random.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789') for _ in range(6))
+    return f"FB{timestamp}{random_part}"
 
 def generate_phone_number():
     prefixes = ['130', '131', '132', '133', '134', '135', '136', '137', '138', '139',
@@ -3076,6 +3093,33 @@ def add_game_points(username, points):
         save_users()
         return True
     return False
+
+def cleanup_expired_feedbacks():
+    current_time = int(time.time() * 1000)
+    expire_ms = 12 * 60 * 60 * 1000
+    feedbacks_to_remove = []
+
+    for fid, fb in feedbacks.items():
+        status = fb.get('status', 'pending')
+        if status not in ['replied', 'closed']:
+            continue
+
+        if status == 'closed':
+            base_time = fb.get('closed_at', 0) or fb.get('replied_at', 0) or fb.get('created_at', 0)
+        else:
+            base_time = fb.get('replied_at', 0) or fb.get('created_at', 0)
+
+        if base_time > 0 and current_time - base_time >= expire_ms:
+            feedbacks_to_remove.append(fid)
+
+    for fid in feedbacks_to_remove:
+        del feedbacks[fid]
+
+    if feedbacks_to_remove:
+        save_feedbacks()
+        log.info(f"清理了 {len(feedbacks_to_remove)} 条过期反馈记录")
+
+    return len(feedbacks_to_remove)
 
 def cleanup_all_expired_data():
     current_time = int(time.time() * 1000)
@@ -6966,9 +7010,6 @@ def get_user_coupons():
             type_label = get_coupon_type_label(coupon.get('type', 'full_reduction'))
             display_desc = coupon.get('description', '')
             if coupon.get('type') == 'product_specific' and coupon.get('product_id'):
-                product_label = get_product_type_label(coupon.get('product_id', ''))
-                display_desc = f'指定{product_label}减{coupon.get("discount", 0)}'
-            elif coupon.get('type') == 'makeup_specific':
                 product_label = get_product_type_label(coupon.get('product_id', ''))
                 display_desc = f'指定{product_label}减{coupon.get("discount", 0)}'
             elif coupon.get('type') == 'pl_discount':
@@ -13777,6 +13818,197 @@ def get_public_announcements():
     announcement_list.sort(key=lambda x: (-x.get('is_sticky', False), -x.get('created_at', 0)))
     return jsonify({'announcements': announcement_list})
 
+@app.route('/api/feedback/submit', methods=['POST'])
+@csrf_protect
+@limiter.limit('1 per minute')
+@login_required
+def submit_feedback():
+    start_time = time.time()
+    username = session['user']['username']
+    data = request.get_json()
+
+    feedback_type = data.get('feedback_type', '').strip()
+    content = data.get('content', '').strip()
+
+    if not feedback_type:
+        return jsonify({'error': '请选择反馈类型'}), 400
+
+    if not content:
+        return jsonify({'error': '请填写反馈内容'}), 400
+
+    if len(content) < 5:
+        return jsonify({'error': '反馈内容至少5个字符'}), 400
+
+    if len(content) > 2000:
+        return jsonify({'error': '反馈内容不能超过2000个字符'}), 400
+
+    valid_types = ['功能建议', '问题反馈', '体验优化', '内容举报', '其他']
+    if feedback_type not in valid_types:
+        return jsonify({'error': '无效的反馈类型'}), 400
+
+    user_data = users.get(username, {})
+    user_email = user_data.get('email', '')
+
+    if not user_email:
+        return jsonify({'error': '您的账号未绑定邮箱，请先绑定邮箱后再提交反馈'}), 400
+
+    feedback_id = generate_feedback_id()
+
+    feedbacks[feedback_id] = {
+        'feedback_id': feedback_id,
+        'username': username,
+        'email': user_email,
+        'feedback_type': feedback_type,
+        'content': content,
+        'created_at': int(time.time() * 1000),
+        'status': 'pending'
+    }
+    save_feedbacks()
+
+    success, message = email_service.send_feedback_email(
+        username, user_email, feedback_type, feedback_id, content
+    )
+
+    if not success:
+        log.warning(f"反馈邮件发送失败: {feedback_id}, 原因: {message}")
+
+    response_time = int((time.time() - start_time) * 1000)
+    return jsonify({
+        'success': True,
+        'feedback_id': feedback_id,
+        'message': f'反馈提交成功，反馈编号：{feedback_id}',
+        'email_sent': success,
+        'responseTime': response_time
+    })
+
+
+@app.route('/api/feedback/list', methods=['GET'])
+@login_required
+def get_feedback_list():
+    username = session['user']['username']
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+
+    user_feedbacks = []
+    for fid, fb in feedbacks.items():
+        if fb.get('username') == username:
+            user_feedbacks.append({
+                'feedback_id': fid,
+                'feedback_type': fb.get('feedback_type', ''),
+                'content': fb.get('content', ''),
+                'created_at': fb.get('created_at', 0),
+                'status': fb.get('status', 'pending'),
+                'reply': fb.get('reply', '')
+            })
+
+    user_feedbacks.sort(key=lambda x: -x.get('created_at', 0))
+    total = len(user_feedbacks)
+    start = (page - 1) * per_page
+    end = start + per_page
+
+    return jsonify({
+        'feedbacks': user_feedbacks[start:end],
+        'total': total,
+        'page': page,
+        'per_page': per_page,
+        'total_pages': (total + per_page - 1) // per_page if total > 0 else 1
+    })
+
+
+@app.route('/api/feedback/<feedback_id>', methods=['GET'])
+@login_required
+def get_feedback_detail(feedback_id):
+    username = session['user']['username']
+
+    if feedback_id not in feedbacks:
+        return jsonify({'error': '反馈不存在'}), 400
+
+    fb = feedbacks[feedback_id]
+
+    if fb.get('username') != username:
+        return jsonify({'error': '无权查看此反馈'}), 403
+
+    return jsonify({
+        'feedback_id': feedback_id,
+        'feedback_type': fb.get('feedback_type', ''),
+        'content': fb.get('content', ''),
+        'created_at': fb.get('created_at', 0),
+        'status': fb.get('status', 'pending'),
+        'reply': fb.get('reply', '')
+    })
+
+
+@app.route('/api/admin/feedback/list', methods=['GET'])
+@admin_login_required
+def admin_get_feedback_list():
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    status_filter = request.args.get('status', '').strip()
+    search = request.args.get('search', '').strip()
+
+    all_feedbacks = []
+    for fid, fb in feedbacks.items():
+        if status_filter and fb.get('status', 'pending') != status_filter:
+            continue
+        if search:
+            search_lower = search.lower()
+            if (search_lower not in fid.lower() and
+                search_lower not in fb.get('username', '').lower() and
+                search_lower not in fb.get('content', '').lower()):
+                continue
+        all_feedbacks.append({
+            'feedback_id': fid,
+            'username': fb.get('username', ''),
+            'email': fb.get('email', ''),
+            'feedback_type': fb.get('feedback_type', ''),
+            'content': fb.get('content', ''),
+            'created_at': fb.get('created_at', 0),
+            'status': fb.get('status', 'pending'),
+            'reply': fb.get('reply', '')
+        })
+
+    all_feedbacks.sort(key=lambda x: -x.get('created_at', 0))
+    total = len(all_feedbacks)
+    start = (page - 1) * per_page
+    end = start + per_page
+
+    return jsonify({
+        'feedbacks': all_feedbacks[start:end],
+        'total': total,
+        'page': page,
+        'per_page': per_page,
+        'total_pages': (total + per_page - 1) // per_page if total > 0 else 1
+    })
+
+
+@app.route('/api/admin/feedback/reply', methods=['POST'])
+@csrf_protect
+@admin_login_required
+def admin_reply_feedback():
+    data = request.get_json()
+    feedback_id = data.get('feedback_id', '').strip()
+    reply = data.get('reply', '').strip()
+    status = data.get('status', 'replied')
+
+    if not feedback_id or feedback_id not in feedbacks:
+        return jsonify({'error': '反馈不存在'}), 400
+
+    if status not in ['pending', 'replied', 'closed']:
+        return jsonify({'error': '无效的状态'}), 400
+
+    current_time = int(time.time() * 1000)
+    feedbacks[feedback_id]['status'] = status
+    feedbacks[feedback_id]['reply'] = reply
+    feedbacks[feedback_id]['replied_at'] = current_time
+    if status == 'closed':
+        feedbacks[feedback_id]['closed_at'] = current_time
+    save_feedbacks()
+
+    return jsonify({
+        'success': True,
+        'message': '反馈回复成功'
+    })
+
 @app.route('/api/game/list', methods=['GET'])
 @login_required
 def get_game_list():
@@ -14110,6 +14342,10 @@ def admin_page():
 def mail_page():
     return send_from_directory('public', 'mail.html')
 
+@app.route('/feedback.html')
+def feedback_page():
+    return send_from_directory('public', 'feedback.html')
+
 @app.route('/pool.html')
 def pool_page():
     return send_from_directory('public', 'pool.html')
@@ -14157,6 +14393,7 @@ def signal_handler(signum, frame):
         save_phone_records()
         save_auth_codes()
         save_reset_codes()
+        save_feedbacks()
         save_point_codes()
         save_premium_point_codes()
         save_boost_codes()

@@ -202,6 +202,7 @@
         <button class="tab-btn" data-tab="reissue"><i class="fas fa-rotate-left"></i> 补发卡密</button>
         <button class="tab-btn" data-tab="users"><i class="fas fa-users"></i> 用户管理</button>
         <button class="tab-btn" data-tab="knowledge"><i class="fas fa-database"></i> 知识库管理</button>
+        <button class="tab-btn" data-tab="feedback"><i class="fas fa-comments"></i> 反馈管理</button>
     </div>
 
     <div id="cdkTab" class="tab-content active">
@@ -359,6 +360,25 @@
             <div class="kb-edit-area" id="kbListContainer"><div class="loading"><i class="fas fa-spinner fa-spin"></i>加载中...</div></div>
         </div>
     </div>
+
+    <div id="feedbackTab" class="tab-content">
+        <div class="section-title"><i class="fas fa-comments"></i> 用户反馈管理</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+            <div class="search-bar" style="margin:0;flex:1;max-width:700px">
+                <input type="text" id="feedbackSearchFilter" placeholder="搜索反馈ID、用户名或内容...">
+                <select id="feedbackStatusFilter" style="flex:0 0 140px;padding:10px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:#fff;font-size:14px;outline:none">
+                    <option value="">全部状态</option>
+                    <option value="pending">待处理</option>
+                    <option value="replied">已回复</option>
+                    <option value="closed">已关闭</option>
+                </select>
+                <button class="btn btn-primary btn-sm" id="searchFeedbackBtn"><i class="fas fa-search"></i></button>
+                <button class="btn btn-outline btn-sm" id="refreshFeedbackBtn"><i class="fas fa-rotate"></i></button>
+            </div>
+        </div>
+        <div class="table-wrap" id="feedbackListContainer"><div class="loading"><i class="fas fa-spinner fa-spin"></i>加载中...</div></div>
+        <div id="feedbackPagination" class="pagination"></div>
+    </div>
 </div>
 
 <div id="confirmModal" class="modal">
@@ -380,7 +400,7 @@
     csrfTokenRefreshPromise=fetch('/api/csrf-token',{method:'GET',credentials:'include',headers:{'Accept':'application/json','Cache-Control':'no-cache'}}).then(function(r){if(!r.ok)throw new Error('CSRF token fetch failed: HTTP '+r.status);return r.json()}).then(function(d){if(!d.csrf_token)throw new Error('No CSRF token in response');csrfToken=d.csrf_token;csrfTokenLastFetch=Date.now();setCsrfTokenCookie(csrfToken);csrfTokenRefreshPromise=null;return csrfToken}).catch(function(e){csrfTokenRefreshPromise=null;csrfToken=null;throw e});return csrfTokenRefreshPromise}
     function apiRequest(url,options){if(!options)options={};options.credentials='include';if(!options.headers)options.headers={};options.headers['Content-Type']='application/json';options.headers['Accept']='application/json';if(currentToken)options.headers['X-Admin-Token']=currentToken;var method=(options.method||'GET').toUpperCase();if(method==='GET'||method==='HEAD'||method==='OPTIONS'){return fetch(url,options).then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error(d.error||'请求失败: HTTP '+r.status);return d})})}
     return fetchCsrfToken().then(function(token){options.headers['X-CSRF-Token']=token;return fetch(url,options)}).then(function(r){return r.json().then(function(d){if(!r.ok){if(r.status===403&&d.error&&d.error.includes('CSRF')){csrfToken=null;csrfTokenLastFetch=0;return fetchCsrfToken().then(function(newToken){options.headers['X-CSRF-Token']=newToken;return fetch(url,options)}).then(function(r2){return r2.json().then(function(d2){if(!r2.ok)throw new Error(d2.error||'请求失败: HTTP '+r2.status);return d2})})}throw new Error(d.error||'请求失败: HTTP '+r.status)}return d})})}
-    var currentToken=null,currentCdkSearch='',currentAnnSearch='',currentUserSearch='',currentKbSearch='',currentUserPage=1,currentUserTotalPages=1,isInitialized=false;
+    var currentToken=null,currentCdkSearch='',currentAnnSearch='',currentUserSearch='',currentKbSearch='',currentUserPage=1,currentUserTotalPages=1,currentFeedbackSearch='',currentFeedbackStatus='',currentFeedbackPage=1,currentFeedbackTotalPages=1,isInitialized=false;
     function showErrorBoundary(msg){var el=document.getElementById('errorBoundary'),desc=document.getElementById('errorDesc');if(el&&desc){desc.textContent=msg||'网络连接异常，请检查网络后重试';el.style.display='block'}}
     function hideErrorBoundary(){var el=document.getElementById('errorBoundary');if(el)el.style.display='none'}
     function showMessage(msg,type){var d=document.createElement('div');d.className='message message-'+type;var icon=type==='success'?'fa-check-circle':type==='error'?'fa-times-circle':'fa-exclamation-triangle';d.innerHTML='<i class="fas '+icon+'"></i> '+msg;document.body.appendChild(d);setTimeout(function(){d.remove()},3500)}
@@ -389,7 +409,7 @@
     function formatDate(d){if(!d)return '-';try{return new Date(d).toLocaleDateString('zh-CN')}catch(e){return '-'}}
     function formatAnnouncementContent(c){if(!c)return '';var f=c.replace(/\n/g,'<br>');var p=/(https?:\/\/[a-zA-Z0-9\-._~:/?#[\]@!$&'()*+,;=]+)/g;f=f.replace(p,function(u){return '<a href="'+u+'" target="_blank" rel="noopener noreferrer" style="color:#a78bfa;text-decoration:underline;">'+u+'</a>'});return f}
     function badge(status,type){var map={success:'badge-success',danger:'badge-danger',warning:'badge-warning',info:'badge-info',neutral:'badge-neutral'};return '<span class="badge '+(map[type]||'badge-neutral')+'">'+status+'</span>'}
-    function showModal(msg,onConfirm){var m=document.getElementById('confirmModal'),p=document.getElementById('confirmMessage');p.textContent=msg;m.style.display='flex';document.getElementById('confirmYes').onclick=function(){m.style.display='none';if(onConfirm)onConfirm()};document.getElementById('confirmNo').onclick=function(){m.style.display='none'}}
+    function showModal(msg,onConfirm){var m=document.getElementById('confirmModal'),p=document.getElementById('confirmMessage');p.innerHTML=msg;m.style.display='flex';document.getElementById('confirmYes').onclick=function(){m.style.display='none';if(onConfirm)onConfirm()};document.getElementById('confirmNo').onclick=function(){m.style.display='none'}}
     async function loadStats(){try{var d=await apiRequest('/api/admin/stats');document.getElementById('totalUsers').textContent=d.users.total;document.getElementById('verifiedUsers').textContent=d.users.verified;document.getElementById('unverifiedUsers').textContent=d.users.unverified;document.getElementById('loginRestricted').textContent=d.users.login_restricted||0;document.getElementById('mallRestricted').textContent=d.users.mall_restricted||0;document.getElementById('generateRestricted').textContent=d.users.generate_phone_restricted||0;document.getElementById('totalPoints').textContent=d.total_points.toFixed(2);document.getElementById('userTotalPoints').textContent=d.user_total_points.toFixed(2);document.getElementById('mailTotal').textContent=d.mail?.total||0;document.getElementById('mailUnclaimed').textContent=d.mail?.unclaimed||0;hideErrorBoundary()}catch(e){console.error(e);showMessage('加载统计数据失败: '+e.message,'error');showErrorBoundary('加载统计数据失败: '+e.message)}}
     async function loadUsers(page){page=page||currentUserPage;try{var d=await apiRequest('/api/admin/users?page='+page+'&per_page=20&search='+encodeURIComponent(currentUserSearch));var c=document.getElementById('usersListContainer');if(d.users.length===0){c.innerHTML='<div class="empty-state"><i class="fas fa-users-slash"></i>暂无用户</div>';document.getElementById('usersPagination').innerHTML='';return}
     var html='<table><thead><tr><th>用户名</th><th>邮箱</th><th>总积分</th><th>认证</th><th>签到</th><th>限制状态</th><th>注册时间</th></tr></thead><tbody>';d.users.forEach(function(u){var restrictBadges='';if(u.loginRestricted)restrictBadges+='<span class="on">登录</span>';else restrictBadges+='<span class="off">登录</span>';if(u.mallRestricted)restrictBadges+='<span class="on">商城</span>';else restrictBadges+='<span class="off">商城</span>';if(u.generatePhoneRestricted)restrictBadges+='<span class="on">生成</span>';else restrictBadges+='<span class="off">生成</span>';var verifiedBadge=u.isVerified?badge('已认证','success'):badge('未认证','danger');html+='<tr><td><strong>'+escapeHtml(u.username)+'</strong></td><td>'+escapeHtml(u.email)+'</td><td>'+u.totalPoints.toFixed(2)+'</td><td>'+verifiedBadge+'</td><td>'+u.attendanceTotalDays+'天</td><td><div class="restrict-badge">'+restrictBadges+'</div></td><td>'+formatDate(u.createdAt)+'</td></tr>'});html+='</tbody></table>';c.innerHTML=html;currentUserTotalPages=d.total_pages||1;var pg=document.getElementById('usersPagination');var pgHtml='';for(var i=1;i<=currentUserTotalPages;i++){pgHtml+='<button class="'+(i===page?'active':'')+'" onclick="loadUsers('+i+')">'+i+'</button>'}pg.innerHTML=pgHtml}catch(e){console.error(e);document.getElementById('usersListContainer').innerHTML='<div class="loading"><i class="fas fa-exclamation-triangle" style="color:#f87171;"></i>加载失败</div>'}}
@@ -410,12 +430,103 @@
     window.deleteKbItem=function(id){showModal('确定要删除此知识条目吗？此操作不可恢复。',function(){apiRequest('/api/admin/knowledge/delete',{method:'POST',body:JSON.stringify({id:id})}).then(function(){showMessage('删除成功','success');loadKnowledgeBase()}).catch(function(e){showMessage(e.message,'error')})})}
     async function addKnowledgeItem(){var title=document.getElementById('kbNewTitle').value.trim();var keywordsRaw=document.getElementById('kbNewKeywords').value.trim();var content=document.getElementById('kbNewContent').value.trim();if(!title){showMessage('请输入标题','error');return}if(!keywordsRaw){showMessage('请输入关键词','error');return}if(!content){showMessage('请输入内容','error');return}var keywords=keywordsRaw.split(',').map(function(s){return s.trim()}).filter(function(s){return s});if(keywords.length===0){showMessage('至少需要一个关键词','error');return}var btn=document.getElementById('addKbBtn');btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> 添加中...';try{var d=await apiRequest('/api/admin/knowledge/add',{method:'POST',body:JSON.stringify({title:title,keywords:keywords,content:content})});showMessage(d.message,'success');document.getElementById('kbAddResult').innerHTML='<div style="background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.15);border-radius:12px;padding:12px 16px;color:#a7f3d0;"><i class="fas fa-check-circle" style="color:#34d399;"></i> 添加成功！</div>';document.getElementById('kbNewTitle').value='';document.getElementById('kbNewKeywords').value='';document.getElementById('kbNewContent').value='';loadKnowledgeBase()}catch(e){showMessage(e.message,'error')}finally{btn.disabled=false;btn.innerHTML='<i class="fas fa-plus"></i> 添加知识'}}
 
-    document.getElementById('loginBtn').addEventListener('click',async function(){var username=document.getElementById('adminUsername').value.trim();var password=document.getElementById('adminPassword').value;var errorEl=document.getElementById('loginError');var btn=document.getElementById('loginBtn');if(!username||!password){errorEl.textContent='请输入用户名和密码';return}errorEl.textContent='';btn.disabled=true;btn.textContent='登录中...';try{await fetchCsrfToken();var r=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':csrfToken||''},body:JSON.stringify({username:username,password:password})});var d=await r.json();if(r.ok&&d.success){currentToken=d.token;localStorage.setItem('adminToken',currentToken);document.getElementById('loginContainer').style.display='none';document.getElementById('adminContainer').style.display='block';document.getElementById('tokenDisplay').innerHTML='<span class="valid">●</span> 已认证 ('+d.expires_in+'s)';loadStats();loadRestrictedUsers();loadCdkPackages();loadAnnouncements();loadUsers(1);loadKnowledgeBase();setInterval(checkAdminSession,60000)}else{errorEl.textContent=d.error||'登录失败，请检查用户名和密码'}}catch(e){errorEl.textContent='网络错误，请重试';console.error(e)}finally{btn.disabled=false;btn.textContent='登录控制台'}});
+    async function loadFeedbackList(page){
+        page=page||currentFeedbackPage;
+        try{
+            var url='/api/admin/feedback/list?page='+page+'&per_page=20&search='+encodeURIComponent(currentFeedbackSearch)+'&status='+encodeURIComponent(currentFeedbackStatus);
+            var d=await apiRequest(url);
+            var c=document.getElementById('feedbackListContainer');
+            if(d.feedbacks.length===0){
+                c.innerHTML='<div class="empty-state"><i class="fas fa-comments"></i>暂无反馈</div>';
+                document.getElementById('feedbackPagination').innerHTML='';
+                return;
+            }
+            var statusMap={pending:'待处理',replied:'已回复',closed:'已关闭'};
+            var statusTypeMap={pending:'warning',replied:'success',closed:'neutral'};
+            var html='<table><thead><tr><th>反馈ID</th><th>用户名</th><th>邮箱</th><th>类型</th><th>内容</th><th>提交时间</th><th>状态</th><th>操作</th></tr></thead><tbody>';
+            d.feedbacks.forEach(function(f){
+                var contentPreview=escapeHtml(f.content);
+                if(contentPreview.length>60)contentPreview=contentPreview.substring(0,60)+'...';
+                var statusText=statusMap[f.status]||f.status;
+                var statusType=statusTypeMap[f.status]||'neutral';
+                html+='<tr><td><code style="font-family:monospace;font-size:11px;color:#a78bfa;">'+escapeHtml(f.feedback_id)+'</code></td><td><strong>'+escapeHtml(f.username)+'</strong></td><td>'+escapeHtml(f.email)+'</td><td>'+escapeHtml(f.feedback_type)+'</td><td><div title="'+escapeHtml(f.content).replace(/"/g,'&quot;')+'" style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+contentPreview+'</div></td><td>'+formatTime(f.created_at)+'</td><td>'+badge(statusText,statusType)+'</td><td><button class="action-btn action-btn-primary" onclick="viewFeedback(\''+escapeHtml(f.feedback_id)+'\')"><i class="fas fa-eye"></i> 查看</button></td></tr>';
+            });
+            html+='</tbody></table>';
+            c.innerHTML=html;
+            currentFeedbackTotalPages=d.total_pages||1;
+            var pg=document.getElementById('feedbackPagination');
+            var pgHtml='';
+            for(var i=1;i<=currentFeedbackTotalPages;i++){
+                pgHtml+='<button class="'+(i===page?'active':'')+'" onclick="loadFeedbackList('+i+')">'+i+'</button>';
+            }
+            pg.innerHTML=pgHtml;
+        }catch(e){
+            console.error(e);
+            document.getElementById('feedbackListContainer').innerHTML='<div class="loading"><i class="fas fa-exclamation-triangle" style="color:#f87171;"></i>加载失败</div>';
+        }
+    }
+
+    window.viewFeedback=async function(feedbackId){
+        try{
+            var d=await apiRequest('/api/admin/feedback/list?per_page=1000');
+            var f=d.feedbacks.find(function(x){return x.feedback_id===feedbackId});
+            if(!f){showMessage('反馈不存在','error');return}
+            var statusOptions='<option value="pending"'+(f.status==='pending'?' selected':'')+'>待处理</option><option value="replied"'+(f.status==='replied'?' selected':'')+'>已回复</option><option value="closed"'+(f.status==='closed'?' selected':'')+'>已关闭</option>';
+            var replyValue=f.reply?escapeHtml(f.reply):'';
+            var modalHtml='<div style="max-height:70vh;overflow-y:auto;">';
+            modalHtml+='<div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:14px 18px;margin-bottom:16px;">';
+            modalHtml+='<div style="margin-bottom:8px;"><span style="color:rgba(255,255,255,0.4);font-size:12px;">反馈ID</span> <code style="color:#a78bfa;font-family:monospace;font-size:13px;">'+escapeHtml(f.feedback_id)+'</code></div>';
+            modalHtml+='<div style="margin-bottom:8px;"><span style="color:rgba(255,255,255,0.4);font-size:12px;">用户名</span> <strong>'+escapeHtml(f.username)+'</strong></div>';
+            modalHtml+='<div style="margin-bottom:8px;"><span style="color:rgba(255,255,255,0.4);font-size:12px;">邮箱</span> '+escapeHtml(f.email)+'</div>';
+            modalHtml+='<div style="margin-bottom:8px;"><span style="color:rgba(255,255,255,0.4);font-size:12px;">类型</span> '+escapeHtml(f.feedback_type)+'</div>';
+            modalHtml+='<div><span style="color:rgba(255,255,255,0.4);font-size:12px;">提交时间</span> '+formatTime(f.created_at)+'</div>';
+            modalHtml+='</div>';
+            modalHtml+='<div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:14px 18px;margin-bottom:16px;border-left:3px solid #667eea;">';
+            modalHtml+='<div style="color:rgba(255,255,255,0.4);font-size:12px;margin-bottom:8px;">反馈内容</div>';
+            modalHtml+='<div style="color:#d1d5db;font-size:14px;white-space:pre-wrap;word-break:break-word;">'+escapeHtml(f.content)+'</div>';
+            modalHtml+='</div>';
+            modalHtml+='<div style="margin-bottom:14px;"><label style="display:block;color:rgba(255,255,255,0.5);font-size:12px;margin-bottom:6px;">状态</label><select id="fbReplyStatus" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:#fff;font-size:14px;outline:none;">'+statusOptions+'</select></div>';
+            modalHtml+='<div><label style="display:block;color:rgba(255,255,255,0.5);font-size:12px;margin-bottom:6px;">回复内容</label><textarea id="fbReplyContent" rows="4" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:#fff;font-size:14px;outline:none;resize:vertical;font-family:inherit;">'+replyValue+'</textarea></div>';
+            modalHtml+='</div>';
+
+            var modal=document.getElementById('confirmModal');
+            var content=modal.querySelector('.modal-content');
+            var originalHtml=content.innerHTML;
+
+            content.innerHTML='<h3><i class="fas fa-comment-dots" style="color:#667eea;margin-right:10px;"></i>反馈详情</h3>'+modalHtml+
+                '<div class="modal-actions" style="margin-top:20px"><button id="fbCancelBtn" style="background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);">关闭</button><button id="fbSaveBtn" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;">保存回复</button></div>';
+
+            modal.style.display='flex';
+
+            document.getElementById('fbCancelBtn').onclick=function(){
+                modal.style.display='none';
+                content.innerHTML=originalHtml;
+                location.reload();
+            };
+            document.getElementById('fbSaveBtn').onclick=async function(){
+                var newStatus=document.getElementById('fbReplyStatus').value;
+                var replyContent=document.getElementById('fbReplyContent').value.trim();
+                try{
+                    await apiRequest('/api/admin/feedback/reply',{method:'POST',body:JSON.stringify({feedback_id:feedbackId,reply:replyContent,status:newStatus})});
+                    showMessage('反馈回复成功','success');
+                    modal.style.display='none';
+                    content.innerHTML=originalHtml;
+                    location.reload();
+                }catch(e){
+                    showMessage(e.message,'error');
+                }
+            };
+        }catch(e){
+            showMessage('加载反馈详情失败: '+e.message,'error');
+        }
+    };
+
+    document.getElementById('loginBtn').addEventListener('click',async function(){var username=document.getElementById('adminUsername').value.trim();var password=document.getElementById('adminPassword').value;var errorEl=document.getElementById('loginError');var btn=document.getElementById('loginBtn');if(!username||!password){errorEl.textContent='请输入用户名和密码';return}errorEl.textContent='';btn.disabled=true;btn.textContent='登录中...';try{await fetchCsrfToken();var r=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':csrfToken||''},body:JSON.stringify({username:username,password:password})});var d=await r.json();if(r.ok&&d.success){currentToken=d.token;localStorage.setItem('adminToken',currentToken);document.getElementById('loginContainer').style.display='none';document.getElementById('adminContainer').style.display='block';document.getElementById('tokenDisplay').innerHTML='<span class="valid">●</span> 已认证 ('+d.expires_in+'s)';loadStats();loadRestrictedUsers();loadCdkPackages();loadAnnouncements();loadUsers(1);loadKnowledgeBase();loadFeedbackList(1);setInterval(checkAdminSession,60000)}else{errorEl.textContent=d.error||'登录失败，请检查用户名和密码'}}catch(e){errorEl.textContent='网络错误，请重试';console.error(e)}finally{btn.disabled=false;btn.textContent='登录控制台'}});
     document.getElementById('adminPassword').addEventListener('keypress',function(e){if(e.key==='Enter')document.getElementById('loginBtn').click()});
     document.getElementById('adminUsername').addEventListener('keypress',function(e){if(e.key==='Enter')document.getElementById('loginBtn').click()});
 
     document.getElementById('logoutAdminBtn').addEventListener('click',logoutAdmin);
-    document.getElementById('refreshBtn').addEventListener('click',function(){loadStats();loadRestrictedUsers();loadCdkPackages();loadAnnouncements();loadUsers(currentUserPage);loadKnowledgeBase();showMessage('数据已刷新','success')});
+    document.getElementById('refreshBtn').addEventListener('click',function(){loadStats();loadRestrictedUsers();loadCdkPackages();loadAnnouncements();loadUsers(currentUserPage);loadKnowledgeBase();loadFeedbackList(currentFeedbackPage);showMessage('数据已刷新','success')});
     document.getElementById('toggleLoginRestrictBtn').addEventListener('click',function(){toggleRestrict('login')});
     document.getElementById('toggleMallRestrictBtn').addEventListener('click',function(){toggleRestrict('mall')});
     document.getElementById('toggleGenerateRestrictBtn').addEventListener('click',function(){toggleRestrict('generate_phone')});
@@ -435,10 +546,14 @@
     document.getElementById('searchKbBtn').addEventListener('click',function(){currentKbSearch=document.getElementById('kbSearchFilter').value.trim();loadKnowledgeBase()});
     document.getElementById('refreshKbBtn').addEventListener('click',function(){currentKbSearch='';document.getElementById('kbSearchFilter').value='';loadKnowledgeBase()});
     document.getElementById('kbSearchFilter').addEventListener('keypress',function(e){if(e.key==='Enter'){currentKbSearch=this.value.trim();loadKnowledgeBase()}});
+    document.getElementById('searchFeedbackBtn').addEventListener('click',function(){currentFeedbackSearch=document.getElementById('feedbackSearchFilter').value.trim();currentFeedbackStatus=document.getElementById('feedbackStatusFilter').value;currentFeedbackPage=1;loadFeedbackList(1)});
+    document.getElementById('refreshFeedbackBtn').addEventListener('click',function(){currentFeedbackSearch='';currentFeedbackStatus='';document.getElementById('feedbackSearchFilter').value='';document.getElementById('feedbackStatusFilter').value='';currentFeedbackPage=1;loadFeedbackList(1)});
+    document.getElementById('feedbackSearchFilter').addEventListener('keypress',function(e){if(e.key==='Enter'){currentFeedbackSearch=this.value.trim();currentFeedbackStatus=document.getElementById('feedbackStatusFilter').value;currentFeedbackPage=1;loadFeedbackList(1)}});
+    document.getElementById('feedbackStatusFilter').addEventListener('change',function(){currentFeedbackSearch=document.getElementById('feedbackSearchFilter').value.trim();currentFeedbackStatus=this.value;currentFeedbackPage=1;loadFeedbackList(1)});
 
-    document.querySelectorAll('.tab-btn').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.tab-btn').forEach(function(x){x.classList.remove('active')});b.classList.add('active');document.querySelectorAll('.tab-content').forEach(function(x){x.classList.remove('active')});var id=b.getAttribute('data-tab');document.getElementById(id+'Tab').classList.add('active');if(id==='restrict')loadRestrictedUsers();if(id==='cdk')loadCdkPackages();if(id==='announcement')loadAnnouncements();if(id==='users')loadUsers(currentUserPage);if(id==='knowledge')loadKnowledgeBase()})});
+    document.querySelectorAll('.tab-btn').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.tab-btn').forEach(function(x){x.classList.remove('active')});b.classList.add('active');document.querySelectorAll('.tab-content').forEach(function(x){x.classList.remove('active')});var id=b.getAttribute('data-tab');document.getElementById(id+'Tab').classList.add('active');if(id==='restrict')loadRestrictedUsers();if(id==='cdk')loadCdkPackages();if(id==='announcement')loadAnnouncements();if(id==='users')loadUsers(currentUserPage);if(id==='knowledge')loadKnowledgeBase();if(id==='feedback')loadFeedbackList(1)})});
 
-    async function init(){if(isInitialized)return;isInitialized=true;try{await fetchCsrfToken().catch(function(e){});var token=localStorage.getItem('adminToken');if(token){currentToken=token;document.getElementById('loginContainer').style.display='none';document.getElementById('adminContainer').style.display='block';document.getElementById('tokenDisplay').innerHTML='<span class="valid">●</span> 已认证';loadStats();loadRestrictedUsers();loadCdkPackages();loadAnnouncements();loadUsers(1);loadKnowledgeBase()}hideErrorBoundary()}catch(error){console.error('Init error:',error);showErrorBoundary('初始化失败: '+(error.message||'网络连接失败'))}}
+    async function init(){if(isInitialized)return;isInitialized=true;try{await fetchCsrfToken().catch(function(e){});var token=localStorage.getItem('adminToken');if(token){currentToken=token;document.getElementById('loginContainer').style.display='none';document.getElementById('adminContainer').style.display='block';document.getElementById('tokenDisplay').innerHTML='<span class="valid">●</span> 已认证';loadStats();loadRestrictedUsers();loadCdkPackages();loadAnnouncements();loadUsers(1);loadKnowledgeBase();loadFeedbackList(1)}hideErrorBoundary()}catch(error){console.error('Init error:',error);showErrorBoundary('初始化失败: '+(error.message||'网络连接失败'))}}
     init();
 </script>
 </body>

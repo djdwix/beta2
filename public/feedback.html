@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>意见反馈 - 虚拟手机号生成器</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+        }
+        .container {
+            max-width: 720px;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.25);
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        .header {
+            background: linear-gradient(135deg, #5865F2 0%, #4752C4 100%);
+            padding: 36px 40px 30px;
+            text-align: center;
+            position: relative;
+        }
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #5865F2, #57F287, #FEE75C, #EB459E);
+            background-size: 300% 100%;
+            animation: gradientMove 3s ease infinite;
+        }
+        @keyframes gradientMove {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        .header .icon { font-size: 48px; display: block; margin-bottom: 8px; }
+        .header h1 { color: #fff; font-size: 24px; font-weight: 700; letter-spacing: 1px; }
+        .header p { color: rgba(255,255,255,0.85); font-size: 14px; margin-top: 6px; }
+
+        .tabs {
+            display: flex;
+            background: #f8f9fc;
+            border-bottom: 1px solid #e8ecf1;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 16px 12px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #8a8aaa;
+            transition: all 0.2s;
+            position: relative;
+            font-family: inherit;
+        }
+        .tab-btn:hover { color: #5865F2; background: rgba(88,101,242,0.04); }
+        .tab-btn.active { color: #5865F2; background: #fff; }
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 20%;
+            right: 20%;
+            height: 3px;
+            background: linear-gradient(90deg, #5865F2, #4752C4);
+            border-radius: 3px 3px 0 0;
+        }
+
+        .content { padding: 36px 40px 32px; }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        .form-group { margin-bottom: 22px; }
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a1a2e;
+            margin-bottom: 8px;
+        }
+        .form-group label .required { color: #EB459E; margin-left: 2px; }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 14px;
+            font-family: inherit;
+            color: #1a1a2e;
+            background: #f8f9fc;
+            border: 2px solid #e8ecf1;
+            border-radius: 12px;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: #5865F2;
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(88,101,242,0.1);
+        }
+        .form-group input[readonly] {
+            background: #eef1f6;
+            color: #8a8aaa;
+            cursor: not-allowed;
+        }
+        .form-group textarea {
+            min-height: 140px;
+            resize: vertical;
+            line-height: 1.6;
+        }
+        .char-count {
+            text-align: right;
+            font-size: 12px;
+            color: #8a8aaa;
+            margin-top: 6px;
+        }
+        .char-count.warning { color: #f5a623; }
+        .char-count.danger { color: #EB459E; }
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+            background: linear-gradient(135deg, #5865F2 0%, #4752C4 100%);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 1px;
+            box-shadow: 0 8px 20px rgba(88,101,242,0.3);
+        }
+        .submit-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(88,101,242,0.4);
+        }
+        .submit-btn:active:not(:disabled) { transform: translateY(0); }
+        .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 18px;
+            font-size: 14px;
+            color: #8a8aaa;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: #5865F2; }
+
+        .toast {
+            position: fixed;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-120px);
+            background: #1a1a2e;
+            color: #fff;
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: transform 0.3s ease;
+            z-index: 9999;
+            max-width: 90%;
+            text-align: center;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .toast.success { background: linear-gradient(135deg, #57F287 0%, #3ba55c 100%); }
+        .toast.error { background: linear-gradient(135deg, #EB459E 0%, #c1307a 100%); }
+
+        .result-box {
+            display: none;
+            background: #f0fdf4;
+            border: 2px solid #57F287;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 22px;
+            text-align: center;
+        }
+        .result-box.show { display: block; }
+        .result-box .result-icon { font-size: 40px; margin-bottom: 8px; }
+        .result-box .result-title { font-size: 16px; font-weight: 700; color: #3ba55c; margin-bottom: 6px; }
+        .result-box .result-id {
+            font-family: 'Courier New', monospace;
+            font-size: 15px;
+            color: #5865F2;
+            font-weight: 700;
+            background: #fff;
+            padding: 8px 16px;
+            border-radius: 8px;
+            display: inline-block;
+            margin-top: 8px;
+            border: 1px solid #e0e6ff;
+        }
+
+        .feedback-list-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .feedback-list-toolbar .title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+        .refresh-btn {
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #5865F2;
+            background: #eef1ff;
+            border: 1px solid #d8e0ff;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .refresh-btn:hover:not(:disabled) { background: #e0e6ff; }
+        .refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .feedback-item {
+            background: #f8f9fc;
+            border: 1px solid #e8ecf1;
+            border-radius: 14px;
+            padding: 18px 20px;
+            margin-bottom: 14px;
+            transition: all 0.2s;
+        }
+        .feedback-item:hover {
+            border-color: #c8d0f0;
+            box-shadow: 0 4px 12px rgba(88,101,242,0.06);
+        }
+        .feedback-item .fi-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .feedback-item .fi-id {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #5865F2;
+            font-weight: 700;
+            background: #fff;
+            padding: 3px 10px;
+            border-radius: 6px;
+            border: 1px solid #e0e6ff;
+        }
+        .feedback-item .fi-status {
+            font-size: 12px;
+            font-weight: 700;
+            padding: 3px 12px;
+            border-radius: 20px;
+        }
+        .feedback-item .fi-status.pending { background: #fff8f0; color: #f5a623; }
+        .feedback-item .fi-status.replied { background: #f0fdf4; color: #3ba55c; }
+        .feedback-item .fi-status.closed { background: #f0f2f5; color: #8a8aaa; }
+
+        .feedback-item .fi-meta {
+            display: flex;
+            gap: 14px;
+            font-size: 12px;
+            color: #8a8aaa;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .feedback-item .fi-content {
+            font-size: 14px;
+            color: #1a1a2e;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+            padding: 12px 14px;
+            background: #fff;
+            border-radius: 10px;
+            border-left: 3px solid #5865F2;
+        }
+
+        .reply-box {
+            margin-top: 12px;
+            padding: 14px 16px;
+            background: linear-gradient(135deg, #f0fdf4 0%, #e8faf0 100%);
+            border-radius: 12px;
+            border-left: 3px solid #57F287;
+        }
+        .reply-box .reply-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #3ba55c;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .reply-box .reply-text {
+            font-size: 14px;
+            color: #1a1a2e;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .list-empty, .list-loading {
+            text-align: center;
+            padding: 50px 20px;
+            color: #8a8aaa;
+            font-size: 14px;
+        }
+        .list-empty .emoji { font-size: 44px; display: block; margin-bottom: 12px; }
+        .list-loading .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid #e8ecf1;
+            border-top-color: #5865F2;
+            border-radius: 50%;
+            margin: 0 auto 12px;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .pagination button {
+            min-width: 36px;
+            padding: 7px 12px;
+            background: #f8f9fc;
+            border: 1px solid #e8ecf1;
+            border-radius: 8px;
+            color: #5865F2;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        .pagination button:hover:not(:disabled) { background: #eef1ff; }
+        .pagination button.active {
+            background: linear-gradient(135deg, #5865F2, #4752C4);
+            color: #fff;
+            border-color: transparent;
+        }
+        .pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        @media (max-width: 480px) {
+            body { padding: 16px 10px; }
+            .header { padding: 26px 20px 22px; }
+            .header .icon { font-size: 36px; }
+            .header h1 { font-size: 20px; }
+            .content { padding: 22px 18px; }
+            .tab-btn { font-size: 13px; padding: 14px 8px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <span class="icon">💬</span>
+            <h1>意见反馈</h1>
+            <p>您的建议是我们前进的动力</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="submit">提交反馈</button>
+            <button class="tab-btn" data-tab="list">我的反馈</button>
+        </div>
+
+        <div class="content">
+            <div id="submitPanel" class="tab-panel active">
+                <div class="result-box" id="resultBox">
+                    <div class="result-icon">✅</div>
+                    <div class="result-title">反馈提交成功</div>
+                    <div>您的反馈编号为：</div>
+                    <div class="result-id" id="resultId">-</div>
+                </div>
+
+                <form id="feedbackForm">
+                    <div class="form-group">
+                        <label>用户名</label>
+                        <input type="text" id="username" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>联系邮箱</label>
+                        <input type="text" id="email" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>反馈类型<span class="required">*</span></label>
+                        <select id="feedbackType" required>
+                            <option value="">请选择反馈类型</option>
+                            <option value="功能建议">功能建议</option>
+                            <option value="问题反馈">问题反馈</option>
+                            <option value="体验优化">体验优化</option>
+                            <option value="内容举报">内容举报</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>反馈内容<span class="required">*</span></label>
+                        <textarea id="content" placeholder="请详细描述您遇到的问题或建议（5-2000字）..." maxlength="2000"></textarea>
+                        <div class="char-count" id="charCount">0 / 2000</div>
+                    </div>
+                    <button type="submit" class="submit-btn" id="submitBtn">提交反馈</button>
+                    <a href="/" class="back-link">← 返回首页</a>
+                </form>
+            </div>
+
+            <div id="listPanel" class="tab-panel">
+                <div class="feedback-list-toolbar">
+                    <div class="title">我的反馈记录 <span style="font-size:12px;font-weight:400;color:#8a8aaa;">（已回复/已关闭的反馈将在12小时后自动清除）</span></div>
+                    <button class="refresh-btn" id="refreshListBtn">🔄 刷新</button>
+                </div>
+                <div id="feedbackListContainer">
+                    <div class="list-loading">
+                        <div class="spinner"></div>
+                        加载中...
+                    </div>
+                </div>
+                <div class="pagination" id="feedbackPagination"></div>
+                <a href="/" class="back-link">← 返回首页</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        let csrfToken = '';
+        let currentPage = 1;
+        let totalPages = 1;
+
+        const STATUS_MAP = {
+            pending: { text: '待处理', cls: 'pending' },
+            replied: { text: '已回复', cls: 'replied' },
+            closed: { text: '已关闭', cls: 'closed' }
+        };
+
+        function showToast(message, type) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast ' + (type || '');
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function escapeHtml(text) {
+            if (text === null || text === undefined) return '';
+            const div = document.createElement('div');
+            div.textContent = String(text);
+            return div.innerHTML;
+        }
+
+        function formatTime(ts) {
+            if (!ts) return '-';
+            try {
+                const d = new Date(ts);
+                const pad = n => String(n).padStart(2, '0');
+                return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            } catch (e) {
+                return '-';
+            }
+        }
+
+        async function fetchCsrfToken() {
+            try {
+                const res = await fetch('/api/csrf-token', { credentials: 'include' });
+                const data = await res.json();
+                csrfToken = data.csrf_token;
+            } catch (e) {
+                console.error('CSRF token fetch failed', e);
+            }
+        }
+
+        async function loadUserInfo() {
+            try {
+                const res = await fetch('/api/check-auth', { credentials: 'include' });
+                const data = await res.json();
+                if (!data.authenticated) {
+                    window.location.href = '/login.html';
+                    return;
+                }
+                document.getElementById('username').value = data.username || '';
+                document.getElementById('email').value = data.email || '';
+            } catch (e) {
+                console.error('Load user info failed', e);
+                window.location.href = '/login.html';
+            }
+        }
+
+        async function loadFeedbackList(page) {
+            page = page || 1;
+            currentPage = page;
+            const container = document.getElementById('feedbackListContainer');
+            const pagination = document.getElementById('feedbackPagination');
+            container.innerHTML = '<div class="list-loading"><div class="spinner"></div>加载中...</div>';
+            pagination.innerHTML = '';
+
+            try {
+                const res = await fetch(`/api/feedback/list?page=${page}&per_page=10`, {
+                    credentials: 'include'
+                });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    container.innerHTML = `<div class="list-empty"><span class="emoji">⚠️</span>${escapeHtml(data.error || '加载失败')}</div>`;
+                    return;
+                }
+
+                if (!data.feedbacks || data.feedbacks.length === 0) {
+                    container.innerHTML = '<div class="list-empty"><span class="emoji">📭</span>暂无反馈记录<br><span style="font-size:13px;color:#b0b0c8;margin-top:6px;display:inline-block;">提交反馈后可在此查看进度</span></div>';
+                    return;
+                }
+
+                totalPages = data.total_pages || 1;
+
+                let html = '';
+                data.feedbacks.forEach(fb => {
+                    const statusInfo = STATUS_MAP[fb.status] || STATUS_MAP.pending;
+                    const replyHtml = (fb.status === 'replied' || fb.status === 'closed') && fb.reply
+                        ? `<div class="reply-box">
+                               <div class="reply-label">💬 管理员回复</div>
+                               <div class="reply-text">${escapeHtml(fb.reply)}</div>
+                           </div>`
+                        : '';
+
+                    html += `
+                        <div class="feedback-item">
+                            <div class="fi-header">
+                                <span class="fi-id">${escapeHtml(fb.feedback_id)}</span>
+                                <span class="fi-status ${statusInfo.cls}">${statusInfo.text}</span>
+                            </div>
+                            <div class="fi-meta">
+                                <span>📂 ${escapeHtml(fb.feedback_type || '未分类')}</span>
+                                <span>🕐 ${formatTime(fb.created_at)}</span>
+                            </div>
+                            <div class="fi-content">${escapeHtml(fb.content)}</div>
+                            ${replyHtml}
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+
+                if (totalPages > 1) {
+                    let pgHtml = '';
+                    pgHtml += `<button ${page <= 1 ? 'disabled' : ''} data-page="${page - 1}">‹ 上一页</button>`;
+                    const startPage = Math.max(1, page - 2);
+                    const endPage = Math.min(totalPages, page + 2);
+                    for (let i = startPage; i <= endPage; i++) {
+                        pgHtml += `<button class="${i === page ? 'active' : ''}" data-page="${i}">${i}</button>`;
+                    }
+                    pgHtml += `<button ${page >= totalPages ? 'disabled' : ''} data-page="${page + 1}">下一页 ›</button>`;
+                    pagination.innerHTML = pgHtml;
+                    pagination.querySelectorAll('button[data-page]').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            const p = parseInt(btn.getAttribute('data-page'), 10);
+                            if (p >= 1 && p <= totalPages && p !== currentPage) {
+                                loadFeedbackList(p);
+                            }
+                        });
+                    });
+                }
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = '<div class="list-empty"><span class="emoji">⚠️</span>网络错误，请稍后重试</div>';
+            }
+        }
+
+        const contentInput = document.getElementById('content');
+        const charCount = document.getElementById('charCount');
+        contentInput.addEventListener('input', () => {
+            const len = contentInput.value.length;
+            charCount.textContent = len + ' / 2000';
+            charCount.className = 'char-count';
+            if (len > 1800) charCount.classList.add('danger');
+            else if (len > 1500) charCount.classList.add('warning');
+        });
+
+        document.getElementById('feedbackForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            const feedbackType = document.getElementById('feedbackType').value;
+            const content = contentInput.value.trim();
+
+            if (!feedbackType) {
+                showToast('请选择反馈类型', 'error');
+                return;
+            }
+            if (content.length < 5) {
+                showToast('反馈内容至少5个字符', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '提交中...';
+
+            try {
+                const res = await fetch('/api/feedback/submit', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken
+                    },
+                    body: JSON.stringify({
+                        feedback_type: feedbackType,
+                        content: content
+                    })
+                });
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    document.getElementById('resultId').textContent = data.feedback_id;
+                    document.getElementById('resultBox').classList.add('show');
+                    document.getElementById('feedbackForm').style.display = 'none';
+                    showToast(data.message, 'success');
+                    contentInput.value = '';
+                    charCount.textContent = '0 / 2000';
+                    charCount.className = 'char-count';
+                } else {
+                    showToast(data.error || '提交失败，请重试', 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('网络错误，请稍后重试', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '提交反馈';
+            }
+        });
+
+        document.getElementById('refreshListBtn').addEventListener('click', function () {
+            this.disabled = true;
+            loadFeedbackList(currentPage).finally(() => {
+                this.disabled = false;
+            });
+        });
+
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+                btn.classList.add('active');
+                const tab = btn.getAttribute('data-tab');
+                document.getElementById(tab + 'Panel').classList.add('active');
+                if (tab === 'list') {
+                    loadFeedbackList(1);
+                }
+            });
+        });
+
+        (async () => {
+            await fetchCsrfToken();
+            await loadUserInfo();
+        })();
+    </script>
+</body>
+</html>

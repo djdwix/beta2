@@ -665,6 +665,185 @@ def resend_verification_code(email, username=None, purpose="验证"):
         save_verification_codes(codes)
     return send_verification_code(email, username, purpose)
 
+def send_feedback_email(username, user_email, feedback_type, feedback_id, content):
+    if not SMTP_EMAIL or not SMTP_PASSWORD:
+        logger.error("SMTP配置不完整，无法发送反馈邮件")
+        return False, "邮件服务配置不完整"
+
+    subject = f"【用户反馈】{feedback_type} - {username}"
+
+    body = f"""收到新的用户反馈：
+
+反馈ID：{feedback_id}
+用户名：{username}
+联系邮箱：{user_email}
+反馈类型：{feedback_type}
+提交时间：{time.strftime('%Y-%m-%d %H:%M:%S')}
+
+反馈内容：
+{content}
+
+---
+此邮件由系统自动发送
+"""
+
+    html_body = f"""<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户反馈</title>
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: #f0f2f5;
+            padding: 40px 20px;
+            line-height: 1.6;
+        }}
+        .container {{
+            max-width: 640px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.08);
+            overflow: hidden;
+            border: 1px solid #e8ecf1;
+        }}
+        .header {{
+            background: linear-gradient(135deg, #5865F2 0%, #4752C4 100%);
+            padding: 32px 40px 28px;
+            text-align: center;
+        }}
+        .header h1 {{
+            color: #ffffff;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }}
+        .header p {{
+            color: rgba(255,255,255,0.85);
+            font-size: 13px;
+            margin-top: 6px;
+        }}
+        .content {{
+            padding: 32px 40px;
+        }}
+        .meta-table {{
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 24px;
+            background: #f8f9fc;
+            border-radius: 12px;
+            overflow: hidden;
+        }}
+        .meta-table tr {{
+            border-bottom: 1px solid #e8ecf1;
+        }}
+        .meta-table tr:last-child {{
+            border-bottom: none;
+        }}
+        .meta-table td {{
+            padding: 12px 18px;
+            font-size: 14px;
+        }}
+        .meta-table td.label {{
+            color: #8a8aaa;
+            width: 110px;
+            font-weight: 500;
+        }}
+        .meta-table td.value {{
+            color: #1a1a2e;
+            font-weight: 600;
+        }}
+        .meta-table td.value.id {{
+            color: #5865F2;
+            font-family: 'Courier New', monospace;
+        }}
+        .content-box {{
+            background: #f8f9fc;
+            border-radius: 12px;
+            padding: 20px;
+            border-left: 4px solid #5865F2;
+        }}
+        .content-box .label {{
+            font-size: 12px;
+            color: #8a8aaa;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: block;
+        }}
+        .content-box .text {{
+            font-size: 15px;
+            color: #1a1a2e;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }}
+        .footer {{
+            background: #f8f9fc;
+            padding: 18px 40px;
+            text-align: center;
+            border-top: 1px solid #e8ecf1;
+        }}
+        .footer .copyright {{
+            font-size: 12px;
+            color: #b0b0c8;
+        }}
+        @media (max-width: 480px) {{
+            body {{ padding: 20px 12px; }}
+            .header {{ padding: 24px 20px 20px; }}
+            .header h1 {{ font-size: 18px; }}
+            .content {{ padding: 24px 20px; }}
+            .meta-table td {{ padding: 10px 14px; font-size: 13px; }}
+            .meta-table td.label {{ width: 90px; }}
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📬 新的用户反馈</h1>
+            <p>虚拟手机号生成器 · 反馈系统</p>
+        </div>
+        <div class="content">
+            <table class="meta-table">
+                <tr>
+                    <td class="label">反馈ID</td>
+                    <td class="value id">{feedback_id}</td>
+                </tr>
+                <tr>
+                    <td class="label">用户名</td>
+                    <td class="value">{username}</td>
+                </tr>
+                <tr>
+                    <td class="label">联系邮箱</td>
+                    <td class="value">{user_email}</td>
+                </tr>
+                <tr>
+                    <td class="label">反馈类型</td>
+                    <td class="value">{feedback_type}</td>
+                </tr>
+                <tr>
+                    <td class="label">提交时间</td>
+                    <td class="value">{time.strftime('%Y-%m-%d %H:%M:%S')}</td>
+                </tr>
+            </table>
+            <div class="content-box">
+                <span class="label">✦ 反馈内容 ✦</span>
+                <div class="text">{content}</div>
+            </div>
+        </div>
+        <div class="footer">
+            <div class="copyright">© 2026 虚拟手机号生成器 · 系统自动发送</div>
+        </div>
+    </div>
+</body>
+</html>"""
+
+    return send_email(SMTP_EMAIL, subject, body, html_body)
+
 def cleanup_verification_codes_loop():
     while True:
         time.sleep(60)
