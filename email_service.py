@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from email.utils import formataddr
 import base64
 
 load_dotenv()
@@ -188,7 +189,7 @@ def send_email(to_email, subject, body, html_body=None):
 
     try:
         msg = MIMEMultipart('alternative')
-        msg['From'] = SMTP_EMAIL
+        msg['From'] = formataddr(('虚拟手机号生成器', SMTP_EMAIL))
         msg['To'] = to_email
         msg['Subject'] = subject
 
@@ -843,6 +844,116 @@ def send_feedback_email(username, user_email, feedback_type, feedback_id, conten
 </html>"""
 
     return send_email(SMTP_EMAIL, subject, body, html_body)
+
+def send_restriction_notification_email(username, user_email, restriction_type, expires_at_ms, reason):
+    if not SMTP_EMAIL or not SMTP_PASSWORD:
+        logger.error("SMTP配置不完整，无法发送限制通知邮件")
+        return False, "邮件服务配置不完整"
+
+    type_names = {
+        'login': '登录',
+        'mall': '商城',
+        'generate_phone': '生成手机号',
+        'feedback': '反馈'
+    }
+    type_name = type_names.get(restriction_type, restriction_type)
+
+    now = time.time()
+    now_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(now))
+
+    if expires_at_ms and expires_at_ms > 0:
+        expire_ts = expires_at_ms / 1000
+        expire_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(expire_ts))
+        expire_line = f'限制截止时间：{expire_str}'
+        auto_line = '截止时间到达后将自动解除限制，无需联系管理员。'
+    else:
+        expire_str = '永久'
+        expire_line = '限制截止时间：永久'
+        auto_line = '此限制为永久限制，如需解除请联系管理员。'
+
+    subject = f"【账号限制通知】您的{type_name}功能已被限制"
+
+    body = f"""您好{('，' + username) if username else ''}：
+
+您已被管理员限制 {type_name} 功能。
+
+限制类型：{type_name}
+限制开始时间：{now_str}
+{expire_line}
+限制原因：{reason or '未填写'}
+
+{auto_line}
+
+如有疑问，请通过客服系统或反馈系统联系运营团队。
+
+此致
+虚拟手机号生成器团队
+"""
+
+    html_body = f"""<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>账号限制通知</title>
+<style>
+* {{ margin:0; padding:0; box-sizing:border-box; }}
+body {{ font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif; background:#f0f2f5; padding:40px 20px; line-height:1.6; }}
+.container {{ max-width:580px; margin:0 auto; background:#fff; border-radius:20px; box-shadow:0 20px 60px rgba(0,0,0,0.08); overflow:hidden; border:1px solid #e8ecf1; }}
+.header {{ background:linear-gradient(135deg,#ef4444 0%,#dc2626 100%); padding:32px 40px 26px; text-align:center; }}
+.header h1 {{ color:#fff; font-size:22px; font-weight:700; letter-spacing:1px; }}
+.header p {{ color:rgba(255,255,255,0.85); font-size:13px; margin-top:6px; }}
+.content {{ padding:32px 40px; }}
+.greeting {{ font-size:16px; color:#1a1a2e; margin-bottom:18px; }}
+.greeting strong {{ color:#dc2626; }}
+.message {{ color:#4a4a5a; font-size:15px; margin-bottom:22px; }}
+.info-table {{ width:100%; border-collapse:collapse; background:#f8f9fc; border-radius:12px; overflow:hidden; margin-bottom:20px; }}
+.info-table tr {{ border-bottom:1px solid #e8ecf1; }}
+.info-table tr:last-child {{ border-bottom:none; }}
+.info-table td {{ padding:12px 18px; font-size:14px; }}
+.info-table td.label {{ color:#8a8aaa; width:120px; font-weight:500; }}
+.info-table td.value {{ color:#1a1a2e; font-weight:600; }}
+.warning-box {{ background:#fef2f2; border-left:4px solid #ef4444; border-radius:8px; padding:14px 18px; margin:20px 0 8px; }}
+.warning-box .text {{ font-size:13px; color:#8a5a5a; }}
+.footer {{ background:#f8f9fc; padding:18px 40px; text-align:center; border-top:1px solid #e8ecf1; }}
+.footer .copyright {{ font-size:12px; color:#b0b0c8; }}
+@media (max-width:480px) {{
+  body {{ padding:20px 12px; }}
+  .header {{ padding:24px 20px 20px; }}
+  .header h1 {{ font-size:18px; }}
+  .content {{ padding:24px 20px; }}
+  .info-table td {{ padding:10px 14px; font-size:13px; }}
+  .footer {{ padding:16px 20px; }}
+}}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>⚠️ 账号限制通知</h1>
+    <p>虚拟手机号生成器 · 风控中心</p>
+  </div>
+  <div class="content">
+    <div class="greeting">您好{f'，<strong>{username}</strong>' if username else ''}！</div>
+    <div class="message">您已被管理员限制 <strong style="color:#dc2626;">{type_name}</strong> 功能，详情如下：</div>
+    <table class="info-table">
+      <tr><td class="label">限制类型</td><td class="value">{type_name}</td></tr>
+      <tr><td class="label">开始时间</td><td class="value">{now_str}</td></tr>
+      <tr><td class="label">截止时间</td><td class="value">{expire_str}</td></tr>
+      <tr><td class="label">限制原因</td><td class="value">{reason or '未填写'}</td></tr>
+    </table>
+    <div class="warning-box">
+      <div class="text">{auto_line}</div>
+    </div>
+    <div style="font-size:13px; color:#8a8aaa; margin-top:20px;">如有疑问，请通过客服系统或反馈系统联系运营团队。</div>
+  </div>
+  <div class="footer">
+    <div class="copyright">© 2026 虚拟手机号生成器 · 系统自动发送</div>
+  </div>
+</div>
+</body>
+</html>"""
+
+    return send_email(user_email, subject, body, html_body)
 
 def cleanup_verification_codes_loop():
     while True:

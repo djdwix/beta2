@@ -2228,8 +2228,23 @@ def check_identity_verified(username):
 
 def get_user_restrictions(username):
     if username not in restricted_users:
-        return {'login': False, 'mall': False, 'generate_phone': False}
-    return restricted_users[username].get('restrictions', {'login': False, 'mall': False, 'generate_phone': False})
+        return {'login': False, 'mall': False, 'generate_phone': False, 'feedback': False}
+    data = restricted_users[username]
+    restrictions = data.get('restrictions', {'login': False, 'mall': False, 'generate_phone': False, 'feedback': False})
+    details = data.get('restriction_details', {})
+    current_time = int(time.time() * 1000)
+    result = {}
+    for rtype in ['login', 'mall', 'generate_phone', 'feedback']:
+        if restrictions.get(rtype, False):
+            d = details.get(rtype, {})
+            expires_at = d.get('expires_at', 0)
+            if expires_at > 0 and current_time >= expires_at:
+                result[rtype] = False
+            else:
+                result[rtype] = True
+        else:
+            result[rtype] = False
+    return result
 
 def is_login_restricted(username):
     restrictions = get_user_restrictions(username)
@@ -2253,6 +2268,33 @@ def identity_required(f):
             return jsonify({'error': '账号已被限制登录，请联系管理员'}), 403
         if not check_identity_verified(username):
             return jsonify({'error': '请先完成身份认证', 'redirect': '/identity_verification.html'}), 403
+        return f(*args, **kwargs)
+    return decorated_function
+
+def is_feedback_restricted(username):
+    restrictions = get_user_restrictions(username)
+    return restrictions.get('feedback', False)
+
+
+def feedback_access_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user' not in session:
+            return jsonify({'error': '请先登录'}), 401
+        username = session['user']['username']
+        if is_feedback_restricted(username):
+            detail = restricted_users.get(username, {}).get('restriction_details', {}).get('feedback', {})
+            expires_at = detail.get('expires_at', 0)
+            reason = detail.get('reason', '')
+            msg = '账号已被限制反馈功能'
+            if reason:
+                msg += f'，原因：{reason}'
+            if expires_at > 0:
+                expire_str = datetime.fromtimestamp(expires_at / 1000).strftime('%Y-%m-%d %H:%M:%S')
+                msg += f'，限制至 {expire_str} 自动解除'
+            else:
+                msg += '，永久限制'
+            return jsonify({'error': msg}), 403
         return f(*args, **kwargs)
     return decorated_function
 
@@ -4413,12 +4455,43 @@ def migrate_restricted_users():
     modified = False
     for username, data in restricted_users.items():
         if 'restrictions' not in data:
-            data['restrictions'] = {'login': False, 'mall': False, 'generate_phone': False}
+            data['restrictions'] = {'login': False, 'mall': False, 'generate_phone': False, 'feedback': False}
             modified = True
-        for rtype in ['login', 'mall', 'generate_phone']:
+        for rtype in ['login', 'mall', 'generate_phone', 'feedback']:
             if rtype not in data['restrictions']:
                 data['restrictions'][rtype] = False
                 modified = True
+        if 'restriction_details' not in data:
+            data['restriction_details'] = {}
+            modified = True
+        for rtype in ['login', 'mall', 'generate_phone', 'feedback']:
+            if rtype not in data['restriction_details']:
+                data['restriction_details'][rtype] = {
+                    'expires_at': 0,
+                    'reason': '',
+                    'restricted_at': 0,
+                    'restricted_by': 'admin'
+                }
+                modified = True
+    if modified:
+        save_restricted_users()
+
+def check_expired_restrictions():
+    current_time = int(time.time() * 1000)
+    modified = False
+    for username, data in restricted_users.items():
+        restrictions = data.get('restrictions', {})
+        details = data.get('restriction_details', {})
+        for rtype in ['login', 'mall', 'generate_phone', 'feedback']:
+            if restrictions.get(rtype, False):
+                d = details.get(rtype, {})
+                expires_at = d.get('expires_at', 0)
+                if expires_at > 0 and current_time >= expires_at:
+                    restrictions[rtype] = False
+                    d['expires_at'] = 0
+                    d['reason'] = ''
+                    modified = True
+                    log.info(f"用户 {username} 的 {rtype} 限制已到期，自动解除")
     if modified:
         save_restricted_users()
 
@@ -5159,6 +5232,7 @@ def admin_get_users():
             'loginRestricted': restrictions.get('login', False),
             'mallRestricted': restrictions.get('mall', False),
             'generatePhoneRestricted': restrictions.get('generate_phone', False),
+            'feedbackRestricted': restrictions.get('feedback', False),
             'createdAt': created_at,
             'daysSinceReg': days_since_reg,
             'attendanceTotalDays': user_data.get('attendanceTotalDays', 0),
@@ -5528,41 +5602,124 @@ def admin_toggle_restrict():
     data = request.get_json()
     username = data.get('username', '').strip()
     restrict_type = data.get('restrict_type', 'login')
+    duration_hours = data.get('duration_hours', 0)
+    reason = data.get('reason', '').strip()
 
     if not username or username not in users:
         return jsonify({'error': '用户不存在'}), 400
 
-    if restrict_type not in ['login', 'mall', 'generate_phone']:
+    if restrict_type not in ['login', 'mall', 'generate_phone', 'feedback']:
         return jsonify({'error': '无效的限制类型'}), 400
+
+    try:
+        duration_hours = float(duration_hours)
+    except:
+        duration_hours = 0
+    if duration_hours < 0:
+        duration_hours = 0
+    if duration_hours > 24 * 365:
+        duration_hours = 24 * 365
 
     if username not in restricted_users:
         restricted_users[username] = {
             'username': username,
-            'restrictions': {'login': False, 'mall': False, 'generate_phone': False},
+            'restrictions': {'login': False, 'mall': False, 'generate_phone': False, 'feedback': False},
+            'restriction_details': {},
             'restricted_at': datetime.now().isoformat(),
             'restricted_by': 'admin'
         }
-    else:
-        if 'restrictions' not in restricted_users[username]:
-            restricted_users[username]['restrictions'] = {'login': False, 'mall': False, 'generate_phone': False}
 
-    current_value = restricted_users[username]['restrictions'].get(restrict_type, False)
-    restricted_users[username]['restrictions'][restrict_type] = not current_value
-    restricted_users[username]['restricted_at'] = datetime.now().isoformat()
-    save_restricted_users()
+    data_rec = restricted_users[username]
+    if 'restrictions' not in data_rec:
+        data_rec['restrictions'] = {'login': False, 'mall': False, 'generate_phone': False, 'feedback': False}
+    if 'restriction_details' not in data_rec:
+        data_rec['restriction_details'] = {}
+    for rtype in ['login', 'mall', 'generate_phone', 'feedback']:
+        if rtype not in data_rec['restriction_details']:
+            data_rec['restriction_details'][rtype] = {
+                'expires_at': 0, 'reason': '', 'restricted_at': 0, 'restricted_by': 'admin'
+            }
+
+    current_time_ms = int(time.time() * 1000)
+    current_value = data_rec['restrictions'].get(restrict_type, False)
 
     type_names = {
         'login': '登录',
         'mall': '积分商城',
-        'generate_phone': '生成手机号'
+        'generate_phone': '生成手机号',
+        'feedback': '反馈'
     }
+    type_name = type_names[restrict_type]
 
-    status = '已限制' if not current_value else '已解除限制'
+    if not current_value:
+        data_rec['restrictions'][restrict_type] = True
+        expires_at = current_time_ms + int(duration_hours * 3600 * 1000) if duration_hours > 0 else 0
+        data_rec['restriction_details'][restrict_type] = {
+            'expires_at': expires_at,
+            'reason': reason,
+            'restricted_at': current_time_ms,
+            'restricted_by': 'admin'
+        }
+        data_rec['restricted_at'] = datetime.now().isoformat()
+        save_restricted_users()
 
+        user_email = users.get(username, {}).get('email', '')
+        email_sent = False
+        email_msg = ''
+        if user_email:
+            try:
+                email_sent, email_msg = email_service.send_restriction_notification_email(
+                    username, user_email, restrict_type, expires_at, reason
+                )
+            except Exception as e:
+                log.error(f"发送限制通知邮件异常: {e}")
+                email_msg = str(e)
+        else:
+            email_msg = '用户未绑定邮箱，未发送通知'
+
+        if expires_at > 0:
+            expire_str = datetime.fromtimestamp(expires_at / 1000).strftime('%Y-%m-%d %H:%M:%S')
+            msg = f'用户{username}的{type_name}功能已被限制，截止 {expire_str} 自动解除'
+        else:
+            msg = f'用户{username}的{type_name}功能已被永久限制'
+
+        return jsonify({
+            'success': True,
+            'message': msg,
+            'action': 'restricted',
+            'restrictions': data_rec['restrictions'],
+            'restriction_details': data_rec['restriction_details'],
+            'email_sent': email_sent,
+            'email_message': email_msg
+        })
+    else:
+        data_rec['restrictions'][restrict_type] = False
+        data_rec['restriction_details'][restrict_type] = {
+            'expires_at': 0, 'reason': '', 'restricted_at': 0, 'restricted_by': 'admin'
+        }
+        save_restricted_users()
+        return jsonify({
+            'success': True,
+            'message': f'用户{username}的{type_name}功能已解除限制',
+            'action': 'unrestricted',
+            'restrictions': data_rec['restrictions'],
+            'restriction_details': data_rec['restriction_details']
+        })
+
+@app.route('/api/admin/restrictions/<username>', methods=['GET'])
+@admin_login_required
+def admin_get_restriction_detail(username):
+    if username not in restricted_users:
+        return jsonify({
+            'username': username,
+            'restrictions': {'login': False, 'mall': False, 'generate_phone': False, 'feedback': False},
+            'restriction_details': {}
+        })
+    data = restricted_users[username]
     return jsonify({
-        'success': True,
-        'message': f'用户{username}的{type_names[restrict_type]}功能{status}',
-        'restrictions': restricted_users[username]['restrictions']
+        'username': username,
+        'restrictions': data.get('restrictions', {}),
+        'restriction_details': data.get('restriction_details', {})
     })
 
 @app.route('/api/admin/stats', methods=['GET'])
@@ -5573,6 +5730,7 @@ def admin_get_stats():
     unverified_users = total_users - verified_users
     login_restricted = sum(1 for u in users if get_user_restrictions(u).get('login', False))
     mall_restricted = sum(1 for u in users if get_user_restrictions(u).get('mall', False))
+    feedback_restricted = sum(1 for u in users if get_user_restrictions(u).get('feedback', False))
     generate_phone_restricted = sum(1 for u in users if get_user_restrictions(u).get('generate_phone', False))
 
     total_points_all_users = sum(u.get('totalPoints', 0) for u in users.values())
@@ -5588,7 +5746,8 @@ def admin_get_stats():
             'unverified': unverified_users,
             'login_restricted': login_restricted,
             'mall_restricted': mall_restricted,
-            'generate_phone_restricted': generate_phone_restricted
+            'generate_phone_restricted': generate_phone_restricted,
+            'feedback_restricted': feedback_restricted
         },
         'total_points': round(system_total, 2),
         'user_total_points': round(total_points_all_users, 2),
@@ -13820,8 +13979,9 @@ def get_public_announcements():
 
 @app.route('/api/feedback/submit', methods=['POST'])
 @csrf_protect
-@limiter.limit('1 per minute')
+@limiter.limit('1 per day')
 @login_required
+@feedback_access_required
 def submit_feedback():
     start_time = time.time()
     username = session['user']['username']
@@ -13980,6 +14140,24 @@ def admin_get_feedback_list():
         'total_pages': (total + per_page - 1) // per_page if total > 0 else 1
     })
 
+
+@app.route('/api/admin/feedback/delete', methods=['POST'])
+@csrf_protect
+@admin_login_required
+def admin_delete_feedback():
+    data = request.get_json()
+    feedback_id = data.get('feedback_id', '').strip()
+
+    if not feedback_id or feedback_id not in feedbacks:
+        return jsonify({'error': '反馈不存在'}), 400
+
+    del feedbacks[feedback_id]
+    save_feedbacks()
+
+    return jsonify({
+        'success': True,
+        'message': '反馈已删除'
+    })
 
 @app.route('/api/admin/feedback/reply', methods=['POST'])
 @csrf_protect
