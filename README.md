@@ -66,8 +66,8 @@ python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().d
 生成 QR_SECRET：
 python -c "import secrets; print(secrets.token_hex(32))"
 
-生成管理员密码哈希（将 your_password 替换为实际密码）：
-python -c "import bcrypt; print(bcrypt.generate_password_hash('your_password').decode('utf-8'))"
+生成管理员密码哈希（将 your_password 替换为实际密码,请勿使用如#,//等注释类字符）：
+python -c 'import bcrypt; print(bcrypt.hashpw("your_password".encode("utf-8"), bcrypt.gensalt()).decode("utf-8"))'
 
 ### 4. 生成 SSL 证书（可使用自己域名的证书）
 
