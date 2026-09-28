@@ -47,5 +47,6 @@ Thumbs.db
 *.bak
 *.backup
 
+# 特殊文件
 admin.py
 *.json
