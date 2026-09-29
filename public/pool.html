@@ -148,7 +148,6 @@
         加载数据中...
     </div>
 
-    <!-- 主瓜分池 -->
     <div id="tab-main" class="tab-content active">
         <div id="mainContent" style="display:none;">
             <div class="attendance-info">
@@ -164,8 +163,8 @@
             </div>
 
             <div class="tier-info" id="tierInfo">
-                📊 池子阶梯: 保底人均 <strong>50</strong> 积分 · 上限人均 <strong>200</strong> 积分
-                <br><span style="font-size:12px;color:#15803d;">当前可瓜分 <span class="tier-value" id="eligibleCountDisplay">0</span> 人 · 池子范围: <span class="tier-value" id="poolRangeDisplay">10,000 ~ 50,000</span></span>
+                📊 池子来源: 系统积分池每日划拨 · 上限为系统池余额的 80%
+                <br><span style="font-size:12px;color:#15803d;">当前可瓜分 <span class="tier-value" id="eligibleCountDisplay">0</span> 人 · 系统池余额: <span class="tier-value" id="poolRangeDisplay">--</span></span>
             </div>
 
             <div id="cooldownContainer" class="cooldown-container">
@@ -176,7 +175,7 @@
             </div>
 
             <div class="pool-stats">
-                <div class="stat-card"><div class="label">📊 今日瓜分池</div><div class="value pool" id="poolAmount">--</div><div class="dynamic-range" id="poolRange">范围: --</div></div>
+                <div class="stat-card"><div class="label">📊 今日瓜分池</div><div class="value pool" id="poolAmount">--</div><div class="dynamic-range" id="poolRange">剩余可领: --</div></div>
                 <div class="stat-card"><div class="label">👥 可瓜分人数</div><div class="value eligible" id="eligibleCount">--</div></div>
                 <div class="stat-card"><div class="label">📈 当前基数</div><div class="value base" id="userBase">--%</div></div>
                 <div class="stat-card"><div class="label">🔥 连续加成</div><div class="value cons" id="bonusDisplay">--</div></div>
@@ -199,13 +198,12 @@
             <div id="yesterdayDetails" class="yesterday-details"></div>
 
             <div class="info-text">
-                <p>📌 池子动态范围: 保底人均 <span class="highlight">50</span> 积分，上限人均 <span class="highlight">200</span> 积分</p>
-                <p>📌 可瓜分人数越多，池子上下限阶梯提高</p>
+                <p>📌 池子资金由系统积分池每日划拨（上限为系统池余额的 80%）</p>
+                <p>📌 未领取部分次日结算: <span class="highlight">20% 退回系统池</span> · <span class="highlight">80% 自动销毁</span></p>
                 <p>📌 主池(80%)按基数分配 · 奖励池(20%)按连续天数加成</p>
                 <p>📌 基数采用平滑曲线: 积分越高基数越平缓下降</p>
                 <p>📌 连续签到加成: ≥7天 100%｜4-6天 70%｜1-3天 40%｜断签归零</p>
                 <p>📌 新用户(注册≤14天) 额外 +15% 基数</p>
-                <p>📌 每日池子 = max(前日发放×1.05, 动态下限)，上限动态</p>
                 <p>📌 领取后冷却 <span class="highlight">24</span> 小时，防止频繁领取</p>
                 <p style="margin-top:8px;font-size:11px;color:#94a3b8;">数据每10分钟刷新 · 每人每日限领一次</p>
             </div>
@@ -214,7 +212,6 @@
         </div>
     </div>
 
-    <!-- 新人奖池 -->
     <div id="tab-newbie" class="tab-content">
         <div id="newbieContent" style="display:none;">
             <div class="newbie-info">
@@ -439,15 +436,6 @@
         return '0% (断签)';
     }
 
-    function getPoolRange(eligibleCount) {
-        var count = eligibleCount || 0;
-        var minPerUser = 50;
-        var maxPerUser = 200;
-        var dynamicMin = Math.max(10000, count * minPerUser);
-        var dynamicMax = Math.min(500000, Math.max(50000, count * maxPerUser));
-        return { min: dynamicMin, max: dynamicMax };
-    }
-
     function updateCountdown() {
         var now = Date.now();
         var diff = Math.max(0, nextUpdateTime - now);
@@ -502,7 +490,7 @@
         }
     }
 
-    function updateClaimStatus(hasClaimed, canClaim, totalDays, userBase, todayReward, isVerified, consBonus, eligibleCount, isCooldown, isSingleUser) {
+    function updateClaimStatus(hasClaimed, canClaim, totalDays, userBase, todayReward, isVerified, consBonus, eligibleCount, isCooldown, isSingleUser, remainingPool) {
         var badge = document.getElementById('claimStatusBadge');
         var claimBtn = document.getElementById('claimBtn');
         if (!badge || !claimBtn) return;
@@ -530,6 +518,12 @@
             badge.className = 'status-badge locked';
             badge.textContent = '🔒 需要累计签到7天';
             claimBtn.textContent = '🔒 需要 ' + totalDays + '/7 天';
+            claimBtn.disabled = true;
+            claimBtn.className = 'claim-btn unavailable';
+        } else if (remainingPool <= 0) {
+            badge.className = 'status-badge locked';
+            badge.textContent = '🔒 今日池子已领完';
+            claimBtn.textContent = '⏳ 今日瓜分池已被领完';
             claimBtn.disabled = true;
             claimBtn.className = 'claim-btn unavailable';
         } else if (effectiveBase <= 0.0001) {
@@ -657,8 +651,12 @@
             poolData = data;
 
             var eligibleCount = data.user_count || 0;
-            var range = getPoolRange(eligibleCount);
             var isCooldown = data.cooldown_remaining || false;
+            var actualPool = data.actual_pool_amount || 0;
+            var theoreticalPool = data.theoretical_pool_amount || actualPool;
+            var remainingPool = data.remaining_pool || 0;
+            var systemPool = data.system_pool_balance || 0;
+            var limitedBySystem = data.pool_limited_by_system || false;
 
             if (isCooldown && data.cooldown_end_time) {
                 cooldownEndTime = data.cooldown_end_time;
@@ -675,11 +673,17 @@
                 document.getElementById('cooldownContainer').style.display = 'none';
             }
 
-            document.getElementById('poolAmount').textContent = data.pool_amount ? formatNumberWithComma(data.pool_amount) : '--';
-            document.getElementById('poolRange').textContent = '范围: ' + formatNumberWithComma(range.min) + ' ~ ' + formatNumberWithComma(range.max);
+            document.getElementById('poolAmount').textContent = formatNumberWithComma(actualPool);
+            var rangeText;
+            if (limitedBySystem) {
+                rangeText = '系统池限制: ' + formatNumberWithComma(actualPool) + ' (理论 ' + formatNumberWithComma(theoreticalPool) + ')';
+            } else {
+                rangeText = '剩余可领: ' + formatNumberWithComma(remainingPool);
+            }
+            document.getElementById('poolRange').textContent = rangeText;
             document.getElementById('eligibleCount').textContent = eligibleCount;
             document.getElementById('eligibleCountDisplay').textContent = eligibleCount;
-            document.getElementById('poolRangeDisplay').textContent = formatNumberWithComma(range.min) + ' ~ ' + formatNumberWithComma(range.max);
+            document.getElementById('poolRangeDisplay').textContent = '系统池余额 ' + formatNumberWithComma(systemPool);
             document.getElementById('userBase').textContent = formatPercent(data.user_base);
             document.getElementById('totalDays').textContent = data.total_days || 0;
             document.getElementById('consecutiveDays').textContent = data.consecutive_days || 0;
@@ -690,8 +694,9 @@
 
             var rewardEl = document.getElementById('todayReward');
             var rewardVal = data.today_reward || 0;
-            rewardEl.innerHTML = formatNumber(rewardVal) + ' <span class="unit">积分</span>';
-            rewardEl.className = (rewardVal <= 0 || data.total_days < 7) ? 'reward-amount locked' : 'reward-amount';
+            var cappedReward = Math.min(rewardVal, remainingPool);
+            rewardEl.innerHTML = formatNumber(cappedReward) + ' <span class="unit">积分</span>';
+            rewardEl.className = (cappedReward <= 0 || data.total_days < 7) ? 'reward-amount locked' : 'reward-amount';
             document.getElementById('previewSubInfo').textContent = 
                 '基数 ' + formatPercent(data.user_base) + ' × 连续加成 ' + (consBonus * 100).toFixed(0) + '%';
 
@@ -708,12 +713,13 @@
                 data.can_claim || false,
                 data.total_days || 0,
                 data.user_base || 0,
-                data.today_reward || 0,
+                cappedReward,
                 data.is_verified || false,
                 consBonus,
                 eligibleCount,
                 isCooldown,
-                data.single_user_cap || false
+                data.single_user_cap || false,
+                remainingPool
             );
 
             document.getElementById('loadingState').style.display = 'none';

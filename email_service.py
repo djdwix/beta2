@@ -845,21 +845,24 @@ def send_feedback_email(username, user_email, feedback_type, feedback_id, conten
 
     return send_email(SMTP_EMAIL, subject, body, html_body)
 
-def send_restriction_notification_email(username, user_email, restriction_type, expires_at_ms, reason):
+def send_restriction_notification_email(username, user_email, restriction_types, expires_at_ms, reason):
     if not SMTP_EMAIL or not SMTP_PASSWORD:
         logger.error("SMTP配置不完整，无法发送限制通知邮件")
         return False, "邮件服务配置不完整"
 
+    if isinstance(restriction_types, str):
+        restriction_types = [restriction_types]
+
     type_names = {
         'login': '登录',
-        'mall': '商城',
+        'mall': '积分商城',
         'generate_phone': '生成手机号',
         'feedback': '反馈'
     }
-    type_name = type_names.get(restriction_type, restriction_type)
+    type_labels = [type_names.get(t, t) for t in restriction_types]
+    types_str = '、'.join(type_labels)
 
-    now = time.time()
-    now_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(now))
+    now_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
 
     if expires_at_ms and expires_at_ms > 0:
         expire_ts = expires_at_ms / 1000
@@ -871,13 +874,13 @@ def send_restriction_notification_email(username, user_email, restriction_type, 
         expire_line = '限制截止时间：永久'
         auto_line = '此限制为永久限制，如需解除请联系管理员。'
 
-    subject = f"【账号限制通知】您的{type_name}功能已被限制"
+    subject = f"【账号限制通知】您的{types_str}功能已被限制"
 
     body = f"""您好{('，' + username) if username else ''}：
 
-您已被管理员限制 {type_name} 功能。
+您已被管理员限制以下功能：{types_str}
 
-限制类型：{type_name}
+限制类型：{types_str}
 限制开始时间：{now_str}
 {expire_line}
 限制原因：{reason or '未填写'}
@@ -934,9 +937,9 @@ body {{ font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','M
   </div>
   <div class="content">
     <div class="greeting">您好{f'，<strong>{username}</strong>' if username else ''}！</div>
-    <div class="message">您已被管理员限制 <strong style="color:#dc2626;">{type_name}</strong> 功能，详情如下：</div>
+    <div class="message">您已被管理员限制以下功能：<strong style="color:#dc2626;">{types_str}</strong>，详情如下：</div>
     <table class="info-table">
-      <tr><td class="label">限制类型</td><td class="value">{type_name}</td></tr>
+      <tr><td class="label">限制类型</td><td class="value">{types_str}</td></tr>
       <tr><td class="label">开始时间</td><td class="value">{now_str}</td></tr>
       <tr><td class="label">截止时间</td><td class="value">{expire_str}</td></tr>
       <tr><td class="label">限制原因</td><td class="value">{reason or '未填写'}</td></tr>

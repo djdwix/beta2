@@ -134,12 +134,16 @@
                 输入你的问题，我会从知识库中查找答案<br>
                 输入「搜索+内容」自动获取搜索结果<br>
                 <span class="highlight">试试输入：今日签到、积分余额、搜索天气、美国时间</span>
+                <br><span class="highlight">输入「我的反馈」查看反馈进度和回复</span>
                 <div class="examples">
                     <span class="ex" onclick="sendQuick('今日签到')">📅 今日签到</span>
                     <span class="ex" onclick="sendQuick('积分余额')">⭐ 积分余额</span>
                     <span class="ex" onclick="sendQuick('PL余额')">💎 PL余额</span>
                     <span class="ex" onclick="sendQuick('查询CDK')">🎫 查询CDK</span>
                     <span class="ex" onclick="sendQuick('注销卡密')">🗑️ 注销卡密</span>
+                    <span class="ex" onclick="sendQuick('我的反馈')">📋 我的反馈</span>
+                    <span class="ex" onclick="sendQuick('我的IP签名档')">🌐 IP签名档</span>
+                    <span class="ex" onclick="sendQuick('最近地震')">🌍 近期地震</span>
                     <span class="ex" onclick="sendQuick('新闻')">📰 今日新闻</span>
                     <span class="ex" onclick="sendQuick('北京天气')">🌤️ 搜索天气</span>
                     <span class="ex" onclick="sendQuick('当前时间')">🕐 中国时间</span>
@@ -152,6 +156,9 @@
             <span class="quick-btn" onclick="sendQuick('PL余额')">💎 PL余额</span>
             <span class="quick-btn" onclick="sendQuick('CDK')">🎫 查询CDK</span>
             <span class="quick-btn" onclick="sendQuick('注销卡密')">🗑️ 注销卡密</span>
+            <span class="quick-btn" onclick="sendQuick('我的反馈')">📋 我的反馈</span>
+            <span class="quick-btn" onclick="sendQuick('我的IP签名档')">🌐 IP签名档</span>
+            <span class="quick-btn" onclick="sendQuick('最近地震')">🌍 近期地震</span>
             <span class="quick-btn" onclick="sendQuick('新闻')">📰 今日新闻</span>
             <span class="quick-btn" onclick="sendQuick('北京天气')">🌤️ 天气</span>
             <span class="quick-btn" onclick="sendQuick('当前时间')">🕐 时间</span>
@@ -589,6 +596,12 @@
                     contentDiv.innerHTML = buildCancellationCard(extra.cancellation_data);
                 } else if (extra && extra.cdk_data) {
                     contentDiv.innerHTML = buildCdkCard(extra.cdk_data);
+                } else if (extra && extra.feedback_data) {
+                    contentDiv.innerHTML = buildFeedbackCard(extra.feedback_data);
+                } else if (extra && extra.ip_signature_data) {
+                    contentDiv.innerHTML = buildIpSignatureCard(extra.ip_signature_data);
+                } else if (extra && extra.earthquake_data) {
+                    contentDiv.innerHTML = buildEarthquakeCard(extra.earthquake_data);
                 } else if (extra && extra.user_data) {
                     var html = '';
                     var hasPersonalData = false;
@@ -621,7 +634,7 @@
                 }
                 div.appendChild(contentDiv);
                 
-                if (extra && extra.matched_keywords && extra.matched_keywords.length > 0 && !extra.is_personal_query && !extra.search_data && !extra.weather_data && !extra.time_data && !extra.cancellation_data && !extra.cdk_data) {
+                if (extra && extra.matched_keywords && extra.matched_keywords.length > 0 && !extra.is_personal_query && !extra.search_data && !extra.weather_data && !extra.time_data && !extra.cancellation_data && !extra.cdk_data && !extra.feedback_data && !extra.ip_signature_data && !extra.earthquake_data) {
                     var tag = document.createElement('div');
                     tag.className = 'matched-tag';
                     tag.textContent = '🔍 匹配: ' + extra.matched_keywords.join('、');
@@ -645,6 +658,121 @@
             chatArea.appendChild(div);
             chatArea.scrollTop = chatArea.scrollHeight;
             return div;
+        }
+
+        function buildFeedbackCard(data) {
+            var feedbacks = data.feedbacks || [];
+            if (feedbacks.length === 0) {
+                return '<div style="color:#999;font-size:14px;padding:10px 0;text-align:center;">📭 您还没有提交过反馈<br><span style="font-size:12px;">可前往「主控台 → 💬 意见反馈」提交</span></div>';
+            }
+            var statusMap = { pending: '待处理', replied: '已回复', closed: '已关闭' };
+            var statusColor = { pending: '#f5a623', replied: '#3ba55c', closed: '#8a8aaa' };
+            var statusBg = { pending: '#fff8f0', replied: '#f0fdf4', closed: '#f0f2f5' };
+            var html = '';
+            feedbacks.forEach(function(fb) {
+                var st = statusMap[fb.status] || fb.status;
+                var color = statusColor[fb.status] || '#8a8aaa';
+                var bg = statusBg[fb.status] || '#f0f2f5';
+                html += '<div style="background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:10px;border-left:4px solid #667eea;">';
+                html += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px;">';
+                html += '<span style="font-family:monospace;font-size:12px;color:#667eea;font-weight:700;">' + escapeHtml(fb.feedback_id) + '</span>';
+                html += '<span style="font-size:11px;font-weight:700;color:' + color + ';background:' + bg + ';padding:3px 12px;border-radius:12px;">' + st + '</span>';
+                html += '</div>';
+                html += '<div style="font-size:12px;color:#8a8aaa;margin-bottom:8px;">📂 ' + escapeHtml(fb.feedback_type) + ' · 🕐 ' + new Date(fb.created_at).toLocaleString('zh-CN') + '</div>';
+                html += '<div style="font-size:13px;color:#333;line-height:1.6;white-space:pre-wrap;word-break:break-word;background:#fff;padding:10px 12px;border-radius:8px;border-left:3px solid #667eea;">' + escapeHtml(fb.content) + '</div>';
+                if (fb.reply) {
+                    html += '<div style="background:#f0fdf4;border-left:3px solid #57F287;padding:10px 12px;margin-top:8px;border-radius:8px;font-size:13px;">';
+                    html += '<div style="color:#3ba55c;font-weight:700;margin-bottom:6px;">💬 管理员回复</div>';
+                    html += '<div style="white-space:pre-wrap;word-break:break-word;color:#1a1a2e;line-height:1.6;">' + escapeHtml(fb.reply) + '</div>';
+                    html += '</div>';
+                }
+                html += '</div>';
+            });
+            html += '<div style="font-size:11px;color:#999;text-align:center;margin-top:8px;">💡 已回复/已关闭的反馈将在12小时后自动清除</div>';
+            return html;
+        }
+
+        function buildIpSignatureCard(data) {
+            if (!data || !data.success) {
+                var errMsg = (data && data.error) || 'IP签名档服务暂不可用';
+                return '<div style="background:#fef2f2;border-left:4px solid #e74c3c;padding:14px 18px;border-radius:12px;">' +
+                    '<div style="font-size:15px;font-weight:700;color:#e74c3c;margin-bottom:6px;">⚠️ 服务暂不可用</div>' +
+                    '<div style="font-size:13px;color:#666;">' + escapeHtml(errMsg) + '</div>' +
+                    '<div style="font-size:12px;color:#999;margin-top:8px;">该接口由第三方提供，可能临时故障，请稍后重试</div>' +
+                    '</div>';
+            }
+            var html = '<div style="background:linear-gradient(135deg,#667eea15,#764ba215);border-radius:16px;padding:16px 20px;border:1px solid rgba(102,126,234,0.2);text-align:center;">';
+            html += '<div style="font-size:15px;font-weight:700;color:#333;margin-bottom:10px;">🌐 您的 IP 签名档</div>';
+            html += '<img src="data:image/' + escapeHtml(data.format) + ';base64,' + data.data + '" style="max-width:100%;border-radius:12px;border:1px solid #e8e8e8;" alt="IP签名档">';
+            html += '<div style="font-size:11px;color:#999;margin-top:10px;">📡 数据来源：' + escapeHtml(data.source || 'IP签名档v3') + '</div>';
+            html += '</div>';
+            return html;
+        }
+
+        function buildEarthquakeCard(data) {
+            if (!data || !data.success) {
+                var errMsg = (data && data.error) || '地震信息服务暂不可用';
+                return '<div style="background:#fef2f2;border-left:4px solid #e74c3c;padding:14px 18px;border-radius:12px;">' +
+                    '<div style="font-size:15px;font-weight:700;color:#e74c3c;margin-bottom:6px;">⚠️ 服务暂不可用</div>' +
+                    '<div style="font-size:13px;color:#666;">' + escapeHtml(errMsg) + '</div>' +
+                    '<div style="font-size:12px;color:#999;margin-top:8px;">该接口由 USGS 提供，可能临时故障，请稍后重试</div>' +
+                    '</div>';
+            }
+
+            if (!data.earthquakes || data.earthquakes.length === 0) {
+                return '<div style="background:#f0fdf4;border-left:4px solid #57F287;padding:16px 20px;border-radius:12px;text-align:center;">' +
+                    '<div style="font-size:32px;margin-bottom:8px;">🌍</div>' +
+                    '<div style="font-size:15px;font-weight:700;color:#3ba55c;margin-bottom:6px;">近一个月内无显著地震</div>' +
+                    '<div style="font-size:12px;color:#666;">全球近期地震活动平稳</div>' +
+                    '</div>';
+            }
+
+            var levelColor = {
+                severe: '#e74c3c',
+                moderate: '#f39c12',
+                light: '#f5a623',
+                minor: '#3498db'
+            };
+            var levelBg = {
+                severe: '#fef2f2',
+                moderate: '#fff8f0',
+                light: '#fffdf5',
+                minor: '#f0f7ff'
+            };
+
+            var html = '<div style="background:linear-gradient(135deg,#667eea15,#764ba215);border-radius:16px;padding:16px 20px;border:1px solid rgba(102,126,234,0.2);">';
+            html += '<div style="font-size:16px;font-weight:700;color:#333;margin-bottom:12px;display:flex;align-items:center;gap:8px;">';
+            html += '<span style="font-size:22px;">🌍</span> ' + escapeHtml(data.period || '近期显著地震');
+            html += '</div>';
+
+            data.earthquakes.forEach(function(eq) {
+                var color = levelColor[eq.level] || '#666';
+                var bg = levelBg[eq.level] || '#f8f9fa';
+
+                html += '<div style="background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:10px;border-left:5px solid ' + color + ';box-shadow:0 2px 6px rgba(0,0,0,0.04);">';
+                html += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">';
+                html += '<div style="display:flex;align-items:center;gap:10px;">';
+                html += '<span style="font-size:28px;font-weight:800;color:' + color + ';font-family:monospace;line-height:1;">' + eq.magnitude + '</span>';
+                html += '<span style="font-size:11px;font-weight:700;color:' + color + ';background:' + bg + ';padding:3px 12px;border-radius:12px;">' + escapeHtml(eq.level_text) + '</span>';
+                html += '</div>';
+                if (eq.tsunami) {
+                    html += '<span style="font-size:11px;font-weight:700;color:#fff;background:#e74c3c;padding:3px 12px;border-radius:12px;">🌊 海啸预警</span>';
+                }
+                html += '</div>';
+                html += '<div style="font-size:14px;color:#333;line-height:1.9;">';
+                html += '<div>📍 <strong>位置：</strong>' + escapeHtml(eq.place) + '</div>';
+                html += '<div>🕐 <strong>时间：</strong>' + escapeHtml(eq.time) + '</div>';
+                html += '<div>⬇️ <strong>深度：</strong>' + eq.depth + ' km</div>';
+                html += '</div>';
+                if (eq.url) {
+                    html += '<a href="' + escapeHtml(eq.url) + '" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:10px;font-size:12px;color:#667eea;text-decoration:none;font-weight:600;">🔗 查看 USGS 详情 →</a>';
+                }
+                html += '</div>';
+            });
+
+            html += '<div style="font-size:11px;color:#999;text-align:center;margin-top:8px;">📡 数据来源：' + escapeHtml(data.source || 'USGS') + '</div>';
+            html += '</div>';
+            return html;
         }
 
         function addTypingIndicator() {
@@ -757,7 +885,83 @@
                 return;
             }
             
-            var isCdkQuery = query.toLowerCase().includes('cdk') || query.toLowerCase().includes('礼包码') || query.toLowerCase().includes('兑换码') || query.toLowerCase().includes('查询cdk') || query.toLowerCase().includes('查看cdk');
+            var isFeedbackList = query.includes('我的反馈') || query.includes('反馈进度') || query.includes('反馈状态') || query.includes('查看反馈') || query.includes('反馈记录') || query.includes('反馈回复') || query.includes('反馈查询');
+            if (isFeedbackList) {
+                var typing = addTypingIndicator();
+                try {
+                    var data = await apiRequest('/api/feedback/list?page=1&per_page=5', {
+                        method: 'GET'
+                    });
+                    removeTypingIndicator();
+                    if (data && data.feedbacks) {
+                        addMessage('bot', '', {
+                            title: '📋 我的反馈（最近' + data.feedbacks.length + '条）',
+                            feedback_data: data,
+                            matched_keywords: ['我的反馈']
+                        });
+                    } else {
+                        addMessage('bot', '查询失败，请稍后重试', { title: '❌ 查询失败' });
+                    }
+                } catch (error) {
+                    removeTypingIndicator();
+                    addMessage('bot', error.message || '查询失败', { title: '❌ 查询失败' });
+                }
+                sendBtn.disabled = false;
+                msgInput.focus();
+                return;
+            }
+            
+            var lowerQuery = query.toLowerCase();
+            var isIpSignatureQuery = query.includes('IP签名') || query.includes('ip签名') || lowerQuery.includes('ip签名') || query.includes('我的IP') || query.includes('我的ip') || lowerQuery.includes('我的ip');
+            if (isIpSignatureQuery) {
+                var typing = addTypingIndicator();
+                try {
+                    var data = await apiRequest('/api/customer-service/ip-signature', {
+                        method: 'GET'
+                    });
+                    removeTypingIndicator();
+                    addMessage('bot', '', {
+                        title: '🌐 IP签名档查询',
+                        ip_signature_data: data,
+                        matched_keywords: ['IP签名档']
+                    });
+                } catch (error) {
+                    removeTypingIndicator();
+                    addMessage('bot', error.message || 'IP签名档服务暂时不可用', {
+                        title: '❌ 查询失败'
+                    });
+                }
+                sendBtn.disabled = false;
+                msgInput.focus();
+                return;
+            }
+            
+            var isEarthquakeQuery = query.includes('地震') || lowerQuery.includes('earthquake') || query.includes('震级');
+            if (isEarthquakeQuery) {
+                var typing = addTypingIndicator();
+                try {
+                    var data = await apiRequest('/api/customer-service/earthquake?limit=3', {
+                        method: 'GET'
+                    });
+                    removeTypingIndicator();
+                    addMessage('bot', '', {
+                        title: '🌍 全球近期地震',
+                        engine: 'USGS',
+                        earthquake_data: data,
+                        matched_keywords: ['地震']
+                    });
+                } catch (error) {
+                    removeTypingIndicator();
+                    addMessage('bot', error.message || '地震信息服务暂时不可用', {
+                        title: '❌ 查询失败'
+                    });
+                }
+                sendBtn.disabled = false;
+                msgInput.focus();
+                return;
+            }
+            
+            var isCdkQuery = lowerQuery.includes('cdk') || query.includes('礼包码') || query.includes('兑换码');
             if (isCdkQuery) {
                 var typing = addTypingIndicator();
                 try {
@@ -862,7 +1066,7 @@
                 } else {
                     addMessage('bot', '没有找到相关内容，试试输入「搜索+内容」进行网页搜索', {
                         title: '😅 未找到匹配结果',
-                        suggestions: ['今日签到', '积分余额', 'PL余额', '新闻', '搜索天气', '美国时间', '查询CDK', '注销卡密']
+                        suggestions: ['今日签到', '积分余额', 'PL余额', '新闻', '搜索天气', '美国时间', '查询CDK', '注销卡密', '我的反馈', '我的IP签名档', '最近地震']
                     });
                 }
             } catch (error) {

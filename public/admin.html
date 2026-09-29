@@ -114,16 +114,17 @@
         .restrict-badge span{padding:2px 10px;border-radius:12px;font-size:10px}
         .restrict-badge .on{background:rgba(239,68,68,0.2);color:#f87171}
         .restrict-badge .off{background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.3)}
-        .restrict-btn-group{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-        .restrict-btn-group button{padding:6px 16px;border:none;border-radius:20px;font-size:12px;cursor:pointer;transition:all 0.2s;font-weight:500}
-        .restrict-btn-group .r-login{background:rgba(239,68,68,0.15);color:#f87171}
-        .restrict-btn-group .r-login:hover{background:rgba(239,68,68,0.25)}
-        .restrict-btn-group .r-mall{background:rgba(251,191,36,0.15);color:#fbbf24}
-        .restrict-btn-group .r-mall:hover{background:rgba(251,191,36,0.25)}
-        .restrict-btn-group .r-phone{background:rgba(96,165,250,0.15);color:#60a5fa}
-        .restrict-btn-group .r-phone:hover{background:rgba(96,165,250,0.25)}
-        .restrict-btn-group .r-feedback{background:rgba(167,139,250,0.15);color:#a78bfa}
-        .restrict-btn-group .r-feedback:hover{background:rgba(167,139,250,0.25)}
+        .restrict-checkbox-group{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+        .restrict-checkbox{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:20px;cursor:pointer;font-size:13px;font-weight:500;transition:all 0.2s;border:1px solid transparent;user-select:none}
+        .restrict-checkbox input[type="checkbox"]{display:none}
+        .restrict-checkbox.r-login{background:rgba(239,68,68,0.1);color:#f87171;border-color:rgba(239,68,68,0.2)}
+        .restrict-checkbox.r-login:has(input:checked){background:rgba(239,68,68,0.35);color:#fff}
+        .restrict-checkbox.r-mall{background:rgba(251,191,36,0.1);color:#fbbf24;border-color:rgba(251,191,36,0.2)}
+        .restrict-checkbox.r-mall:has(input:checked){background:rgba(251,191,36,0.35);color:#1a1a2e}
+        .restrict-checkbox.r-phone{background:rgba(96,165,250,0.1);color:#60a5fa;border-color:rgba(96,165,250,0.2)}
+        .restrict-checkbox.r-phone:has(input:checked){background:rgba(96,165,250,0.35);color:#fff}
+        .restrict-checkbox.r-feedback{background:rgba(167,139,250,0.1);color:#a78bfa;border-color:rgba(167,139,250,0.2)}
+        .restrict-checkbox.r-feedback:has(input:checked){background:rgba(167,139,250,0.35);color:#fff}
         .error-boundary{display:none;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:16px;padding:24px;text-align:center;margin-bottom:20px}
         .error-boundary .icon{font-size:40px;color:#f87171;margin-bottom:10px}
         .error-boundary .title{font-size:16px;font-weight:600;color:#f87171}
@@ -301,8 +302,8 @@
         <div class="section-title"><i class="fas fa-ban"></i> 账号风控管理</div>
         <div style="background:rgba(255,255,255,0.03);border-radius:16px;padding:20px;border:1px solid rgba(255,255,255,0.05);margin-bottom:20px">
             <div class="form-row">
-                <div class="form-group" style="flex:0 0 240px"><label>用户名</label><input type="text" id="restrictUsername" placeholder="输入要操作的用户名"></div>
-                <div class="form-group" style="flex:0 0 200px">
+                <div class="form-group" style="flex:0 0 260px"><label>用户名</label><input type="text" id="restrictUsername" placeholder="输入要操作的用户名"></div>
+                <div class="form-group" style="flex:0 0 220px">
                     <label>限制时长</label>
                     <select id="restrictDuration">
                         <option value="0">永久</option>
@@ -325,14 +326,37 @@
                 <div class="form-group" style="flex:1"><label>限制原因（可选）</label><input type="text" id="restrictReason" placeholder="例如：违规操作，用于邮件通知用户" maxlength="200"></div>
             </div>
             <div class="form-row">
+                <div class="form-group" style="flex:1">
+                    <label>选择限制类型（可多选）</label>
+                    <div class="restrict-checkbox-group">
+                        <label class="restrict-checkbox r-login">
+                            <input type="checkbox" value="login" id="restrictTypeLogin">
+                            <span><i class="fas fa-lock"></i> 登录限制</span>
+                        </label>
+                        <label class="restrict-checkbox r-mall">
+                            <input type="checkbox" value="mall" id="restrictTypeMall">
+                            <span><i class="fas fa-store"></i> 商城限制</span>
+                        </label>
+                        <label class="restrict-checkbox r-phone">
+                            <input type="checkbox" value="generate_phone" id="restrictTypePhone">
+                            <span><i class="fas fa-phone"></i> 生成限制</span>
+                        </label>
+                        <label class="restrict-checkbox r-feedback">
+                            <input type="checkbox" value="feedback" id="restrictTypeFeedback">
+                            <span><i class="fas fa-comment-dots"></i> 反馈限制</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="form-row">
                 <div class="form-group" style="flex:0 0 auto">
                     <label style="opacity:0">操作</label>
-                    <div class="restrict-btn-group">
-                        <button class="r-login" onclick="toggleRestrict('login')"><i class="fas fa-lock"></i> 登录限制</button>
-                        <button class="r-mall" onclick="toggleRestrict('mall')"><i class="fas fa-store"></i> 商城限制</button>
-                        <button class="r-phone" onclick="toggleRestrict('generate_phone')"><i class="fas fa-phone"></i> 生成限制</button>
-                        <button class="r-feedback" onclick="toggleRestrict('feedback')"><i class="fas fa-comment-dots"></i> 反馈限制</button>
-                    </div>
+                    <button class="btn btn-danger" id="applyRestrictBtn" onclick="applyBatchRestrict()">
+                        <i class="fas fa-ban"></i> 确认限制（并发送邮件）
+                    </button>
+                    <button class="btn btn-outline" id="unrestrictBtn" onclick="applyBatchUnrestrict()" style="margin-left:8px;">
+                        <i class="fas fa-unlock"></i> 解除所选限制
+                    </button>
                 </div>
             </div>
             <div id="restrictResult"></div>
@@ -512,9 +536,20 @@
     window.deleteAnn=function(id){showModal('确定要删除此公告吗？此操作不可恢复。',function(){apiRequest('/api/admin/announcements/delete',{method:'POST',body:JSON.stringify({id:id})}).then(function(){showMessage('删除成功','success');loadAnnouncements()}).catch(function(e){showMessage(e.message,'error')})})}
     async function createAnnouncement(){var t=document.getElementById('annTitle').value.trim();var c=document.getElementById('annContent').value;var type=document.getElementById('annType').value;var sticky=document.getElementById('annSticky').value==='true';var st=document.getElementById('annStartTime').value;var et=document.getElementById('annEndTime').value;if(!t){showMessage('请输入公告标题','error');return}if(!c){showMessage('请输入公告内容','error');return}var btn=document.getElementById('createAnnBtn');btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> 发布中...';try{var d=await apiRequest('/api/admin/announcements/create',{method:'POST',body:JSON.stringify({title:t,content:c,type:type,is_sticky:sticky,start_time:st,end_time:et})});showMessage(d.message,'success');document.getElementById('annCreateResult').innerHTML='<div style="background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.15);border-radius:12px;padding:12px 16px;color:#a7f3d0;"><i class="fas fa-check-circle" style="color:#34d399;"></i> 发布成功！</div>';document.getElementById('annTitle').value='';document.getElementById('annContent').value='';document.getElementById('annStartTime').value='';document.getElementById('annEndTime').value='';loadAnnouncements()}catch(e){showMessage(e.message,'error')}finally{btn.disabled=false;btn.innerHTML='<i class="fas fa-plus"></i> 发布公告'}}
 
-    async function toggleRestrict(type){
+    function getSelectedRestrictTypes(){
+        var types=[];
+        if(document.getElementById('restrictTypeLogin').checked)types.push('login');
+        if(document.getElementById('restrictTypeMall').checked)types.push('mall');
+        if(document.getElementById('restrictTypePhone').checked)types.push('generate_phone');
+        if(document.getElementById('restrictTypeFeedback').checked)types.push('feedback');
+        return types;
+    }
+
+    async function applyBatchRestrict(){
         var u=document.getElementById('restrictUsername').value.trim();
         if(!u){showMessage('请输入用户名','error');return}
+        var types=getSelectedRestrictTypes();
+        if(types.length===0){showMessage('请至少选择一种限制类型','error');return}
         var durSel=document.getElementById('restrictDuration').value;
         var durationHours=0;
         if(durSel==='custom'){
@@ -523,16 +558,59 @@
             durationHours=parseFloat(durSel)||0;
         }
         var reason=document.getElementById('restrictReason').value.trim();
+        var btn=document.getElementById('applyRestrictBtn');
+        btn.disabled=true;
+        var originalText=btn.innerHTML;
+        btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> 提交中...';
         try{
-            var d=await apiRequest('/api/admin/toggle-restrict',{method:'POST',body:JSON.stringify({username:u,restrict_type:type,duration_hours:durationHours,reason:reason})});
+            var d=await apiRequest('/api/admin/restrict-batch',{method:'POST',body:JSON.stringify({username:u,restrict_types:types,duration_hours:durationHours,reason:reason})});
             var extra='';
-            if(d.action==='restricted'&&d.email_sent){extra=' · 邮件通知已发送';}
-            else if(d.action==='restricted'&&d.email_message){extra=' · 邮件通知未发送：'+d.email_message;}
+            if(d.email_sent){extra=' · 邮件通知已发送';}
+            else if(d.email_message){extra=' · 邮件通知未发送：'+d.email_message;}
             showMessage(d.message+extra,'success');
-            document.getElementById('restrictResult').innerHTML='<div style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.12);border-radius:12px;padding:12px 16px;color:#a7f3d0;">'+escapeHtml(d.message)+(extra?'<br><span style="font-size:12px;opacity:0.8;">'+escapeHtml(extra)+'</span>':'')+'</div>';
+            var alreadyInfo='';
+            if(d.already_restricted&&d.already_restricted.length>0){
+                var typeNames={login:'登录',mall:'商城',generate_phone:'生成手机号',feedback:'反馈'};
+                alreadyInfo='<br><span style="font-size:12px;opacity:0.7;">已处于限制状态的类型：'+d.already_restricted.map(function(t){return typeNames[t]||t}).join('、')+'（已跳过）</span>';
+            }
+            document.getElementById('restrictResult').innerHTML='<div style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.12);border-radius:12px;padding:12px 16px;color:#a7f3d0;">'+escapeHtml(d.message)+(extra?'<br><span style="font-size:12px;opacity:0.8;">'+escapeHtml(extra)+'</span>':'')+alreadyInfo+'</div>';
             loadStats();
             loadRestrictedUsers();
-        }catch(e){showMessage(e.message,'error')}
+        }catch(e){
+            showMessage(e.message,'error');
+        }finally{
+            btn.disabled=false;
+            btn.innerHTML=originalText;
+        }
+    }
+
+    async function applyBatchUnrestrict(){
+        var u=document.getElementById('restrictUsername').value.trim();
+        if(!u){showMessage('请输入用户名','error');return}
+        var types=getSelectedRestrictTypes();
+        if(types.length===0){showMessage('请至少选择一种限制类型','error');return}
+        showModal('确定要解除用户 <code style="color:#a78bfa;">'+escapeHtml(u)+'</code> 的所选限制吗？',async function(){
+            var typeNames={login:'登录',mall:'商城',generate_phone:'生成手机号',feedback:'反馈'};
+            var successList=[];
+            var failList=[];
+            for(var i=0;i<types.length;i++){
+                try{
+                    await apiRequest('/api/admin/toggle-restrict',{method:'POST',body:JSON.stringify({username:u,restrict_type:types[i]})});
+                    successList.push(typeNames[types[i]]||types[i]);
+                }catch(e){
+                    failList.push((typeNames[types[i]]||types[i])+':'+e.message);
+                }
+            }
+            if(successList.length>0){
+                showMessage('已解除：'+successList.join('、'),'success');
+            }
+            if(failList.length>0){
+                showMessage('部分失败：'+failList.join('；'),'error');
+            }
+            document.getElementById('restrictResult').innerHTML='<div style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.12);border-radius:12px;padding:12px 16px;color:#a7f3d0;">解除限制：'+(successList.length>0?successList.join('、'):'无')+(failList.length>0?'<br><span style="color:#f87171;font-size:12px;">失败：'+escapeHtml(failList.join('；'))+'</span>':'')+'</div>';
+            loadStats();
+            loadRestrictedUsers();
+        });
     }
 
     document.getElementById('restrictDuration').addEventListener('change',function(){

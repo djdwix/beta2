@@ -53,6 +53,7 @@ for handler in logging.root.handlers:
 
 load_dotenv()
 app = Flask(__name__, static_folder='public')
+app.config['START_TIME'] = time.time()
 
 limiter = Limiter(
     app=app,
@@ -80,7 +81,7 @@ RATE_LIMITS = {
     'admin_login': '18 per minute'
 }
 
-LOCK_TIMEOUT = 30
+LOCK_TIMEOUT = 15
 
 QR_SECRET = os.getenv('QR_SECRET')
 if not QR_SECRET:
@@ -2164,45 +2165,6 @@ def check_and_award_attendance_rewards(username):
 
     return rewards if rewards else None
 
-def migrate_attendance_dates():
-    modified = False
-    for username, user_data in users.items():
-        if 'attendance_dates' not in user_data:
-            user_data['attendance_dates'] = []
-            last_date = user_data.get('lastAttendanceDate', '')
-            if last_date:
-                user_data['attendance_dates'].append(last_date)
-            modified = True
-    if modified:
-        save_users()
-
-def migrate_game_membership_data():
-    modified = False
-    for username, user_data in users.items():
-        if 'membership' not in user_data:
-            user_data['membership'] = {
-                'is_member': False,
-                'activated_at': 0,
-                'expires_at': 0,
-                'lifetime': True
-            }
-            modified = True
-        else:
-            membership = user_data['membership']
-            if 'lifetime' not in membership:
-                membership['lifetime'] = True
-                modified = True
-            if 'activated_at' not in membership:
-                membership['activated_at'] = 0
-                modified = True
-            if 'expires_at' not in membership:
-                membership['expires_at'] = 0
-                modified = True
-    if modified:
-        save_users()
-        log.info("游戏会员数据迁移完成")
-    return modified
-
 def migrate_first_attendance_date():
     modified = False
     for username, user_data in users.items():
@@ -2639,17 +2601,6 @@ def cleanup_expired_pool_claims():
             del user_pool_claims[username]
     save_user_pool_claims()
 
-def cleanup_pool_records():
-    for date, data in pool_records.items():
-        if 'payout_details' in data and data['payout_details']:
-            total = sum(data['payout_details'].values())
-            if data.get('total_payout', 0) != total:
-                data['total_payout'] = total
-                log.info(f"Fixed pool record for {date}: total_payout = {total}")
-        elif 'payout_details' not in data:
-            data['payout_details'] = {}
-    save_pool_records()
-
 def get_daily_pool_amount():
     yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
     yesterday_payout = 0
@@ -2674,6 +2625,86 @@ def get_daily_pool_amount():
     
     base = max(dynamic_min, yesterday_payout * POOL_GROWTH_FACTOR)
     return min(base, dynamic_max)
+
+
+def settle_pool_funds():
+    global system_total_points
+    today = get_today_pool_date()
+    
+    if today in pool_records and pool_records[today].get('settled', False):
+        return pool_records[today].get('pool_amount', 0)
+    
+    theoretical_amount = get_daily_pool_amount()
+    
+    max_allocatable = round(system_total_points * 0.8, 4)
+    pool_amount = min(theoretical_amount, max_allocatable)
+    
+    if pool_amount <= 0:
+        if today not in pool_records:
+            pool_records[today] = {'total_payout': 0, 'payout_details': {}}
+        pool_records[today]['pool_amount'] = 0
+        pool_records[today]['theoretical_amount'] = theoretical_amount
+        pool_records[today]['allocated_from_system'] = 0
+        pool_records[today]['settled'] = True
+        pool_records[today]['settled_at'] = int(time.time() * 1000)
+        save_pool_records()
+        return 0
+    
+    deduct_system_total_points(pool_amount)
+    
+    if today not in pool_records:
+        pool_records[today] = {'total_payout': 0, 'payout_details': {}}
+    
+    pool_records[today]['pool_amount'] = pool_amount
+    pool_records[today]['theoretical_amount'] = theoretical_amount
+    pool_records[today]['allocated_from_system'] = pool_amount
+    pool_records[today]['settled'] = True
+    pool_records[today]['settled_at'] = int(time.time() * 1000)
+    pool_records[today]['remaining_unclaimed'] = pool_amount
+    save_pool_records()
+    
+    log.debug(f"Pool fund allocated: {pool_amount} from system pool (theoretical={theoretical_amount}), remaining system: {system_total_points}")
+    return pool_amount
+
+
+def settle_yesterday_pool_unclaimed():
+    global system_total_points
+    yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+    
+    if yesterday not in pool_records:
+        return
+    
+    record = pool_records[yesterday]
+    
+    if record.get('unclaimed_settled', False):
+        return
+    
+    pool_amount = record.get('pool_amount', 0)
+    total_payout = record.get('total_payout', 0)
+    
+    if pool_amount <= 0:
+        record['unclaimed_settled'] = True
+        record['unclaimed_settled_at'] = int(time.time() * 1000)
+        save_pool_records()
+        return
+    
+    unclaimed = max(0, round(pool_amount - total_payout, 4))
+    
+    if unclaimed > 0:
+        refund_to_system = round(unclaimed * 0.2, 4)
+        burned = round(unclaimed * 0.8, 4)
+        
+        if refund_to_system > 0:
+            add_system_total_points(refund_to_system)
+        
+        record['unclaimed_amount'] = unclaimed
+        record['refunded_to_system'] = refund_to_system
+        record['burned_amount'] = burned
+        log.debug(f"Pool unclaimed settled for {yesterday}: unclaimed={unclaimed}, refunded={refund_to_system}, burned={burned}")
+    
+    record['unclaimed_settled'] = True
+    record['unclaimed_settled_at'] = int(time.time() * 1000)
+    save_pool_records()
 
 def add_random_system_points(username):
     user_data = users.get(username, {})
@@ -2859,12 +2890,32 @@ def process_pool_reward_for_user(username):
         if not check_identity_verified(username):
             return None, '请先完成身份认证'
         
+        settle_pool_funds()
+        
+        today = get_today_pool_date()
+        if today not in pool_records:
+            pool_records[today] = {'total_payout': 0, 'payout_details': {}}
+        
+        allocated = pool_records[today].get('allocated_from_system', 0)
+        already_paid = pool_records[today].get('total_payout', 0)
+        remaining = max(0, round(allocated - already_paid, 4))
+        
+        if remaining <= 0:
+            return None, '今日瓜分池已被领完，请明日再试'
+        
         reward = get_user_today_pool_reward(username)
         if reward <= 0:
             return None, '积分基数为0，无法瓜分'
         
+        if reward > remaining:
+            reward = remaining
+        
+        reward = round(reward, 4)
+        if reward <= 0:
+            return None, '今日瓜分池已被领完，请明日再试'
+        
         mail_attachment_id = f"mail_{int(time.time()*1000)}_{random.randint(1000,9999)}"
-        pool_amount = get_daily_pool_amount()
+        pool_amount = pool_records[today].get('pool_amount', 0)
         user_bases = build_user_bases()
         normalized = normalize_user_bases_with_bonus(user_bases)
         base = normalized.get(username, 0)
@@ -2887,15 +2938,12 @@ def process_pool_reward_for_user(username):
         mark_user_pool_claimed(username)
         mark_cooldown(username)
         
-        today = datetime.now().strftime('%Y-%m-%d')
-        if today not in pool_records:
-            pool_records[today] = {'total_payout': 0, 'payout_details': {}}
-        
         if 'payout_details' not in pool_records[today]:
             pool_records[today]['payout_details'] = {}
         
-        pool_records[today]['total_payout'] = pool_records[today].get('total_payout', 0) + reward
-        pool_records[today]['payout_details'][username] = pool_records[today]['payout_details'].get(username, 0) + reward
+        pool_records[today]['total_payout'] = round(pool_records[today].get('total_payout', 0) + reward, 4)
+        pool_records[today]['payout_details'][username] = round(pool_records[today]['payout_details'].get(username, 0) + reward, 4)
+        pool_records[today]['remaining_unclaimed'] = max(0, round(allocated - pool_records[today]['total_payout'], 4))
         save_pool_records()
         
         return reward, None
@@ -2910,16 +2958,8 @@ def pool_reward_loop():
     while True:
         time.sleep(3600)
         try:
-            today = datetime.now().strftime('%Y-%m-%d')
-            total_payout = 0
-            for username, claims in user_pool_claims.items():
-                if today in claims:
-                    reward = get_user_today_pool_reward(username)
-                    total_payout += reward
-            if today not in pool_records:
-                pool_records[today] = {'total_payout': 0}
-            pool_records[today]['total_payout'] = total_payout
-            save_pool_records()
+            settle_yesterday_pool_unclaimed()
+            settle_pool_funds()
         except Exception as e:
             log.error(f"Pool reward loop error: {e}")
 
@@ -4071,6 +4111,109 @@ def csrf_protect(f):
 def csrf_token_endpoint():
     return jsonify({'csrf_token': get_csrf_token()})
 
+@app.route('/api/health-web', methods=['GET'])
+@limiter.limit('5 per day')
+def health_check():
+    import shutil
+
+    start_time = time.time()
+    status = 'ok'
+    checks = {}
+
+    try:
+        disk = shutil.disk_usage(DATA_DIR)
+        disk_free_mb = round(disk.free / (1024 * 1024), 2)
+        disk_total_mb = round(disk.total / (1024 * 1024), 2)
+        disk_used_percent = round((disk.used / disk.total) * 100, 2)
+        checks['disk'] = {
+            'status': 'ok' if disk_used_percent < 90 else 'warning',
+            'free_mb': disk_free_mb,
+            'total_mb': disk_total_mb,
+            'used_percent': disk_used_percent
+        }
+        if disk_used_percent >= 95:
+            status = 'error'
+        elif disk_used_percent >= 90 and status == 'ok':
+            status = 'warning'
+    except Exception as e:
+        checks['disk'] = {'status': 'error', 'message': str(e)}
+        status = 'error'
+
+    try:
+        data_files = {
+            'users': USERS_FILE,
+            'phone_records': PHONE_RECORDS_FILE,
+            'orders': ORDERS_FILE,
+            'system_points': SYSTEM_POINTS_FILE
+        }
+        file_status = {}
+        for name, path in data_files.items():
+            if os.path.exists(path):
+                size_bytes = os.path.getsize(path)
+                file_status[name] = {
+                    'exists': True,
+                    'size_kb': round(size_bytes / 1024, 2)
+                }
+            else:
+                file_status[name] = {'exists': False}
+        checks['data_files'] = {'status': 'ok', 'files': file_status}
+    except Exception as e:
+        checks['data_files'] = {'status': 'error', 'message': str(e)}
+        status = 'error'
+
+    try:
+        checks['users'] = {
+            'status': 'ok',
+            'total': len(users),
+            'verified': sum(1 for u in users if check_identity_verified(u))
+        }
+    except Exception as e:
+        checks['users'] = {'status': 'error', 'message': str(e)}
+
+    try:
+        checks['system_points'] = {
+            'status': 'ok',
+            'balance': round(system_total_points, 4),
+            'pool_balance': round(pool_balance, 4) if 'pool_balance' in globals() else 0
+        }
+    except Exception as e:
+        checks['system_points'] = {'status': 'error', 'message': str(e)}
+
+    try:
+        checks['feedback'] = {
+            'status': 'ok',
+            'total': len(feedbacks),
+            'pending': sum(1 for f in feedbacks.values() if f.get('status') == 'pending')
+        }
+    except Exception as e:
+        checks['feedback'] = {'status': 'error', 'message': str(e)}
+
+    try:
+        import smtplib
+        smtp_configured = bool(SMTP_EMAIL and SMTP_PASSWORD)
+        checks['smtp'] = {
+            'status': 'ok' if smtp_configured else 'warning',
+            'configured': smtp_configured,
+            'server': SMTP_SERVER,
+            'port': SMTP_PORT
+        }
+    except Exception as e:
+        checks['smtp'] = {'status': 'error', 'message': str(e)}
+
+    response_time_ms = int((time.time() - start_time) * 1000)
+
+    http_code = 200
+    if status == 'error':
+        http_code = 503
+
+    return jsonify({
+        'status': status,
+        'timestamp': int(time.time() * 1000),
+        'uptime_seconds': int(time.time() - app.config.get('START_TIME', time.time())),
+        'response_time_ms': response_time_ms,
+        'checks': checks
+    }), http_code
+
 @app.route('/api/admin/login', methods=['POST'])
 @limiter.limit(RATE_LIMITS['admin_login'])
 @csrf_protect
@@ -4759,80 +4902,6 @@ def nav_sell_single(username, index, shares):
         'tax_rate': tax_rate
     }, None
 
-def migrate_auth_codes():
-    modified = False
-    for code, data in auth_codes.items():
-        if 'verified' not in data:
-            data['verified'] = False
-            modified = True
-        if 'reward_claimed' not in data:
-            data['reward_claimed'] = False
-            modified = True
-    if modified:
-        save_auth_codes()
-
-def migrate_user_login_time():
-    modified = False
-    for username, user_data in users.items():
-        if 'lastLoginTime' not in user_data:
-            last_login_date = user_data.get('lastLoginDate', '')
-            if last_login_date:
-                try:
-                    dt = datetime.strptime(last_login_date, '%Y-%m-%d')
-                    user_data['lastLoginTime'] = dt.isoformat()
-                except:
-                    user_data['lastLoginTime'] = ''
-            else:
-                user_data['lastLoginTime'] = ''
-            modified = True
-    
-    if modified:
-        save_users()
-        log.info("用户登录时间数据迁移完成 (ISO 8601)")
-
-def migrate_game_stats_to_users():
-    modified = False
-    for username, user_data in users.items():
-        if 'game_stats' not in user_data:
-            user_data['game_stats'] = {
-                'today_plays': 0,
-                'today_date': '',
-                'total_wins': 0,
-                'total_plays': 0
-            }
-            modified = True
-        else:
-            if 'today_date' not in user_data['game_stats']:
-                user_data['game_stats']['today_date'] = ''
-                modified = True
-            if 'today_plays' not in user_data['game_stats']:
-                user_data['game_stats']['today_plays'] = 0
-                modified = True
-            if 'total_wins' not in user_data['game_stats']:
-                user_data['game_stats']['total_wins'] = 0
-                modified = True
-            if 'total_plays' not in user_data['game_stats']:
-                user_data['game_stats']['total_plays'] = 0
-                modified = True
-    if modified:
-        save_users()
-        log.info("游戏统计数据迁移完成")
-
-def migrate_existing_game_limits_to_users():
-    modified = False
-    for username, limits in user_code_limits.items():
-        if 'game' in limits and username in users:
-            game_limits = limits['game']
-            if 'game_stats' not in users[username]:
-                users[username]['game_stats'] = {}
-            users[username]['game_stats']['total_wins'] = game_limits.get('total_wins', 0)
-            users[username]['game_stats']['total_plays'] = game_limits.get('total_plays', 0)
-            modified = True
-            log.info(f"已迁移用户 {username} 的游戏数据: 胜场 {game_limits.get('total_wins', 0)}, 总场 {game_limits.get('total_plays', 0)}")
-    if modified:
-        save_users()
-        log.info("历史游戏数据迁移完成")
-
 def force_recalculate_first_attendance_date():
     modified = False
     for username, user_data in users.items():
@@ -4859,8 +4928,6 @@ def force_recalculate_first_attendance_date():
     
     if modified:
         save_users()
-
-force_recalculate_first_attendance_date()
 
 def generate_qr_token(order_id, product_number):
     timestamp = int(time.time())
@@ -5595,21 +5662,26 @@ def admin_cdk_list():
         print(f"list cdk error: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/api/admin/toggle-restrict', methods=['POST'])
+@app.route('/api/admin/restrict-batch', methods=['POST'])
 @csrf_protect
 @admin_login_required
-def admin_toggle_restrict():
+def admin_restrict_batch():
     data = request.get_json()
     username = data.get('username', '').strip()
-    restrict_type = data.get('restrict_type', 'login')
+    restrict_types = data.get('restrict_types', [])
     duration_hours = data.get('duration_hours', 0)
     reason = data.get('reason', '').strip()
 
     if not username or username not in users:
         return jsonify({'error': '用户不存在'}), 400
 
-    if restrict_type not in ['login', 'mall', 'generate_phone', 'feedback']:
-        return jsonify({'error': '无效的限制类型'}), 400
+    if not isinstance(restrict_types, list) or len(restrict_types) == 0:
+        return jsonify({'error': '请至少选择一种限制类型'}), 400
+
+    valid_types = ['login', 'mall', 'generate_phone', 'feedback']
+    for rt in restrict_types:
+        if rt not in valid_types:
+            return jsonify({'error': f'无效的限制类型: {rt}'}), 400
 
     try:
         duration_hours = float(duration_hours)
@@ -5634,14 +5706,112 @@ def admin_toggle_restrict():
         data_rec['restrictions'] = {'login': False, 'mall': False, 'generate_phone': False, 'feedback': False}
     if 'restriction_details' not in data_rec:
         data_rec['restriction_details'] = {}
-    for rtype in ['login', 'mall', 'generate_phone', 'feedback']:
+    for rtype in valid_types:
         if rtype not in data_rec['restriction_details']:
             data_rec['restriction_details'][rtype] = {
                 'expires_at': 0, 'reason': '', 'restricted_at': 0, 'restricted_by': 'admin'
             }
 
     current_time_ms = int(time.time() * 1000)
-    current_value = data_rec['restrictions'].get(restrict_type, False)
+    expires_at = current_time_ms + int(duration_hours * 3600 * 1000) if duration_hours > 0 else 0
+
+    applied_types = []
+    already_restricted = []
+    for rtype in restrict_types:
+        if data_rec['restrictions'].get(rtype, False):
+            already_restricted.append(rtype)
+        else:
+            data_rec['restrictions'][rtype] = True
+            data_rec['restriction_details'][rtype] = {
+                'expires_at': expires_at,
+                'reason': reason,
+                'restricted_at': current_time_ms,
+                'restricted_by': 'admin'
+            }
+            applied_types.append(rtype)
+
+    if not applied_types:
+        return jsonify({
+            'success': False,
+            'error': '所选限制类型均已处于限制状态',
+            'already_restricted': already_restricted
+        }), 400
+
+    data_rec['restricted_at'] = datetime.now().isoformat()
+    save_restricted_users()
+
+    type_names = {
+        'login': '登录',
+        'mall': '积分商城',
+        'generate_phone': '生成手机号',
+        'feedback': '反馈'
+    }
+
+    user_email = users.get(username, {}).get('email', '')
+    email_sent = False
+    email_msg = ''
+    if user_email:
+        try:
+            email_sent, email_msg = email_service.send_restriction_notification_email(
+                username, user_email, applied_types, expires_at, reason
+            )
+        except Exception as e:
+            log.error(f"发送限制通知邮件异常: {e}")
+            email_msg = str(e)
+    else:
+        email_msg = '用户未绑定邮箱，未发送通知'
+
+    applied_labels = [type_names[t] for t in applied_types]
+    if expires_at > 0:
+        expire_str = datetime.fromtimestamp(expires_at / 1000).strftime('%Y-%m-%d %H:%M:%S')
+        msg = f'已对用户{username}限制：{"、".join(applied_labels)}，截止 {expire_str} 自动解除'
+    else:
+        msg = f'已对用户{username}永久限制：{"、".join(applied_labels)}'
+
+    return jsonify({
+        'success': True,
+        'message': msg,
+        'applied_types': applied_types,
+        'already_restricted': already_restricted,
+        'restrictions': data_rec['restrictions'],
+        'restriction_details': data_rec['restriction_details'],
+        'email_sent': email_sent,
+        'email_message': email_msg
+    })
+
+@app.route('/api/admin/toggle-restrict', methods=['POST'])
+@csrf_protect
+@admin_login_required
+def admin_toggle_restrict():
+    data = request.get_json()
+    username = data.get('username', '').strip()
+    restrict_type = data.get('restrict_type', 'login')
+
+    if not username or username not in users:
+        return jsonify({'error': '用户不存在'}), 400
+
+    if restrict_type not in ['login', 'mall', 'generate_phone', 'feedback']:
+        return jsonify({'error': '无效的限制类型'}), 400
+
+    if username not in restricted_users:
+        restricted_users[username] = {
+            'username': username,
+            'restrictions': {'login': False, 'mall': False, 'generate_phone': False, 'feedback': False},
+            'restriction_details': {},
+            'restricted_at': datetime.now().isoformat(),
+            'restricted_by': 'admin'
+        }
+
+    data_rec = restricted_users[username]
+    if 'restrictions' not in data_rec:
+        data_rec['restrictions'] = {'login': False, 'mall': False, 'generate_phone': False, 'feedback': False}
+    if 'restriction_details' not in data_rec:
+        data_rec['restriction_details'] = {}
+    for rtype in ['login', 'mall', 'generate_phone', 'feedback']:
+        if rtype not in data_rec['restriction_details']:
+            data_rec['restriction_details'][rtype] = {
+                'expires_at': 0, 'reason': '', 'restricted_at': 0, 'restricted_by': 'admin'
+            }
 
     type_names = {
         'login': '登录',
@@ -5651,12 +5821,27 @@ def admin_toggle_restrict():
     }
     type_name = type_names[restrict_type]
 
-    if not current_value:
-        data_rec['restrictions'][restrict_type] = True
-        expires_at = current_time_ms + int(duration_hours * 3600 * 1000) if duration_hours > 0 else 0
+    current_value = data_rec['restrictions'].get(restrict_type, False)
+
+    if current_value:
+        data_rec['restrictions'][restrict_type] = False
         data_rec['restriction_details'][restrict_type] = {
-            'expires_at': expires_at,
-            'reason': reason,
+            'expires_at': 0, 'reason': '', 'restricted_at': 0, 'restricted_by': 'admin'
+        }
+        save_restricted_users()
+        return jsonify({
+            'success': True,
+            'message': f'用户{username}的{type_name}功能已解除限制',
+            'action': 'unrestricted',
+            'restrictions': data_rec['restrictions'],
+            'restriction_details': data_rec['restriction_details']
+        })
+    else:
+        current_time_ms = int(time.time() * 1000)
+        data_rec['restrictions'][restrict_type] = True
+        data_rec['restriction_details'][restrict_type] = {
+            'expires_at': 0,
+            'reason': '',
             'restricted_at': current_time_ms,
             'restricted_by': 'admin'
         }
@@ -5669,7 +5854,7 @@ def admin_toggle_restrict():
         if user_email:
             try:
                 email_sent, email_msg = email_service.send_restriction_notification_email(
-                    username, user_email, restrict_type, expires_at, reason
+                    username, user_email, [restrict_type], 0, ''
                 )
             except Exception as e:
                 log.error(f"发送限制通知邮件异常: {e}")
@@ -5677,33 +5862,14 @@ def admin_toggle_restrict():
         else:
             email_msg = '用户未绑定邮箱，未发送通知'
 
-        if expires_at > 0:
-            expire_str = datetime.fromtimestamp(expires_at / 1000).strftime('%Y-%m-%d %H:%M:%S')
-            msg = f'用户{username}的{type_name}功能已被限制，截止 {expire_str} 自动解除'
-        else:
-            msg = f'用户{username}的{type_name}功能已被永久限制'
-
         return jsonify({
             'success': True,
-            'message': msg,
+            'message': f'用户{username}的{type_name}功能已被永久限制',
             'action': 'restricted',
             'restrictions': data_rec['restrictions'],
             'restriction_details': data_rec['restriction_details'],
             'email_sent': email_sent,
             'email_message': email_msg
-        })
-    else:
-        data_rec['restrictions'][restrict_type] = False
-        data_rec['restriction_details'][restrict_type] = {
-            'expires_at': 0, 'reason': '', 'restricted_at': 0, 'restricted_by': 'admin'
-        }
-        save_restricted_users()
-        return jsonify({
-            'success': True,
-            'message': f'用户{username}的{type_name}功能已解除限制',
-            'action': 'unrestricted',
-            'restrictions': data_rec['restrictions'],
-            'restriction_details': data_rec['restriction_details']
         })
 
 @app.route('/api/admin/restrictions/<username>', methods=['GET'])
@@ -6936,6 +7102,7 @@ def generate_anti_fake_code():
     return str(random.randint(100000, 999999))
 
 @app.route('/api/order/create', methods=['POST'])
+@limiter.limit(RATE_LIMITS['order_create'])
 @csrf_protect
 @login_required
 @identity_required
@@ -7882,6 +8049,7 @@ def cancel_order_api(order_id):
     return jsonify({'success': True, 'message': '订单已取消'})
 
 @app.route('/api/order/<order_id>/set-password', methods=['POST'])
+@limiter.limit(RATE_LIMITS['order_create'])
 @csrf_protect
 @login_required
 def set_pay_password_api(order_id):
@@ -9058,7 +9226,6 @@ def use_point_code():
     })
 
 @app.route('/api/get-inventory', methods=['GET'])
-@csrf_protect
 @login_required
 @identity_required
 def get_inventory():
@@ -9888,9 +10055,17 @@ def get_pl_rate_history():
 def get_pool_status_api():
     username = session['user']['username']
     try:
+        settle_yesterday_pool_unclaimed()
+        settle_pool_funds()
+        
         status = get_pool_status()
         today_reward = get_user_today_pool_reward(username)
         has_claimed = has_user_claimed_pool_today(username)
+        
+        today = get_today_pool_date()
+        allocated = pool_records.get(today, {}).get('allocated_from_system', 0)
+        already_paid = pool_records.get(today, {}).get('total_payout', 0)
+        remaining_pool = max(0, round(allocated - already_paid, 4))
         
         cooldown_data = user_pool_claims.get(username, {}).get('last_claim_cooldown', {})
         last_claim_time = cooldown_data.get('timestamp', 0)
@@ -9927,11 +10102,15 @@ def get_pool_status_api():
         
         user_bases = build_user_bases()
         
+        theoretical_amount = pool_records.get(today, {}).get('theoretical_amount', status['pool_amount'])
+        pool_limited_by_system = status['pool_amount'] < theoretical_amount
+        
         can_claim = (
             total_days >= 7 and 
             not has_claimed and 
             not cooldown_remaining and
             today_reward > 0 and 
+            remaining_pool > 0 and
             is_verified and 
             not is_restricted
         )
@@ -9939,6 +10118,11 @@ def get_pool_status_api():
         return jsonify({
             'today': status['today'],
             'pool_amount': status['pool_amount'],
+            'theoretical_pool_amount': theoretical_amount,
+            'actual_pool_amount': status['pool_amount'],
+            'remaining_pool': remaining_pool,
+            'system_pool_balance': round(system_total_points, 4),
+            'pool_limited_by_system': pool_limited_by_system,
             'total_base': round(status['total_base'], 4),
             'user_count': status['user_count'],
             'user_base': round(current_base, 4),
@@ -11138,7 +11322,6 @@ def get_gender_from_id_number(id_number):
         return None
 
 @app.route('/api/check_identity_status', methods=['GET'])
-@csrf_protect
 @login_required
 def check_identity_status():
     username = session['user']['username']
@@ -11155,7 +11338,6 @@ def check_identity_status():
     return jsonify({'authenticated': True, 'id_verified': False})
 
 @app.route('/api/gateway/status', methods=['GET'])
-@csrf_protect
 @login_required
 def gateway_status():
     start_time = time.time()
@@ -12792,19 +12974,6 @@ def search_order():
     
     return jsonify({'type': 'order', 'orders': found_orders}), 200
 
-@app.route('/api/debug/user-data', methods=['GET'])
-@login_required
-def debug_user_data():
-    username = session['user']['username']
-    user_data = users.get(username, {})
-    return jsonify({
-        'username': username,
-        'firstAttendanceDate': user_data.get('firstAttendanceDate', ''),
-        'lastAttendanceDate': user_data.get('lastAttendanceDate', ''),
-        'attendanceTotalDays': user_data.get('attendanceTotalDays', 0),
-        'attendanceConsecutiveDays': user_data.get('attendanceConsecutiveDays', 0)
-    })
-
 @app.route('/qr/<token>')
 def qr_redirect_page(token):
     try:
@@ -12908,7 +13077,6 @@ def quick_verify_identity():
     })
 
 @app.route('/api/identity/quick-status', methods=['GET'])
-@csrf_protect
 @login_required
 def quick_verify_status():
     username = session['user']['username']
@@ -13140,7 +13308,7 @@ def get_next_milestone(current, milestone_type):
 
 @app.route('/api/customer-service/news', methods=['GET'])
 @login_required
-@limiter.limit('1 per minute')
+@limiter.limit('5 per day')
 def get_news():
     start_time = time.time()
     try:
@@ -13183,9 +13351,183 @@ def get_news():
             'responseTime': int((time.time() - start_time) * 1000)
         })
 
+@app.route('/api/customer-service/ip-signature', methods=['GET'])
+@login_required
+@limiter.limit('5 per day')
+def get_ip_signature():
+    try:
+        import requests
+        from io import BytesIO
+        import base64
+
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'image/*,*/*;q=0.8',
+            'Referer': 'https://api.aa1.cn/'
+        }
+
+        url = 'https://zj.v.api.aa1.cn/api/ip-qmd'
+
+        resp = requests.get(url, headers=headers, timeout=8, allow_redirects=True, stream=True)
+
+        if resp.status_code != 200:
+            return jsonify({
+                'success': False,
+                'error': f'IP签名档服务暂时不可用 (HTTP {resp.status_code})'
+            }), 200
+
+        content_type = resp.headers.get('Content-Type', '')
+        if 'image' not in content_type.lower():
+            return jsonify({
+                'success': False,
+                'error': 'IP签名档服务返回异常数据'
+            }), 200
+
+        content = resp.content
+        if not content or len(content) < 100:
+            return jsonify({
+                'success': False,
+                'error': 'IP签名档图片数据异常'
+            }), 200
+
+        if len(content) > 2 * 1024 * 1024:
+            return jsonify({
+                'success': False,
+                'error': '图片过大，请稍后重试'
+            }), 200
+
+        img_base64 = base64.b64encode(content).decode('utf-8')
+        fmt = 'png'
+        if 'jpeg' in content_type.lower() or 'jpg' in content_type.lower():
+            fmt = 'jpeg'
+        elif 'gif' in content_type.lower():
+            fmt = 'gif'
+        elif 'webp' in content_type.lower():
+            fmt = 'webp'
+
+        return jsonify({
+            'success': True,
+            'type': 'image',
+            'data': img_base64,
+            'format': fmt,
+            'source': 'IP签名档v3'
+        })
+
+    except requests.exceptions.Timeout:
+        return jsonify({
+            'success': False,
+            'error': 'IP签名档服务请求超时，请稍后重试'
+        }), 200
+    except Exception as e:
+        log.error(f"IP signature fetch error: {e}")
+        return jsonify({
+            'success': False,
+            'error': 'IP签名档服务暂时不可用'
+        }), 200
+
+@app.route('/api/customer-service/earthquake', methods=['GET'])
+@login_required
+@limiter.limit('3 per day')
+def get_earthquake_info():
+    try:
+        import requests
+
+        limit = request.args.get('limit', 3, type=int)
+        if limit < 1:
+            limit = 1
+        if limit > 10:
+            limit = 10
+
+        url = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/significant_month.geojson'
+
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'application/json'
+        }
+
+        resp = requests.get(url, headers=headers, timeout=10)
+        if resp.status_code != 200:
+            return jsonify({
+                'success': False,
+                'error': f'地震信息服务暂时不可用 (HTTP {resp.status_code})'
+            }), 200
+
+        data = resp.json()
+        features = data.get('features', [])
+        if not features:
+            return jsonify({
+                'success': True,
+                'earthquakes': [],
+                'total': 0,
+                'source': 'USGS',
+                'message': '近一个月内无显著地震'
+            })
+
+        earthquakes = []
+        for feat in features[:limit]:
+            props = feat.get('properties', {})
+            geom = feat.get('geometry', {})
+            coords = geom.get('coordinates', [0, 0, 0])
+
+            magnitude = props.get('mag', 0)
+            place = props.get('place', '未知地点')
+            time_ms = props.get('time', 0)
+            tsunami = props.get('tsunami', 0)
+            url_detail = props.get('url', '')
+            depth = coords[2] if len(coords) > 2 else 0
+
+            try:
+                time_str = datetime.fromtimestamp(time_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
+            except:
+                time_str = '未知'
+
+            if magnitude >= 6.0:
+                level = 'severe'
+                level_text = '强震'
+            elif magnitude >= 5.0:
+                level = 'moderate'
+                level_text = '中强震'
+            elif magnitude >= 4.0:
+                level = 'light'
+                level_text = '中等'
+            else:
+                level = 'minor'
+                level_text = '轻微'
+
+            earthquakes.append({
+                'magnitude': round(magnitude, 1),
+                'place': place,
+                'time': time_str,
+                'depth': round(depth, 1),
+                'tsunami': bool(tsunami),
+                'level': level,
+                'level_text': level_text,
+                'url': url_detail
+            })
+
+        return jsonify({
+            'success': True,
+            'earthquakes': earthquakes,
+            'total': len(earthquakes),
+            'source': 'USGS Earthquake Hazards Program',
+            'period': '近一个月显著地震'
+        })
+
+    except requests.exceptions.Timeout:
+        return jsonify({
+            'success': False,
+            'error': '地震信息服务请求超时，请稍后重试'
+        }), 200
+    except Exception as e:
+        log.error(f"Earthquake fetch error: {e}")
+        return jsonify({
+            'success': False,
+            'error': '地震信息服务暂时不可用'
+        }), 200
+
 @app.route('/api/customer-service/search-web', methods=['POST'])
 @login_required
-@limiter.limit('10 per minute')
+@limiter.limit('4 per minute')
 def search_web():
     start_time = time.time()
     data = request.get_json()
@@ -13927,32 +14269,6 @@ def send_verification_code_api():
     
     return jsonify({'error': '无效的操作类型'}), 400
 
-@app.route('/api/check-verification-status', methods=['POST'])
-@csrf_protect
-@limiter.limit('30 per minute')
-def check_verification_status_api():
-    """
-    检查验证码状态
-    """
-    data = request.get_json()
-    email = data.get('email', '').strip().lower()
-
-    if not email:
-        return jsonify({'error': '请输入邮箱地址'}), 400
-
-    if not validate_email(email):
-        return jsonify({'error': '邮箱格式不正确'}), 400
-
-    status = email_service.get_verification_status(email)
-    
-    return jsonify({
-        'exists': status['exists'],
-        'verified': status['verified'],
-        'expired': status['expired'],
-        'message': status['message'],
-        'expires_at': status.get('expires_at', 0)
-    })
-
 @app.route('/api/announcements', methods=['GET'])
 def get_public_announcements():
     current_time = int(time.time() * 1000)
@@ -14628,17 +14944,11 @@ if __name__ == '__main__':
 
     cleanup_all_expired_data()
     enforce_phone_record_limit()
-    cleanup_pool_records()
+    cleanup_expired_feedbacks()
     
-    migrate_user_login_time()
     migrate_restricted_users()
-    migrate_auth_codes()
     migrate_first_attendance_date()
-    migrate_attendance_dates()
     migrate_user_data()
-    migrate_game_stats_to_users()
-    migrate_existing_game_limits_to_users()
-    migrate_game_membership_data()
     log.info("用户数据迁移完成")
 
     if not os.getenv('ADMIN_PASSWORD_HASH'):
