@@ -2800,6 +2800,16 @@ def normalize_user_bases_with_bonus(user_bases):
     
     return result
 
+def normalize_cdk_rewards(package):
+    if 'rewards' in package and isinstance(package['rewards'], list):
+        return package['rewards']
+    reward_type = package.get('reward_type', '')
+    reward_value = package.get('reward_value', '')
+    reward_quantity = package.get('reward_quantity', 1)
+    if not reward_type:
+        return []
+    return [{'type': reward_type, 'value': reward_value, 'quantity': reward_quantity}]
+
 def get_user_today_pool_reward(username):
     user_bases = build_user_bases()
     normalized = normalize_user_bases_with_bonus(user_bases)
@@ -3202,6 +3212,14 @@ def cleanup_expired_feedbacks():
         log.info(f"清理了 {len(feedbacks_to_remove)} 条过期反馈记录")
 
     return len(feedbacks_to_remove)
+
+def feedback_cleanup_loop():
+    while True:
+        try:
+            cleanup_expired_feedbacks()
+        except Exception as e:
+            log.error(f"清理过期反馈异常: {e}")
+        time.sleep(120)
 
 def cleanup_all_expired_data():
     current_time = int(time.time() * 1000)
@@ -4294,8 +4312,8 @@ def get_user_owned_code_count(username):
 
 def check_user_code_limit(username):
     count = get_user_owned_code_count(username)
-    if count >= 16:
-        return False, f'背包卡密已达上限(16/16)，请先使用或回收部分卡密'
+    if count >= 20:
+        return False, f'背包卡密已达上限(20/20)，请先使用或回收部分卡密'
     return True, None
 
 def get_product_number(product_type):
@@ -5576,7 +5594,7 @@ def admin_reissue_cancellation():
 @app.route('/api/admin/cdk/list', methods=['GET'])
 def admin_cdk_list():
     from_ai = request.args.get('from_ai', 'false').lower() == 'true'
-    
+
     if from_ai:
         if 'user' not in session:
             return jsonify({'error': '请先登录'}), 401
@@ -5588,45 +5606,56 @@ def admin_cdk_list():
             del admin_sessions[admin_token]
             return jsonify({'error': '管理员会话已过期，请重新登录'}), 401
         admin_sessions[admin_token] = time.time() + ADMIN_SESSION_TIMEOUT
-    
+
     try:
         available_cdks = []
         current_time = int(time.time() * 1000)
-        
+
+        reward_type_map = {
+            'points': '积分',
+            'point_code': '普通积分卡密',
+            'premium_point_code': '高级积分卡密',
+            'reset_code': '重置密码卡密',
+            'boost_code': '积分加成卡',
+            'special_point_code': '特殊积分卡密',
+            'makeup_code': '补签卡',
+            'gamblers_code': '赌神积分卡',
+            'box_code': '盲盒卡',
+            'plcard_code': '普通PL随机卡',
+            'premium_boost_code': '高级加成卡',
+            'cancellation_code': '注销卡密'
+        }
+
         for code, package in cdk_packages.items():
             if package.get('used', False):
                 continue
-            
+
             start_time_ms = package.get('start_time', 0)
             expiry_time_ms = package.get('expiry_time', 0)
-            
+
             if start_time_ms > 0 and current_time < start_time_ms:
                 continue
-            
+
             if expiry_time_ms > 0 and current_time > expiry_time_ms:
                 continue
-            
-            reward_type = package.get('reward_type', '')
-            reward_type_map = {
-                'points': '积分',
-                'point_code': '普通积分卡密',
-                'premium_point_code': '高级积分卡密',
-                'reset_code': '重置密码卡密',
-                'boost_code': '积分加成卡',
-                'special_point_code': '特殊积分卡密',
-                'makeup_code': '补签卡',
-                'gamblers_code': '赌神积分卡',
-                'box_code': '盲盒卡',
-                'plcard_code': '普通PL随机卡'
-            }
-            reward_type_label = reward_type_map.get(reward_type, reward_type)
-            
+
+            rewards = normalize_cdk_rewards(package)
+
+            reward_summary_list = []
+            for r in rewards:
+                label = reward_type_map.get(r.get('type', ''), r.get('type', ''))
+                qty = r.get('quantity', 1)
+                if r.get('type') == 'points':
+                    reward_summary_list.append(f"{label} x{qty} (值{r.get('value', '')})")
+                else:
+                    reward_summary_list.append(f"{label} x{qty}")
+            reward_summary = '、'.join(reward_summary_list) if reward_summary_list else '无奖励'
+
             available_cdks.append({
                 'code': code,
                 'name': package.get('name', ''),
-                'reward_type': reward_type_label,
-                'reward_value': package.get('reward_value', ''),
-                'reward_quantity': package.get('reward_quantity', 1),
+                'rewards': rewards,
+                'reward_summary': reward_summary,
                 'is_universal': package.get('is_universal', False),
                 'min_total_days': package.get('min_total_days', 0),
                 'min_consecutive_days': package.get('min_consecutive_days', 0),
@@ -5634,9 +5663,9 @@ def admin_cdk_list():
                 'expiry_time': expiry_time_ms,
                 'created_at': package.get('created_at', 0)
             })
-        
+
         available_cdks.sort(key=lambda x: x.get('created_at', 0), reverse=True)
-        
+
         if from_ai:
             if not available_cdks:
                 return jsonify({
@@ -5647,7 +5676,7 @@ def admin_cdk_list():
                     'message': '当前没有可用的CDK礼包码',
                     'cdks': []
                 })
-            
+
             return jsonify({
                 'success': True,
                 'status': 'available',
@@ -5656,10 +5685,13 @@ def admin_cdk_list():
                 'message': f'当前有 {len(available_cdks)} 个可用的CDK礼包码',
                 'cdks': available_cdks[:10]
             })
-        
+
         return jsonify({'success': True, 'cdks': available_cdks})
+
     except Exception as e:
-        print(f"list cdk error: {e}")
+        log.error(f"list cdk error: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/admin/restrict-batch', methods=['POST'])
@@ -5930,6 +5962,7 @@ def admin_get_cdk_packages():
         packages_list.append({
             'code': code,
             'name': package.get('name', ''),
+            'rewards': normalize_cdk_rewards(package),
             'reward_type': package.get('reward_type', ''),
             'reward_value': package.get('reward_value', ''),
             'reward_quantity': package.get('reward_quantity', 1),
@@ -5951,17 +5984,15 @@ def admin_get_cdk_packages():
 def admin_create_cdk_package():
     data = request.get_json()
     name = data.get('name', '').strip().lower()
-    reward_type = data.get('reward_type', '')
-    reward_value = data.get('reward_value', '')
-    reward_quantity = data.get('reward_quantity', 1)
+    rewards = data.get('rewards', [])
     is_universal = data.get('is_universal', False)
     start_time_str = data.get('start_time', '')
     expiry_time_str = data.get('expiry_time', '')
     min_total_days = int(data.get('min_total_days', 0))
     min_consecutive_days = int(data.get('min_consecutive_days', 0))
 
-    if not name or not reward_type or not reward_value:
-        return jsonify({'error': '请填写完整信息'}), 400
+    if not name:
+        return jsonify({'error': '请填写CDK名称'}), 400
 
     if not validate_cdk_name(name):
         return jsonify({'error': 'CDK名称仅限小写字母和数字，长度3-32位'}), 400
@@ -5969,23 +6000,44 @@ def admin_create_cdk_package():
     if name in cdk_packages:
         return jsonify({'error': 'CDK名称已存在'}), 400
 
-    if reward_type not in ['points', 'point_code', 'premium_point_code', 'reset_code', 'boost_code', 'special_point_code', 'makeup_code', 'gamblers_code', 'box_code', 'plcard_code']:
-        return jsonify({'error': '无效的奖励类型'}), 400
+    if not isinstance(rewards, list) or len(rewards) == 0:
+        return jsonify({'error': '请至少添加一项奖励'}), 400
 
-    if reward_type == 'points':
+    if len(rewards) > 10:
+        return jsonify({'error': '奖励项不能超过10项'}), 400
+
+    valid_types = ['points', 'point_code', 'premium_point_code', 'reset_code',
+                   'boost_code', 'special_point_code', 'makeup_code', 'gamblers_code',
+                   'box_code', 'plcard_code', 'premium_boost_code', 'cancellation_code']
+
+    normalized_rewards = []
+    for idx, r in enumerate(rewards):
+        r_type = r.get('type', '').strip()
+        r_value = str(r.get('value', '')).strip()
         try:
-            reward_value_float = float(reward_value)
-            if reward_value_float <= 0 or reward_value_float > 1000:
-                return jsonify({'error': '积分数量必须在1-1000之间'}), 400
+            r_qty = int(r.get('quantity', 1))
         except:
-            return jsonify({'error': '积分数量必须是数字'}), 400
+            return jsonify({'error': f'第{idx+1}项奖励数量无效'}), 400
 
-    try:
-        reward_quantity_int = int(reward_quantity)
-        if reward_quantity_int < 1 or reward_quantity_int > 100:
-            return jsonify({'error': '数量必须在1-100之间'}), 400
-    except:
-        return jsonify({'error': '数量必须是数字'}), 400
+        if r_type not in valid_types:
+            return jsonify({'error': f'第{idx+1}项奖励类型无效'}), 400
+
+        if r_qty < 1 or r_qty > 100:
+            return jsonify({'error': f'第{idx+1}项奖励数量必须在1-100之间'}), 400
+
+        if r_type == 'points':
+            try:
+                val = float(r_value)
+                if val <= 0 or val > 100000:
+                    return jsonify({'error': f'第{idx+1}项积分数量必须在1-100000之间'}), 400
+            except:
+                return jsonify({'error': f'第{idx+1}项积分数量必须是数字'}), 400
+
+        normalized_rewards.append({
+            'type': r_type,
+            'value': r_value,
+            'quantity': r_qty
+        })
 
     start_time_ms = 0
     expiry_time_ms = 0
@@ -6013,14 +6065,11 @@ def admin_create_cdk_package():
         return jsonify({'error': '截止时间必须大于起始时间'}), 400
 
     current_time = int(time.time() * 1000)
-    cdk_code = name
 
-    cdk_packages[cdk_code] = {
-        'code': cdk_code,
+    cdk_packages[name] = {
+        'code': name,
         'name': name,
-        'reward_type': reward_type,
-        'reward_value': reward_value,
-        'reward_quantity': reward_quantity_int,
+        'rewards': normalized_rewards,
         'is_universal': is_universal,
         'used': False,
         'used_by': '',
@@ -6035,8 +6084,9 @@ def admin_create_cdk_package():
 
     return jsonify({
         'success': True,
-        'message': f'CDK礼包码创建成功，数量: {reward_quantity_int}',
-        'cdk_code': cdk_code
+        'message': f'CDK礼包码创建成功，共 {len(normalized_rewards)} 项奖励',
+        'cdk_code': name,
+        'rewards_count': len(normalized_rewards)
     })
 
 @app.route('/api/admin/cdk/delete', methods=['POST'])
@@ -6110,108 +6160,120 @@ def exchange_cdk():
         if cdk_code in user_records:
             return jsonify({'error': '您已经兑换过此CDK礼包码'}), 400
 
-    reward_type = package.get('reward_type')
-    reward_value = package.get('reward_value')
-    reward_quantity = package.get('reward_quantity', 1)
-    reward_description = ''
+    rewards = normalize_cdk_rewards(package)
+    if not rewards:
+        return jsonify({'error': 'CDK奖励配置异常'}), 400
 
-    # 只创建邮件，不直接存背包
-    if reward_type == 'points':
-        points_to_add = float(reward_value) * reward_quantity
-        mail_attachment_id = f"mail_{int(time.time()*1000)}_{random.randint(1000,9999)}"
-        mail_attachments[mail_attachment_id] = {
-            'id': mail_attachment_id,
-            'username': username,
-            'type': 'points',
-            'points_amount': points_to_add,
-            'used': False,
-            'created_at': int(time.time() * 1000),
-            'expires_at': int(time.time() * 1000) + 28800000,
-            'title': 'CDK兑换-积分奖励',
-            'description': f'CDK兑换获得{points_to_add}积分',
-            'claimed': False,
-            'claimed_at': 0,
-            'source': 'cdk_exchange'
-        }
-        save_mail_attachments()
-        reward_description = f'{points_to_add}积分'
+    code_storage_map = {
+        'point_code': (generate_point_code, '普通积分卡密', 'point_code'),
+        'premium_point_code': (generate_premium_point_code, '高级积分卡密', 'premium_point_code'),
+        'reset_code': (generate_reset_code, '重置密码卡密', 'reset_code'),
+        'boost_code': (generate_boost_code, '积分加成卡密', 'boost_code'),
+        'special_point_code': (generate_special_point_code, '特殊积分卡密', 'special_point_code'),
+        'makeup_code': (generate_makeup_code, '补签卡', 'makeup_code'),
+        'gamblers_code': (generate_gamblers_code, '赌神积分卡密', 'gamblers_code'),
+        'cancellation_code': (generate_cancellation_code, '注销卡密', 'cancellation_code'),
+        'box_code': (generate_box_code, '盲盒卡', 'box_code'),
+        'plcard_code': (generate_plcard_code, '普通PL随机卡', 'plcard_code'),
+        'premium_boost_code': (generate_premium_boost_code, '高级加成卡', 'premium_boost_code')
+    }
 
-    elif reward_type in ['point_code', 'premium_point_code', 'reset_code', 'boost_code', 'special_point_code', 'makeup_code', 'gamblers_code', 'cancellation_code', 'box_code', 'plcard_code', 'premium_boost_code']:
-        # 生成卡密，只存入邮件，不直接存背包
-        code_storage_map = {
-            'point_code': (generate_point_code, '普通积分卡密'),
-            'premium_point_code': (generate_premium_point_code, '高级积分卡密'),
-            'reset_code': (generate_reset_code, '重置密码卡密'),
-            'boost_code': (generate_boost_code, '积分加成卡密'),
-            'special_point_code': (generate_special_point_code, '特殊积分卡密'),
-            'makeup_code': (generate_makeup_code, '补签卡'),
-            'gamblers_code': (generate_gamblers_code, '赌神积分卡密'),
-            'cancellation_code': (generate_cancellation_code, '注销卡密'),
-            'box_code': (generate_box_code, '盲盒卡'),
-            'plcard_code': (generate_plcard_code, '普通PL随机卡'),
-            'premium_boost_code': (generate_premium_boost_code, '高级加成卡')
-        }
+    reward_descriptions = []
+    mail_attachment_ids = []
 
-        if reward_type not in code_storage_map:
-            return jsonify({'error': '无效的奖励类型'}), 400
+    for reward in rewards:
+        r_type = reward.get('type', '')
+        r_value = str(reward.get('value', '')).strip()
+        try:
+            r_qty = int(reward.get('quantity', 1))
+        except:
+            r_qty = 1
 
-        generate_func, type_label = code_storage_map[reward_type]
-        generated_codes = []
+        if r_qty < 1:
+            r_qty = 1
+        if r_qty > 100:
+            r_qty = 100
 
-        for _ in range(reward_quantity):
-            code = generate_func()
-            generated_codes.append(code)
+        if r_type == 'points':
+            try:
+                points_to_add = float(r_value) * r_qty
+            except:
+                continue
+            if points_to_add <= 0:
+                continue
 
-        # 只存入邮件，不直接存背包
-        if len(generated_codes) == 1:
             mail_attachment_id = f"mail_{int(time.time()*1000)}_{random.randint(1000,9999)}"
             mail_attachments[mail_attachment_id] = {
                 'id': mail_attachment_id,
                 'username': username,
-                'type': reward_type,
-                'code': generated_codes[0],
-                'codes': generated_codes,
+                'type': 'points',
+                'points_amount': points_to_add,
                 'used': False,
                 'created_at': int(time.time() * 1000),
                 'expires_at': int(time.time() * 1000) + 28800000,
-                'title': f'CDK兑换-{type_label}',
-                'description': f'CDK兑换获得{type_label}1张',
+                'title': 'CDK兑换-积分奖励',
+                'description': f'CDK兑换获得{points_to_add}积分',
                 'claimed': False,
                 'claimed_at': 0,
-                'source': 'cdk_exchange',
-                'quantity': 1,
-                'is_batch': False
+                'source': 'cdk_exchange'
             }
-            save_mail_attachments()
-            reward_description = f'{type_label} x1'
-        else:
-            codes_str = '\n'.join(generated_codes)
+            mail_attachment_ids.append(mail_attachment_id)
+            reward_descriptions.append(f'{points_to_add}积分')
+
+        elif r_type in code_storage_map:
+            generate_func, type_label, storage_type = code_storage_map[r_type]
+            generated_codes = []
+            for _ in range(r_qty):
+                code = generate_func()
+                generated_codes.append(code)
+
             mail_attachment_id = f"mail_{int(time.time()*1000)}_{random.randint(1000,9999)}"
-            mail_attachments[mail_attachment_id] = {
-                'id': mail_attachment_id,
-                'username': username,
-                'type': reward_type,
-                'codes': generated_codes,
-                'code': generated_codes[0],
-                'used': False,
-                'created_at': int(time.time() * 1000),
-                'expires_at': int(time.time() * 1000) + 28800000,
-                'title': f'CDK兑换-{type_label} x{reward_quantity}',
-                'description': f'CDK兑换获得{type_label} {reward_quantity}张\n\n卡密列表:\n{codes_str}',
-                'claimed': False,
-                'claimed_at': 0,
-                'source': 'cdk_exchange',
-                'quantity': reward_quantity,
-                'is_batch': True
-            }
-            save_mail_attachments()
-            reward_description = f'{type_label} x{reward_quantity}'
+            if len(generated_codes) == 1:
+                mail_attachments[mail_attachment_id] = {
+                    'id': mail_attachment_id,
+                    'username': username,
+                    'type': storage_type,
+                    'code': generated_codes[0],
+                    'codes': generated_codes,
+                    'used': False,
+                    'created_at': int(time.time() * 1000),
+                    'expires_at': int(time.time() * 1000) + 28800000,
+                    'title': f'CDK兑换-{type_label}',
+                    'description': f'CDK兑换获得{type_label}1张',
+                    'claimed': False,
+                    'claimed_at': 0,
+                    'source': 'cdk_exchange',
+                    'quantity': 1,
+                    'is_batch': False
+                }
+            else:
+                codes_str = '\n'.join(generated_codes)
+                mail_attachments[mail_attachment_id] = {
+                    'id': mail_attachment_id,
+                    'username': username,
+                    'type': storage_type,
+                    'codes': generated_codes,
+                    'code': generated_codes[0],
+                    'used': False,
+                    'created_at': int(time.time() * 1000),
+                    'expires_at': int(time.time() * 1000) + 28800000,
+                    'title': f'CDK兑换-{type_label} x{r_qty}',
+                    'description': f'CDK兑换获得{type_label} {r_qty}张\n\n卡密列表:\n{codes_str}',
+                    'claimed': False,
+                    'claimed_at': 0,
+                    'source': 'cdk_exchange',
+                    'quantity': r_qty,
+                    'is_batch': True
+                }
+            mail_attachment_ids.append(mail_attachment_id)
+            reward_descriptions.append(f'{type_label} x{r_qty}')
 
-        # 注意：cancellation_code 的特殊处理也需要在邮件领取时做
-        # 不要在兑换时直接修改用户状态
+    if not reward_descriptions:
+        return jsonify({'error': 'CDK奖励配置异常，无可发放奖励'}), 400
 
-    else:
-        return jsonify({'error': '无效的奖励类型'}), 400
+    save_mail_attachments()
+
+    reward_description = ' + '.join(reward_descriptions)
 
     if package.get('is_universal', False):
         if username not in user_cdk_records:
@@ -6229,6 +6291,7 @@ def exchange_cdk():
         'success': True,
         'message': f'兑换成功！奖励已发送至邮箱：{reward_description}',
         'reward': reward_description,
+        'rewards_count': len(reward_descriptions),
         'responseTime': response_time
     })
 
@@ -6623,8 +6686,8 @@ def create_batch_order():
     if not can_add:
         return jsonify({'error': msg}), 400
 
-    if get_user_owned_code_count(username) + quantity > 16 and not is_daifu:
-        return jsonify({'error': f'购买{quantity}张卡密后背包将超出上限(16/16)，请先使用或回收部分卡密'}), 400
+    if get_user_owned_code_count(username) + quantity > 20 and not is_daifu:
+        return jsonify({'error': f'购买{quantity}张卡密后背包将超出上限(20/20)，请先使用或回收部分卡密'}), 400
 
     payment_method = 'pl' if use_pl else 'points'
 
@@ -7122,7 +7185,7 @@ def create_order_api():
         return jsonify({'error': '不支持的支付方式'}), 400
 
     if not check_user_code_limit(username)[0]:
-        return jsonify({'error': '背包卡密已达上限(8/8)，请先使用或回收部分卡密'}), 400
+        return jsonify({'error': '背包卡密已达上限(20/20)，请先使用或回收部分卡密'}), 400
 
     # Apply tiered pricing to the order
     final_price = get_final_price(product_price, username)
@@ -10626,6 +10689,9 @@ boost_cleanup_thread.start()
 
 pool_thread = threading.Thread(target=pool_reward_loop, daemon=True)
 pool_thread.start()
+
+feedback_cleanup_thread = threading.Thread(target=feedback_cleanup_loop, daemon=True)
+feedback_cleanup_thread.start()
 
 @app.route('/api/login', methods=['POST'])
 @csrf_protect
@@ -14295,7 +14361,7 @@ def get_public_announcements():
 
 @app.route('/api/feedback/submit', methods=['POST'])
 @csrf_protect
-@limiter.limit('1 per day')
+@limiter.limit('5 per day')
 @login_required
 @feedback_access_required
 def submit_feedback():

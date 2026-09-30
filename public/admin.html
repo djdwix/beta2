@@ -149,7 +149,14 @@
         .restriction-info{font-size:11px;color:rgba(255,255,255,0.4);margin-top:4px;line-height:1.5}
         .restriction-info .reason{color:#fbbf24}
         .restriction-info .expire{color:#a78bfa}
-        @media(max-width:768px){.admin-container{padding:12px 16px}.login-card{padding:32px 24px;width:95%}.stats-grid{grid-template-columns:repeat(2,1fr)}.admin-header .left h1{font-size:18px}.form-row{flex-direction:column}.form-group{min-width:100%}}
+        .cdk-reward-row{display:flex;gap:8px;margin-bottom:8px;align-items:center;background:rgba(255,255,255,0.03);padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04)}
+        .cdk-reward-row select{flex:1;padding:8px 12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#fff;font-size:13px;outline:none}
+        .cdk-reward-row select option{background:#1a1a2e;color:#fff}
+        .cdk-reward-row input[type="text"]{flex:0 0 100px;padding:8px 12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#fff;font-size:13px;outline:none}
+        .cdk-reward-row input[type="number"]{flex:0 0 80px;padding:8px 12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#fff;font-size:13px;outline:none}
+        .cdk-reward-row .remove-reward-btn{flex:0 0 auto;padding:6px 12px;background:rgba(239,68,68,0.7);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:12px}
+        .cdk-reward-row .remove-reward-btn:hover{background:#ef4444}
+        @media(max-width:768px){.admin-container{padding:12px 16px}.login-card{padding:32px 24px;width:95%}.stats-grid{grid-template-columns:repeat(2,1fr)}.admin-header .left h1{font-size:18px}.form-row{flex-direction:column}.form-group{min-width:100%}.cdk-reward-row{flex-wrap:wrap}}
     </style>
 </head>
 <body>
@@ -220,26 +227,14 @@
     <div id="cdkTab" class="tab-content active">
         <div class="section-title"><i class="fas fa-ticket"></i> CDK礼包码管理</div>
         <div style="margin-bottom:20px;background:rgba(255,255,255,0.03);border-radius:16px;padding:20px;border:1px solid rgba(255,255,255,0.05)">
-            <div style="font-size:14px;font-weight:500;color:#fff;margin-bottom:14px">创建新CDK</div>
+            <div style="font-size:14px;font-weight:500;color:#fff;margin-bottom:14px">创建新CDK（支持多奖励）</div>
             <div class="form-row">
                 <div class="form-group"><label>礼包名称 (小写字母+数字, 3-32位)</label><input type="text" id="cdkName" placeholder="vip888" maxlength="32"></div>
-                <div class="form-group"><label>奖励类型</label>
-                    <select id="cdkRewardType">
-                        <option value="points">积分</option>
-                        <option value="point_code">普通积分卡密</option>
-                        <option value="premium_point_code">高级积分卡密</option>
-                        <option value="reset_code">重置密码卡密</option>
-                        <option value="boost_code">积分加成卡密</option>
-                        <option value="special_point_code">特殊积分卡密</option>
-                        <option value="makeup_code">补签卡</option>
-                        <option value="gamblers_code">赌神积分卡密</option>
-                        <option value="box_code">盲盒卡</option>
-                        <option value="plcard_code">普通PL随机卡</option>
-                        <option value="premium_boost_code">高级加成卡</option>
-                        <option value="cancellation_code">注销卡密</option>
-                    </select>
-                </div>
-                <div class="form-group"><label>数量</label><input type="number" id="cdkRewardValue" placeholder="数量" value="1" min="1" max="100"></div>
+            </div>
+            <div style="margin-bottom:14px;">
+                <label style="display:block;font-size:12px;color:rgba(255,255,255,0.5);font-weight:500;margin-bottom:8px;">奖励列表（最多10项）</label>
+                <div id="cdkRewardsContainer"></div>
+                <button class="btn btn-outline btn-sm" id="addRewardBtn" style="margin-top:8px;"><i class="fas fa-plus"></i> 添加奖励项</button>
             </div>
             <div class="form-row">
                 <div class="form-group"><label>起始时间 (可选)</label><input type="datetime-local" id="cdkStartTime"></div>
@@ -470,6 +465,64 @@
     function badge(status,type){var map={success:'badge-success',danger:'badge-danger',warning:'badge-warning',info:'badge-info',neutral:'badge-neutral',purple:'badge-purple'};return '<span class="badge '+(map[type]||'badge-neutral')+'">'+status+'</span>'}
     function showModal(msg,onConfirm){var m=document.getElementById('confirmModal'),p=document.getElementById('confirmMessage');p.innerHTML=msg;m.style.display='flex';document.getElementById('confirmYes').onclick=function(){m.style.display='none';if(onConfirm)onConfirm()};document.getElementById('confirmNo').onclick=function(){m.style.display='none'}}
 
+    var CDK_REWARD_OPTIONS = [
+        {v:'points', t:'积分'},
+        {v:'point_code', t:'普通积分卡密'},
+        {v:'premium_point_code', t:'高级积分卡密'},
+        {v:'reset_code', t:'重置密码卡密'},
+        {v:'boost_code', t:'积分加成卡密'},
+        {v:'special_point_code', t:'特殊积分卡密'},
+        {v:'makeup_code', t:'补签卡'},
+        {v:'gamblers_code', t:'赌神积分卡密'},
+        {v:'box_code', t:'盲盒卡'},
+        {v:'plcard_code', t:'普通PL随机卡'},
+        {v:'premium_boost_code', t:'高级加成卡'},
+        {v:'cancellation_code', t:'注销卡密'}
+    ];
+    var CDK_REWARD_LABELS = {
+        'points':'积分','point_code':'普通积分卡','premium_point_code':'高级积分卡',
+        'reset_code':'重置密码卡','boost_code':'积分加成卡','special_point_code':'特殊积分卡',
+        'makeup_code':'补签卡','gamblers_code':'赌神卡','box_code':'盲盒卡',
+        'plcard_code':'PL随机卡','premium_boost_code':'高级加成卡','cancellation_code':'注销卡'
+    };
+
+    function buildRewardRow(){
+        var optHtml='';
+        CDK_REWARD_OPTIONS.forEach(function(o){optHtml+='<option value="'+o.v+'">'+o.t+'</option>';});
+        return '<select class="reward-type">'+optHtml+'</select>'+
+            '<input type="text" class="reward-value" placeholder="积分值">'+
+            '<input type="number" class="reward-quantity" value="1" min="1" max="100" placeholder="数量">'+
+            '<button type="button" class="remove-reward-btn"><i class="fas fa-trash"></i></button>';
+    }
+
+    function addRewardRow(){
+        var container=document.getElementById('cdkRewardsContainer');
+        if(container.querySelectorAll('.cdk-reward-row').length>=10){showMessage('最多10项奖励','warning');return;}
+        var row=document.createElement('div');
+        row.className='cdk-reward-row';
+        row.innerHTML=buildRewardRow();
+        container.appendChild(row);
+        bindRewardRowEvents();
+    }
+
+    function bindRewardRowEvents(){
+        document.querySelectorAll('.remove-reward-btn').forEach(function(btn){
+            btn.onclick=function(){
+                var rows=document.querySelectorAll('.cdk-reward-row');
+                if(rows.length<=1){showMessage('至少保留一项奖励','warning');return;}
+                btn.closest('.cdk-reward-row').remove();
+            };
+        });
+        document.querySelectorAll('.reward-type').forEach(function(sel){
+            sel.onchange=function(){
+                var row=sel.closest('.cdk-reward-row');
+                var valueInput=row.querySelector('.reward-value');
+                if(sel.value==='points'){valueInput.style.display='';valueInput.placeholder='积分值';}
+                else{valueInput.style.display='none';valueInput.value='';}
+            };
+        });
+    }
+
     async function loadStats(){try{var d=await apiRequest('/api/admin/stats');document.getElementById('totalUsers').textContent=d.users.total;document.getElementById('verifiedUsers').textContent=d.users.verified;document.getElementById('unverifiedUsers').textContent=d.users.unverified;document.getElementById('loginRestricted').textContent=d.users.login_restricted||0;document.getElementById('mallRestricted').textContent=d.users.mall_restricted||0;document.getElementById('generateRestricted').textContent=d.users.generate_phone_restricted||0;document.getElementById('feedbackRestricted').textContent=d.users.feedback_restricted||0;document.getElementById('totalPoints').textContent=d.total_points.toFixed(2);document.getElementById('userTotalPoints').textContent=d.user_total_points.toFixed(2);document.getElementById('mailTotal').textContent=d.mail?.total||0;document.getElementById('mailUnclaimed').textContent=d.mail?.unclaimed||0;hideErrorBoundary()}catch(e){console.error(e);showMessage('加载统计数据失败: '+e.message,'error');showErrorBoundary('加载统计数据失败: '+e.message)}}
 
     async function loadUsers(page){page=page||currentUserPage;try{var d=await apiRequest('/api/admin/users?page='+page+'&per_page=20&search='+encodeURIComponent(currentUserSearch));var c=document.getElementById('usersListContainer');if(d.users.length===0){c.innerHTML='<div class="empty-state"><i class="fas fa-users-slash"></i>暂无用户</div>';document.getElementById('usersPagination').innerHTML='';return}
@@ -527,9 +580,97 @@
         }
     }
 
-    async function loadCdkPackages(){try{var d=await apiRequest('/api/admin/cdk/packages');var c=document.getElementById('cdkListContainer');if(d.packages.length===0){c.innerHTML='<div class="empty-state"><i class="fas fa-ticket"></i>暂无CDK礼包码</div>';return}var filtered=d.packages;if(currentCdkSearch)filtered=filtered.filter(function(p){return p.code.toLowerCase().includes(currentCdkSearch.toLowerCase())||p.name.toLowerCase().includes(currentCdkSearch.toLowerCase())});if(filtered.length===0){c.innerHTML='<div class="empty-state"><i class="fas fa-search"></i>未找到匹配的CDK</div>';return}var html='<table><thead><tr><th>礼包码</th><th>名称</th><th>奖励</th><th>数量</th><th>类型</th><th>签到限制</th><th>状态</th><th>使用用户</th><th>生效时间</th><th>截止时间</th><th>操作</th></tr></thead><tbody>';filtered.forEach(function(p){var rewardText='';if(p.reward_type==='points')rewardText=p.reward_value+'积分';else if(p.reward_type==='point_code')rewardText='普通积分卡';else if(p.reward_type==='premium_point_code')rewardText='高级积分卡';else if(p.reward_type==='reset_code')rewardText='重置密码卡';else if(p.reward_type==='boost_code')rewardText='加成卡';else if(p.reward_type==='special_point_code')rewardText='特殊积分卡';else if(p.reward_type==='makeup_code')rewardText='补签卡';else if(p.reward_type==='gamblers_code')rewardText='赌神卡';else if(p.reward_type==='box_code')rewardText='盲盒卡';else if(p.reward_type==='plcard_code')rewardText='普通PL随机卡';else if(p.reward_type==='premium_boost_code')rewardText='高级加成卡';else if(p.reward_type==='cancellation_code')rewardText='注销卡';var statusText='',statusType='neutral';var now=Date.now();if(p.used){statusText='已使用';statusType='danger'}else if(p.expiry_time&&now>p.expiry_time){statusText='已过期';statusType='danger'}else if(p.start_time&&now<p.start_time){statusText='未开始';statusType='warning'}else{statusText='有效';statusType='success'}var limitText='';if(p.min_total_days>0&&p.min_consecutive_days>0)limitText='累签≥'+p.min_total_days+'天 连签≥'+p.min_consecutive_days+'天';else if(p.min_total_days>0)limitText='累签≥'+p.min_total_days+'天';else if(p.min_consecutive_days>0)limitText='连签≥'+p.min_consecutive_days+'天';else limitText='无限制';html+='<tr><td><code style="font-family:monospace;font-size:12px;color:#a78bfa;">'+escapeHtml(p.code)+'</code></td><td>'+escapeHtml(p.name)+'</td><td>'+rewardText+'</td><td>'+p.reward_quantity+'</td><td>'+(p.is_universal?'通用':'单次')+'</td><td>'+limitText+'</td><td>'+badge(statusText,statusType)+'</td><td>'+(p.used_by?escapeHtml(p.used_by):'-')+'</td><td>'+(p.start_time?formatTime(p.start_time):'-')+'</td><td>'+(p.expiry_time?formatTime(p.expiry_time):'-')+'</td><td><button class="action-btn action-btn-danger" onclick="deleteCdk(\''+escapeHtml(p.code)+'\')"><i class="fas fa-trash"></i></button></td></tr>'});html+='</tbody></table>';c.innerHTML=html}catch(e){console.error(e);document.getElementById('cdkListContainer').innerHTML='<div class="loading"><i class="fas fa-exclamation-triangle" style="color:#f87171;"></i>加载失败</div>'}}
+    async function loadCdkPackages(){
+        try{
+            var d=await apiRequest('/api/admin/cdk/packages');
+            var c=document.getElementById('cdkListContainer');
+            if(d.packages.length===0){c.innerHTML='<div class="empty-state"><i class="fas fa-ticket"></i>暂无CDK礼包码</div>';return}
+            var filtered=d.packages;
+            if(currentCdkSearch)filtered=filtered.filter(function(p){return p.code.toLowerCase().includes(currentCdkSearch.toLowerCase())||p.name.toLowerCase().includes(currentCdkSearch.toLowerCase())});
+            if(filtered.length===0){c.innerHTML='<div class="empty-state"><i class="fas fa-search"></i>未找到匹配的CDK</div>';return}
+            var html='<table><thead><tr><th>礼包码</th><th>名称</th><th>奖励</th><th>类型</th><th>签到限制</th><th>状态</th><th>使用用户</th><th>生效时间</th><th>截止时间</th><th>操作</th></tr></thead><tbody>';
+            filtered.forEach(function(p){
+                var rewardsList=p.rewards||[];
+                var rewardTexts=[];
+                rewardsList.forEach(function(r){
+                    var label=CDK_REWARD_LABELS[r.type]||r.type;
+                    if(r.type==='points'){
+                        rewardTexts.push(label+' x'+r.quantity+'('+r.value+')');
+                    }else{
+                        rewardTexts.push(label+' x'+r.quantity);
+                    }
+                });
+                var rewardText=rewardTexts.length>0?rewardTexts.join('<br>'):'无';
+                var statusText='',statusType='neutral';
+                var now=Date.now();
+                if(p.used){statusText='已使用';statusType='danger'}
+                else if(p.expiry_time&&now>p.expiry_time){statusText='已过期';statusType='danger'}
+                else if(p.start_time&&now<p.start_time){statusText='未开始';statusType='warning'}
+                else{statusText='有效';statusType='success'}
+                var limitText='';
+                if(p.min_total_days>0&&p.min_consecutive_days>0)limitText='累签≥'+p.min_total_days+'天 连签≥'+p.min_consecutive_days+'天';
+                else if(p.min_total_days>0)limitText='累签≥'+p.min_total_days+'天';
+                else if(p.min_consecutive_days>0)limitText='连签≥'+p.min_consecutive_days+'天';
+                else limitText='无限制';
+                html+='<tr><td><code style="font-family:monospace;font-size:12px;color:#a78bfa;">'+escapeHtml(p.code)+'</code></td><td>'+escapeHtml(p.name)+'</td><td style="white-space:normal;line-height:1.5;">'+rewardText+'</td><td>'+(p.is_universal?'通用':'单次')+'</td><td>'+limitText+'</td><td>'+badge(statusText,statusType)+'</td><td>'+(p.used_by?escapeHtml(p.used_by):'-')+'</td><td>'+(p.start_time?formatTime(p.start_time):'-')+'</td><td>'+(p.expiry_time?formatTime(p.expiry_time):'-')+'</td><td><button class="action-btn action-btn-danger" onclick="deleteCdk(\''+escapeHtml(p.code)+'\')"><i class="fas fa-trash"></i></button></td></tr>';
+            });
+            html+='</tbody></table>';
+            c.innerHTML=html;
+        }catch(e){console.error(e);document.getElementById('cdkListContainer').innerHTML='<div class="loading"><i class="fas fa-exclamation-triangle" style="color:#f87171;"></i>加载失败</div>'}
+    }
+
     window.deleteCdk=function(code){showModal('确定要删除CDK礼包码 <code style="color:#a78bfa;">'+code+'</code> 吗？此操作不可恢复。',function(){apiRequest('/api/admin/cdk/delete',{method:'POST',body:JSON.stringify({code:code})}).then(function(){showMessage('删除成功','success');loadCdkPackages()}).catch(function(e){showMessage(e.message,'error')})})}
-    async function createCdkPackage(){var name=document.getElementById('cdkName').value.trim().toLowerCase();var rType=document.getElementById('cdkRewardType').value;var rVal=document.getElementById('cdkRewardValue').value.trim();var rQty=parseInt(rVal)||1;var isUniv=document.getElementById('cdkIsUniversal').checked;var st=document.getElementById('cdkStartTime').value;var et=document.getElementById('cdkEndTime').value;var mt=parseInt(document.getElementById('cdkMinTotalDays').value)||0;var mc=parseInt(document.getElementById('cdkMinConsecutiveDays').value)||0;if(!name){showMessage('请输入礼包名称','error');return}if(!/^[a-z0-9]{3,32}$/.test(name)){showMessage('CDK名称仅限小写字母和数字，长度3-32位','error');return}if(!rVal||rQty<1){showMessage('请输入有效的数量（至少1）','error');return}if(rQty>100){showMessage('数量不能超过100','error');return}if(mt<0||mt>9999){showMessage('累计签到天数必须在0-9999之间','error');return}if(mc<0||mc>9999){showMessage('连续签到天数必须在0-9999之间','error');return}var validTypes=['points','point_code','premium_point_code','reset_code','boost_code','special_point_code','makeup_code','gamblers_code','box_code','plcard_code','premium_boost_code','cancellation_code'];if(!validTypes.includes(rType)){showMessage('无效的奖励类型','error');return}var btn=document.getElementById('createCdkBtn');btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> 创建中...';try{var d=await apiRequest('/api/admin/cdk/create',{method:'POST',body:JSON.stringify({name:name,reward_type:rType,reward_value:rVal,reward_quantity:rQty,is_universal:isUniv,start_time:st,expiry_time:et,min_total_days:mt,min_consecutive_days:mc})});showMessage(d.message,'success');document.getElementById('cdkCreateResult').innerHTML='<div style="background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.15);border-radius:12px;padding:12px 16px;color:#a7f3d0;"><i class="fas fa-check-circle" style="color:#34d399;"></i> 创建成功！礼包码: <code style="color:#a78bfa;background:rgba(255,255,255,0.06);padding:2px 10px;border-radius:6px;">'+escapeHtml(d.cdk_code)+'</code> 数量: '+rQty+'</div>';document.getElementById('cdkName').value='';document.getElementById('cdkRewardValue').value='1';document.getElementById('cdkStartTime').value='';document.getElementById('cdkEndTime').value='';document.getElementById('cdkIsUniversal').checked=false;document.getElementById('cdkMinTotalDays').value='0';document.getElementById('cdkMinConsecutiveDays').value='0';loadCdkPackages()}catch(e){showMessage(e.message,'error')}finally{btn.disabled=false;btn.innerHTML='<i class="fas fa-plus"></i> 创建CDK'}}
+
+    async function createCdkPackage(){
+        var name=document.getElementById('cdkName').value.trim().toLowerCase();
+        var isUniv=document.getElementById('cdkIsUniversal').checked;
+        var st=document.getElementById('cdkStartTime').value;
+        var et=document.getElementById('cdkEndTime').value;
+        var mt=parseInt(document.getElementById('cdkMinTotalDays').value)||0;
+        var mc=parseInt(document.getElementById('cdkMinConsecutiveDays').value)||0;
+
+        if(!name){showMessage('请输入礼包名称','error');return}
+        if(!/^[a-z0-9]{3,32}$/.test(name)){showMessage('CDK名称仅限小写字母和数字，长度3-32位','error');return}
+
+        var rewards=[];
+        var rows=document.querySelectorAll('.cdk-reward-row');
+        for(var i=0;i<rows.length;i++){
+            var row=rows[i];
+            var rType=row.querySelector('.reward-type').value;
+            var rValue=row.querySelector('.reward-value').value.trim();
+            var rQty=parseInt(row.querySelector('.reward-quantity').value)||1;
+            if(rQty<1||rQty>100){showMessage('第'+(i+1)+'项数量必须在1-100之间','error');return}
+            if(rType==='points'){
+                var val=parseFloat(rValue);
+                if(!rValue||isNaN(val)||val<=0){showMessage('第'+(i+1)+'项积分值无效','error');return}
+            }
+            rewards.push({type:rType,value:rValue,quantity:rQty});
+        }
+        if(rewards.length===0){showMessage('请至少添加一项奖励','error');return}
+
+        var btn=document.getElementById('createCdkBtn');
+        btn.disabled=true;
+        btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> 创建中...';
+        try{
+            var d=await apiRequest('/api/admin/cdk/create',{method:'POST',body:JSON.stringify({
+                name:name,rewards:rewards,is_universal:isUniv,
+                start_time:st,expiry_time:et,
+                min_total_days:mt,min_consecutive_days:mc
+            })});
+            showMessage(d.message,'success');
+            document.getElementById('cdkCreateResult').innerHTML='<div style="background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.15);border-radius:12px;padding:12px 16px;color:#a7f3d0;"><i class="fas fa-check-circle" style="color:#34d399;"></i> 创建成功！礼包码: <code style="color:#a78bfa;background:rgba(255,255,255,0.06);padding:2px 10px;border-radius:6px;">'+escapeHtml(d.cdk_code)+'</code> 共 '+d.rewards_count+' 项奖励</div>';
+            document.getElementById('cdkName').value='';
+            document.getElementById('cdkStartTime').value='';
+            document.getElementById('cdkEndTime').value='';
+            document.getElementById('cdkIsUniversal').checked=false;
+            document.getElementById('cdkMinTotalDays').value='0';
+            document.getElementById('cdkMinConsecutiveDays').value='0';
+            document.getElementById('cdkRewardsContainer').innerHTML='';
+            addRewardRow();
+            loadCdkPackages();
+        }catch(e){showMessage(e.message,'error')}
+        finally{btn.disabled=false;btn.innerHTML='<i class="fas fa-plus"></i> 创建CDK'}
+    }
 
     async function loadAnnouncements(){try{var d=await apiRequest('/api/admin/announcements');var c=document.getElementById('annListContainer');if(d.announcements.length===0){c.innerHTML='<div class="empty-state"><i class="fas fa-bullhorn"></i>暂无公告</div>';return}var filtered=d.announcements;if(currentAnnSearch)filtered=filtered.filter(function(a){return a.title.toLowerCase().includes(currentAnnSearch.toLowerCase())});if(filtered.length===0){c.innerHTML='<div class="empty-state"><i class="fas fa-search"></i>未找到匹配的公告</div>';return}var typeMap={'info':'普通','warning':'警告','success':'成功','danger':'重要'};var html='<table><thead><tr><th>标题</th><th>类型</th><th>内容</th><th>置顶</th><th>状态</th><th>生效时间</th><th>失效时间</th><th>操作</th></tr></thead><tbody>';filtered.forEach(function(a){var statusText=a.is_active?'有效':'已禁用';var statusType=a.is_active?'success':'danger';var stickyText=a.is_sticky?'是':'否';var contentPreview=formatAnnouncementContent(a.content);if(contentPreview.length>80)contentPreview=contentPreview.substring(0,80)+'...';html+='<tr><td><strong>'+escapeHtml(a.title)+'</strong></td><td>'+typeMap[a.type]+'</td><td><div title="'+escapeHtml(a.content).replace(/"/g,'&quot;')+'" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+contentPreview+'</div></td><td>'+stickyText+'</td><td>'+badge(statusText,statusType)+'</td><td>'+(a.start_time?formatTime(a.start_time):'-')+'</td><td>'+(a.end_time?formatTime(a.end_time):'-')+'</td><td><button class="action-btn action-btn-primary" onclick="editAnn(\''+a.id+'\')"><i class="fas fa-edit"></i></button><button class="action-btn action-btn-danger" onclick="deleteAnn(\''+a.id+'\')"><i class="fas fa-trash"></i></button></td></tr>'});html+='</tbody></table>';c.innerHTML=html}catch(e){console.error(e);document.getElementById('annListContainer').innerHTML='<div class="loading"><i class="fas fa-exclamation-triangle" style="color:#f87171;"></i>加载失败</div>'}}
     window.editAnn=function(id){apiRequest('/api/admin/announcements').then(function(d){var a=d.announcements.find(function(x){return x.id===id});if(!a){showMessage('公告不存在','error');return}var nt=prompt('请输入新标题',a.title);if(nt===null)return;var nc=prompt('请输入新内容（支持换行和URL超链接）',a.content);if(nc===null)return;var ntype=prompt('请输入类型 (info/warning/success/danger)',a.type);if(ntype===null)return;var nsticky=confirm('是否置顶？当前状态：'+(a.is_sticky?'已置顶':'未置顶'));var nactive=confirm('是否启用？当前状态：'+(a.is_active?'已启用':'已禁用'));return apiRequest('/api/admin/announcements/update',{method:'POST',body:JSON.stringify({id:id,title:nt,content:nc,type:ntype,is_sticky:nsticky,is_active:nactive,start_time:'',end_time:''})})}).then(function(){showMessage('公告更新成功','success');loadAnnouncements()}).catch(function(e){showMessage(e.message,'error')})}
@@ -552,11 +693,8 @@
         if(types.length===0){showMessage('请至少选择一种限制类型','error');return}
         var durSel=document.getElementById('restrictDuration').value;
         var durationHours=0;
-        if(durSel==='custom'){
-            durationHours=parseFloat(document.getElementById('restrictCustomHours').value)||0;
-        }else{
-            durationHours=parseFloat(durSel)||0;
-        }
+        if(durSel==='custom'){durationHours=parseFloat(document.getElementById('restrictCustomHours').value)||0}
+        else{durationHours=parseFloat(durSel)||0}
         var reason=document.getElementById('restrictReason').value.trim();
         var btn=document.getElementById('applyRestrictBtn');
         btn.disabled=true;
@@ -565,8 +703,8 @@
         try{
             var d=await apiRequest('/api/admin/restrict-batch',{method:'POST',body:JSON.stringify({username:u,restrict_types:types,duration_hours:durationHours,reason:reason})});
             var extra='';
-            if(d.email_sent){extra=' · 邮件通知已发送';}
-            else if(d.email_message){extra=' · 邮件通知未发送：'+d.email_message;}
+            if(d.email_sent){extra=' · 邮件通知已发送'}
+            else if(d.email_message){extra=' · 邮件通知未发送：'+d.email_message}
             showMessage(d.message+extra,'success');
             var alreadyInfo='';
             if(d.already_restricted&&d.already_restricted.length>0){
@@ -576,12 +714,8 @@
             document.getElementById('restrictResult').innerHTML='<div style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.12);border-radius:12px;padding:12px 16px;color:#a7f3d0;">'+escapeHtml(d.message)+(extra?'<br><span style="font-size:12px;opacity:0.8;">'+escapeHtml(extra)+'</span>':'')+alreadyInfo+'</div>';
             loadStats();
             loadRestrictedUsers();
-        }catch(e){
-            showMessage(e.message,'error');
-        }finally{
-            btn.disabled=false;
-            btn.innerHTML=originalText;
-        }
+        }catch(e){showMessage(e.message,'error')}
+        finally{btn.disabled=false;btn.innerHTML=originalText}
     }
 
     async function applyBatchUnrestrict(){
@@ -597,16 +731,10 @@
                 try{
                     await apiRequest('/api/admin/toggle-restrict',{method:'POST',body:JSON.stringify({username:u,restrict_type:types[i]})});
                     successList.push(typeNames[types[i]]||types[i]);
-                }catch(e){
-                    failList.push((typeNames[types[i]]||types[i])+':'+e.message);
-                }
+                }catch(e){failList.push((typeNames[types[i]]||types[i])+':'+e.message)}
             }
-            if(successList.length>0){
-                showMessage('已解除：'+successList.join('、'),'success');
-            }
-            if(failList.length>0){
-                showMessage('部分失败：'+failList.join('；'),'error');
-            }
+            if(successList.length>0){showMessage('已解除：'+successList.join('、'),'success')}
+            if(failList.length>0){showMessage('部分失败：'+failList.join('；'),'error')}
             document.getElementById('restrictResult').innerHTML='<div style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.12);border-radius:12px;padding:12px 16px;color:#a7f3d0;">解除限制：'+(successList.length>0?successList.join('、'):'无')+(failList.length>0?'<br><span style="color:#f87171;font-size:12px;">失败：'+escapeHtml(failList.join('；'))+'</span>':'')+'</div>';
             loadStats();
             loadRestrictedUsers();
@@ -728,14 +856,27 @@
         });
     };
 
-    document.getElementById('loginBtn').addEventListener('click',async function(){var username=document.getElementById('adminUsername').value.trim();var password=document.getElementById('adminPassword').value;var errorEl=document.getElementById('loginError');var btn=document.getElementById('loginBtn');if(!username||!password){errorEl.textContent='请输入用户名和密码';return}errorEl.textContent='';btn.disabled=true;btn.textContent='登录中...';try{await fetchCsrfToken();var r=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':csrfToken||''},body:JSON.stringify({username:username,password:password})});var d=await r.json();if(r.ok&&d.success){currentToken=d.token;localStorage.setItem('adminToken',currentToken);document.getElementById('loginContainer').style.display='none';document.getElementById('adminContainer').style.display='block';document.getElementById('tokenDisplay').innerHTML='<span class="valid">●</span> 已认证 ('+d.expires_in+'s)';loadStats();loadRestrictedUsers();loadCdkPackages();loadAnnouncements();loadUsers(1);loadKnowledgeBase();loadFeedbackList(1);setInterval(checkAdminSession,60000)}else{errorEl.textContent=d.error||'登录失败，请检查用户名和密码'}}catch(e){errorEl.textContent='网络错误，请重试';console.error(e)}finally{btn.disabled=false;btn.textContent='登录控制台'}});
+    document.getElementById('loginBtn').addEventListener('click',async function(){var username=document.getElementById('adminUsername').value.trim();var password=document.getElementById('adminPassword').value;var errorEl=document.getElementById('loginError');var btn=document.getElementById('loginBtn');if(!username||!password){errorEl.textContent='请输入用户名和密码';return}errorEl.textContent='';btn.disabled=true;btn.textContent='登录中...';try{await fetchCsrfToken();var r=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':csrfToken||''},body:JSON.stringify({username:username,password:password})});var d=await r.json();if(r.ok&&d.success){currentToken=d.token;localStorage.setItem('adminToken',currentToken);document.getElementById('loginContainer').style.display='none';document.getElementById('adminContainer').style.display='block';document.getElementById('tokenDisplay').innerHTML='<span class="valid">●</span> 已认证 ('+d.expires_in+'s)';initAdminData();setInterval(checkAdminSession,60000)}else{errorEl.textContent=d.error||'登录失败，请检查用户名和密码'}}catch(e){errorEl.textContent='网络错误，请重试';console.error(e)}finally{btn.disabled=false;btn.textContent='登录控制台'}});
     document.getElementById('adminPassword').addEventListener('keypress',function(e){if(e.key==='Enter')document.getElementById('loginBtn').click()});
     document.getElementById('adminUsername').addEventListener('keypress',function(e){if(e.key==='Enter')document.getElementById('loginBtn').click()});
+
+    function initAdminData(){
+        loadStats();
+        loadRestrictedUsers();
+        loadCdkPackages();
+        loadAnnouncements();
+        loadUsers(1);
+        loadKnowledgeBase();
+        loadFeedbackList(1);
+        document.getElementById('cdkRewardsContainer').innerHTML='';
+        addRewardRow();
+    }
 
     document.getElementById('logoutAdminBtn').addEventListener('click',logoutAdmin);
     document.getElementById('refreshBtn').addEventListener('click',function(){loadStats();loadRestrictedUsers();loadCdkPackages();loadAnnouncements();loadUsers(currentUserPage);loadKnowledgeBase();loadFeedbackList(currentFeedbackPage);showMessage('数据已刷新','success')});
     document.getElementById('reissueBtn').addEventListener('click',reissueCancellation);
     document.getElementById('createCdkBtn').addEventListener('click',createCdkPackage);
+    document.getElementById('addRewardBtn').addEventListener('click',addRewardRow);
     document.getElementById('searchCdkBtn').addEventListener('click',function(){currentCdkSearch=document.getElementById('cdkSearchFilter').value.trim();loadCdkPackages()});
     document.getElementById('refreshCdkBtn').addEventListener('click',function(){currentCdkSearch='';document.getElementById('cdkSearchFilter').value='';loadCdkPackages()});
     document.getElementById('createAnnBtn').addEventListener('click',createAnnouncement);
@@ -757,7 +898,7 @@
 
     document.querySelectorAll('.tab-btn').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.tab-btn').forEach(function(x){x.classList.remove('active')});b.classList.add('active');document.querySelectorAll('.tab-content').forEach(function(x){x.classList.remove('active')});var id=b.getAttribute('data-tab');document.getElementById(id+'Tab').classList.add('active');if(id==='restrict')loadRestrictedUsers();if(id==='cdk')loadCdkPackages();if(id==='announcement')loadAnnouncements();if(id==='users')loadUsers(currentUserPage);if(id==='knowledge')loadKnowledgeBase();if(id==='feedback')loadFeedbackList(1)})});
 
-    async function init(){if(isInitialized)return;isInitialized=true;try{await fetchCsrfToken().catch(function(e){});var token=localStorage.getItem('adminToken');if(token){currentToken=token;document.getElementById('loginContainer').style.display='none';document.getElementById('adminContainer').style.display='block';document.getElementById('tokenDisplay').innerHTML='<span class="valid">●</span> 已认证';loadStats();loadRestrictedUsers();loadCdkPackages();loadAnnouncements();loadUsers(1);loadKnowledgeBase();loadFeedbackList(1)}hideErrorBoundary()}catch(error){console.error('Init error:',error);showErrorBoundary('初始化失败: '+(error.message||'网络连接失败'))}}
+    async function init(){if(isInitialized)return;isInitialized=true;try{await fetchCsrfToken().catch(function(e){});var token=localStorage.getItem('adminToken');if(token){currentToken=token;document.getElementById('loginContainer').style.display='none';document.getElementById('adminContainer').style.display='block';document.getElementById('tokenDisplay').innerHTML='<span class="valid">●</span> 已认证';initAdminData()}hideErrorBoundary()}catch(error){console.error('Init error:',error);showErrorBoundary('初始化失败: '+(error.message||'网络连接失败'))}}
     init();
 </script>
 </body>

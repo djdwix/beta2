@@ -490,6 +490,12 @@
             html += '</div>';
             html += '<div style="font-size:14px;color:#444;margin-bottom:8px;">' + (d.message || '') + '</div>';
             if (d.cdks && d.cdks.length > 0) {
+                var typeMap = {
+                    'points':'积分','point_code':'普通积分卡','premium_point_code':'高级积分卡',
+                    'reset_code':'重置密码卡','boost_code':'积分加成卡','special_point_code':'特殊积分卡',
+                    'makeup_code':'补签卡','gamblers_code':'赌神卡','box_code':'盲盒卡',
+                    'plcard_code':'PL随机卡','premium_boost_code':'高级加成卡','cancellation_code':'注销卡'
+                };
                 d.cdks.forEach(function(item) {
                     html += '<div class="cdk-item">';
                     html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
@@ -498,10 +504,28 @@
                         html += '<span style="font-size:10px;background:#e8f0fe;color:#667eea;padding:2px 10px;border-radius:12px;">🔄 通用</span>';
                     }
                     html += '</div>';
-                    var rewardType = item.reward_type || '未知';
-                    var rewardValue = item.reward_value || '';
-                    var rewardQty = item.reward_quantity || 1;
-                    html += '<div class="cdk-reward">🎁 奖励: ' + escapeHtml(rewardType) + ' × ' + rewardQty + ' (值: ' + escapeHtml(rewardValue) + ')</div>';
+
+                    var rewardsList = item.rewards || [];
+                    if (rewardsList.length > 0) {
+                        var rewardTexts = [];
+                        rewardsList.forEach(function(r) {
+                            var label = typeMap[r.type] || r.type || '未知';
+                            if (r.type === 'points') {
+                                rewardTexts.push(label + ' ×' + r.quantity + '（' + r.value + '）');
+                            } else {
+                                rewardTexts.push(label + ' ×' + r.quantity);
+                            }
+                        });
+                        html += '<div class="cdk-reward">🎁 奖励: ' + escapeHtml(rewardTexts.join(' + ')) + '</div>';
+                    } else if (item.reward_summary) {
+                        html += '<div class="cdk-reward">🎁 奖励: ' + escapeHtml(item.reward_summary) + '</div>';
+                    } else if (item.reward_type) {
+                        var fallbackLabel = typeMap[item.reward_type] || item.reward_type;
+                        html += '<div class="cdk-reward">🎁 奖励: ' + escapeHtml(fallbackLabel) + ' × ' + (item.reward_quantity || 1) + '</div>';
+                    } else {
+                        html += '<div class="cdk-reward">🎁 奖励: 未知</div>';
+                    }
+
                     var reqs = [];
                     if (item.min_total_days > 0) reqs.push('📊 累计签到≥' + item.min_total_days + '天');
                     if (item.min_consecutive_days > 0) reqs.push('🔥 连续签到≥' + item.min_consecutive_days + '天');
