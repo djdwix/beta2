@@ -8697,12 +8697,13 @@ def use_box_code():
         save_box_codes()
         return jsonify({'error': '盲盒卡密已过期（48小时有效）'}), 400
 
-    possible_types = ['point_code', 'premium_point_code', 'reset_code', 'boost_code', 'special_point_code', 'gamblers_code']
+    possible_types = ['point_code', 'premium_point_code', 'boost_code', 'special_point_code', 'gamblers_code', 'premium_boost_code', 'plcard_code']
     chosen_type = random.choice(possible_types)
     type_map = {
         'point_code': ('point_code', generate_point_code, '普通积分卡密', point_codes, save_point_codes),
+        'plcard_code': ('plcard_code', generate_plcard_code, 'PL随机卡', plcard_codes, save_plcard_codes),
+        'premium_boost_code': ('premium_boost_code', generate_premium_boost_code, '高级积分加成卡密', premium_boost_codes, save_premium_boost_codes),
         'premium_point_code': ('premium_point_code', generate_premium_point_code, '高级积分卡密', premium_point_codes, save_premium_point_codes),
-        'reset_code': ('reset_code', generate_reset_code, '重置密码卡密', reset_codes, save_reset_codes),
         'boost_code': ('boost_code', generate_boost_code, '积分加成卡密', boost_codes, save_boost_codes),
         'special_point_code': ('special_point_code', generate_special_point_code, '特殊积分卡密', special_point_codes, save_special_point_codes),
         'gamblers_code': ('gamblers_code', generate_gamblers_code, '赌神积分卡密', gamblers_codes, save_gamblers_codes)
@@ -8856,7 +8857,7 @@ def use_premium_boost_code():
 
 @app.route('/api/account/cancel', methods=['POST'])
 @csrf_protect
-@limiter.limit('3 per minute')
+@limiter.limit('2 per day')
 @login_required
 def cancel_account():
     start_time = time.time()
@@ -9586,7 +9587,7 @@ def reset_password():
 
 @app.route('/api/forgot-password/send-code', methods=['POST'])
 @csrf_protect
-@limiter.limit('3 per minute')
+@limiter.limit('2 per day')
 def forgot_password_send_code():
     start_time = time.time()
     data = request.get_json()
@@ -14579,7 +14580,7 @@ def get_game_list():
     if not gm:
         return jsonify({'error': '游戏服务未初始化'}), 500
     return jsonify({
-        'games': gm.get_game_list(),
+        'games': gm.get_game_list(username),
         'stats': gm.get_stats(username)
     })
 
@@ -14620,7 +14621,10 @@ def play_game(game_id):
     try:
         if game_id == 'dice':
             bet_type = data.get('bet_type', 'high')
-            bet_value = int(data.get('bet_value', 7))
+            try:
+                bet_value = int(data.get('bet_value', 7))
+            except (ValueError, TypeError):
+                bet_value = 7
             result = gm.play_dice(username, bet_type, bet_value)
         elif game_id == 'blackjack':
             result = gm.play_blackjack(username)
@@ -14629,7 +14633,7 @@ def play_game(game_id):
             if guess is not None:
                 try:
                     guess = int(guess)
-                except:
+                except (ValueError, TypeError):
                     return jsonify({'error': '请输入有效的数字'}), 400
             result = gm.play_guess_number(username, guess)
         elif game_id == 'rock_paper_scissors':
@@ -14637,8 +14641,22 @@ def play_game(game_id):
             result = gm.play_rps(username, player_move)
         elif game_id == 'roulette':
             bet_type = data.get('bet_type', 'number')
-            bet_value = int(data.get('bet_value', 0))
+            try:
+                bet_value = int(data.get('bet_value', 0))
+            except (ValueError, TypeError):
+                bet_value = 0
             result = gm.play_roulette(username, bet_type, bet_value)
+        elif game_id == 'lucky_wheel':
+            result = gm.play_lucky_wheel(username)
+        elif game_id == 'memory_cards':
+            action = data.get('action')
+            index = data.get('index')
+            if index is not None:
+                try:
+                    index = int(index)
+                except (ValueError, TypeError):
+                    return jsonify({'error': '无效的卡片位置'}), 400
+            result = gm.play_memory_cards(username, action, index)
         else:
             return jsonify({'error': '游戏不存在'}), 400
         if result.get('success'):
@@ -14695,12 +14713,17 @@ def get_membership_status():
     gm = game.get_game_manager()
     membership = game.get_membership_data(users, username)
     stats = gm.get_stats(username) if gm else {}
+    tier = game.get_member_tier(users, username)
     return jsonify({
         'is_member': game.is_game_member(users, username),
+        'tier': tier,
+        'tier_name': game.MEMBERSHIP_TIERS[tier]['name'],
         'membership': membership,
         'today_plays': stats.get('today_plays', 0),
         'max_plays': game.get_member_max_plays(users, username),
         'bonus_rate': game.get_member_bonus_rate(users, username) * 100,
+        'daily_task_bonus': game.get_member_daily_task_bonus(users, username),
+        'exclusive_games': game.get_member_exclusive_games(users, username),
         'expires_at': membership.get('expires_at', 0) if membership else 0,
         'activated_at': membership.get('activated_at', 0) if membership else 0
     })
@@ -14715,26 +14738,193 @@ def buy_membership():
     if is_login_restricted(username):
         return jsonify({'error': '账号已被限制'}), 403
     if game.is_game_member(users, username):
-        return jsonify({'error': '您已是游戏会员'}), 400
-    success, message = game.activate_game_membership(users, save_users, username)
+        return jsonify({'error': '您已是会员，请使用升级功能'}), 400
+    data = request.get_json() or {}
+    tier = data.get('tier', 'normal')
+    success, message = game.activate_game_membership(users, save_users, username, tier)
     if success:
-        if username in users and 'game_stats' in users[username]:
-            stats = users[username]['game_stats']
-            today = datetime.now().strftime('%Y-%m-%d')
-            if stats.get('today_date') == today:
-                pass
         reload_if_changed()
         response_time = int((time.time() - start_time) * 1000)
         return jsonify({
             'success': True,
             'message': message,
             'is_member': True,
+            'tier': tier,
             'max_plays': game.get_member_max_plays(users, username),
             'bonus_rate': game.get_member_bonus_rate(users, username) * 100,
             'responseTime': response_time
         })
     else:
         return jsonify({'error': message}), 400
+
+@app.route('/api/game/history', methods=['GET'])
+@login_required
+def get_game_history():
+    username = session['user']['username']
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    history = gm.get_user_game_history(username)
+    return jsonify({
+        'history': history,
+        'total': len(history)
+    })
+
+
+@app.route('/api/game/history/delete', methods=['POST'])
+@csrf_protect
+@login_required
+def delete_game_history():
+    username = session['user']['username']
+    data = request.get_json() or {}
+    record_id = data.get('record_id', '').strip()
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    if not record_id:
+        return jsonify({'error': '缺少记录ID'}), 400
+    success = gm.delete_game_history_item(username, record_id)
+    if success:
+        return jsonify({'success': True, 'message': '记录已删除'})
+    return jsonify({'error': '记录不存在'}), 400
+
+
+@app.route('/api/game/history/clear', methods=['POST'])
+@csrf_protect
+@login_required
+def clear_game_history():
+    username = session['user']['username']
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    gm.clear_game_history(username)
+    return jsonify({'success': True, 'message': '所有记录已清空'})
+
+
+@app.route('/api/game/tasks', methods=['GET'])
+@login_required
+def get_game_tasks():
+    username = session['user']['username']
+    if is_login_restricted(username):
+        return jsonify({'error': '账号已被限制'}), 403
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    return jsonify(gm.get_daily_tasks(username))
+
+
+@app.route('/api/game/tasks/claim', methods=['POST'])
+@csrf_protect
+@login_required
+def claim_game_task():
+    username = session['user']['username']
+    data = request.get_json() or {}
+    task_id = data.get('task_id', '').strip()
+    if not task_id:
+        return jsonify({'error': '缺少任务ID'}), 400
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    success, message = gm.claim_daily_task(username, task_id)
+    if success:
+        reload_if_changed()
+        return jsonify({'success': True, 'message': message})
+    return jsonify({'error': message}), 400
+
+
+@app.route('/api/game/tasks/claim-all', methods=['POST'])
+@csrf_protect
+@login_required
+def claim_all_game_tasks():
+    username = session['user']['username']
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    success, message, total = gm.claim_all_daily_tasks(username)
+    if success:
+        reload_if_changed()
+        return jsonify({'success': True, 'message': message, 'total_reward': total})
+    return jsonify({'error': message}), 400
+
+
+@app.route('/api/game/memory/state', methods=['GET'])
+@login_required
+def get_memory_game_state():
+    username = session['user']['username']
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    state = gm.get_memory_game_state(username)
+    if not state:
+        return jsonify({'active': False})
+    return jsonify({
+        'active': state.get('active', False),
+        'cards': state.get('cards', []),
+        'flipped': state.get('flipped', []),
+        'matched': state.get('matched', []),
+        'moves': state.get('moves', 0)
+    })
+
+@app.route('/api/game/lucky_wheel/segments', methods=['GET'])
+@login_required
+def get_lucky_wheel_segments():
+    username = session['user']['username']
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    tier = game.get_member_tier(users, username)
+    if tier not in ['gold', 'diamond']:
+        return jsonify({'error': '无权访问'}), 403
+    segments = gm.get_lucky_wheel_segments()
+    return jsonify({
+        'segments': [{'label': s['label'], 'color': s['color'], 'multiplier': s['multiplier']} for s in segments]
+    })
+
+@app.route('/api/membership/tiers', methods=['GET'])
+def get_membership_tiers():
+    tiers = []
+    for key, info in game.MEMBERSHIP_TIERS.items():
+        if key == 'none':
+            continue
+        tiers.append({
+            'id': key,
+            'name': info['name'],
+            'price': info['price'],
+            'max_plays': info['max_plays'],
+            'bonus_rate': info['bonus_rate'] * 100,
+            'daily_task_bonus': info['daily_task_bonus'],
+            'exclusive_games': info['exclusive_games']
+        })
+    return jsonify({'tiers': tiers})
+
+
+@app.route('/api/membership/upgrade', methods=['POST'])
+@csrf_protect
+@login_required
+@identity_required
+def upgrade_membership():
+    start_time = time.time()
+    username = session['user']['username']
+    if is_login_restricted(username):
+        return jsonify({'error': '账号已被限制'}), 403
+    data = request.get_json() or {}
+    new_tier = data.get('tier', '').strip()
+    if not new_tier:
+        return jsonify({'error': '请选择会员等级'}), 400
+    success, message = game.upgrade_membership(users, save_users, username, new_tier)
+    if success:
+        reload_if_changed()
+        response_time = int((time.time() - start_time) * 1000)
+        return jsonify({
+            'success': True,
+            'message': message,
+            'is_member': True,
+            'tier': new_tier,
+            'max_plays': game.get_member_max_plays(users, username),
+            'bonus_rate': game.get_member_bonus_rate(users, username) * 100,
+            'responseTime': response_time
+        })
+    return jsonify({'error': message}), 400
 
 @app.route('/api/weather/current', methods=['GET'])
 @login_required

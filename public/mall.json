@@ -137,7 +137,7 @@
             "warning": "⚠️ 48小时有效 |使用后5分钟内不可再次使用任意类型积分加成卡 ",
             "recycleInfo": "💰 回收价: 原价10%",
             "price": 15.6,
-            "plPrice": true,
+            "plPrice": false,
             "type": "premium_boost",
             "apiEndpoint": "/api/buy-premium-boost-code",
             "responseKey": "premiumboostCode",

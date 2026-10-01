@@ -2,11 +2,11 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>🎮 游戏中心</title>
     <style>
-        *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:'Segoe UI','PingFang SC',sans-serif;background:linear-gradient(135deg,#0a0a1a 0%,#1a1a3e 50%,#0d0d2b 100%);min-height:100vh;color:#e8e8f0;padding:20px}
+        *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+        body{font-family:'Segoe UI','PingFang SC',sans-serif;background:linear-gradient(135deg,#0a0a1a 0%,#1a1a3e 50%,#0d0d2b 100%);min-height:100vh;color:#e8e8f0;padding:20px;touch-action:manipulation}
         .container{max-width:1200px;margin:0 auto}
         .header{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;background:rgba(255,255,255,0.06);border-radius:20px;border:1px solid rgba(255,255,255,0.08);margin-bottom:24px;flex-wrap:wrap;gap:12px}
         .header h1{font-size:24px;background:linear-gradient(135deg,#fbbf24,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
@@ -18,18 +18,26 @@
         .header .back-btn:hover{background:rgba(255,255,255,0.15)}
         .membership-btn{padding:8px 20px;background:linear-gradient(135deg,#fbbf24,#d97706);border:none;border-radius:40px;color:#1a1a2e;cursor:pointer;font-weight:600;font-size:13px;text-decoration:none;transition:all 0.3s;display:inline-block}
         .membership-btn:hover{transform:scale(1.05);box-shadow:0 4px 20px rgba(251,191,36,0.3)}
+        .tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+        .tab{padding:10px 24px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:40px;color:rgba(255,255,255,0.6);cursor:pointer;transition:all 0.3s;font-size:14px;font-weight:500;min-height:44px;display:flex;align-items:center}
+        .tab:hover{background:rgba(255,255,255,0.08)}
+        .tab.active{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border-color:transparent}
+        .tab-content{display:none}
+        .tab-content.active{display:block}
         .game-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:30px}
-        .game-card{background:rgba(255,255,255,0.04);border-radius:20px;padding:20px;border:1px solid rgba(255,255,255,0.06);cursor:pointer;transition:all 0.3s;text-align:center}
+        .game-card{background:rgba(255,255,255,0.04);border-radius:20px;padding:20px;border:1px solid rgba(255,255,255,0.06);cursor:pointer;transition:all 0.3s;text-align:center;position:relative;overflow:hidden;min-height:160px}
         .game-card:hover{background:rgba(255,255,255,0.08);border-color:rgba(251,191,36,0.3);transform:translateY(-4px);box-shadow:0 8px 30px rgba(0,0,0,0.3)}
+        .game-card:active{transform:translateY(-2px) scale(0.98)}
         .game-card .emoji{font-size:48px;display:block;margin-bottom:10px}
         .game-card .name{font-size:18px;font-weight:600;color:#fff;margin-bottom:4px}
         .game-card .desc{font-size:13px;color:rgba(255,255,255,0.4);margin-bottom:8px}
         .game-card .reward{font-size:12px;color:#fbbf24}
         .game-card.disabled{opacity:0.4;cursor:not-allowed;pointer-events:none}
+        .game-card .exclusive-tag{position:absolute;top:8px;right:8px;font-size:10px;background:linear-gradient(135deg,#fbbf24,#d97706);color:#1a1a2e;padding:2px 8px;border-radius:10px;font-weight:600}
         .game-area{background:rgba(255,255,255,0.04);border-radius:20px;padding:24px;border:1px solid rgba(255,255,255,0.06);display:none}
         .game-area.active{display:block}
         .game-area .game-title{font-size:20px;font-weight:600;color:#fff;margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-        .game-area .game-title .back{background:rgba(255,255,255,0.08);border:none;color:rgba(255,255,255,0.6);padding:4px 16px;border-radius:20px;cursor:pointer;font-size:13px;transition:all 0.2s}
+        .game-area .game-title .back{background:rgba(255,255,255,0.08);border:none;color:rgba(255,255,255,0.6);padding:4px 16px;border-radius:20px;cursor:pointer;font-size:13px;transition:all 0.2s;min-height:36px}
         .game-area .game-title .back:hover{background:rgba(255,255,255,0.15);color:#fff}
         .game-area .game-title .member-badge{font-size:12px;background:rgba(251,191,36,0.15);color:#fbbf24;padding:2px 12px;border-radius:12px;border:1px solid rgba(251,191,36,0.2)}
         .game-area .game-content{color:rgba(255,255,255,0.8);line-height:1.8}
@@ -38,22 +46,18 @@
         .game-area .game-content .result-box .win{color:#34d399}
         .game-area .game-content .result-box .lose{color:#f87171}
         .game-area .game-content .dice-row{display:flex;gap:16px;justify-content:center;margin:12px 0;flex-wrap:wrap}
-        .game-area .game-content .dice{width:60px;height:60px;background:rgba(255,255,255,0.06);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:#fff;border:1px solid rgba(255,255,255,0.08)}
+        .game-area .game-content .dice{width:60px;height:60px;background:rgba(255,255,255,0.06);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:#fff;border:1px solid rgba(255,255,255,0.08);animation:rollIn 0.5s ease-out}
+        @keyframes rollIn{0%{transform:rotate(0deg) scale(0);opacity:0}50%{transform:rotate(360deg) scale(1.2)}100%{transform:rotate(720deg) scale(1);opacity:1}}
         .game-area .game-content .cards-row{display:flex;gap:12px;justify-content:center;margin:12px 0;flex-wrap:wrap}
-        .game-area .game-content .card{width:50px;height:70px;background:rgba(255,255,255,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#fff;border:1px solid rgba(255,255,255,0.1)}
+        .game-area .game-content .card{width:50px;height:70px;background:rgba(255,255,255,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#fff;border:1px solid rgba(255,255,255,0.1);animation:flipIn 0.5s ease-out}
+        @keyframes flipIn{0%{transform:rotateY(90deg);opacity:0}100%{transform:rotateY(0deg);opacity:1}}
         .game-area .game-content .card.red{color:#f87171}
         .game-area .game-content .card.black{color:#fff}
-        .game-area .game-content .rps-row{display:flex;gap:20px;justify-content:center;margin:12px 0;flex-wrap:wrap}
-        .game-area .game-content .rps-move{font-size:42px;padding:12px 24px;background:rgba(255,255,255,0.04);border-radius:12px;border:1px solid rgba(255,255,255,0.06);cursor:pointer;transition:all 0.2s}
-        .game-area .game-content .rps-move:hover{background:rgba(255,255,255,0.12);transform:scale(1.05)}
-        .game-area .game-content .rps-move.win{border-color:#34d399;background:rgba(52,211,153,0.1)}
-        .game-area .game-content .rps-move.lose{border-color:#f87171;background:rgba(248,113,113,0.1)}
-        .game-area .game-content .rps-move.selected{border-color:#667eea;background:rgba(102,126,234,0.2)}
         .game-area .game-content .roulette-result{font-size:56px;font-weight:700;text-align:center;padding:16px;background:rgba(255,255,255,0.04);border-radius:16px;margin:12px 0}
         .game-area .game-content .roulette-result.red{color:#f87171}
         .game-area .game-content .roulette-result.black{color:#fff}
         .game-area .game-content .roulette-result.green{color:#34d399}
-        .btn{display:inline-block;padding:10px 28px;border:none;border-radius:40px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s}
+        .btn{display:inline-block;padding:10px 28px;border:none;border-radius:40px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s;min-height:44px}
         .btn-primary{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
         .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(102,126,234,0.3)}
         .btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none}
@@ -67,11 +71,17 @@
         .btn-outline:hover{background:rgba(255,255,255,0.12)}
         .btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
         .bet-options{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
-        .bet-options button{padding:6px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:20px;color:rgba(255,255,255,0.6);cursor:pointer;transition:all 0.2s;font-size:13px}
+        .bet-options button{padding:6px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:20px;color:rgba(255,255,255,0.6);cursor:pointer;transition:all 0.2s;font-size:13px;min-height:36px}
         .bet-options button:hover{background:rgba(255,255,255,0.12)}
         .bet-options button.active{background:rgba(102,126,234,0.3);border-color:#667eea;color:#a78bfa}
         .loading{text-align:center;padding:40px;color:rgba(255,255,255,0.3)}
         .loading i{font-size:28px;display:block;margin-bottom:12px;color:#667eea}
+        .skeleton{background:rgba(255,255,255,0.04);border-radius:20px;padding:20px;min-height:160px;position:relative;overflow:hidden}
+        .skeleton::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.06),transparent);animation:shimmer 1.5s infinite}
+        @keyframes shimmer{0%{left:-100%}100%{left:100%}}
+        .skeleton-line{background:rgba(255,255,255,0.06);border-radius:8px;height:16px;margin-bottom:12px}
+        .skeleton-line.short{width:60%}
+        .skeleton-line.emoji{width:48px;height:48px;border-radius:50%;margin:0 auto 10px}
         .message{position:fixed;bottom:24px;right:24px;padding:14px 24px;border-radius:16px;z-index:9999;animation:slideUp 0.35s ease;max-width:420px;box-shadow:0 12px 40px rgba(0,0,0,0.5);font-size:14px;display:flex;align-items:center;gap:10px}
         .message-success{background:#065f46;color:#a7f3d0;border:1px solid rgba(52,211,153,0.2)}
         .message-error{background:#7f1d1d;color:#fca5a5;border:1px solid rgba(239,68,68,0.2)}
@@ -82,25 +92,94 @@
         .history-item .h-lose{color:#f87171}
         .history-item .h-tie{color:#fbbf24}
         .roulette-bet-options{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
-        .roulette-bet-options button{padding:6px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:20px;color:rgba(255,255,255,0.6);cursor:pointer;transition:all 0.2s;font-size:13px}
+        .roulette-bet-options button{padding:6px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:20px;color:rgba(255,255,255,0.6);cursor:pointer;transition:all 0.2s;font-size:13px;min-height:36px}
         .roulette-bet-options button:hover{background:rgba(255,255,255,0.12)}
         .roulette-bet-options button.active-roulette{border-color:#667eea;background:rgba(102,126,234,0.2);color:#a78bfa}
         .guess-input-area{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0}
-        .guess-input-area input{width:120px;padding:10px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:#fff;font-size:18px;outline:none;text-align:center}
+        .guess-input-area input{width:120px;padding:10px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:#fff;font-size:18px;outline:none;text-align:center;min-height:44px}
         .guess-input-area input:focus{border-color:#667eea}
         .guess-input-area input:disabled{opacity:0.4}
         .guess-hint{font-size:16px;padding:8px 16px;background:rgba(255,255,255,0.04);border-radius:10px;margin:6px 0}
         .guess-hint.high{color:#f87171}
         .guess-hint.low{color:#60a5fa}
         .rps-choice-area{display:flex;gap:16px;justify-content:center;margin:12px 0;flex-wrap:wrap}
-        .rps-choice-btn{font-size:48px;padding:16px 28px;background:rgba(255,255,255,0.04);border:2px solid rgba(255,255,255,0.08);border-radius:16px;cursor:pointer;transition:all 0.3s}
+        .rps-choice-btn{font-size:48px;padding:16px 28px;background:rgba(255,255,255,0.04);border:2px solid rgba(255,255,255,0.08);border-radius:16px;cursor:pointer;transition:all 0.3s;min-height:80px;min-width:80px}
         .rps-choice-btn:hover{background:rgba(255,255,255,0.12);transform:scale(1.08)}
         .rps-choice-btn:disabled{opacity:0.3;cursor:not-allowed;transform:none}
         .rps-choice-btn.selected{background:rgba(102,126,234,0.2);border-color:#667eea}
         .rps-score{font-size:18px;font-weight:600;margin:8px 0;padding:12px;background:rgba(255,255,255,0.04);border-radius:12px}
         .member-badge{font-size:12px;background:rgba(251,191,36,0.15);color:#fbbf24;padding:2px 12px;border-radius:12px;border:1px solid rgba(251,191,36,0.2);display:inline-block}
         .bonus-indicator{font-size:12px;color:#34d399;margin-left:4px}
-        @media(max-width:768px){.game-grid{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}.game-area{padding:16px}.dice{width:45px;height:45px;font-size:20px}.card{width:40px;height:60px;font-size:16px}.rps-choice-btn{font-size:36px;padding:12px 20px}}
+        .streak-badge{font-size:12px;background:rgba(239,68,68,0.15);color:#f87171;padding:2px 10px;border-radius:12px;border:1px solid rgba(239,68,68,0.2);margin-left:8px}
+        .task-list{display:grid;gap:12px;margin-top:16px}
+        .task-item{background:rgba(255,255,255,0.04);border-radius:14px;padding:16px;border:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+        .task-item.completed{border-color:rgba(52,211,153,0.3);background:rgba(52,211,153,0.06)}
+        .task-item.claimed{opacity:0.6}
+        .task-info{flex:1;min-width:200px}
+        .task-name{font-size:14px;color:#fff;font-weight:500;margin-bottom:6px}
+        .task-progress{font-size:12px;color:rgba(255,255,255,0.5)}
+        .task-progress-bar{height:6px;background:rgba(255,255,255,0.08);border-radius:3px;margin-top:6px;overflow:hidden}
+        .task-progress-fill{height:100%;background:linear-gradient(90deg,#667eea,#764ba2);border-radius:3px;transition:width 0.3s}
+        .task-reward{font-size:13px;color:#fbbf24;font-weight:600}
+        .task-btn{padding:8px 20px;border:none;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.3s;min-height:40px}
+        .task-btn.claimable{background:linear-gradient(135deg,#34d399,#059669);color:#fff}
+        .task-btn.claimable:hover{transform:scale(1.05)}
+        .task-btn.claimed{background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.4);cursor:not-allowed}
+        .task-btn.locked{background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.4);cursor:not-allowed}
+        .task-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px}
+        .task-header h3{font-size:18px;color:#fff}
+        .task-summary{font-size:14px;color:rgba(255,255,255,0.6)}
+        .task-summary strong{color:#fbbf24}
+        .history-list{display:grid;gap:8px;margin-top:16px}
+        .history-record{background:rgba(255,255,255,0.04);border-radius:12px;padding:14px 18px;border:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;transition:all 0.3s}
+        .history-record:hover{background:rgba(255,255,255,0.06)}
+        .history-left{display:flex;align-items:center;gap:12px;flex:1;min-width:200px}
+        .history-icon{font-size:24px}
+        .history-detail{flex:1}
+        .history-game{font-size:14px;color:#fff;font-weight:500}
+        .history-meta{font-size:12px;color:rgba(255,255,255,0.4);margin-top:2px}
+        .history-right{display:flex;align-items:center;gap:12px}
+        .history-points{font-size:14px;font-weight:600}
+        .history-points.win{color:#34d399}
+        .history-points.lose{color:#f87171}
+        .history-delete{background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.2);color:#f87171;width:32px;height:32px;border-radius:50%;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;font-size:14px}
+        .history-delete:hover{background:rgba(248,113,113,0.2);transform:scale(1.1)}
+        .history-empty{text-align:center;padding:60px 20px;color:rgba(255,255,255,0.3)}
+        .history-empty .icon{font-size:48px;display:block;margin-bottom:12px}
+        .history-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px}
+        .history-toolbar h3{font-size:18px;color:#fff}
+        .wheel-container{position:relative;width:300px;height:300px;margin:20px auto}
+        .wheel{width:100%;height:100%;border-radius:50%;position:relative;transition:transform 4s cubic-bezier(0.17,0.67,0.12,0.99);border:8px solid rgba(255,255,255,0.1);box-shadow:0 0 40px rgba(102,126,234,0.3);overflow:hidden}
+        .wheel-pointer{position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:32px;z-index:10;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5))}
+        .wheel-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:60px;height:60px;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;z-index:5;border:4px solid rgba(255,255,255,0.2)}
+        .wheel-label{position:absolute;top:50%;left:50%;transform-origin:0 0;font-size:14px;font-weight:700;color:#fff;white-space:nowrap;pointer-events:none;text-align:center;width:60px;margin-left:-30px;margin-top:-10px;z-index:3}
+        .memory-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:400px;margin:16px auto}
+        .memory-card{aspect-ratio:1;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:32px;cursor:pointer;transition:all 0.3s;border:2px solid rgba(255,255,255,0.1);user-select:none}
+        .memory-card:hover{transform:scale(1.05)}
+        .memory-card.flipped{background:rgba(255,255,255,0.1)}
+        .memory-card.matched{background:rgba(52,211,153,0.2);border-color:#34d399;cursor:default}
+        .memory-card.matched:hover{transform:none}
+        .memory-card.hidden{color:transparent}
+        @media(max-width:768px){
+            body{padding:12px}
+            .game-grid{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+            .game-card{padding:16px;min-height:140px}
+            .game-card .emoji{font-size:40px}
+            .game-card .name{font-size:16px}
+            .game-area{padding:16px}
+            .dice{width:48px!important;height:48px!important;font-size:22px!important}
+            .card{width:42px!important;height:62px!important;font-size:18px!important}
+            .rps-choice-btn{font-size:38px;padding:12px 20px;min-height:70px;min-width:70px}
+            .wheel-container{width:260px;height:260px}
+            .wheel-label{font-size:12px;width:50px;margin-left:-25px;margin-top:-8px}
+            .memory-grid{gap:8px}
+            .memory-card{font-size:24px}
+            .header{padding:12px 16px}
+            .header h1{font-size:20px}
+            .header .stats{gap:8px;font-size:12px}
+            .task-item{padding:12px}
+            .history-record{padding:12px}
+        }
     </style>
 </head>
 <body>
@@ -113,6 +192,7 @@
             <span>⭐ 总胜场: <span id="totalWins">0</span></span>
             <span id="memberStatus" style="color:rgba(255,255,255,0.4);font-weight:600;">👑 普通</span>
             <span id="bonusDisplay" style="color:rgba(255,255,255,0.3);font-size:12px;">加成: +0%</span>
+            <span id="streakDisplay" style="color:rgba(255,255,255,0.3);font-size:12px;display:none;">🔥 连赢: 0</span>
         </div>
         <div class="right-group">
             <a href="/GAME/membership.html" class="membership-btn">👑 会员中心</a>
@@ -120,13 +200,54 @@
         </div>
     </div>
 
-    <div class="game-grid" id="gameGrid"></div>
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('games')">🎮 游戏</div>
+        <div class="tab" onclick="switchTab('tasks')">📋 每日任务</div>
+        <div class="tab" onclick="switchTab('history')">📜 游戏记录</div>
+    </div>
+
+    <div class="tab-content active" id="tab-games">
+        <div class="game-grid" id="gameGrid">
+            <div class="skeleton"><div class="skeleton-line emoji"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+            <div class="skeleton"><div class="skeleton-line emoji"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+            <div class="skeleton"><div class="skeleton-line emoji"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+            <div class="skeleton"><div class="skeleton-line emoji"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+            <div class="skeleton"><div class="skeleton-line emoji"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+        </div>
+    </div>
+
+    <div class="tab-content" id="tab-tasks">
+        <div class="task-header">
+            <h3>📋 每日任务</h3>
+            <div class="task-summary">进度: <strong id="taskProgress">0/0</strong></div>
+        </div>
+        <div class="task-list" id="taskList">
+            <div class="skeleton"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+            <div class="skeleton"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+            <div class="skeleton"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+        </div>
+        <div style="margin-top:16px;text-align:center;">
+            <button class="btn btn-warning" id="claimAllBtn" onclick="claimAllTasks()" style="display:none;">🎁 一键领取全部</button>
+        </div>
+    </div>
+
+    <div class="tab-content" id="tab-history">
+        <div class="history-toolbar">
+            <h3>📜 游戏记录</h3>
+            <button class="btn btn-danger" onclick="clearAllHistory()" id="clearHistoryBtn" style="display:none;">🗑️ 清空全部</button>
+        </div>
+        <div class="history-list" id="historyList">
+            <div class="skeleton"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+            <div class="skeleton"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+        </div>
+    </div>
 
     <div class="game-area" id="gameArea">
         <div class="game-title">
             <span id="gameTitle">游戏</span>
             <span id="gameMemberBadge" class="member-badge" style="display:none;">👑 会员</span>
             <span id="gameBonusBadge" class="bonus-indicator" style="display:none;">+30% 加成</span>
+            <span id="gameStreakBadge" class="streak-badge" style="display:none;">🔥 连赢 0</span>
             <button class="back" onclick="backToGames()">← 返回</button>
         </div>
         <div class="game-content" id="gameContent"></div>
@@ -143,6 +264,8 @@
     var rpsGameActive = false;
     var isMember = false;
     var memberBonusRate = 0;
+    var currentTier = 'none';
+    var currentWinStreak = 0;
 
     function getCsrfTokenFromCookie() {
         try {
@@ -239,16 +362,39 @@
         return d.innerHTML;
     }
 
+    function formatTime(ts) {
+        if (!ts) return '';
+        var d = new Date(ts);
+        var now = new Date();
+        var diff = now - d;
+        if (diff < 60000) return '刚刚';
+        if (diff < 3600000) return Math.floor(diff / 60000) + '分钟前';
+        if (diff < 86400000) return Math.floor(diff / 3600000) + '小时前';
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    }
+
+    function switchTab(tab) {
+        document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+        document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
+        event.target.classList.add('active');
+        document.getElementById('tab-' + tab).classList.add('active');
+        if (tab === 'tasks') loadTasks();
+        if (tab === 'history') loadHistory();
+    }
+
     async function loadMemberStatus() {
         try {
             var data = await apiRequest('/api/membership/status');
             isMember = data.is_member || false;
             memberBonusRate = data.bonus_rate || 0;
+            currentTier = data.tier || 'none';
             var el = document.getElementById('memberStatus');
+            var tierName = data.tier_name || '普通';
             if (isMember) {
-                el.textContent = '👑 会员';
-                el.style.color = '#fbbf24';
-                document.getElementById('bonusDisplay').textContent = '加成: +30%';
+                var icons = {'normal': '👑', 'gold': '🥇', 'diamond': '💎'};
+                el.textContent = (icons[currentTier] || '👑') + ' ' + tierName;
+                el.style.color = currentTier === 'diamond' ? '#a78bfa' : currentTier === 'gold' ? '#fbbf24' : '#fbbf24';
+                document.getElementById('bonusDisplay').textContent = '加成: +' + memberBonusRate + '%';
                 document.getElementById('bonusDisplay').style.color = '#34d399';
             } else {
                 el.textContent = '👑 普通';
@@ -268,12 +414,26 @@
             document.getElementById('maxPlays').textContent = data.max_plays || 5;
             document.getElementById('winRate').textContent = data.win_rate || 0;
             document.getElementById('totalWins').textContent = data.total_wins || 0;
+            if (data.win_streak) {
+                currentWinStreak = data.win_streak.current_win || 0;
+                var streakEl = document.getElementById('streakDisplay');
+                if (currentWinStreak > 0) {
+                    streakEl.style.display = 'inline';
+                    streakEl.textContent = '🔥 连赢: ' + currentWinStreak;
+                    streakEl.style.color = currentWinStreak >= 3 ? '#f87171' : '#fbbf24';
+                } else {
+                    streakEl.style.display = 'none';
+                }
+            }
             if (data.is_member) {
-                document.getElementById('memberStatus').textContent = '👑 会员';
-                document.getElementById('memberStatus').style.color = '#fbbf24';
-                document.getElementById('bonusDisplay').textContent = '加成: +30%';
-                document.getElementById('bonusDisplay').style.color = '#34d399';
                 isMember = true;
+                currentTier = data.member_tier || 'normal';
+                memberBonusRate = data.member_bonus_rate || 0;
+                var icons = {'normal': '👑', 'gold': '🥇', 'diamond': '💎'};
+                document.getElementById('memberStatus').textContent = (icons[currentTier] || '👑') + ' ' + (data.member_tier_name || '会员');
+                document.getElementById('memberStatus').style.color = currentTier === 'diamond' ? '#a78bfa' : currentTier === 'gold' ? '#fbbf24' : '#fbbf24';
+                document.getElementById('bonusDisplay').textContent = '加成: +' + memberBonusRate + '%';
+                document.getElementById('bonusDisplay').style.color = '#34d399';
             }
         } catch (e) {
             console.error('Stats error:', e);
@@ -288,11 +448,15 @@
             var remaining = data.stats.remaining_plays || 0;
             var isMemberFlag = data.stats.is_member || false;
             isMember = isMemberFlag;
+            currentTier = data.stats.member_tier || 'none';
+            memberBonusRate = data.stats.member_bonus_rate || 0;
             data.games.forEach(function(g) {
                 var disabled = remaining <= 0 ? 'disabled' : '';
                 var memberTag = isMemberFlag ? ' <span style="font-size:10px;color:#fbbf24;">👑</span>' : '';
-                var bonusTag = isMemberFlag ? ' <span style="font-size:10px;color:#34d399;">+30%</span>' : '';
+                var bonusTag = isMemberFlag ? ' <span style="font-size:10px;color:#34d399;">+' + memberBonusRate + '%</span>' : '';
+                var exclusiveTag = g.exclusive ? '<span class="exclusive-tag">专属</span>' : '';
                 html += '<div class="game-card ' + disabled + '" onclick="startGame(\'' + g.id + '\')">';
+                html += exclusiveTag;
                 html += '<span class="emoji">' + g.emoji + '</span>';
                 html += '<div class="name">' + escapeHtml(g.name) + memberTag + '</div>';
                 html += '<div class="desc">' + escapeHtml(g.description) + '</div>';
@@ -304,7 +468,146 @@
             await loadMemberStatus();
         } catch (e) {
             console.error('Load games error:', e);
-            document.getElementById('gameGrid').innerHTML = '<div class="loading"><i class="fas fa-exclamation-triangle" style="color:#f87171;font-size:28px;display:block;margin-bottom:12px;"></i>加载失败: ' + escapeHtml(e.message) + '</div>';
+            document.getElementById('gameGrid').innerHTML = '<div class="loading">加载失败: ' + escapeHtml(e.message) + '</div>';
+        }
+    }
+
+    async function loadTasks() {
+        try {
+            var data = await apiRequest('/api/game/tasks');
+            var list = document.getElementById('taskList');
+            var progress = document.getElementById('taskProgress');
+            progress.textContent = data.completed_count + '/' + data.total_count;
+            var html = '';
+            data.tasks.forEach(function(t) {
+                var completed = t.progress >= t.target;
+                var canClaim = completed && !t.claimed;
+                var pct = Math.min(100, (t.progress / t.target) * 100);
+                var btnClass = t.claimed ? 'claimed' : (canClaim ? 'claimable' : 'locked');
+                var btnText = t.claimed ? '已领取' : (canClaim ? '领取' : '未完成');
+                var btnDisabled = canClaim ? '' : 'disabled';
+                var itemClass = t.claimed ? 'claimed' : (completed ? 'completed' : '');
+                html += '<div class="task-item ' + itemClass + '">';
+                html += '<div class="task-info">';
+                html += '<div class="task-name">' + escapeHtml(t.name) + '</div>';
+                html += '<div class="task-progress">进度: ' + t.progress + '/' + t.target + '</div>';
+                html += '<div class="task-progress-bar"><div class="task-progress-fill" style="width:' + pct + '%"></div></div>';
+                html += '</div>';
+                html += '<div style="display:flex;align-items:center;gap:12px;">';
+                html += '<div class="task-reward">+' + t.reward + '积分</div>';
+                html += '<button class="task-btn ' + btnClass + '" ' + btnDisabled + ' onclick="claimTask(\'' + t.id + '\')">' + btnText + '</button>';
+                html += '</div>';
+                html += '</div>';
+            });
+            list.innerHTML = html;
+            var claimAllBtn = document.getElementById('claimAllBtn');
+            var claimableCount = data.tasks.filter(function(t) { return t.progress >= t.target && !t.claimed; }).length;
+            if (claimableCount > 0) {
+                claimAllBtn.style.display = 'inline-block';
+                claimAllBtn.textContent = '🎁 一键领取 (' + claimableCount + ')';
+            } else {
+                claimAllBtn.style.display = 'none';
+            }
+        } catch (e) {
+            console.error('Load tasks error:', e);
+            document.getElementById('taskList').innerHTML = '<div class="loading">加载失败: ' + escapeHtml(e.message) + '</div>';
+        }
+    }
+
+    async function claimTask(taskId) {
+        try {
+            var data = await apiRequest('/api/game/tasks/claim', {
+                method: 'POST',
+                body: JSON.stringify({ task_id: taskId })
+            });
+            showMessage(data.message, 'success');
+            loadTasks();
+            loadStats();
+        } catch (e) {
+            showMessage(e.message, 'error');
+        }
+    }
+
+    async function claimAllTasks() {
+        try {
+            var data = await apiRequest('/api/game/tasks/claim-all', {
+                method: 'POST',
+                body: JSON.stringify({})
+            });
+            showMessage(data.message, 'success');
+            loadTasks();
+            loadStats();
+        } catch (e) {
+            showMessage(e.message, 'error');
+        }
+    }
+
+    async function loadHistory() {
+        try {
+            var data = await apiRequest('/api/game/history');
+            var list = document.getElementById('historyList');
+            var clearBtn = document.getElementById('clearHistoryBtn');
+            if (!data.history || data.history.length === 0) {
+                list.innerHTML = '<div class="history-empty"><span class="icon">📭</span>暂无游戏记录</div>';
+                clearBtn.style.display = 'none';
+                return;
+            }
+            clearBtn.style.display = 'inline-block';
+            var html = '';
+            data.history.forEach(function(r) {
+                var icons = {
+                    'dice': '🎲', 'blackjack': '🃏', 'guess_number': '🎯',
+                    'rock_paper_scissors': '🤖', 'roulette': '🎡',
+                    'lucky_wheel': '🎰', 'memory_cards': '🃏'
+                };
+                var icon = icons[r.game_id] || '🎮';
+                var pointsClass = r.won ? 'win' : 'lose';
+                var pointsText = r.won ? '+' + r.points_earned : (r.points_earned > 0 ? '+' + r.points_earned : '0');
+                html += '<div class="history-record">';
+                html += '<div class="history-left">';
+                html += '<span class="history-icon">' + icon + '</span>';
+                html += '<div class="history-detail">';
+                html += '<div class="history-game">' + escapeHtml(r.game_name) + '</div>';
+                html += '<div class="history-meta">' + (r.detail ? escapeHtml(r.detail) + ' · ' : '') + formatTime(r.timestamp) + '</div>';
+                html += '</div>';
+                html += '</div>';
+                html += '<div class="history-right">';
+                html += '<span class="history-points ' + pointsClass + '">' + pointsText + '</span>';
+                html += '<button class="history-delete" onclick="deleteHistoryItem(\'' + r.id + '\')" title="删除">✕</button>';
+                html += '</div>';
+                html += '</div>';
+            });
+            list.innerHTML = html;
+        } catch (e) {
+            console.error('Load history error:', e);
+            document.getElementById('historyList').innerHTML = '<div class="loading">加载失败: ' + escapeHtml(e.message) + '</div>';
+        }
+    }
+
+    async function deleteHistoryItem(recordId) {
+        try {
+            var data = await apiRequest('/api/game/history/delete', {
+                method: 'POST',
+                body: JSON.stringify({ record_id: recordId })
+            });
+            showMessage(data.message, 'success');
+            loadHistory();
+        } catch (e) {
+            showMessage(e.message, 'error');
+        }
+    }
+
+    async function clearAllHistory() {
+        if (!confirm('确定要清空所有游戏记录吗？此操作不可恢复。')) return;
+        try {
+            var data = await apiRequest('/api/game/history/clear', {
+                method: 'POST',
+                body: JSON.stringify({})
+            });
+            showMessage(data.message, 'success');
+            loadHistory();
+        } catch (e) {
+            showMessage(e.message, 'error');
         }
     }
 
@@ -314,6 +617,7 @@
         gameData = {};
         guessGameActive = false;
         rpsGameActive = false;
+        memoryState = { cards: [], flipped: [], matched: [], moves: 0, lock: false };
         loadStats();
         loadGames();
     }
@@ -328,17 +632,29 @@
             'blackjack': '🃏 二十一点',
             'guess_number': '🎯 猜数字',
             'rock_paper_scissors': '🤖 石头剪刀布',
-            'roulette': '🎡 轮盘赌'
+            'roulette': '🎡 轮盘赌',
+            'lucky_wheel': '🎰 幸运转盘',
+            'memory_cards': '🃏 记忆翻牌'
         };
         document.getElementById('gameTitle').textContent = names[gameId] || '游戏';
         var memberBadge = document.getElementById('gameMemberBadge');
         var bonusBadge = document.getElementById('gameBonusBadge');
+        var streakBadge = document.getElementById('gameStreakBadge');
+        var tierNames = {'normal': '👑 普通会员', 'gold': '🥇 黄金会员', 'diamond': '💎 钻石会员'};
         if (isMember) {
             memberBadge.style.display = 'inline-block';
+            memberBadge.textContent = tierNames[currentTier] || '👑 会员';
             bonusBadge.style.display = 'inline-block';
+            bonusBadge.textContent = '+' + memberBonusRate + '% 加成';
         } else {
             memberBadge.style.display = 'none';
             bonusBadge.style.display = 'none';
+        }
+        if (currentWinStreak > 0) {
+            streakBadge.style.display = 'inline-block';
+            streakBadge.textContent = '🔥 连赢 ' + currentWinStreak;
+        } else {
+            streakBadge.style.display = 'none';
         }
         var content = document.getElementById('gameContent');
         if (gameId === 'dice') renderDice(content);
@@ -346,12 +662,41 @@
         else if (gameId === 'guess_number') renderGuessNumber(content);
         else if (gameId === 'rock_paper_scissors') renderRPS(content);
         else if (gameId === 'roulette') renderRoulette(content);
-        else content.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i>加载中...</div>';
+        else if (gameId === 'lucky_wheel') renderLuckyWheel(content);
+        else if (gameId === 'memory_cards') renderMemoryCards(content);
+        else content.innerHTML = '<div class="loading">加载中...</div>';
+    }
+
+    function updateStreakBadge(streak, loseStreak) {
+        var badge = document.getElementById('gameStreakBadge');
+        if (streak > 0) {
+            currentWinStreak = streak;
+            badge.style.display = 'inline-block';
+            badge.textContent = '🔥 连赢 ' + streak;
+            badge.style.color = '';
+            badge.style.background = '';
+            badge.style.borderColor = '';
+        } else if (loseStreak > 0) {
+            currentWinStreak = 0;
+            badge.style.display = 'inline-block';
+            badge.textContent = '💪 连败 ' + loseStreak;
+            badge.style.color = '#60a5fa';
+            badge.style.background = 'rgba(96,165,250,0.15)';
+            badge.style.borderColor = 'rgba(96,165,250,0.2)';
+        } else {
+            currentWinStreak = 0;
+            badge.style.display = 'none';
+        }
+    }
+
+    function renderBonusMessage(bonusMessage) {
+        if (!bonusMessage) return '';
+        return '<div style="margin-top:8px;padding:8px 12px;background:rgba(251,191,36,0.1);border-radius:10px;font-size:13px;color:#fbbf24;border:1px solid rgba(251,191,36,0.2);">' + escapeHtml(bonusMessage) + '</div>';
     }
 
     function renderDice(el) {
         gameData.betType = 'high';
-        var memberInfo = isMember ? '<div style="font-size:13px;color:#fbbf24;margin-bottom:8px;">👑 会员权益：每日10次 | 获胜积分+30%</div>' : '';
+        var memberInfo = isMember ? '<div style="font-size:13px;color:#fbbf24;margin-bottom:8px;">👑 ' + currentTier + '会员 | 每日' + document.getElementById('maxPlays').textContent + '次 | 获胜积分+' + memberBonusRate + '%</div>' : '';
         el.innerHTML = '<p style="margin-bottom:12px;">🎲 你和AI各掷3个骰子，点数大者获胜！</p>' +
             memberInfo +
             '<div class="bet-options">' +
@@ -389,20 +734,23 @@
             var playerDiceHtml = data.player_dice.map(function(d) { return '<div class="dice">' + d + '</div>'; }).join('');
             var aiDiceHtml = data.ai_dice.map(function(d) { return '<div class="dice">' + d + '</div>'; }).join('');
             var winClass = data.won ? 'win' : 'lose';
-            var bonusInfo = data.is_member && data.won ? '<div style="font-size:12px;color:#34d399;">👑 会员30%加成已应用</div>' : '';
+            var bonusInfo = data.is_member && data.won ? '<div style="font-size:12px;color:#34d399;">👑 ' + currentTier + '会员+' + memberBonusRate + '%加成已应用</div>' : '';
             el.innerHTML = '<div class="result-box">' +
                 '<div style="font-size:14px;color:rgba(255,255,255,0.5);">🧑 你的骰子 (合计 ' + data.player_total + ')</div>' +
                 '<div class="dice-row">' + playerDiceHtml + '</div>' +
                 '<div style="font-size:14px;color:rgba(255,255,255,0.5);margin-top:12px;">🤖 AI的骰子 (合计 ' + data.ai_total + ')</div>' +
                 '<div class="dice-row">' + aiDiceHtml + '</div>' +
                 '<div class="big ' + winClass + '">' + data.message + '</div>' +
-                (data.won ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' 积分</div>' : '') +
+                (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' 积分</div>' : '') +
                 bonusInfo +
+                renderBonusMessage(data.bonus_message) +
                 '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
                 '</div>';
             if (data.won) showMessage('🎉 赢了！+' + data.points_earned + ' 积分', 'success');
             else showMessage('😔 输了，再试一次！', 'warning');
+            updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
             loadStats();
+            loadGames();
         } catch (e) {
             showMessage(e.message || '游戏失败', 'error');
         } finally {
@@ -412,7 +760,7 @@
     }
 
     function renderBlackjack(el) {
-        var memberInfo = isMember ? '<div style="font-size:13px;color:#fbbf24;margin-bottom:8px;">👑 会员权益：每日10次 | 获胜积分+30%</div>' : '';
+        var memberInfo = isMember ? '<div style="font-size:13px;color:#fbbf24;margin-bottom:8px;">👑 ' + currentTier + '会员 | 每日' + document.getElementById('maxPlays').textContent + '次 | 获胜积分+' + memberBonusRate + '%</div>' : '';
         el.innerHTML = '<p style="margin-bottom:12px;">🃏 你和庄家比21点，点数大者获胜（超过21点爆牌）</p>' +
             memberInfo +
             '<button class="btn btn-primary" id="bjPlayBtn" onclick="playBlackjack()">🃏 发牌</button>' +
@@ -442,7 +790,7 @@
                 return '<div class="card ' + cls + '">' + val + '</div>';
             }).join('');
             var winClass = data.won ? 'win' : 'lose';
-            var bonusInfo = data.is_member && data.won ? '<div style="font-size:12px;color:#34d399;">👑 会员30%加成已应用</div>' : '';
+            var bonusInfo = data.is_member && data.won ? '<div style="font-size:12px;color:#34d399;">👑 ' + currentTier + '会员+' + memberBonusRate + '%加成已应用</div>' : '';
             el.innerHTML = '<div class="result-box">' +
                 '<div style="font-size:14px;color:rgba(255,255,255,0.5);">🧑 你的手牌 (合计 ' + data.player_total + ')</div>' +
                 '<div class="cards-row">' + playerCards + '</div>' +
@@ -450,13 +798,16 @@
                 '<div class="cards-row">' + dealerCards + '</div>' +
                 (data.dealer_hit_count > 0 ? '<div style="font-size:12px;color:rgba(255,255,255,0.3);">庄家补了 ' + data.dealer_hit_count + ' 张牌</div>' : '') +
                 '<div class="big ' + winClass + '">' + data.message + '</div>' +
-                (data.won ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' 积分</div>' : '') +
+                (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' 积分</div>' : '') +
                 bonusInfo +
+                renderBonusMessage(data.bonus_message) +
                 '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
                 '</div>';
             if (data.won) showMessage('🎉 赢了！+' + data.points_earned + ' 积分', 'success');
             else showMessage('😔 输了，再试一次！', 'warning');
+            updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
             loadStats();
+            loadGames();
         } catch (e) {
             showMessage(e.message || '游戏失败', 'error');
         } finally {
@@ -467,7 +818,7 @@
 
     function renderGuessNumber(el) {
         guessGameActive = false;
-        var memberInfo = isMember ? '<div style="font-size:13px;color:#fbbf24;margin-bottom:8px;">👑 会员权益：每日10次 | 获胜积分+30%</div>' : '';
+        var memberInfo = isMember ? '<div style="font-size:13px;color:#fbbf24;margin-bottom:8px;">👑 ' + currentTier + '会员 | 每日' + document.getElementById('maxPlays').textContent + '次 | 获胜积分+' + memberBonusRate + '%</div>' : '';
         el.innerHTML = '<p style="margin-bottom:12px;">🎯 1-100之间猜数字，你有7次机会！</p>' +
             memberInfo +
             '<button class="btn btn-primary" id="gnStartBtn" onclick="startGuessGame()">🎯 开始新游戏</button>' +
@@ -481,6 +832,17 @@
             '<div id="guessHintArea"></div>' +
             '<div id="guessResult" style="margin-top:12px;"></div>' +
             '</div>';
+        setTimeout(function() {
+            var input = document.getElementById('guessInput');
+            if (input) {
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        submitGuess();
+                    }
+                });
+            }
+        }, 100);
     }
 
     async function startGuessGame() {
@@ -537,17 +899,22 @@
             var status = document.getElementById('guessStatus');
             if (data.game_over) {
                 var winClass = data.won ? 'win' : 'lose';
-                var bonusInfo = data.is_member && data.won ? '<div style="font-size:12px;color:#34d399;">👑 会员30%加成已应用</div>' : '';
+                var bonusInfo = data.is_member && data.won ? '<div style="font-size:12px;color:#34d399;">👑 ' + currentTier + '会员+' + memberBonusRate + '%加成已应用</div>' : '';
                 resultArea.innerHTML = '<div class="result-box"><div class="big ' + winClass + '">' + data.message + '</div>' +
-                    (data.won ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' 积分</div>' : '') +
+                    (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' 积分</div>' : '') +
                     bonusInfo +
+                    renderBonusMessage(data.bonus_message) +
                     '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div></div>';
                 guessGameActive = false;
                 input.disabled = true;
                 submitBtn.disabled = true;
                 document.getElementById('guessResetBtn').style.display = 'inline-block';
                 status.textContent = data.won ? '🎉 游戏结束！你赢了！' : '😔 游戏结束！你输了！';
-                if (data.won) loadStats();
+                updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
+                if (data.won) {
+                    loadStats();
+                    loadGames();
+                }
             } else if (data.hint) {
                 var hintClass = data.hint.indexOf('太大') !== -1 ? 'high' : 'low';
                 hintArea.innerHTML = '<div class="guess-hint ' + hintClass + '">' + data.hint + '</div>';
@@ -588,7 +955,7 @@
 
     function renderRPS(el) {
         rpsGameActive = false;
-        var memberInfo = isMember ? '<div style="font-size:13px;color:#fbbf24;margin-bottom:8px;">👑 会员权益：每日10次 | 获胜积分+30%</div>' : '';
+        var memberInfo = isMember ? '<div style="font-size:13px;color:#fbbf24;margin-bottom:8px;">👑 ' + currentTier + '会员 | 每日' + document.getElementById('maxPlays').textContent + '次 | 获胜积分+' + memberBonusRate + '%</div>' : '';
         el.innerHTML = '<p style="margin-bottom:12px;">🤖 石头剪刀布，三局两胜！选择你的出拳</p>' +
             memberInfo +
             '<button class="btn btn-primary" id="rpsStartBtn" onclick="startRPSGame()">🤖 开始对战</button>' +
@@ -619,7 +986,7 @@
             if (data.success) {
                 rpsGameActive = true;
                 document.getElementById('rpsGameArea').style.display = 'block';
-                document.getElementById('rpsStatus').textContent = '🤖 请选择你的出拳！';
+                document.getElementById('rpsStatus').textContent = '🤖 请选择你的出拳！(快捷键: R/P/S 或 1/2/3)';
                 document.querySelectorAll('.rps-choice-btn').forEach(function(b) { b.disabled = false; });
                 document.getElementById('rpsScore').textContent = '比分: 你 0 : 0 AI';
                 document.getElementById('rpsHistory').innerHTML = '';
@@ -638,6 +1005,7 @@
     }
 
     async function rpsChoice(move) {
+        if (!rpsGameActive) return;
         var btns = document.querySelectorAll('.rps-choice-btn');
         btns.forEach(function(b) { b.disabled = true; });
         var status = document.getElementById('rpsStatus');
@@ -661,17 +1029,22 @@
                     });
                 }
                 var winClass = data.won ? 'win' : 'lose';
-                var bonusInfo = data.is_member && data.won ? '<div style="font-size:12px;color:#34d399;">👑 会员30%加成已应用</div>' : '';
+                var bonusInfo = data.is_member && data.won ? '<div style="font-size:12px;color:#34d399;">👑 ' + currentTier + '会员+' + memberBonusRate + '%加成已应用</div>' : '';
                 document.getElementById('rpsHistory').innerHTML = historyHtml;
                 document.getElementById('rpsResult').innerHTML = '<div class="result-box"><div class="big ' + winClass + '">' + data.message + '</div>' +
-                    (data.won ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' 积分</div>' : '') +
+                    (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' 积分</div>' : '') +
                     bonusInfo +
+                    renderBonusMessage(data.bonus_message) +
                     '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div></div>';
                 document.getElementById('rpsScore').textContent = '最终比分: 你 ' + data.player_wins + ' : ' + data.ai_wins + ' AI';
                 document.getElementById('rpsStatus').textContent = '🏁 游戏结束！';
                 document.getElementById('rpsResetBtn').style.display = 'inline-block';
                 btns.forEach(function(b) { b.disabled = true; });
-                if (data.won) loadStats();
+                updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
+                if (data.won) {
+                    loadStats();
+                    loadGames();
+                }
             } else {
                 var cls = data.result === 'win' ? 'h-win' : data.result === 'lose' ? 'h-lose' : 'h-tie';
                 var historyItem = document.createElement('div');
@@ -708,7 +1081,7 @@
 
     function renderRoulette(el) {
         gameData.rouletteBet = { type: 'number', value: 7 };
-        var memberInfo = isMember ? '<div style="font-size:13px;color:#fbbf24;margin-bottom:8px;">👑 会员权益：每日10次 | 获胜积分+30%</div>' : '';
+        var memberInfo = isMember ? '<div style="font-size:13px;color:#fbbf24;margin-bottom:8px;">👑 ' + currentTier + '会员 | 每日' + document.getElementById('maxPlays').textContent + '次 | 获胜积分+' + memberBonusRate + '%</div>' : '';
         el.innerHTML = '<p style="margin-bottom:12px;">🎡 猜数字（0-36）、颜色（红/黑）、奇偶、大小</p>' +
             memberInfo +
             '<div class="roulette-bet-options" id="rouletteBetOptions">' +
@@ -776,24 +1149,265 @@
             else if (data.color && data.color.indexOf('红色') !== -1) colorClass = 'red';
             else colorClass = 'black';
             var winClass = data.won ? 'win' : 'lose';
-            var bonusInfo = data.is_member && data.won ? '<div style="font-size:12px;color:#34d399;">👑 会员30%加成已应用</div>' : '';
+            var bonusInfo = data.is_member && data.won ? '<div style="font-size:12px;color:#34d399;">👑 ' + currentTier + '会员+' + memberBonusRate + '%加成已应用</div>' : '';
             el.innerHTML = '<div class="result-box">' +
                 '<div class="roulette-result ' + colorClass + '">' + data.result + '</div>' +
                 '<div style="font-size:14px;color:rgba(255,255,255,0.5);">' + data.color + '</div>' +
                 '<div class="big ' + winClass + '">' + data.message + '</div>' +
-                (data.won ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' 积分</div>' : '') +
+                (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' 积分</div>' : '') +
                 bonusInfo +
+                renderBonusMessage(data.bonus_message) +
                 '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
                 '</div>';
             if (data.won) showMessage('🎉 赢了！+' + data.points_earned + ' 积分', 'success');
             else showMessage('😔 输了，再试一次！', 'warning');
+            updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
             loadStats();
+            loadGames();
         } catch (e) {
             showMessage(e.message || '游戏失败', 'error');
         } finally {
             btn.disabled = false;
             btn.textContent = '🎡 转轮盘';
         }
+    }
+
+    async function renderLuckyWheel(el) {
+        var memberInfo = isMember ? '<div style="font-size:13px;color:#fbbf24;margin-bottom:8px;">🥇 ' + currentTier + '会员专属 | 每日' + document.getElementById('maxPlays').textContent + '次 | 获胜积分+' + memberBonusRate + '%</div>' : '';
+        el.innerHTML = '<p style="margin-bottom:12px;">🎰 转动幸运转盘，赢取高倍积分奖励！</p>' +
+            memberInfo +
+            '<div class="wheel-container" id="wheelContainer">' +
+            '<div class="wheel-pointer">▼</div>' +
+            '<div class="wheel" id="luckyWheel"></div>' +
+            '<div class="wheel-center">🎰</div>' +
+            '</div>' +
+            '<div style="text-align:center;margin-top:20px;">' +
+            '<button class="btn btn-warning" id="wheelPlayBtn" onclick="playLuckyWheel()">🎰 转动转盘</button>' +
+            '</div>' +
+            '<div id="wheelResult" style="margin-top:16px;"></div>';
+        try {
+            var data = await apiRequest('/api/game/lucky_wheel/segments');
+            var segments = data.segments || [];
+            renderWheelVisual(segments);
+        } catch (e) {
+            showMessage('加载转盘失败: ' + e.message, 'error');
+        }
+    }
+
+    function renderWheelVisual(segments) {
+        var wheel = document.getElementById('luckyWheel');
+        if (!wheel) return;
+        var total = segments.length;
+        var segAngle = 360 / total;
+        var gradientParts = [];
+        for (var i = 0; i < total; i++) {
+            var startAngle = i * segAngle;
+            var endAngle = (i + 1) * segAngle;
+            gradientParts.push(segments[i].color + ' ' + startAngle + 'deg ' + endAngle + 'deg');
+        }
+        wheel.style.background = 'conic-gradient(' + gradientParts.join(',') + ')';
+        var oldLabels = wheel.querySelectorAll('.wheel-label');
+        oldLabels.forEach(function(l) { l.remove(); });
+        for (var j = 0; j < total; j++) {
+            var label = document.createElement('div');
+            label.className = 'wheel-label';
+            var midAngle = j * segAngle + segAngle / 2;
+            label.style.transform = 'rotate(' + midAngle + 'deg) translateY(-110px) rotate(-' + midAngle + 'deg)';
+            label.textContent = segments[j].label;
+            if (segments[j].multiplier >= 8) {
+                label.style.color = '#fff';
+                label.style.fontWeight = '900';
+                label.style.textShadow = '0 0 8px rgba(255,255,255,0.6)';
+            } else if (segments[j].multiplier === 0) {
+                label.style.color = 'rgba(255,255,255,0.5)';
+            } else {
+                label.style.color = '#fff';
+            }
+            wheel.appendChild(label);
+        }
+    }
+
+    async function playLuckyWheel() {
+        var btn = document.getElementById('wheelPlayBtn');
+        var wheel = document.getElementById('luckyWheel');
+        if (!btn || btn.disabled) return;
+        btn.disabled = true;
+        btn.textContent = '🎰 转动中...';
+        try {
+            var data = await apiRequest('/api/game/play/lucky_wheel', {
+                method: 'POST',
+                body: JSON.stringify({})
+            });
+            var segments = data.segments || [];
+            var total = segments.length;
+            var segAngle = 360 / total;
+            renderWheelVisual(segments);
+            var targetIndex = data.selected_index || 0;
+            var targetAngle = 360 * 5 + (360 - (targetIndex * segAngle + segAngle / 2));
+            if (!wheel.dataset.spinCount) wheel.dataset.spinCount = '0';
+            var spinCount = parseInt(wheel.dataset.spinCount) + 1;
+            wheel.dataset.spinCount = String(spinCount);
+            var finalAngle = targetAngle + (spinCount - 1) * 360 * 5;
+            wheel.style.transition = 'transform 4s cubic-bezier(0.17,0.67,0.12,0.99)';
+            wheel.style.transform = 'rotate(' + finalAngle + 'deg)';
+            setTimeout(function() {
+                var el = document.getElementById('wheelResult');
+                if (!el) return;
+                var winClass = data.won ? 'win' : 'lose';
+                var bonusInfo = data.is_member && data.won ? '<div style="font-size:12px;color:#34d399;">👑 ' + currentTier + '会员+' + memberBonusRate + '%加成已应用</div>' : '';
+                var multiplierText = data.multiplier > 0 ? ('倍率 x' + data.multiplier) : '未中奖';
+                el.innerHTML = '<div class="result-box">' +
+                    '<div style="font-size:48px;margin-bottom:8px;">' + (data.won ? '🎉' : '😔') + '</div>' +
+                    '<div style="font-size:14px;color:rgba(255,255,255,0.5);margin-bottom:4px;">转盘结果</div>' +
+                    '<div style="font-size:22px;font-weight:700;color:' + (data.won ? '#34d399' : '#f87171') + ';margin-bottom:8px;">' + escapeHtml(data.label) + '</div>' +
+                    '<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:8px;">' + multiplierText + '</div>' +
+                    '<div class="big ' + winClass + '">' + data.message + '</div>' +
+                    (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' 积分</div>' : '') +
+                    bonusInfo +
+                    renderBonusMessage(data.bonus_message) +
+                    '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
+                    '</div>';
+                if (data.won) showMessage('🎉 赢了！+' + data.points_earned + ' 积分', 'success');
+                else showMessage('😔 谢谢参与！', 'warning');
+                updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
+                loadStats();
+                loadGames();
+                btn.disabled = false;
+                btn.textContent = '🎰 转动转盘';
+            }, 4200);
+        } catch (e) {
+            showMessage(e.message || '游戏失败', 'error');
+            btn.disabled = false;
+            btn.textContent = '🎰 转动转盘';
+        }
+    }
+
+    function renderMemoryCards(el) {
+        var memberInfo = isMember ? '<div style="font-size:13px;color:#fbbf24;margin-bottom:8px;">💎 ' + currentTier + '会员专属 | 每日' + document.getElementById('maxPlays').textContent + '次 | 获胜积分+' + memberBonusRate + '%</div>' : '';
+        el.innerHTML = '<p style="margin-bottom:12px;">🃏 翻开两张相同的牌即可配对，步数越少积分越高！</p>' +
+            memberInfo +
+            '<button class="btn btn-primary" id="memoryStartBtn" onclick="startMemoryGame()">🃏 开始游戏</button>' +
+            '<div id="memoryGameArea" style="display:none;margin-top:12px;">' +
+            '<div id="memoryStatus" style="text-align:center;font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:8px;"></div>' +
+            '<div class="memory-grid" id="memoryGrid"></div>' +
+            '<div id="memoryResult" style="margin-top:12px;"></div>' +
+            '<button class="btn btn-outline" id="memoryResetBtn" onclick="resetMemoryGame()" style="display:none;margin-top:8px;">重新开始</button>' +
+            '</div>';
+    }
+
+    var memoryState = { cards: [], flipped: [], matched: [], moves: 0, lock: false };
+
+    async function startMemoryGame() {
+        var btn = document.getElementById('memoryStartBtn');
+        if (!btn || btn.disabled) return;
+        btn.disabled = true;
+        btn.textContent = '⏳ 准备中...';
+        try {
+            var data = await apiRequest('/api/game/play/memory_cards', {
+                method: 'POST',
+                body: JSON.stringify({ action: 'start' })
+            });
+            if (data.success) {
+                memoryState = { cards: data.cards, flipped: [], matched: [], moves: 0, lock: false };
+                document.getElementById('memoryGameArea').style.display = 'block';
+                document.getElementById('memoryStatus').textContent = '🃏 翻牌配对中... 步数: 0';
+                document.getElementById('memoryResult').innerHTML = '';
+                document.getElementById('memoryResetBtn').style.display = 'none';
+                renderMemoryGrid();
+                btn.textContent = '🔄 重新开始';
+                showMessage('🃏 游戏开始！', 'success');
+            } else {
+                showMessage(data.error || '启动失败', 'error');
+            }
+        } catch (e) {
+            showMessage(e.message || '启动失败', 'error');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    function renderMemoryGrid() {
+        var grid = document.getElementById('memoryGrid');
+        var html = '';
+        for (var i = 0; i < memoryState.cards.length; i++) {
+            var isFlipped = memoryState.flipped.indexOf(i) !== -1;
+            var isMatched = memoryState.matched.indexOf(i) !== -1;
+            var cls = 'memory-card';
+            if (isMatched) cls += ' matched';
+            else if (isFlipped) cls += ' flipped';
+            else cls += ' hidden';
+            var content = (isFlipped || isMatched) ? memoryState.cards[i] : '?';
+            html += '<div class="' + cls + '" onclick="flipMemoryCard(' + i + ')">' + content + '</div>';
+        }
+        grid.innerHTML = html;
+    }
+
+    async function flipMemoryCard(index) {
+        if (memoryState.lock) return;
+        if (memoryState.flipped.indexOf(index) !== -1) return;
+        if (memoryState.matched.indexOf(index) !== -1) return;
+        try {
+            var data = await apiRequest('/api/game/play/memory_cards', {
+                method: 'POST',
+                body: JSON.stringify({ action: 'flip', index: index })
+            });
+            if (!data.success) {
+                showMessage(data.error || '操作失败', 'error');
+                return;
+            }
+            if (data.game_over) {
+                memoryState.matched = data.matched;
+                memoryState.flipped = [];
+                renderMemoryGrid();
+                document.getElementById('memoryStatus').textContent = '🏁 游戏结束！步数: ' + data.moves;
+                var winClass = data.won ? 'win' : 'lose';
+                document.getElementById('memoryResult').innerHTML = '<div class="result-box"><div class="big ' + winClass + '">' + data.message + '</div>' +
+                    (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' 积分</div>' : '') +
+                    renderBonusMessage(data.bonus_message) +
+                    '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div></div>';
+                document.getElementById('memoryResetBtn').style.display = 'inline-block';
+                updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
+                loadStats();
+                loadGames();
+                return;
+            }
+            memoryState.moves = data.moves;
+            memoryState.matched = data.matched;
+            if (data.is_match) {
+                memoryState.flipped = [];
+                renderMemoryGrid();
+                document.getElementById('memoryStatus').textContent = '🃏 配对成功！步数: ' + data.moves;
+                return;
+            }
+            if (data.pair_complete) {
+                memoryState.flipped = data.flipped;
+                renderMemoryGrid();
+                memoryState.lock = true;
+                document.getElementById('memoryStatus').textContent = '🃏 未配对，步数: ' + data.moves;
+                setTimeout(function() {
+                    memoryState.flipped = [];
+                    memoryState.lock = false;
+                    renderMemoryGrid();
+                }, 800);
+                return;
+            }
+            memoryState.flipped = data.flipped;
+            renderMemoryGrid();
+            document.getElementById('memoryStatus').textContent = '🃏 翻牌中... 步数: ' + data.moves;
+        } catch (e) {
+            showMessage(e.message || '操作失败', 'error');
+        }
+    }
+
+    function resetMemoryGame() {
+        memoryState = { cards: [], flipped: [], matched: [], moves: 0, lock: false };
+        document.getElementById('memoryGameArea').style.display = 'none';
+        document.getElementById('memoryResult').innerHTML = '';
+        document.getElementById('memoryStatus').textContent = '';
+        document.getElementById('memoryResetBtn').style.display = 'none';
+        document.getElementById('memoryStartBtn').textContent = '🃏 开始游戏';
+        document.getElementById('memoryStartBtn').disabled = false;
+        showMessage('游戏已重置', 'warning');
     }
 
     document.addEventListener('DOMContentLoaded', function() {
