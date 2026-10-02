@@ -7,7 +7,7 @@
     <style>
         *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
         body{font-family:'Segoe UI','PingFang SC',sans-serif;background:linear-gradient(135deg,#0a0a1a 0%,#1a1a3e 50%,#0d0d2b 100%);min-height:100vh;color:#e8e8f0;padding:20px;touch-action:manipulation}
-        .container{max-width:1100px;margin:0 auto}
+        .container{max-width:1200px;margin:0 auto}
         .header{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;background:rgba(255,255,255,0.06);border-radius:20px;border:1px solid rgba(255,255,255,0.08);margin-bottom:24px;flex-wrap:wrap;gap:12px}
         .header h1{font-size:24px;background:linear-gradient(135deg,#fbbf24,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
         .header .back-btn{padding:8px 20px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:40px;color:#d1d5db;cursor:pointer;transition:all 0.3s;font-size:13px;text-decoration:none;min-height:40px;display:flex;align-items:center}
@@ -18,6 +18,7 @@
         .status-bar .value.gold{color:#fbbf24}
         .status-bar .value.green{color:#34d399}
         .status-bar .value.purple{color:#a78bfa}
+        .status-bar .value.pink{color:#ec4899}
         .status-bar .item{display:flex;flex-direction:column;gap:2px}
         .message{position:fixed;bottom:24px;right:24px;padding:14px 24px;border-radius:16px;z-index:9999;animation:slideUp 0.35s ease;max-width:420px;box-shadow:0 12px 40px rgba(0,0,0,0.5);font-size:14px;display:flex;align-items:center;gap:10px}
         .message-success{background:#065f46;color:#a7f3d0;border:1px solid rgba(52,211,153,0.2)}
@@ -41,12 +42,14 @@
         .tier-card.normal{border-color:rgba(251,191,36,0.2);background:linear-gradient(145deg,rgba(251,191,36,0.06),rgba(245,158,11,0.01))}
         .tier-card.gold{border-color:rgba(245,158,11,0.3);background:linear-gradient(145deg,rgba(245,158,11,0.08),rgba(217,119,6,0.01))}
         .tier-card.diamond{border-color:rgba(167,139,250,0.3);background:linear-gradient(145deg,rgba(167,139,250,0.08),rgba(124,58,237,0.01))}
+        .tier-card.supreme{border-color:rgba(236,72,153,0.4);background:linear-gradient(145deg,rgba(236,72,153,0.1),rgba(190,24,93,0.02))}
         .tier-card.current{border-color:rgba(52,211,153,0.4);background:linear-gradient(145deg,rgba(52,211,153,0.08),rgba(5,150,105,0.01))}
         .tier-card .crown{font-size:56px;display:block;margin-bottom:12px}
         .tier-card .tier-name{font-size:22px;font-weight:700;margin-bottom:4px}
         .tier-card.normal .tier-name{color:#fbbf24}
         .tier-card.gold .tier-name{color:#f59e0b}
         .tier-card.diamond .tier-name{color:#a78bfa}
+        .tier-card.supreme .tier-name{color:#ec4899}
         .tier-card.current .tier-name{color:#34d399}
         .tier-card .tier-subtitle{font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:16px}
         .tier-card .tier-price{font-size:32px;font-weight:700;color:#fff;margin:12px 0}
@@ -59,19 +62,30 @@
         .tier-card .tier-btn.buy-normal{background:linear-gradient(135deg,#fbbf24,#d97706);color:#1a1a2e}
         .tier-card .tier-btn.buy-gold{background:linear-gradient(135deg,#f59e0b,#b45309);color:#fff}
         .tier-card .tier-btn.buy-diamond{background:linear-gradient(135deg,#a78bfa,#7c3aed);color:#fff}
+        .tier-card .tier-btn.buy-supreme{background:linear-gradient(135deg,#ec4899,#be185d);color:#fff}
         .tier-card .tier-btn.upgrade{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
         .tier-card .tier-btn:hover{transform:scale(1.02);box-shadow:0 8px 25px rgba(0,0,0,0.3)}
         .tier-card .tier-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none;box-shadow:none}
         .tier-card .tier-btn.current-btn{background:rgba(52,211,153,0.2);color:#34d399;cursor:not-allowed}
         .tier-card .current-badge{position:absolute;top:16px;right:16px;font-size:11px;background:linear-gradient(135deg,#34d399,#059669);color:#1a1a2e;padding:4px 12px;border-radius:10px;font-weight:700}
         .tier-card .popular-badge{position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:11px;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;padding:4px 16px;border-radius:10px;font-weight:700;white-space:nowrap}
+        .tier-card .supreme-badge{position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:11px;background:linear-gradient(135deg,#ec4899,#be185d);color:#fff;padding:4px 16px;border-radius:10px;font-weight:700;white-space:nowrap}
+        .req-box{margin-top:12px;padding:12px;background:rgba(255,255,255,0.04);border-radius:12px;text-align:left}
+        .req-box .req-title{font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:8px}
+        .req-box .req-item{font-size:12px;display:flex;justify-content:space-between;margin-bottom:4px}
+        .req-box .req-item.met{color:#34d399}
+        .req-box .req-item.not-met{color:#f87171}
         .active-card{background:linear-gradient(145deg,rgba(52,211,153,0.1),rgba(5,150,105,0.02));border-radius:24px;padding:32px;border:1px solid rgba(52,211,153,0.2);text-align:center;margin-bottom:24px}
+        .active-card.supreme-active{background:linear-gradient(145deg,rgba(236,72,153,0.12),rgba(190,24,93,0.02));border-color:rgba(236,72,153,0.3)}
         .active-card .crown-active{font-size:64px;display:block;margin-bottom:12px}
         .active-card .title-active{font-size:28px;font-weight:700;color:#34d399;margin-bottom:8px}
+        .active-card.supreme-active .title-active{color:#ec4899}
         .active-card .subtitle-active{font-size:15px;color:rgba(255,255,255,0.5);margin-bottom:20px}
         .active-card .perks-active{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:20px 0;text-align:left}
         .active-card .perks-active .perk-active{background:rgba(52,211,153,0.08);padding:12px 16px;border-radius:12px;display:flex;align-items:center;gap:10px;font-size:14px;color:rgba(255,255,255,0.8)}
+        .active-card.supreme-active .perks-active .perk-active{background:rgba(236,72,153,0.08)}
         .active-card .active-badge{display:inline-block;padding:8px 28px;background:linear-gradient(135deg,#34d399,#059669);color:#1a1a2e;border-radius:40px;font-size:16px;font-weight:700;margin-top:8px}
+        .active-card.supreme-active .active-badge{background:linear-gradient(135deg,#ec4899,#be185d);color:#fff}
         .upgrade-section{margin-top:24px}
         .upgrade-section h3{font-size:18px;color:#fff;margin-bottom:16px;text-align:center}
         @media(max-width:768px){
@@ -135,7 +149,7 @@
         </div>
 
         <div id="memberSection" style="display:none;">
-            <div class="active-card">
+            <div class="active-card" id="activeCard">
                 <span class="crown-active" id="activeCrown">👑</span>
                 <div class="title-active" id="activeTitle">会员已激活</div>
                 <div class="subtitle-active" id="activeSubtitle">您已享受全部会员权益</div>
@@ -158,6 +172,7 @@
     var isMember = false;
     var currentTier = 'none';
     var allTiers = [];
+    var supremeReq = null;
 
     function getCsrfTokenFromCookie() {
         try {
@@ -254,10 +269,10 @@
         return d.innerHTML;
     }
 
-    var tierIcons = { 'normal': '👑', 'gold': '🥇', 'diamond': '💎' };
-    var tierClasses = { 'normal': 'normal', 'gold': 'gold', 'diamond': 'diamond' };
-    var tierBtnClasses = { 'normal': 'buy-normal', 'gold': 'buy-gold', 'diamond': 'buy-diamond' };
-    var tierOrder = { 'none': 0, 'normal': 1, 'gold': 2, 'diamond': 3 };
+    var tierIcons = { 'normal': '👑', 'gold': '🥇', 'diamond': '💎', 'supreme': '👑' };
+    var tierClasses = { 'normal': 'normal', 'gold': 'gold', 'diamond': 'diamond', 'supreme': 'supreme' };
+    var tierBtnClasses = { 'normal': 'buy-normal', 'gold': 'buy-gold', 'diamond': 'buy-diamond', 'supreme': 'buy-supreme' };
+    var tierOrder = { 'none': 0, 'normal': 1, 'gold': 2, 'diamond': 3, 'supreme': 4 };
 
     async function loadTiers() {
         try {
@@ -268,13 +283,21 @@
         }
     }
 
+    async function loadSupremeRequirements() {
+        try {
+            supremeReq = await apiRequest('/api/membership/supreme-requirements');
+        } catch (e) {
+            supremeReq = null;
+        }
+    }
+
     function renderTierCard(tier, isCurrent, isUpgrade) {
         var icon = tierIcons[tier.id] || '👑';
         var cls = tierClasses[tier.id] || 'normal';
         var btnCls = tierBtnClasses[tier.id] || 'buy-normal';
         var exclusiveNames = [];
         var gameNames = { 'lucky_wheel': '幸运转盘', 'memory_cards': '记忆翻牌' };
-        tier.exclusive_games.forEach(function(g) {
+        (tier.exclusive_games || []).forEach(function(g) {
             exclusiveNames.push(gameNames[g] || g);
         });
         var cardCls = 'tier-card ' + cls;
@@ -282,9 +305,10 @@
         var html = '<div class="' + cardCls + '">';
         if (isCurrent) html += '<div class="current-badge">当前等级</div>';
         if (tier.id === 'gold' && !isCurrent) html += '<div class="popular-badge">🔥 最受欢迎</div>';
+        if (tier.id === 'supreme' && !isCurrent) html += '<div class="supreme-badge">👑 至尊荣耀</div>';
         html += '<span class="crown">' + icon + '</span>';
         html += '<div class="tier-name">' + escapeHtml(tier.name) + '</div>';
-        html += '<div class="tier-subtitle">' + (tier.id === 'normal' ? '入门首选' : tier.id === 'gold' ? '进阶玩家必备' : '顶级尊享体验') + '</div>';
+        html += '<div class="tier-subtitle">' + (tier.id === 'normal' ? '入门首选' : tier.id === 'gold' ? '进阶玩家必备' : tier.id === 'diamond' ? '顶级尊享体验' : '至高无上荣耀') + '</div>';
         html += '<div class="tier-price">' + tier.price + ' <small>积分</small></div>';
         html += '<div class="tier-perks">';
         html += '<div class="tier-perk"><span class="icon">🎯</span> 每日游戏次数 <strong>' + tier.max_plays + '次</strong></div>';
@@ -298,13 +322,32 @@
         }
         html += '<div class="tier-perk"><span class="icon">🏆</span> 专属' + tier.name + '标识</div>';
         html += '</div>';
+        if (tier.id === 'supreme' && supremeReq) {
+            html += '<div class="req-box">';
+            html += '<div class="req-title">📋 购买条件</div>';
+            html += '<div class="req-item ' + (supremeReq.plays_met ? 'met' : 'not-met') + '">';
+            html += '<span>总局数</span><span>' + supremeReq.total_plays + ' / ' + supremeReq.required_plays + (supremeReq.plays_met ? ' ✅' : ' ❌') + '</span>';
+            html += '</div>';
+            html += '<div class="req-item ' + (supremeReq.win_rate_met ? 'met' : 'not-met') + '">';
+            html += '<span>胜率</span><span>' + supremeReq.win_rate + '% / &gt;' + supremeReq.required_win_rate + '%' + (supremeReq.win_rate_met ? ' ✅' : ' ❌') + '</span>';
+            html += '</div>';
+            html += '</div>';
+        }
         if (isCurrent) {
             html += '<button class="tier-btn current-btn" disabled>✅ 当前等级</button>';
         } else if (isUpgrade) {
             var diff = tier.price - getTierPrice(currentTier);
             html += '<button class="tier-btn upgrade" onclick="upgradeTo(\'' + tier.id + '\', ' + diff + ')">⬆️ 升级 (补' + diff.toFixed(2) + '积分)</button>';
         } else {
-            html += '<button class="tier-btn ' + btnCls + '" onclick="buyTier(\'' + tier.id + '\', ' + tier.price + ')">👑 立即开通</button>';
+            var canBuy = true;
+            if (tier.id === 'supreme' && supremeReq && !supremeReq.meets_requirements) {
+                canBuy = false;
+            }
+            if (canBuy) {
+                html += '<button class="tier-btn ' + btnCls + '" onclick="buyTier(\'' + tier.id + '\', ' + tier.price + ')">👑 立即开通</button>';
+            } else {
+                html += '<button class="tier-btn ' + btnCls + '" disabled>❌ 未满足条件</button>';
+            }
         }
         html += '</div>';
         return html;
@@ -331,6 +374,8 @@
             if (isMember) {
                 statusEl.textContent = '✅ ' + data.tier_name;
                 statusEl.className = 'value gold';
+                if (currentTier === 'supreme') statusEl.className = 'value pink';
+                else if (currentTier === 'diamond') statusEl.className = 'value purple';
             } else {
                 statusEl.textContent = '❌ 未开通';
                 statusEl.className = 'value';
@@ -351,9 +396,9 @@
 
             var tierEl = document.getElementById('tierName');
             tierEl.textContent = data.tier_name || '普通用户';
-            if (currentTier === 'diamond') tierEl.className = 'value purple';
-            else if (currentTier === 'gold') tierEl.className = 'value gold';
-            else if (currentTier === 'normal') tierEl.className = 'value gold';
+            if (currentTier === 'supreme') tierEl.className = 'value pink';
+            else if (currentTier === 'diamond') tierEl.className = 'value purple';
+            else if (currentTier === 'gold' || currentTier === 'normal') tierEl.className = 'value gold';
             else tierEl.className = 'value';
 
             if (isMember) {
@@ -387,6 +432,12 @@
         document.getElementById('activeCrown').textContent = icon;
         document.getElementById('activeTitle').textContent = data.tier_name + '已激活';
         document.getElementById('activeSubtitle').textContent = '您已享受全部会员权益';
+        var activeCard = document.getElementById('activeCard');
+        if (currentTier === 'supreme') {
+            activeCard.className = 'active-card supreme-active';
+        } else {
+            activeCard.className = 'active-card';
+        }
         var perks = '<div class="perk-active"><span class="icon">🎯</span> 每日游戏次数 <strong>' + data.max_plays + '次</strong>（已生效）</div>';
         perks += '<div class="perk-active"><span class="icon">⭐</span> 获胜积分 <strong>+' + data.bonus_rate + '%</strong> 加成（已生效）</div>';
         perks += '<div class="perk-active"><span class="icon">♾️</span> 永久有效，无需续费</div>';
@@ -433,6 +484,7 @@
                 showMessage('🎉 ' + data.message, 'success');
                 isMember = true;
                 currentTier = tierId;
+                await loadSupremeRequirements();
                 await loadMembershipStatus();
             } else {
                 showMessage(data.error || '购买失败', 'error');
@@ -456,6 +508,7 @@
             if (data.success) {
                 showMessage('🎉 ' + data.message, 'success');
                 currentTier = tierId;
+                await loadSupremeRequirements();
                 await loadMembershipStatus();
             } else {
                 showMessage(data.error || '升级失败', 'error');
@@ -469,6 +522,7 @@
 
     document.addEventListener('DOMContentLoaded', async function() {
         await loadTiers();
+        await loadSupremeRequirements();
         await loadMembershipStatus();
     });
 </script>

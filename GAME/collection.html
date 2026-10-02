@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>📖 卡牌收集册</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+        body{font-family:'Segoe UI','PingFang SC',sans-serif;background:linear-gradient(135deg,#0a0a1a 0%,#1a1a3e 50%,#0d0d2b 100%);min-height:100vh;color:#e8e8f0;padding:20px;touch-action:manipulation}
+        .container{max-width:1200px;margin:0 auto}
+        .header{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;background:rgba(255,255,255,0.06);border-radius:20px;border:1px solid rgba(255,255,255,0.08);margin-bottom:24px;flex-wrap:wrap;gap:12px}
+        .header h1{font-size:24px;background:linear-gradient(135deg,#fbbf24,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+        .header .back-btn{padding:8px 20px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:40px;color:#d1d5db;cursor:pointer;transition:all 0.3s;font-size:13px;text-decoration:none;min-height:40px;display:flex;align-items:center}
+        .header .back-btn:hover{background:rgba(255,255,255,0.15)}
+        .progress-section{background:linear-gradient(145deg,rgba(251,191,36,0.08),rgba(245,158,11,0.02));border-radius:20px;padding:24px;border:1px solid rgba(251,191,36,0.2);margin-bottom:24px;text-align:center}
+        .progress-section .progress-icon{font-size:56px;display:block;margin-bottom:12px}
+        .progress-section .progress-title{font-size:22px;font-weight:700;color:#fbbf24;margin-bottom:8px}
+        .progress-section .progress-subtitle{font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:16px}
+        .progress-bar-big{height:12px;background:rgba(255,255,255,0.08);border-radius:6px;overflow:hidden;margin-bottom:8px}
+        .progress-bar-fill{height:100%;background:linear-gradient(90deg,#667eea,#764ba2,#fbbf24);border-radius:6px;transition:width 0.6s ease}
+        .progress-numbers{font-size:15px;color:#fff;font-weight:600}
+        .progress-numbers strong{color:#fbbf24;font-size:20px}
+        .disenchant-toolbar{display:flex;justify-content:center;gap:12px;margin-top:16px;flex-wrap:wrap}
+        .disenchant-btn-main{padding:10px 28px;background:linear-gradient(135deg,#f87171,#dc2626);border:none;border-radius:40px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s;min-height:44px}
+        .disenchant-btn-main:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(248,113,113,0.4)}
+        .disenchant-btn-main:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+        .disenchant-info{font-size:13px;color:rgba(255,255,255,0.6);margin-top:8px}
+        .game-section{background:rgba(255,255,255,0.04);border-radius:20px;padding:24px;border:1px solid rgba(255,255,255,0.06);margin-bottom:20px}
+        .game-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px}
+        .game-title{font-size:18px;font-weight:700;color:#fff;display:flex;align-items:center;gap:10px}
+        .game-title .game-icon{font-size:28px}
+        .game-title .game-badge{font-size:12px;padding:3px 12px;border-radius:12px;font-weight:500}
+        .game-badge.complete{background:rgba(52,211,153,0.15);color:#34d399;border:1px solid rgba(52,211,153,0.3)}
+        .game-badge.partial{background:rgba(251,191,36,0.15);color:#fbbf24;border:1px solid rgba(251,191,36,0.2)}
+        .game-progress{font-size:14px;color:rgba(255,255,255,0.6)}
+        .game-progress strong{color:#fbbf24}
+        .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:12px}
+        .card-item{aspect-ratio:3/4;border-radius:14px;border:2px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 8px;transition:all 0.3s;position:relative;overflow:hidden;cursor:pointer}
+        .card-item:hover{transform:translateY(-4px);box-shadow:0 8px 25px rgba(0,0,0,0.4)}
+        .card-item.not-owned{opacity:0.4;filter:grayscale(1)}
+        .card-item.common{border-color:rgba(156,163,175,0.4)}
+        .card-item.rare{border-color:rgba(96,165,250,0.5);background:rgba(96,165,250,0.06)}
+        .card-item.epic{border-color:rgba(167,139,250,0.6);background:rgba(167,139,250,0.08);box-shadow:0 0 20px rgba(167,139,250,0.15)}
+        .card-item.legendary{border-color:rgba(251,191,36,0.7);background:rgba(251,191,36,0.1);box-shadow:0 0 25px rgba(251,191,36,0.25);animation:legendaryGlow 2s infinite}
+        @keyframes legendaryGlow{0%,100%{box-shadow:0 0 25px rgba(251,191,36,0.25)}50%{box-shadow:0 0 40px rgba(251,191,36,0.5)}}
+        .card-item .card-emoji{font-size:40px;margin-bottom:6px;display:block}
+        .card-item .card-name{font-size:12px;color:#fff;font-weight:600;text-align:center;line-height:1.2}
+        .card-item .card-rarity{font-size:10px;font-weight:700;margin-top:4px;text-transform:uppercase;letter-spacing:0.5px}
+        .card-item .card-count{position:absolute;top:6px;right:6px;background:rgba(52,211,153,0.9);color:#1a1a2e;font-size:11px;font-weight:700;padding:2px 7px;border-radius:10px;min-width:20px;text-align:center}
+        .card-item .card-lock{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:24px;opacity:0.7}
+        .card-item .disenchant-btn{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);background:rgba(248,113,113,0.9);color:#fff;font-size:10px;padding:3px 10px;border-radius:10px;cursor:pointer;opacity:0;transition:opacity 0.2s}
+        .card-item:hover .disenchant-btn{opacity:1}
+        .message{position:fixed;bottom:24px;right:24px;padding:14px 24px;border-radius:16px;z-index:9999;animation:slideUp 0.35s ease;max-width:420px;box-shadow:0 12px 40px rgba(0,0,0,0.5);font-size:14px;display:flex;align-items:center;gap:10px}
+        .message-success{background:#065f46;color:#a7f3d0;border:1px solid rgba(52,211,153,0.2)}
+        .message-error{background:#7f1d1d;color:#fca5a5;border:1px solid rgba(239,68,68,0.2)}
+        .message-warning{background:#78350f;color:#fde68a;border:1px solid rgba(251,191,36,0.2)}
+        @keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+        .loading{text-align:center;padding:60px 20px;color:rgba(255,255,255,0.3)}
+        .loading .spinner{width:40px;height:40px;border:3px solid rgba(255,255,255,0.1);border-top-color:#fbbf24;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .rarity-legend{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:16px;font-size:12px}
+        .rarity-legend .legend-item{display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08)}
+        .rarity-legend .legend-dot{width:10px;height:10px;border-radius:50%}
+        .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center;z-index:10000;padding:20px}
+        .modal-overlay.active{display:flex}
+        .modal-box{background:linear-gradient(145deg,#1a1a3e,#0d0d2b);border-radius:20px;padding:28px;border:1px solid rgba(255,255,255,0.1);max-width:460px;width:100%;text-align:center;animation:modalIn 0.3s ease}
+        @keyframes modalIn{from{transform:scale(0.9);opacity:0}to{transform:scale(1);opacity:1}}
+        .modal-box .modal-icon{font-size:48px;margin-bottom:12px;display:block}
+        .modal-box .modal-title{font-size:20px;color:#fff;font-weight:700;margin-bottom:12px}
+        .modal-box .modal-desc{font-size:14px;color:rgba(255,255,255,0.7);margin-bottom:20px;line-height:1.6;text-align:left;max-height:280px;overflow-y:auto}
+        .modal-box .modal-desc .detail-item{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:10px;margin-bottom:6px;font-size:13px}
+        .modal-box .modal-desc .detail-item .di-left{display:flex;align-items:center;gap:8px}
+        .modal-box .modal-desc .detail-item .di-points{color:#fbbf24;font-weight:600}
+        .modal-box .modal-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+        .modal-box .modal-actions button{padding:10px 28px;border:none;border-radius:40px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s;min-height:44px}
+        .modal-box .modal-actions .btn-cancel{background:rgba(255,255,255,0.08);color:#d1d5db}
+        .modal-box .modal-actions .btn-confirm{background:linear-gradient(135deg,#f87171,#dc2626);color:#fff}
+        @media(max-width:768px){
+            body{padding:12px}
+            .header{padding:12px 16px}
+            .header h1{font-size:20px}
+            .progress-section{padding:16px}
+            .game-section{padding:16px}
+            .card-grid{grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px}
+            .card-item .card-emoji{font-size:32px}
+            .card-item .card-name{font-size:11px}
+            .card-item .card-rarity{font-size:9px}
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>📖 卡牌收集册</h1>
+        <a href="/GAME/" class="back-btn">← 返回游戏大厅</a>
+    </div>
+
+    <div id="content">
+        <div class="loading"><div class="spinner"></div>加载中...</div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="confirmModal">
+    <div class="modal-box">
+        <span class="modal-icon">♻️</span>
+        <div class="modal-title">一键分解确认</div>
+        <div class="modal-desc" id="disenchantDetails"></div>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeDisenchantModal()">取消</button>
+            <button class="btn-confirm" onclick="confirmDisenchantAll()">确认分解</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    var csrfToken = null;
+    var csrfTokenLastFetch = 0;
+    var pendingDisenchant = false;
+
+    function getCsrfTokenFromCookie() {
+        try {
+            var c = document.cookie.split(';');
+            for (var i = 0; i < c.length; i++) {
+                var cookie = c[i].trim();
+                if (cookie.indexOf('csrf_token=') === 0) {
+                    return cookie.substring('csrf_token='.length, cookie.length);
+                }
+            }
+        } catch (e) {}
+        return null;
+    }
+
+    async function fetchCsrfToken() {
+        if (csrfToken && (Date.now() - csrfTokenLastFetch) < 300000) return csrfToken;
+        var cookieToken = getCsrfTokenFromCookie();
+        if (cookieToken) {
+            csrfToken = cookieToken;
+            csrfTokenLastFetch = Date.now();
+            return csrfToken;
+        }
+        try {
+            var res = await fetch('/api/csrf-token', {
+                method: 'GET',
+                credentials: 'include',
+                headers: { 'Accept': 'application/json' }
+            });
+            var data = await res.json();
+            if (data.csrf_token) {
+                csrfToken = data.csrf_token;
+                csrfTokenLastFetch = Date.now();
+                return csrfToken;
+            }
+            throw new Error('No CSRF token');
+        } catch (e) {
+            throw new Error('Failed to fetch CSRF token');
+        }
+    }
+
+    async function apiRequest(url, options) {
+        if (!options) options = {};
+        options.credentials = 'include';
+        if (!options.headers) options.headers = {};
+        options.headers['Content-Type'] = 'application/json';
+        options.headers['Accept'] = 'application/json';
+        var method = (options.method || 'GET').toUpperCase();
+        if (method === 'GET' || method === 'HEAD') {
+            var res = await fetch(url, options);
+            var data = await res.json();
+            if (!res.ok) throw new Error(data.error || '请求失败: ' + res.status);
+            return data;
+        }
+        var token = await fetchCsrfToken();
+        options.headers['X-CSRF-Token'] = token;
+        var res = await fetch(url, options);
+        var data = await res.json();
+        if (!res.ok) throw new Error(data.error || '请求失败: ' + res.status);
+        return data;
+    }
+
+    function showMessage(msg, type) {
+        var d = document.createElement('div');
+        d.className = 'message message-' + type;
+        var icon = type === 'success' ? '✅' : type === 'error' ? '❌' : '⚠️';
+        d.innerHTML = icon + ' ' + msg;
+        document.body.appendChild(d);
+        setTimeout(function() { d.remove(); }, 3500);
+    }
+
+    function escapeHtml(t) {
+        if (!t) return '';
+        var d = document.createElement('div');
+        d.textContent = t;
+        return d.innerHTML;
+    }
+
+    var RARITY_COLORS = {
+        'common': '#9ca3af',
+        'rare': '#60a5fa',
+        'epic': '#a78bfa',
+        'legendary': '#fbbf24'
+    };
+
+    async function loadCollection() {
+        try {
+            var data = await apiRequest('/api/game/collection/overview');
+            var disenchantData = null;
+            try {
+                disenchantData = await apiRequest('/api/game/collection/disenchantable');
+            } catch (e) {}
+            var content = document.getElementById('content');
+            var html = '';
+            html += '<div class="progress-section">';
+            html += '<span class="progress-icon">📖</span>';
+            html += '<div class="progress-title">卡牌收集进度</div>';
+            html += '<div class="progress-subtitle">玩游戏有概率掉落卡牌，集齐全部解锁专属奖励</div>';
+            html += '<div class="progress-bar-big"><div class="progress-bar-fill" style="width:' + data.progress_percent + '%"></div></div>';
+            html += '<div class="progress-numbers"><strong>' + data.total_owned + '</strong> / ' + data.total_count + ' （' + data.progress_percent + '%）</div>';
+            html += '<div class="rarity-legend">';
+            html += '<div class="legend-item"><span class="legend-dot" style="background:' + RARITY_COLORS.common + '"></span>普通 80%</div>';
+            html += '<div class="legend-item"><span class="legend-dot" style="background:' + RARITY_COLORS.rare + '"></span>稀有 15%</div>';
+            html += '<div class="legend-item"><span class="legend-dot" style="background:' + RARITY_COLORS.epic + '"></span>史诗 4%</div>';
+            html += '<div class="legend-item"><span class="legend-dot" style="background:' + RARITY_COLORS.legendary + '"></span>传说 1%</div>';
+            html += '</div>';
+            if (disenchantData && disenchantData.count > 0) {
+                html += '<div class="disenchant-toolbar">';
+                html += '<button class="disenchant-btn-main" onclick="openDisenchantModal()">♻️ 一键分解所有重复卡牌（+' + disenchantData.total_value + '积分）</button>';
+                html += '</div>';
+                html += '<div class="disenchant-info">共 ' + disenchantData.count + ' 种卡牌有重复，每种保留1张</div>';
+            }
+            html += '</div>';
+            var gameProgress = data.game_progress || {};
+            var gameOrder = ['dice', 'blackjack', 'guess_number', 'rock_paper_scissors', 'roulette', 'lucky_wheel', 'memory_cards', 'whack_mole'];
+            gameOrder.forEach(function(gameId) {
+                var gp = gameProgress[gameId];
+                if (!gp) return;
+                var badgeClass = gp.complete ? 'complete' : 'partial';
+                var badgeText = gp.complete ? '✅ 已集齐' : gp.owned + '/' + gp.total;
+                html += '<div class="game-section">';
+                html += '<div class="game-header">';
+                html += '<div class="game-title"><span class="game-icon">' + gp.icon + '</span>' + escapeHtml(gp.name) + '<span class="game-badge ' + badgeClass + '">' + badgeText + '</span></div>';
+                html += '<div class="game-progress">收集: <strong>' + gp.owned + '</strong> / ' + gp.total + '</div>';
+                html += '</div>';
+                html += '<div class="card-grid">';
+                gp.cards.forEach(function(card) {
+                    var cls = 'card-item ' + card.rarity;
+                    if (!card.owned) cls += ' not-owned';
+                    html += '<div class="' + cls + '">';
+                    if (card.owned && card.count > 1) {
+                        html += '<span class="card-count">x' + card.count + '</span>';
+                    }
+                    html += '<span class="card-emoji">' + card.emoji + '</span>';
+                    html += '<div class="card-name">' + escapeHtml(card.name) + '</div>';
+                    html += '<div class="card-rarity" style="color:' + card.rarity_color + '">' + card.rarity_name + '</div>';
+                    if (card.owned && card.count > 1) {
+                        html += '<div class="disenchant-btn" onclick="event.stopPropagation();disenchantCard(\'' + gameId + '\', \'' + card.id + '\')">分解</div>';
+                    }
+                    html += '</div>';
+                });
+                html += '</div>';
+                html += '</div>';
+            });
+            content.innerHTML = html;
+        } catch (e) {
+            document.getElementById('content').innerHTML = '<div class="loading">加载失败: ' + escapeHtml(e.message) + '</div>';
+        }
+    }
+
+    async function disenchantCard(gameId, cardId) {
+        if (!confirm('确定要分解这张卡牌吗？分解后数量减1，获得少量积分。')) return;
+        try {
+            var data = await apiRequest('/api/game/collection/disenchant', {
+                method: 'POST',
+                body: JSON.stringify({ game_id: gameId, card_id: cardId })
+            });
+            showMessage(data.message, 'success');
+            loadCollection();
+        } catch (e) {
+            showMessage(e.message, 'error');
+        }
+    }
+
+    async function openDisenchantModal() {
+        try {
+            var data = await apiRequest('/api/game/collection/disenchantable');
+            if (!data.cards || data.cards.length === 0) {
+                showMessage('没有可分解的重复卡牌', 'warning');
+                return;
+            }
+            var detailsHtml = '<div style="margin-bottom:12px;color:#fbbf24;font-weight:600;">共 ' + data.count + ' 种卡牌有重复，可获得 ' + data.total_value + ' 积分</div>';
+            data.cards.forEach(function(c) {
+                detailsHtml += '<div class="detail-item">';
+                detailsHtml += '<div class="di-left">';
+                detailsHtml += '<span style="font-size:20px;">' + c.emoji + '</span>';
+                detailsHtml += '<span>' + escapeHtml(c.card_name) + '</span>';
+                detailsHtml += '<span style="font-size:11px;color:' + c.rarity_color + ';">' + c.rarity_name + '</span>';
+                detailsHtml += '</div>';
+                detailsHtml += '<span class="di-points">x' + c.extra + ' → +' + c.total_value + '</span>';
+                detailsHtml += '</div>';
+            });
+            document.getElementById('disenchantDetails').innerHTML = detailsHtml;
+            document.getElementById('confirmModal').classList.add('active');
+            pendingDisenchant = true;
+        } catch (e) {
+            showMessage('加载失败: ' + e.message, 'error');
+        }
+    }
+
+    function closeDisenchantModal() {
+        document.getElementById('confirmModal').classList.remove('active');
+        pendingDisenchant = false;
+    }
+
+    async function confirmDisenchantAll() {
+        if (!pendingDisenchant) return;
+        var confirmBtn = document.querySelector('#confirmModal .btn-confirm');
+        if (confirmBtn) {
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = '分解中...';
+        }
+        try {
+            var data = await apiRequest('/api/game/collection/disenchant-all', {
+                method: 'POST',
+                body: JSON.stringify({})
+            });
+            var msg = data.message;
+            if (data.truncated) {
+                msg += '（详情列表已截断显示）';
+            }
+            showMessage(msg, 'success');
+            closeDisenchantModal();
+            loadCollection();
+        } catch (e) {
+            showMessage(e.message, 'error');
+            if (confirmBtn) {
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = '确认分解';
+            }
+        }
+    }
+
+    document.getElementById('confirmModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeDisenchantModal();
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadCollection();
+    });
+</script>
+</body>
+</html>

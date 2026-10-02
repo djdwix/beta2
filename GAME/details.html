@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🎮 游戏详情</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+        body{font-family:'Segoe UI','PingFang SC',sans-serif;background:linear-gradient(135deg,#0a0a1a 0%,#1a1a3e 50%,#0d0d2b 100%);min-height:100vh;color:#e8e8f0;padding:20px;touch-action:manipulation}
+        .container{max-width:900px;margin:0 auto}
+        .header{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;background:rgba(255,255,255,0.06);border-radius:20px;border:1px solid rgba(255,255,255,0.08);margin-bottom:24px;flex-wrap:wrap;gap:12px}
+        .header h1{font-size:24px;background:linear-gradient(135deg,#fbbf24,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+        .header .back-btn{padding:8px 20px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:40px;color:#d1d5db;cursor:pointer;transition:all 0.3s;font-size:13px;text-decoration:none;min-height:40px;display:flex;align-items:center}
+        .header .back-btn:hover{background:rgba(255,255,255,0.15)}
+        .detail-hero{text-align:center;padding:40px 20px;background:rgba(255,255,255,0.04);border-radius:24px;border:1px solid rgba(255,255,255,0.06);margin-bottom:20px;position:relative;overflow:hidden}
+        .detail-hero::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#667eea,#764ba2,#fbbf24)}
+        .detail-hero .hero-emoji{font-size:80px;display:block;margin-bottom:12px;animation:heroFloat 3s infinite ease-in-out}
+        @keyframes heroFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+        .detail-hero .hero-name{font-size:32px;font-weight:700;color:#fff;margin-bottom:8px}
+        .detail-hero .hero-desc{font-size:15px;color:rgba(255,255,255,0.6);max-width:600px;margin:0 auto;line-height:1.6}
+        .detail-hero .exclusive-badge{display:inline-block;margin-top:12px;padding:6px 20px;background:linear-gradient(135deg,#fbbf24,#d97706);color:#1a1a2e;border-radius:20px;font-size:13px;font-weight:700}
+        .info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+        .info-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:20px;text-align:center}
+        .info-card .info-icon{font-size:28px;margin-bottom:8px;display:block}
+        .info-card .info-label{font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:6px}
+        .info-card .info-value{font-size:20px;font-weight:700;color:#fff}
+        .info-card .info-value.gold{color:#fbbf24}
+        .info-card .info-value.green{color:#34d399}
+        .section{background:rgba(255,255,255,0.04);border-radius:20px;padding:24px;border:1px solid rgba(255,255,255,0.06);margin-bottom:20px}
+        .section-title{font-size:18px;font-weight:700;color:#fff;margin-bottom:16px;display:flex;align-items:center;gap:10px}
+        .rule-list{display:grid;gap:10px}
+        .rule-item{display:flex;gap:12px;align-items:flex-start;padding:12px 16px;background:rgba(255,255,255,0.03);border-radius:12px;font-size:14px;color:rgba(255,255,255,0.75);line-height:1.6}
+        .rule-item .rule-num{flex-shrink:0;width:24px;height:24px;border-radius:50%;background:rgba(102,126,234,0.2);color:#a78bfa;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+        .history-list{display:grid;gap:8px}
+        .history-record{background:rgba(255,255,255,0.03);border-radius:12px;padding:12px 16px;border:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+        .history-record .hr-left{display:flex;align-items:center;gap:10px;flex:1;min-width:150px}
+        .history-record .hr-result{font-size:18px}
+        .history-record .hr-detail{font-size:14px;color:#fff}
+        .history-record .hr-time{font-size:12px;color:rgba(255,255,255,0.4);margin-top:2px}
+        .history-record .hr-points{font-size:15px;font-weight:700}
+        .history-record .hr-points.win{color:#34d399}
+        .history-record .hr-points.lose{color:#f87171}
+        .empty{text-align:center;padding:40px 20px;color:rgba(255,255,255,0.3);font-size:14px}
+        .empty .empty-icon{font-size:48px;display:block;margin-bottom:12px}
+        .btn{display:inline-block;padding:12px 40px;border:none;border-radius:40px;font-size:15px;font-weight:600;cursor:pointer;transition:all 0.3s;min-height:48px;text-decoration:none}
+        .btn-primary{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
+        .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(102,126,234,0.3)}
+        .btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+        .btn-warning{background:linear-gradient(135deg,#fbbf24,#d97706);color:#1a1a2e}
+        .btn-warning:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(251,191,36,0.3)}
+        .btn-outline{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#d1d5db}
+        .btn-outline:hover{background:rgba(255,255,255,0.12)}
+        .action-bar{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+        .message{position:fixed;bottom:24px;right:24px;padding:14px 24px;border-radius:16px;z-index:9999;animation:slideUp 0.35s ease;max-width:420px;box-shadow:0 12px 40px rgba(0,0,0,0.5);font-size:14px;display:flex;align-items:center;gap:10px}
+        .message-success{background:#065f46;color:#a7f3d0;border:1px solid rgba(52,211,153,0.2)}
+        .message-error{background:#7f1d1d;color:#fca5a5;border:1px solid rgba(239,68,68,0.2)}
+        .message-warning{background:#78350f;color:#fde68a;border:1px solid rgba(251,191,36,0.2)}
+        @keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+        .loading{text-align:center;padding:60px 20px;color:rgba(255,255,255,0.3)}
+        .loading .spinner{width:40px;height:40px;border:3px solid rgba(255,255,255,0.1);border-top-color:#667eea;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .cards-progress{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:16px;background:rgba(167,139,250,0.08);border-radius:14px;border:1px solid rgba(167,139,250,0.2);margin-top:16px}
+        .cards-progress .cp-icon{font-size:32px}
+        .cards-progress .cp-info{flex:1;min-width:200px}
+        .cards-progress .cp-title{font-size:14px;color:#fff;font-weight:600;margin-bottom:4px}
+        .cards-progress .cp-bar{height:8px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;margin-top:6px}
+        .cards-progress .cp-fill{height:100%;background:linear-gradient(90deg,#a78bfa,#7c3aed);border-radius:4px;transition:width 0.5s}
+        .cards-progress .cp-count{font-size:13px;color:#a78bfa;font-weight:600}
+        @media(max-width:768px){
+            body{padding:12px}
+            .header{padding:12px 16px}
+            .header h1{font-size:20px}
+            .section{padding:16px}
+            .detail-hero{padding:28px 16px}
+            .detail-hero .hero-emoji{font-size:64px}
+            .detail-hero .hero-name{font-size:24px}
+            .info-grid{grid-template-columns:repeat(2,1fr)}
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🎮 游戏详情</h1>
+        <a href="/GAME/" class="back-btn">← 返回游戏大厅</a>
+    </div>
+
+    <div id="content">
+        <div class="loading"><div class="spinner"></div>加载中...</div>
+    </div>
+</div>
+
+<script>
+    var csrfToken = null;
+    var csrfTokenLastFetch = 0;
+    var gameId = '';
+
+    function getCsrfTokenFromCookie() {
+        try {
+            var c = document.cookie.split(';');
+            for (var i = 0; i < c.length; i++) {
+                var cookie = c[i].trim();
+                if (cookie.indexOf('csrf_token=') === 0) {
+                    return cookie.substring('csrf_token='.length, cookie.length);
+                }
+            }
+        } catch (e) {}
+        return null;
+    }
+
+    async function fetchCsrfToken() {
+        if (csrfToken && (Date.now() - csrfTokenLastFetch) < 300000) return csrfToken;
+        var cookieToken = getCsrfTokenFromCookie();
+        if (cookieToken) {
+            csrfToken = cookieToken;
+            csrfTokenLastFetch = Date.now();
+            return csrfToken;
+        }
+        try {
+            var res = await fetch('/api/csrf-token', {
+                method: 'GET',
+                credentials: 'include',
+                headers: { 'Accept': 'application/json' }
+            });
+            var data = await res.json();
+            if (data.csrf_token) {
+                csrfToken = data.csrf_token;
+                csrfTokenLastFetch = Date.now();
+                return csrfToken;
+            }
+            throw new Error('No CSRF token');
+        } catch (e) {
+            throw new Error('Failed to fetch CSRF token');
+        }
+    }
+
+    async function apiRequest(url, options) {
+        if (!options) options = {};
+        options.credentials = 'include';
+        if (!options.headers) options.headers = {};
+        options.headers['Content-Type'] = 'application/json';
+        options.headers['Accept'] = 'application/json';
+        var method = (options.method || 'GET').toUpperCase();
+        if (method === 'GET' || method === 'HEAD') {
+            var res = await fetch(url, options);
+            var data = await res.json();
+            if (!res.ok) throw new Error(data.error || '请求失败: ' + res.status);
+            return data;
+        }
+        var token = await fetchCsrfToken();
+        options.headers['X-CSRF-Token'] = token;
+        var res = await fetch(url, options);
+        var data = await res.json();
+        if (!res.ok) throw new Error(data.error || '请求失败: ' + res.status);
+        return data;
+    }
+
+    function showMessage(msg, type) {
+        var d = document.createElement('div');
+        d.className = 'message message-' + type;
+        var icon = type === 'success' ? '✅' : type === 'error' ? '❌' : '⚠️';
+        d.innerHTML = icon + ' ' + msg;
+        document.body.appendChild(d);
+        setTimeout(function() { d.remove(); }, 3500);
+    }
+
+    function escapeHtml(t) {
+        if (!t) return '';
+        var d = document.createElement('div');
+        d.textContent = t;
+        return d.innerHTML;
+    }
+
+    function formatTime(ts) {
+        if (!ts) return '';
+        var d = new Date(ts);
+        var now = new Date();
+        var diff = now - d;
+        if (diff < 60000) return '刚刚';
+        if (diff < 3600000) return Math.floor(diff / 60000) + '分钟前';
+        if (diff < 86400000) return Math.floor(diff / 3600000) + '小时前';
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    }
+
+    var GAME_INFO = {
+        'dice': {
+            emoji: '🎲',
+            name: '骰子大战',
+            desc: '你和AI各掷3个骰子，点数大者获胜',
+            exclusive: false,
+            min_points: 5,
+            max_points: 40,
+            rules: [
+                '你和AI各掷3个骰子，比较总点数大小',
+                '可选择"比大"、"比小"、"超过7点"、"低于7点"等玩法',
+                '点数差距越小，奖励越高（差1点最高可获得20~40积分）',
+                '连赢3局额外+20%，连赢5局额外+50%',
+                '会员额外享受加成：普通+30% / 黄金+50% / 钻石+100% / 至尊+300%'
+            ]
+        },
+        'blackjack': {
+            emoji: '🃏',
+            name: '二十一点',
+            desc: '与庄家比21点，点数大者获胜（超过21点爆牌）',
+            exclusive: false,
+            min_points: 10,
+            max_points: 55,
+            rules: [
+                '系统发牌，你和庄家各得2张牌',
+                '目标是让手牌点数接近21点但不超过21点',
+                '庄家点数小于17时必须继续抽牌',
+                'A可算1点或11点，以最接近21点为准',
+                '玩家21点且庄家非21点时，奖励最高（30~55积分）'
+            ]
+        },
+        'guess_number': {
+            emoji: '🎯',
+            name: '猜数字',
+            desc: '1-100之间猜数字，7次机会',
+            exclusive: false,
+            min_points: 8,
+            max_points: 45,
+            rules: [
+                '系统随机生成 1-100 之间的整数',
+                '每次猜测后会提示"太大了"或"太小了"',
+                '总共 7 次机会，猜中即获胜',
+                '使用次数越少，奖励越高（3次内猜中最高25~45积分）',
+                '游戏进度实时保存，刷新页面可继续'
+            ]
+        },
+        'rock_paper_scissors': {
+            emoji: '🤖',
+            name: '石头剪刀布',
+            desc: '三局两胜，与AI对战',
+            exclusive: false,
+            min_points: 3,
+            max_points: 25,
+            rules: [
+                '石头胜剪刀、剪刀胜布、布胜石头',
+                '三局两胜制，先赢2局者获胜',
+                '平局不计入胜负，重开一局',
+                '最多进行10轮',
+                '支持键盘快捷键：R/1=石头，P/2=布，S/3=剪刀'
+            ]
+        },
+        'roulette': {
+            emoji: '🎡',
+            name: '轮盘赌',
+            desc: '猜数字/颜色/奇偶/大小',
+            exclusive: false,
+            min_points: 8,
+            max_points: 100,
+            rules: [
+                '轮盘共 37 个数字：0-36',
+                '0 为绿色，其他数字分红黑两色',
+                '可下注：数字、红色/黑色、偶数/奇数、大(19-36)/小(1-18)',
+                '猜中数字（0-36）赔率最高，奖励60~100积分',
+                '颜色/奇偶/大小命中奖励中等（8~20积分）'
+            ]
+        },
+        'whack_mole': {
+            emoji: '🔨',
+            name: '打地鼠',
+            desc: '30秒限时点击地鼠，避开炸弹',
+            exclusive: false,
+            min_points: 8,
+            max_points: 35,
+            rules: [
+                '9宫格随机出现地鼠，30秒内点击得分',
+                '点击地鼠 +1 分，点击炸弹 -2 分',
+                '使用瞄准镜道具可延长 10 秒',
+                '得分越高奖励越多，满分30分可获得最高35积分',
+                '得分归零时不获得积分'
+            ]
+        },
+        'lucky_wheel': {
+            emoji: '🎰',
+            name: '幸运转盘',
+            desc: '转盘抽奖，最高 x20 倍率',
+            exclusive: true,
+            min_points: 5,
+            max_points: 80,
+            rules: [
+                '黄金会员及以上专属游戏',
+                '转盘共 8 个扇区：谢谢参与、x1、x2、x3、x5、x8、x10、x20',
+                '点击"转动转盘"，轮盘旋转4秒后停止',
+                '指针指向的扇区即为本次结果',
+                'x10 及以上倍率奖励丰厚，x20 最高可获得50~80积分'
+            ]
+        },
+        'memory_cards': {
+            emoji: '🧠',
+            name: '记忆翻牌',
+            desc: '翻牌配对，步数越少分越高',
+            exclusive: true,
+            min_points: 8,
+            max_points: 60,
+            rules: [
+                '钻石会员专属游戏',
+                '4x4 网格共 16 张卡片，8 对相同图案',
+                '每次翻开 2 张牌，配对成功则保留',
+                '全部配对完成即可获得奖励',
+                '步数越少奖励越高：12步内40~60积分，24步以上8~15积分'
+            ]
+        }
+    };
+
+    async function loadDetails() {
+        var params = new URLSearchParams(window.location.search);
+        gameId = params.get('game') || '';
+        var info = GAME_INFO[gameId];
+        var content = document.getElementById('content');
+        if (!info) {
+            content.innerHTML = '<div class="empty"><span class="empty-icon">❓</span>游戏不存在</div>';
+            return;
+        }
+        var personalStats = null;
+        var history = [];
+        var collectionProgress = null;
+        try {
+            var statsData = await apiRequest('/api/game/personal-stats');
+            personalStats = statsData;
+        } catch (e) {}
+        try {
+            var historyData = await apiRequest('/api/game/history');
+            if (historyData.history) {
+                history = historyData.history.filter(function(r) { return r.game_id === gameId; }).slice(0, 5);
+            }
+        } catch (e) {}
+        try {
+            var colData = await apiRequest('/api/game/collection/overview');
+            if (colData.game_progress && colData.game_progress[gameId]) {
+                collectionProgress = colData.game_progress[gameId];
+            }
+        } catch (e) {}
+        var gameStats = personalStats && personalStats.game_stats ? personalStats.game_stats[gameId] : null;
+        var totalPlays = gameStats ? gameStats.plays : 0;
+        var totalWins = gameStats ? gameStats.wins : 0;
+        var winRate = gameStats ? gameStats.win_rate : 0;
+        var html = '';
+        html += '<div class="detail-hero">';
+        html += '<span class="hero-emoji">' + info.emoji + '</span>';
+        html += '<div class="hero-name">' + escapeHtml(info.name) + '</div>';
+        html += '<div class="hero-desc">' + escapeHtml(info.desc) + '</div>';
+        if (info.exclusive) {
+            html += '<div class="exclusive-badge">👑 会员专属游戏</div>';
+        }
+        html += '</div>';
+        html += '<div class="info-grid">';
+        html += '<div class="info-card"><span class="info-icon">🎮</span><div class="info-label">总局数</div><div class="info-value">' + totalPlays + '</div></div>';
+        html += '<div class="info-card"><span class="info-icon">🏆</span><div class="info-label">总胜场</div><div class="info-value green">' + totalWins + '</div></div>';
+        html += '<div class="info-card"><span class="info-icon">📈</span><div class="info-label">胜率</div><div class="info-value gold">' + winRate + '%</div></div>';
+        html += '<div class="info-card"><span class="info-icon">🎁</span><div class="info-label">奖励范围</div><div class="info-value gold">' + info.min_points + '~' + info.max_points + '</div></div>';
+        html += '</div>';
+        html += '<div class="section">';
+        html += '<div class="section-title">📖 玩法说明</div>';
+        html += '<div class="rule-list">';
+        info.rules.forEach(function(rule, idx) {
+            html += '<div class="rule-item"><span class="rule-num">' + (idx + 1) + '</span><span>' + escapeHtml(rule) + '</span></div>';
+        });
+        html += '</div>';
+        html += '</div>';
+        if (collectionProgress) {
+            var pct = Math.round(collectionProgress.owned / Math.max(1, collectionProgress.total) * 100);
+            html += '<div class="section">';
+            html += '<div class="section-title">📖 卡牌收集进度</div>';
+            html += '<div class="cards-progress">';
+            html += '<span class="cp-icon">' + collectionProgress.icon + '</span>';
+            html += '<div class="cp-info">';
+            html += '<div class="cp-title">' + escapeHtml(collectionProgress.name) + ' 卡牌</div>';
+            html += '<div class="cp-bar"><div class="cp-fill" style="width:' + pct + '%"></div></div>';
+            html += '</div>';
+            html += '<div class="cp-count">' + collectionProgress.owned + '/' + collectionProgress.total + '</div>';
+            html += '</div>';
+            html += '<div style="margin-top:12px;text-align:center;">';
+            html += '<a href="/GAME/collection.html" class="btn btn-outline" style="font-size:13px;padding:8px 20px;min-height:40px;">查看完整收集册</a>';
+            html += '</div>';
+            html += '</div>';
+        }
+        html += '<div class="section">';
+        html += '<div class="section-title">📜 最近战绩</div>';
+        if (history.length === 0) {
+            html += '<div class="empty"><span class="empty-icon">📭</span>暂无该游戏的记录</div>';
+        } else {
+            html += '<div class="history-list">';
+            history.forEach(function(r) {
+                var resultIcon = r.won ? '🎉' : '😔';
+                var pointsClass = r.won ? 'win' : 'lose';
+                var pointsText = r.won ? '+' + r.points_earned : '0';
+                html += '<div class="history-record">';
+                html += '<div class="hr-left">';
+                html += '<span class="hr-result">' + resultIcon + '</span>';
+                html += '<div><div class="hr-detail">' + escapeHtml(r.detail || '') + '</div><div class="hr-time">' + formatTime(r.timestamp) + '</div></div>';
+                html += '</div>';
+                html += '<span class="hr-points ' + pointsClass + '">' + pointsText + '</span>';
+                html += '</div>';
+            });
+            html += '</div>';
+        }
+        html += '</div>';
+        html += '<div class="action-bar">';
+        html += '<a href="/GAME/?game=' + gameId + '" class="btn btn-warning">🎮 立即开玩</a>';
+        html += '<a href="/GAME/" class="btn btn-outline">← 返回大厅</a>';
+        html += '</div>';
+        content.innerHTML = html;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadDetails();
+    });
+</script>
+</body>
+</html>

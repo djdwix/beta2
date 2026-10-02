@@ -12,14 +12,13 @@
         .header h1{font-size:24px;background:linear-gradient(135deg,#fbbf24,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
         .header .stats{display:flex;gap:20px;flex-wrap:wrap;font-size:13px;color:rgba(255,255,255,0.6)}
         .header .stats span{background:rgba(255,255,255,0.06);padding:4px 14px;border-radius:20px}
-        .header .stats .highlight{color:#fbbf24}
         .header .right-group{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-        .header .back-btn{padding:8px 20px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:40px;color:#d1d5db;cursor:pointer;transition:all 0.3s;font-size:13px;text-decoration:none}
+        .header .back-btn{padding:8px 20px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:40px;color:#d1d5db;cursor:pointer;transition:all 0.3s;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;min-height:40px}
         .header .back-btn:hover{background:rgba(255,255,255,0.15)}
         .membership-btn{padding:8px 20px;background:linear-gradient(135deg,#fbbf24,#d97706);border:none;border-radius:40px;color:#1a1a2e;cursor:pointer;font-weight:600;font-size:13px;text-decoration:none;transition:all 0.3s;display:inline-block}
         .membership-btn:hover{transform:scale(1.05);box-shadow:0 4px 20px rgba(251,191,36,0.3)}
         .tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
-        .tab{padding:10px 24px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:40px;color:rgba(255,255,255,0.6);cursor:pointer;transition:all 0.3s;font-size:14px;font-weight:500;min-height:44px;display:flex;align-items:center}
+        .tab{padding:10px 24px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:40px;color:rgba(255,255,255,0.6);cursor:pointer;transition:all 0.3s;font-size:14px;font-weight:500;min-height:44px;display:flex;align-items:center;text-decoration:none}
         .tab:hover{background:rgba(255,255,255,0.08)}
         .tab.active{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border-color:transparent}
         .tab-content{display:none}
@@ -57,7 +56,7 @@
         .game-area .game-content .roulette-result.red{color:#f87171}
         .game-area .game-content .roulette-result.black{color:#fff}
         .game-area .game-content .roulette-result.green{color:#34d399}
-        .btn{display:inline-block;padding:10px 28px;border:none;border-radius:40px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s;min-height:44px}
+        .btn{display:inline-block;padding:10px 28px;border:none;border-radius:40px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s;min-height:44px;text-decoration:none}
         .btn-primary{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
         .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(102,126,234,0.3)}
         .btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none}
@@ -75,7 +74,6 @@
         .bet-options button:hover{background:rgba(255,255,255,0.12)}
         .bet-options button.active{background:rgba(102,126,234,0.3);border-color:#667eea;color:#a78bfa}
         .loading{text-align:center;padding:40px;color:rgba(255,255,255,0.3)}
-        .loading i{font-size:28px;display:block;margin-bottom:12px;color:#667eea}
         .skeleton{background:rgba(255,255,255,0.04);border-radius:20px;padding:20px;min-height:160px;position:relative;overflow:hidden}
         .skeleton::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.06),transparent);animation:shimmer 1.5s infinite}
         @keyframes shimmer{0%{left:-100%}100%{left:100%}}
@@ -160,6 +158,36 @@
         .memory-card.matched{background:rgba(52,211,153,0.2);border-color:#34d399;cursor:default}
         .memory-card.matched:hover{transform:none}
         .memory-card.hidden{color:transparent}
+        .stat-card{background:rgba(255,255,255,0.04);border-radius:16px;padding:20px;border:1px solid rgba(255,255,255,0.06);text-align:center}
+        .stat-card .stat-label{font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:8px}
+        .stat-card .stat-value{font-size:26px;font-weight:700;color:#fff}
+        .stat-card .stat-value.green{color:#34d399}
+        .stat-card .stat-value.red{color:#f87171}
+        .stat-card .stat-value.gold{color:#fbbf24}
+        .stat-card .stat-value.blue{color:#60a5fa}
+        .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px}
+        .points-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-size:48px;font-weight:900;color:#fbbf24;text-shadow:0 0 30px rgba(251,191,36,0.8);z-index:10000;pointer-events:none;animation:pointsFloat 1.5s ease-out forwards}
+        @keyframes pointsFloat{0%{transform:translate(-50%,-50%) scale(0.5);opacity:0}30%{transform:translate(-50%,-70%) scale(1.3);opacity:1}100%{transform:translate(-50%,-120%) scale(1);opacity:0}}
+        .ach-popup{position:fixed;top:80px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,rgba(251,191,36,0.95),rgba(217,119,6,0.95));color:#1a1a2e;padding:20px 32px;border-radius:20px;box-shadow:0 12px 40px rgba(251,191,36,0.5);z-index:10001;display:flex;align-items:center;gap:16px;animation:achSlide 0.5s ease-out;max-width:90%;border:2px solid rgba(255,255,255,0.3)}
+        .ach-popup .ach-icon{font-size:40px}
+        .ach-popup .ach-info .ach-title{font-size:12px;opacity:0.7;font-weight:600;margin-bottom:4px}
+        .ach-popup .ach-info .ach-name{font-size:18px;font-weight:800}
+        @keyframes achSlide{0%{transform:translate(-50%,-100px);opacity:0}100%{transform:translate(-50%,0);opacity:1}}
+        .whack-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:360px;margin:20px auto}
+        .whack-hole{aspect-ratio:1;background:radial-gradient(circle at 50% 80%,#3a2a1a,#1a1a2e);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:44px;cursor:pointer;border:3px solid rgba(139,69,19,0.4);transition:all 0.2s;user-select:none;position:relative;overflow:hidden}
+        .whack-hole:hover{border-color:rgba(251,191,36,0.6)}
+        .whack-hole:active{transform:scale(0.95)}
+        .whack-hole.mole{background:radial-gradient(circle at 50% 80%,#4a3520,#2a1a0e);border-color:#34d399;animation:popIn 0.2s ease-out}
+        .whack-hole.bomb{background:radial-gradient(circle at 50% 80%,#4a1a1a,#2a0e0e);border-color:#f87171;animation:popIn 0.2s ease-out}
+        @keyframes popIn{0%{transform:scale(0.5);opacity:0}100%{transform:scale(1);opacity:1}}
+        .whack-status{display:flex;justify-content:space-around;padding:16px;background:rgba(255,255,255,0.04);border-radius:14px;margin-bottom:12px;flex-wrap:wrap;gap:12px}
+        .whack-status .stat{text-align:center}
+        .whack-status .stat-label{font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:4px}
+        .whack-status .stat-value{font-size:22px;font-weight:700;color:#fff}
+        .whack-status .stat-value.gold{color:#fbbf24}
+        .whack-status .stat-value.red{color:#f87171}
+        .card-drop-toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);padding:14px 24px;border-radius:16px;background:linear-gradient(135deg,rgba(102,126,234,0.95),rgba(118,75,162,0.95));color:#fff;font-size:14px;font-weight:600;z-index:9998;box-shadow:0 12px 40px rgba(102,126,234,0.5);animation:cardDrop 3s ease-out forwards;display:flex;align-items:center;gap:12px;border:2px solid rgba(255,255,255,0.2);max-width:90%}
+        @keyframes cardDrop{0%{transform:translate(-50%,50px);opacity:0}10%{transform:translate(-50%,0);opacity:1}90%{transform:translate(-50%,0);opacity:1}100%{transform:translate(-50%,-30px);opacity:0}}
         @media(max-width:768px){
             body{padding:12px}
             .game-grid{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
@@ -179,6 +207,9 @@
             .header .stats{gap:8px;font-size:12px}
             .task-item{padding:12px}
             .history-record{padding:12px}
+            .stats-grid{grid-template-columns:repeat(2,1fr)}
+            .whack-grid{gap:8px;max-width:300px}
+            .whack-hole{font-size:36px}
         }
     </style>
 </head>
@@ -195,15 +226,21 @@
             <span id="streakDisplay" style="color:rgba(255,255,255,0.3);font-size:12px;display:none;">🔥 连赢: 0</span>
         </div>
         <div class="right-group">
+            <a href="/GAME/collection.html" class="membership-btn" style="background:linear-gradient(135deg,#a78bfa,#7c3aed);color:#fff;">📖 卡牌收集</a>
+            <a href="/GAME/dashboard.html" class="membership-btn" style="background:linear-gradient(135deg,#34d399,#059669);">🎁 每日福利</a>
             <a href="/GAME/membership.html" class="membership-btn">👑 会员中心</a>
             <a href="/" class="back-btn">← 返回主控台</a>
         </div>
     </div>
 
     <div class="tabs">
-        <div class="tab active" onclick="switchTab('games')">🎮 游戏</div>
-        <div class="tab" onclick="switchTab('tasks')">📋 每日任务</div>
-        <div class="tab" onclick="switchTab('history')">📜 游戏记录</div>
+        <div class="tab active" onclick="switchTab('games', event)">🎮 游戏</div>
+        <div class="tab" onclick="switchTab('tasks', event)">📋 每日任务</div>
+        <div class="tab" onclick="switchTab('history', event)">📜 游戏记录</div>
+        <div class="tab" onclick="switchTab('achievements', event)">🎖️ 成就</div>
+        <div class="tab" onclick="switchTab('items', event)">🎁 道具</div>
+        <div class="tab" onclick="switchTab('leaderboard', event)">🏆 排行榜</div>
+        <div class="tab" onclick="switchTab('stats', event)">📊 我的战绩</div>
     </div>
 
     <div class="tab-content active" id="tab-games">
@@ -242,6 +279,59 @@
         </div>
     </div>
 
+    <div class="tab-content" id="tab-achievements">
+        <div class="task-header">
+            <h3>🎖️ 成就系统</h3>
+            <div class="task-summary">已解锁: <strong id="achProgress">0/0</strong></div>
+        </div>
+        <div style="margin-bottom:16px;text-align:right;">
+            <button class="btn btn-warning" id="claimAllAchBtn" onclick="claimAllAchievements()" style="display:none;">🎁 一键领取</button>
+        </div>
+        <div class="task-list" id="achievementList">
+            <div class="skeleton"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+            <div class="skeleton"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+            <div class="skeleton"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+        </div>
+    </div>
+
+    <div class="tab-content" id="tab-items">
+        <div class="task-header">
+            <h3>🎁 道具背包</h3>
+        </div>
+        <div class="task-list" id="itemList">
+            <div class="skeleton"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+        </div>
+        <div class="task-header" style="margin-top:24px;">
+            <h3>🛒 道具商店</h3>
+        </div>
+        <div class="task-list" id="shopList">
+            <div class="skeleton"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+        </div>
+    </div>
+
+    <div class="tab-content" id="tab-leaderboard">
+        <div class="task-header">
+            <h3>🏆 排行榜</h3>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="btn btn-outline" id="lbBtnToday" onclick="loadLeaderboard('today')">今日</button>
+                <button class="btn btn-outline" id="lbBtnWeek" onclick="loadLeaderboard('week')">本周</button>
+                <button class="btn btn-primary" id="lbBtnTotal" onclick="loadLeaderboard('total')">总榜</button>
+            </div>
+        </div>
+        <div class="history-list" id="leaderboardList">
+            <div class="skeleton"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+        </div>
+    </div>
+
+    <div class="tab-content" id="tab-stats">
+        <div class="task-header">
+            <h3>📊 我的战绩</h3>
+        </div>
+        <div id="personalStats">
+            <div class="skeleton"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+        </div>
+    </div>
+
     <div class="game-area" id="gameArea">
         <div class="game-title">
             <span id="gameTitle">游戏</span>
@@ -266,6 +356,12 @@
     var memberBonusRate = 0;
     var currentTier = 'none';
     var currentWinStreak = 0;
+    var currentLbPeriod = 'total';
+    var memoryState = { cards: [], flipped: [], matched: [], moves: 0, lock: false };
+    var whackState = { score: 0, hits: 0, bombs: 0, active: false, timeLeft: 0, timer: null, duration: 30 };
+    var shownAchievements = {};
+    var isAnimating = false;
+    var lastPointsPopupTime = 0;
 
     function getCsrfTokenFromCookie() {
         try {
@@ -355,6 +451,59 @@
         setTimeout(function() { d.remove(); }, 3500);
     }
 
+    function showPointsPopup(points) {
+        if (!points || points <= 0) return;
+        var now = Date.now();
+        if (now - lastPointsPopupTime < 300) return;
+        lastPointsPopupTime = now;
+        var d = document.createElement('div');
+        d.className = 'points-popup';
+        d.textContent = '+' + points;
+        document.body.appendChild(d);
+        setTimeout(function() { d.remove(); }, 1500);
+    }
+
+    function showAchievementPopup(ach) {
+        var d = document.createElement('div');
+        d.className = 'ach-popup';
+        d.innerHTML = '<span class="ach-icon">' + ach.icon + '</span>' +
+            '<div class="ach-info">' +
+            '<div class="ach-title">🎖️ 成就解锁</div>' +
+            '<div class="ach-name">' + escapeHtml(ach.name) + '</div>' +
+            '</div>';
+        document.body.appendChild(d);
+        setTimeout(function() { d.remove(); }, 4000);
+    }
+
+    function showCardDrop(drop) {
+        if (!drop) return;
+        var d = document.createElement('div');
+        d.className = 'card-drop-toast';
+        var color = drop.rarity_color || '#fff';
+        d.innerHTML = '<span style="font-size:32px;">' + drop.card.emoji + '</span>' +
+            '<div>' +
+            '<div style="font-size:12px;opacity:0.8;">' + (drop.is_new ? '🎉 获得新卡牌' : '🎴 重复卡牌') + '</div>' +
+            '<div style="font-size:15px;color:' + color + ';font-weight:700;">' + escapeHtml(drop.card.name) + ' · ' + drop.rarity_name + '</div>' +
+            '</div>';
+        document.body.appendChild(d);
+        setTimeout(function() { d.remove(); }, 3000);
+    }
+
+    async function checkNewAchievements() {
+        try {
+            var data = await apiRequest('/api/game/achievements');
+            if (!data.achievements) return;
+            data.achievements.forEach(function(a) {
+                if (a.unlocked && !shownAchievements[a.id]) {
+                    shownAchievements[a.id] = true;
+                    if (!a.reward_claimed) {
+                        showAchievementPopup(a);
+                    }
+                }
+            });
+        } catch (e) {}
+    }
+
     function escapeHtml(t) {
         if (!t) return '';
         var d = document.createElement('div');
@@ -373,13 +522,24 @@
         return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
     }
 
-    function switchTab(tab) {
+    function switchTab(tab, evt) {
+        var target = evt ? evt.currentTarget : (window.event ? window.event.target : null);
         document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
         document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
-        event.target.classList.add('active');
-        document.getElementById('tab-' + tab).classList.add('active');
+        if (target) {
+            target.classList.add('active');
+        } else {
+            var fallback = document.querySelector('.tab[onclick*="' + tab + '"]');
+            if (fallback) fallback.classList.add('active');
+        }
+        var content = document.getElementById('tab-' + tab);
+        if (content) content.classList.add('active');
         if (tab === 'tasks') loadTasks();
         if (tab === 'history') loadHistory();
+        if (tab === 'achievements') loadAchievements();
+        if (tab === 'items') loadItems();
+        if (tab === 'leaderboard') loadLeaderboard();
+        if (tab === 'stats') loadPersonalStats();
     }
 
     async function loadMemberStatus() {
@@ -391,9 +551,9 @@
             var el = document.getElementById('memberStatus');
             var tierName = data.tier_name || '普通';
             if (isMember) {
-                var icons = {'normal': '👑', 'gold': '🥇', 'diamond': '💎'};
+                var icons = {'normal': '👑', 'gold': '🥇', 'diamond': '💎', 'supreme': '👑'};
                 el.textContent = (icons[currentTier] || '👑') + ' ' + tierName;
-                el.style.color = currentTier === 'diamond' ? '#a78bfa' : currentTier === 'gold' ? '#fbbf24' : '#fbbf24';
+                el.style.color = currentTier === 'supreme' ? '#ec4899' : currentTier === 'diamond' ? '#a78bfa' : currentTier === 'gold' ? '#fbbf24' : '#fbbf24';
                 document.getElementById('bonusDisplay').textContent = '加成: +' + memberBonusRate + '%';
                 document.getElementById('bonusDisplay').style.color = '#34d399';
             } else {
@@ -429,9 +589,9 @@
                 isMember = true;
                 currentTier = data.member_tier || 'normal';
                 memberBonusRate = data.member_bonus_rate || 0;
-                var icons = {'normal': '👑', 'gold': '🥇', 'diamond': '💎'};
+                var icons = {'normal': '👑', 'gold': '🥇', 'diamond': '💎', 'supreme': '👑'};
                 document.getElementById('memberStatus').textContent = (icons[currentTier] || '👑') + ' ' + (data.member_tier_name || '会员');
-                document.getElementById('memberStatus').style.color = currentTier === 'diamond' ? '#a78bfa' : currentTier === 'gold' ? '#fbbf24' : '#fbbf24';
+                document.getElementById('memberStatus').style.color = currentTier === 'supreme' ? '#ec4899' : currentTier === 'diamond' ? '#a78bfa' : currentTier === 'gold' ? '#fbbf24' : '#fbbf24';
                 document.getElementById('bonusDisplay').textContent = '加成: +' + memberBonusRate + '%';
                 document.getElementById('bonusDisplay').style.color = '#34d399';
             }
@@ -455,7 +615,7 @@
                 var memberTag = isMemberFlag ? ' <span style="font-size:10px;color:#fbbf24;">👑</span>' : '';
                 var bonusTag = isMemberFlag ? ' <span style="font-size:10px;color:#34d399;">+' + memberBonusRate + '%</span>' : '';
                 var exclusiveTag = g.exclusive ? '<span class="exclusive-tag">专属</span>' : '';
-                html += '<div class="game-card ' + disabled + '" onclick="startGame(\'' + g.id + '\')">';
+                html += '<div class="game-card ' + disabled + '" onclick="window.location.href=\'/GAME/details.html?game=' + g.id + '\'">';
                 html += exclusiveTag;
                 html += '<span class="emoji">' + g.emoji + '</span>';
                 html += '<div class="name">' + escapeHtml(g.name) + memberTag + '</div>';
@@ -521,6 +681,7 @@
                 body: JSON.stringify({ task_id: taskId })
             });
             showMessage(data.message, 'success');
+            showPointsPopup(data.reward || 0);
             loadTasks();
             loadStats();
         } catch (e) {
@@ -535,6 +696,7 @@
                 body: JSON.stringify({})
             });
             showMessage(data.message, 'success');
+            if (data.total_reward) showPointsPopup(data.total_reward);
             loadTasks();
             loadStats();
         } catch (e) {
@@ -558,7 +720,8 @@
                 var icons = {
                     'dice': '🎲', 'blackjack': '🃏', 'guess_number': '🎯',
                     'rock_paper_scissors': '🤖', 'roulette': '🎡',
-                    'lucky_wheel': '🎰', 'memory_cards': '🃏'
+                    'lucky_wheel': '🎰', 'memory_cards': '🧠',
+                    'whack_mole': '🔨'
                 };
                 var icon = icons[r.game_id] || '🎮';
                 var pointsClass = r.won ? 'win' : 'lose';
@@ -611,7 +774,298 @@
         }
     }
 
+    async function loadAchievements() {
+        try {
+            var data = await apiRequest('/api/game/achievements');
+            var list = document.getElementById('achievementList');
+            var progress = document.getElementById('achProgress');
+            progress.textContent = data.unlocked_count + '/' + data.total_count;
+            var html = '';
+            var claimableCount = 0;
+            data.achievements.forEach(function(a) {
+                var pct = Math.min(100, (a.progress / a.target) * 100);
+                var itemClass = a.unlocked ? (a.reward_claimed ? 'claimed' : 'completed') : '';
+                html += '<div class="task-item ' + itemClass + '">';
+                html += '<div class="task-info" style="display:flex;align-items:center;gap:12px;">';
+                html += '<div style="font-size:32px;flex-shrink:0;">' + a.icon + '</div>';
+                html += '<div style="flex:1;min-width:0;">';
+                html += '<div class="task-name">' + escapeHtml(a.name) + (a.unlocked ? ' ✅' : '') + '</div>';
+                html += '<div class="task-progress">' + escapeHtml(a.desc) + '</div>';
+                html += '<div class="task-progress">进度: ' + a.progress + '/' + a.target + '</div>';
+                html += '<div class="task-progress-bar"><div class="task-progress-fill" style="width:' + pct + '%"></div></div>';
+                html += '</div>';
+                html += '</div>';
+                html += '<div style="display:flex;align-items:center;gap:12px;flex-shrink:0;">';
+                html += '<div class="task-reward">+' + a.reward + '积分</div>';
+                if (a.unlocked && !a.reward_claimed) {
+                    claimableCount++;
+                    html += '<button class="task-btn claimable" onclick="claimAchievement(\'' + a.id + '\')">领取</button>';
+                } else if (a.reward_claimed) {
+                    html += '<button class="task-btn claimed" disabled>已领取</button>';
+                } else {
+                    html += '<button class="task-btn locked" disabled>未解锁</button>';
+                }
+                html += '</div>';
+                html += '</div>';
+            });
+            list.innerHTML = html;
+            var btn = document.getElementById('claimAllAchBtn');
+            if (claimableCount > 0) {
+                btn.style.display = 'inline-block';
+                btn.textContent = '🎁 一键领取 (' + claimableCount + ')';
+            } else {
+                btn.style.display = 'none';
+            }
+        } catch (e) {
+            console.error('Load achievements error:', e);
+            document.getElementById('achievementList').innerHTML = '<div class="loading">加载失败: ' + escapeHtml(e.message) + '</div>';
+        }
+    }
+
+    async function claimAchievement(id) {
+        try {
+            var data = await apiRequest('/api/game/achievements/claim', {
+                method: 'POST',
+                body: JSON.stringify({ achievement_id: id })
+            });
+            showMessage(data.message, 'success');
+            loadAchievements();
+            loadStats();
+        } catch (e) {
+            showMessage(e.message, 'error');
+        }
+    }
+
+    async function claimAllAchievements() {
+        try {
+            var data = await apiRequest('/api/game/achievements/claim-all', {
+                method: 'POST',
+                body: JSON.stringify({})
+            });
+            showMessage(data.message, 'success');
+            if (data.total_reward) showPointsPopup(data.total_reward);
+            loadAchievements();
+            loadStats();
+        } catch (e) {
+            showMessage(e.message, 'error');
+        }
+    }
+
+    async function loadItems() {
+        try {
+            var shopData = await apiRequest('/api/game/items/shop');
+            var listData = await apiRequest('/api/game/items/list');
+            var ownedMap = {};
+            (listData.items || []).forEach(function(it) {
+                ownedMap[it.id] = it;
+            });
+            var activeMap = listData.active_effects || {};
+            var now = Math.floor(Date.now() / 1000);
+            var shopHtml = '';
+            (shopData.items || []).forEach(function(item) {
+                var owned = ownedMap[item.id];
+                var active = activeMap[item.id];
+                var activeTag = '';
+                if (active && active.expires_at > now) {
+                    activeTag = '<div style="font-size:12px;color:#34d399;margin-top:4px;">✅ 生效中 (' + (active.expires_at - now) + '秒)</div>';
+                }
+                shopHtml += '<div class="task-item">';
+                shopHtml += '<div class="task-info" style="display:flex;align-items:center;gap:12px;">';
+                shopHtml += '<div style="font-size:32px;flex-shrink:0;">' + item.icon + '</div>';
+                shopHtml += '<div style="flex:1;min-width:0;">';
+                shopHtml += '<div class="task-name">' + escapeHtml(item.name) + (owned ? ' (拥有 x' + owned.count + ')' : '') + '</div>';
+                shopHtml += '<div class="task-progress">' + escapeHtml(item.desc) + '</div>';
+                shopHtml += activeTag;
+                shopHtml += '</div>';
+                shopHtml += '</div>';
+                shopHtml += '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap;">';
+                shopHtml += '<div class="task-reward">' + item.price + ' 积分</div>';
+                if (owned && owned.count > 0) {
+                    shopHtml += '<button class="task-btn claimable" onclick="useItem(\'' + item.id + '\')">使用</button>';
+                }
+                shopHtml += '<button class="task-btn claimable" onclick="buyItem(\'' + item.id + '\')">购买</button>';
+                shopHtml += '</div>';
+                shopHtml += '</div>';
+            });
+            document.getElementById('shopList').innerHTML = shopHtml;
+            var ownedHtml = '';
+            var ownedItems = listData.items || [];
+            if (ownedItems.length === 0) {
+                ownedHtml = '<div class="history-empty"><span class="icon">🎒</span>背包空空如也</div>';
+            } else {
+                ownedItems.forEach(function(it) {
+                    var active = activeMap[it.id];
+                    var activeTag = '';
+                    if (active && active.expires_at > now) {
+                        activeTag = '<div style="font-size:12px;color:#34d399;margin-top:4px;">✅ 生效中 (' + (active.expires_at - now) + '秒)</div>';
+                    }
+                    ownedHtml += '<div class="task-item">';
+                    ownedHtml += '<div class="task-info" style="display:flex;align-items:center;gap:12px;">';
+                    ownedHtml += '<div style="font-size:32px;flex-shrink:0;">' + it.icon + '</div>';
+                    ownedHtml += '<div style="flex:1;min-width:0;">';
+                    ownedHtml += '<div class="task-name">' + escapeHtml(it.name) + ' x' + it.count + '</div>';
+                    ownedHtml += '<div class="task-progress">' + escapeHtml(it.desc) + '</div>';
+                    ownedHtml += activeTag;
+                    ownedHtml += '</div>';
+                    ownedHtml += '</div>';
+                    ownedHtml += '<button class="task-btn claimable" onclick="useItem(\'' + it.id + '\')">使用</button>';
+                    ownedHtml += '</div>';
+                });
+            }
+            document.getElementById('itemList').innerHTML = ownedHtml;
+        } catch (e) {
+            console.error('Load items error:', e);
+            document.getElementById('itemList').innerHTML = '<div class="loading">加载失败: ' + escapeHtml(e.message) + '</div>';
+            document.getElementById('shopList').innerHTML = '';
+        }
+    }
+
+    async function buyItem(itemId) {
+        try {
+            var data = await apiRequest('/api/game/items/buy', {
+                method: 'POST',
+                body: JSON.stringify({ item_id: itemId })
+            });
+            showMessage(data.message, 'success');
+            loadItems();
+            loadStats();
+        } catch (e) {
+            showMessage(e.message, 'error');
+        }
+    }
+
+    async function useItem(itemId) {
+        try {
+            var data = await apiRequest('/api/game/items/use', {
+                method: 'POST',
+                body: JSON.stringify({ item_id: itemId })
+            });
+            showMessage(data.message, 'success');
+            loadItems();
+        } catch (e) {
+            showMessage(e.message, 'error');
+        }
+    }
+
+    async function loadLeaderboard(period) {
+        if (period) currentLbPeriod = period;
+        ['Today', 'Week', 'Total'].forEach(function(p) {
+            var btn = document.getElementById('lbBtn' + p);
+            if (btn) {
+                var pLower = p.toLowerCase();
+                if (pLower === currentLbPeriod) {
+                    btn.className = 'btn btn-primary';
+                } else {
+                    btn.className = 'btn btn-outline';
+                }
+            }
+        });
+        try {
+            var data = await apiRequest('/api/game/leaderboard?period=' + currentLbPeriod);
+            var list = document.getElementById('leaderboardList');
+            var board = data.leaderboard || [];
+            if (board.length === 0) {
+                list.innerHTML = '<div class="history-empty"><span class="icon">🏆</span>暂无数据</div>';
+                return;
+            }
+            var html = '';
+            board.forEach(function(entry) {
+                var rankIcon = entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : entry.rank === 3 ? '🥉' : '#' + entry.rank;
+                var tierIcon = {'normal': '👑', 'gold': '🥇', 'diamond': '💎', 'supreme': '👑'}[entry.member_tier] || '';
+                var selfStyle = entry.is_self ? ' style="border-color:rgba(251,191,36,0.4);background:rgba(251,191,36,0.06);"' : '';
+                html += '<div class="history-record"' + selfStyle + '>';
+                html += '<div class="history-left">';
+                html += '<span class="history-icon" style="font-size:20px;">' + rankIcon + '</span>';
+                html += '<div class="history-detail">';
+                html += '<div class="history-game">' + escapeHtml(entry.username) + ' ' + tierIcon + (entry.is_self ? ' (你)' : '') + '</div>';
+                html += '<div class="history-meta">胜率 ' + entry.win_rate + '% · ' + entry.plays + '局 · ' + entry.points + '分</div>';
+                html += '</div>';
+                html += '</div>';
+                html += '<div class="history-right">';
+                html += '<span class="history-points win">' + entry.wins + ' 胜</span>';
+                html += '</div>';
+                html += '</div>';
+            });
+            list.innerHTML = html;
+        } catch (e) {
+            console.error('Load leaderboard error:', e);
+            document.getElementById('leaderboardList').innerHTML = '<div class="loading">加载失败: ' + escapeHtml(e.message) + '</div>';
+        }
+    }
+
+    async function loadPersonalStats() {
+        try {
+            var data = await apiRequest('/api/game/personal-stats');
+            var html = '';
+            html += '<div class="stats-grid">';
+            html += '<div class="stat-card"><div class="stat-label">🎮 总局数</div><div class="stat-value">' + data.total_plays + '</div></div>';
+            html += '<div class="stat-card"><div class="stat-label">🏆 总胜场</div><div class="stat-value green">' + data.total_wins + '</div></div>';
+            html += '<div class="stat-card"><div class="stat-label">😔 总败场</div><div class="stat-value red">' + data.total_losses + '</div></div>';
+            html += '<div class="stat-card"><div class="stat-label">📈 胜率</div><div class="stat-value gold">' + data.win_rate + '%</div></div>';
+            html += '<div class="stat-card"><div class="stat-label">💰 累计赚取积分</div><div class="stat-value gold">' + data.total_points_earned + '</div></div>';
+            html += '<div class="stat-card"><div class="stat-label">🔥 最长连赢</div><div class="stat-value red">' + data.max_win_streak + '</div></div>';
+            html += '<div class="stat-card"><div class="stat-label">💪 最长连败</div><div class="stat-value blue">' + data.max_lose_streak + '</div></div>';
+            html += '<div class="stat-card"><div class="stat-label">⚡ 当前连赢</div><div class="stat-value gold">' + data.current_win_streak + '</div></div>';
+            html += '</div>';
+            html += '<div class="task-header" style="margin-top:24px;"><h3>🎯 各游戏战绩</h3></div>';
+            html += '<div class="task-list">';
+            var hasAny = false;
+            Object.keys(data.game_stats || {}).forEach(function(gid) {
+                var g = data.game_stats[gid];
+                if (g.plays > 0 || g.wins > 0) hasAny = true;
+                html += '<div class="task-item">';
+                html += '<div class="task-info">';
+                html += '<div class="task-name">' + escapeHtml(g.name) + '</div>';
+                html += '<div class="task-progress">' + g.plays + '局 · ' + g.wins + '胜</div>';
+                html += '</div>';
+                html += '<div style="font-size:18px;font-weight:700;color:#fbbf24;">' + g.win_rate + '%</div>';
+                html += '</div>';
+            });
+            if (!hasAny) {
+                html += '<div class="history-empty">暂无游戏数据</div>';
+            }
+            html += '</div>';
+            document.getElementById('personalStats').innerHTML = html;
+        } catch (e) {
+            console.error('Load stats error:', e);
+            document.getElementById('personalStats').innerHTML = '<div class="loading">加载失败: ' + escapeHtml(e.message) + '</div>';
+        }
+    }
+
+    function whackVisibilityHandler() {
+        if (!whackState.active) return;
+        if (document.hidden) {
+            if (whackState.timer) {
+                clearInterval(whackState.timer);
+                whackState.timer = null;
+            }
+        } else {
+            if (!whackState.timer && whackState.timeLeft > 0) {
+                whackState.timer = setInterval(function() {
+                    whackState.timeLeft--;
+                    var timeEl = document.getElementById('whackTime');
+                    if (timeEl) timeEl.textContent = whackState.timeLeft;
+                    if (whackState.timeLeft <= 0) {
+                        clearInterval(whackState.timer);
+                        whackState.timer = null;
+                        finishWhackGame();
+                    }
+                }, 1000);
+            }
+        }
+    }
+
+    function cleanupGame() {
+        if (whackState.timer) {
+            clearInterval(whackState.timer);
+            whackState.timer = null;
+        }
+        whackState.active = false;
+        document.removeEventListener('visibilitychange', whackVisibilityHandler);
+    }
+
     function backToGames() {
+        cleanupGame();
         document.getElementById('gameArea').classList.remove('active');
         document.getElementById('gameGrid').style.display = 'grid';
         gameData = {};
@@ -634,13 +1088,14 @@
             'rock_paper_scissors': '🤖 石头剪刀布',
             'roulette': '🎡 轮盘赌',
             'lucky_wheel': '🎰 幸运转盘',
-            'memory_cards': '🃏 记忆翻牌'
+            'memory_cards': '🧠 记忆翻牌',
+            'whack_mole': '🔨 打地鼠'
         };
         document.getElementById('gameTitle').textContent = names[gameId] || '游戏';
         var memberBadge = document.getElementById('gameMemberBadge');
         var bonusBadge = document.getElementById('gameBonusBadge');
         var streakBadge = document.getElementById('gameStreakBadge');
-        var tierNames = {'normal': '👑 普通会员', 'gold': '🥇 黄金会员', 'diamond': '💎 钻石会员'};
+        var tierNames = {'normal': '👑 普通会员', 'gold': '🥇 黄金会员', 'diamond': '💎 钻石会员', 'supreme': '👑 至尊会员'};
         if (isMember) {
             memberBadge.style.display = 'inline-block';
             memberBadge.textContent = tierNames[currentTier] || '👑 会员';
@@ -664,6 +1119,7 @@
         else if (gameId === 'roulette') renderRoulette(content);
         else if (gameId === 'lucky_wheel') renderLuckyWheel(content);
         else if (gameId === 'memory_cards') renderMemoryCards(content);
+        else if (gameId === 'whack_mole') renderWhackMole(content);
         else content.innerHTML = '<div class="loading">加载中...</div>';
     }
 
@@ -745,12 +1201,19 @@
                 bonusInfo +
                 renderBonusMessage(data.bonus_message) +
                 '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
+                '<div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">' +
+                '<button class="btn btn-warning" onclick="playDice()">🔄 再来一局</button>' +
+                '<button class="btn btn-outline" onclick="backToGames()">← 返回大厅</button>' +
+                '</div>' +
                 '</div>';
-            if (data.won) showMessage('🎉 赢了！+' + data.points_earned + ' 积分', 'success');
-            else showMessage('😔 输了，再试一次！', 'warning');
+            if (data.won) {
+                showMessage('🎉 赢了！+' + data.points_earned + ' 积分', 'success');
+                showPointsPopup(data.points_earned);
+            } else showMessage('😔 输了，再试一次！', 'warning');
+            if (data.card_drop) showCardDrop(data.card_drop);
             updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
             loadStats();
-            loadGames();
+            checkNewAchievements();
         } catch (e) {
             showMessage(e.message || '游戏失败', 'error');
         } finally {
@@ -802,12 +1265,19 @@
                 bonusInfo +
                 renderBonusMessage(data.bonus_message) +
                 '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
+                '<div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">' +
+                '<button class="btn btn-warning" onclick="playBlackjack()">🔄 再来一局</button>' +
+                '<button class="btn btn-outline" onclick="backToGames()">← 返回大厅</button>' +
+                '</div>' +
                 '</div>';
-            if (data.won) showMessage('🎉 赢了！+' + data.points_earned + ' 积分', 'success');
-            else showMessage('😔 输了，再试一次！', 'warning');
+            if (data.won) {
+                showMessage('🎉 赢了！+' + data.points_earned + ' 积分', 'success');
+                showPointsPopup(data.points_earned);
+            } else showMessage('😔 输了，再试一次！', 'warning');
+            if (data.card_drop) showCardDrop(data.card_drop);
             updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
             loadStats();
-            loadGames();
+            checkNewAchievements();
         } catch (e) {
             showMessage(e.message || '游戏失败', 'error');
         } finally {
@@ -904,7 +1374,11 @@
                     (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' 积分</div>' : '') +
                     bonusInfo +
                     renderBonusMessage(data.bonus_message) +
-                    '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div></div>';
+                    '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
+                    '<div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">' +
+                    '<button class="btn btn-warning" onclick="startGuessGame()">🔄 再来一局</button>' +
+                    '<button class="btn btn-outline" onclick="backToGames()">← 返回大厅</button>' +
+                    '</div></div>';
                 guessGameActive = false;
                 input.disabled = true;
                 submitBtn.disabled = true;
@@ -912,9 +1386,11 @@
                 status.textContent = data.won ? '🎉 游戏结束！你赢了！' : '😔 游戏结束！你输了！';
                 updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
                 if (data.won) {
+                    showPointsPopup(data.points_earned);
                     loadStats();
-                    loadGames();
+                    checkNewAchievements();
                 }
+                if (data.card_drop) showCardDrop(data.card_drop);
             } else if (data.hint) {
                 var hintClass = data.hint.indexOf('太大') !== -1 ? 'high' : 'low';
                 hintArea.innerHTML = '<div class="guess-hint ' + hintClass + '">' + data.hint + '</div>';
@@ -1035,16 +1511,22 @@
                     (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' 积分</div>' : '') +
                     bonusInfo +
                     renderBonusMessage(data.bonus_message) +
-                    '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div></div>';
+                    '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
+                    '<div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">' +
+                    '<button class="btn btn-warning" onclick="startRPSGame()">🔄 再来一局</button>' +
+                    '<button class="btn btn-outline" onclick="backToGames()">← 返回大厅</button>' +
+                    '</div></div>';
                 document.getElementById('rpsScore').textContent = '最终比分: 你 ' + data.player_wins + ' : ' + data.ai_wins + ' AI';
                 document.getElementById('rpsStatus').textContent = '🏁 游戏结束！';
                 document.getElementById('rpsResetBtn').style.display = 'inline-block';
                 btns.forEach(function(b) { b.disabled = true; });
                 updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
                 if (data.won) {
+                    showPointsPopup(data.points_earned);
                     loadStats();
-                    loadGames();
+                    checkNewAchievements();
                 }
+                if (data.card_drop) showCardDrop(data.card_drop);
             } else {
                 var cls = data.result === 'win' ? 'h-win' : data.result === 'lose' ? 'h-lose' : 'h-tie';
                 var historyItem = document.createElement('div');
@@ -1158,12 +1640,19 @@
                 bonusInfo +
                 renderBonusMessage(data.bonus_message) +
                 '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
+                '<div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">' +
+                '<button class="btn btn-warning" onclick="playRoulette()">🔄 再来一局</button>' +
+                '<button class="btn btn-outline" onclick="backToGames()">← 返回大厅</button>' +
+                '</div>' +
                 '</div>';
-            if (data.won) showMessage('🎉 赢了！+' + data.points_earned + ' 积分', 'success');
-            else showMessage('😔 输了，再试一次！', 'warning');
+            if (data.won) {
+                showMessage('🎉 赢了！+' + data.points_earned + ' 积分', 'success');
+                showPointsPopup(data.points_earned);
+            } else showMessage('😔 输了，再试一次！', 'warning');
+            if (data.card_drop) showCardDrop(data.card_drop);
             updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
             loadStats();
-            loadGames();
+            checkNewAchievements();
         } catch (e) {
             showMessage(e.message || '游戏失败', 'error');
         } finally {
@@ -1228,9 +1717,11 @@
     }
 
     async function playLuckyWheel() {
+        if (isAnimating) return;
         var btn = document.getElementById('wheelPlayBtn');
         var wheel = document.getElementById('luckyWheel');
         if (!btn || btn.disabled) return;
+        isAnimating = true;
         btn.disabled = true;
         btn.textContent = '🎰 转动中...';
         try {
@@ -1252,7 +1743,10 @@
             wheel.style.transform = 'rotate(' + finalAngle + 'deg)';
             setTimeout(function() {
                 var el = document.getElementById('wheelResult');
-                if (!el) return;
+                if (!el) {
+                    isAnimating = false;
+                    return;
+                }
                 var winClass = data.won ? 'win' : 'lose';
                 var bonusInfo = data.is_member && data.won ? '<div style="font-size:12px;color:#34d399;">👑 ' + currentTier + '会员+' + memberBonusRate + '%加成已应用</div>' : '';
                 var multiplierText = data.multiplier > 0 ? ('倍率 x' + data.multiplier) : '未中奖';
@@ -1266,27 +1760,36 @@
                     bonusInfo +
                     renderBonusMessage(data.bonus_message) +
                     '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
+                    '<div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">' +
+                    '<button class="btn btn-warning" onclick="playLuckyWheel()">🔄 再来一局</button>' +
+                    '<button class="btn btn-outline" onclick="backToGames()">← 返回大厅</button>' +
+                    '</div>' +
                     '</div>';
-                if (data.won) showMessage('🎉 赢了！+' + data.points_earned + ' 积分', 'success');
-                else showMessage('😔 谢谢参与！', 'warning');
+                if (data.won) {
+                    showMessage('🎉 赢了！+' + data.points_earned + ' 积分', 'success');
+                    showPointsPopup(data.points_earned);
+                } else showMessage('😔 谢谢参与！', 'warning');
+                if (data.card_drop) showCardDrop(data.card_drop);
                 updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
                 loadStats();
-                loadGames();
+                checkNewAchievements();
                 btn.disabled = false;
                 btn.textContent = '🎰 转动转盘';
+                isAnimating = false;
             }, 4200);
         } catch (e) {
             showMessage(e.message || '游戏失败', 'error');
             btn.disabled = false;
             btn.textContent = '🎰 转动转盘';
+            isAnimating = false;
         }
     }
 
     function renderMemoryCards(el) {
         var memberInfo = isMember ? '<div style="font-size:13px;color:#fbbf24;margin-bottom:8px;">💎 ' + currentTier + '会员专属 | 每日' + document.getElementById('maxPlays').textContent + '次 | 获胜积分+' + memberBonusRate + '%</div>' : '';
-        el.innerHTML = '<p style="margin-bottom:12px;">🃏 翻开两张相同的牌即可配对，步数越少积分越高！</p>' +
+        el.innerHTML = '<p style="margin-bottom:12px;">🧠 翻开两张相同的牌即可配对，步数越少积分越高！</p>' +
             memberInfo +
-            '<button class="btn btn-primary" id="memoryStartBtn" onclick="startMemoryGame()">🃏 开始游戏</button>' +
+            '<button class="btn btn-primary" id="memoryStartBtn" onclick="startMemoryGame()">🧠 开始游戏</button>' +
             '<div id="memoryGameArea" style="display:none;margin-top:12px;">' +
             '<div id="memoryStatus" style="text-align:center;font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:8px;"></div>' +
             '<div class="memory-grid" id="memoryGrid"></div>' +
@@ -1294,8 +1797,6 @@
             '<button class="btn btn-outline" id="memoryResetBtn" onclick="resetMemoryGame()" style="display:none;margin-top:8px;">重新开始</button>' +
             '</div>';
     }
-
-    var memoryState = { cards: [], flipped: [], matched: [], moves: 0, lock: false };
 
     async function startMemoryGame() {
         var btn = document.getElementById('memoryStartBtn');
@@ -1310,12 +1811,12 @@
             if (data.success) {
                 memoryState = { cards: data.cards, flipped: [], matched: [], moves: 0, lock: false };
                 document.getElementById('memoryGameArea').style.display = 'block';
-                document.getElementById('memoryStatus').textContent = '🃏 翻牌配对中... 步数: 0';
+                document.getElementById('memoryStatus').textContent = '🧠 翻牌配对中... 步数: 0';
                 document.getElementById('memoryResult').innerHTML = '';
                 document.getElementById('memoryResetBtn').style.display = 'none';
                 renderMemoryGrid();
                 btn.textContent = '🔄 重新开始';
-                showMessage('🃏 游戏开始！', 'success');
+                showMessage('🧠 游戏开始！', 'success');
             } else {
                 showMessage(data.error || '启动失败', 'error');
             }
@@ -1364,11 +1865,17 @@
                 document.getElementById('memoryResult').innerHTML = '<div class="result-box"><div class="big ' + winClass + '">' + data.message + '</div>' +
                     (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' 积分</div>' : '') +
                     renderBonusMessage(data.bonus_message) +
-                    '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div></div>';
+                    '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
+                    '<div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">' +
+                    '<button class="btn btn-warning" onclick="startMemoryGame()">🔄 再来一局</button>' +
+                    '<button class="btn btn-outline" onclick="backToGames()">← 返回大厅</button>' +
+                    '</div></div>';
                 document.getElementById('memoryResetBtn').style.display = 'inline-block';
                 updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
+                showPointsPopup(data.points_earned);
+                if (data.card_drop) showCardDrop(data.card_drop);
                 loadStats();
-                loadGames();
+                checkNewAchievements();
                 return;
             }
             memoryState.moves = data.moves;
@@ -1376,14 +1883,14 @@
             if (data.is_match) {
                 memoryState.flipped = [];
                 renderMemoryGrid();
-                document.getElementById('memoryStatus').textContent = '🃏 配对成功！步数: ' + data.moves;
+                document.getElementById('memoryStatus').textContent = '🧠 配对成功！步数: ' + data.moves;
                 return;
             }
             if (data.pair_complete) {
                 memoryState.flipped = data.flipped;
                 renderMemoryGrid();
                 memoryState.lock = true;
-                document.getElementById('memoryStatus').textContent = '🃏 未配对，步数: ' + data.moves;
+                document.getElementById('memoryStatus').textContent = '🧠 未配对，步数: ' + data.moves;
                 setTimeout(function() {
                     memoryState.flipped = [];
                     memoryState.lock = false;
@@ -1393,7 +1900,7 @@
             }
             memoryState.flipped = data.flipped;
             renderMemoryGrid();
-            document.getElementById('memoryStatus').textContent = '🃏 翻牌中... 步数: ' + data.moves;
+            document.getElementById('memoryStatus').textContent = '🧠 翻牌中... 步数: ' + data.moves;
         } catch (e) {
             showMessage(e.message || '操作失败', 'error');
         }
@@ -1405,14 +1912,217 @@
         document.getElementById('memoryResult').innerHTML = '';
         document.getElementById('memoryStatus').textContent = '';
         document.getElementById('memoryResetBtn').style.display = 'none';
-        document.getElementById('memoryStartBtn').textContent = '🃏 开始游戏';
+        document.getElementById('memoryStartBtn').textContent = '🧠 开始游戏';
         document.getElementById('memoryStartBtn').disabled = false;
         showMessage('游戏已重置', 'warning');
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
-        loadMemberStatus();
-        loadGames();
+    function renderWhackMole(el) {
+        var memberInfo = isMember ? '<div style="font-size:13px;color:#fbbf24;margin-bottom:8px;">👑 ' + currentTier + '会员 | 每日' + document.getElementById('maxPlays').textContent + '次 | 获胜积分+' + memberBonusRate + '%</div>' : '';
+        el.innerHTML = '<p style="margin-bottom:12px;">🔨 30秒内点击地鼠得分，避开炸弹！</p>' +
+            memberInfo +
+            '<div class="whack-status">' +
+            '<div class="stat"><div class="stat-label">⏱️ 剩余时间</div><div class="stat-value" id="whackTime">30</div></div>' +
+            '<div class="stat"><div class="stat-label">🎯 得分</div><div class="stat-value gold" id="whackScore">0</div></div>' +
+            '<div class="stat"><div class="stat-label">🐹 打中</div><div class="stat-value" id="whackHits">0</div></div>' +
+            '<div class="stat"><div class="stat-label">💣 炸弹</div><div class="stat-value red" id="whackBombs">0</div></div>' +
+            '</div>' +
+            '<button class="btn btn-primary" id="whackStartBtn" onclick="startWhackGame()">🔨 开始游戏</button>' +
+            '<div id="whackGameArea" style="display:none;margin-top:16px;">' +
+            '<div class="whack-grid" id="whackGrid">' +
+            '<div class="whack-hole" data-idx="0"></div>' +
+            '<div class="whack-hole" data-idx="1"></div>' +
+            '<div class="whack-hole" data-idx="2"></div>' +
+            '<div class="whack-hole" data-idx="3"></div>' +
+            '<div class="whack-hole" data-idx="4"></div>' +
+            '<div class="whack-hole" data-idx="5"></div>' +
+            '<div class="whack-hole" data-idx="6"></div>' +
+            '<div class="whack-hole" data-idx="7"></div>' +
+            '<div class="whack-hole" data-idx="8"></div>' +
+            '</div>' +
+            '<div id="whackResult" style="margin-top:16px;"></div>' +
+            '</div>';
+    }
+
+    async function startWhackGame() {
+        var btn = document.getElementById('whackStartBtn');
+        if (!btn || btn.disabled) return;
+        btn.disabled = true;
+        btn.textContent = '⏳ 准备中...';
+        try {
+            var data = await apiRequest('/api/game/play/whack_mole', {
+                method: 'POST',
+                body: JSON.stringify({ action: 'start' })
+            });
+            if (data.success) {
+                whackState = { score: 0, hits: 0, bombs: 0, active: true, timeLeft: data.duration, timer: null, duration: data.duration };
+                document.getElementById('whackGameArea').style.display = 'block';
+                document.getElementById('whackTime').textContent = data.duration;
+                document.getElementById('whackScore').textContent = '0';
+                document.getElementById('whackHits').textContent = '0';
+                document.getElementById('whackBombs').textContent = '0';
+                document.getElementById('whackResult').innerHTML = '';
+                var grid = document.getElementById('whackGrid');
+                grid.querySelectorAll('.whack-hole').forEach(function(h) {
+                    h.innerHTML = '';
+                    h.className = 'whack-hole';
+                    h.onclick = function() { whackHit(parseInt(h.dataset.idx)); };
+                });
+                btn.textContent = '🔄 重新开始';
+                showMessage(data.message, 'success');
+                document.removeEventListener('visibilitychange', whackVisibilityHandler);
+                document.addEventListener('visibilitychange', whackVisibilityHandler);
+                whackState.timer = setInterval(function() {
+                    whackState.timeLeft--;
+                    var timeEl = document.getElementById('whackTime');
+                    if (timeEl) timeEl.textContent = whackState.timeLeft;
+                    if (whackState.timeLeft <= 0) {
+                        clearInterval(whackState.timer);
+                        whackState.timer = null;
+                        finishWhackGame();
+                    }
+                }, 1000);
+                whackSpawnLoop();
+            } else {
+                showMessage(data.error || '启动失败', 'error');
+            }
+        } catch (e) {
+            showMessage(e.message || '启动失败', 'error');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    function whackSpawnLoop() {
+        if (!whackState.active) return;
+        var grid = document.getElementById('whackGrid');
+        if (!grid) return;
+        var holes = grid.querySelectorAll('.whack-hole');
+        var occupied = [];
+        holes.forEach(function(h) { if (h.classList.contains('mole') || h.classList.contains('bomb')) occupied.push(h); });
+        if (occupied.length >= 3) {
+            setTimeout(whackSpawnLoop, 300);
+            return;
+        }
+        var empty = [];
+        holes.forEach(function(h) { if (!h.classList.contains('mole') && !h.classList.contains('bomb')) empty.push(h); });
+        if (empty.length === 0) {
+            setTimeout(whackSpawnLoop, 300);
+            return;
+        }
+        var target = empty[Math.floor(Math.random() * empty.length)];
+        var isBomb = Math.random() < 0.2;
+        if (isBomb) {
+            target.classList.add('bomb');
+            target.textContent = '💣';
+        } else {
+            target.classList.add('mole');
+            target.textContent = '🐹';
+        }
+        var hideDelay = isBomb ? 1200 : 900;
+        setTimeout(function() {
+            if (target) {
+                target.classList.remove('mole', 'bomb');
+                target.textContent = '';
+            }
+        }, hideDelay);
+        setTimeout(whackSpawnLoop, 400 + Math.random() * 300);
+    }
+
+    function whackHit(idx) {
+        if (!whackState.active) return;
+        var grid = document.getElementById('whackGrid');
+        var holes = grid.querySelectorAll('.whack-hole');
+        var target = holes[idx];
+        if (!target) return;
+        if (target.classList.contains('mole')) {
+            whackState.score++;
+            whackState.hits++;
+            target.classList.remove('mole');
+            target.textContent = '💥';
+            setTimeout(function() { if (target) target.textContent = ''; }, 150);
+        } else if (target.classList.contains('bomb')) {
+            whackState.score = Math.max(0, whackState.score - 2);
+            whackState.bombs++;
+            target.classList.remove('bomb');
+            target.textContent = '💥';
+            setTimeout(function() { if (target) target.textContent = ''; }, 150);
+        }
+        document.getElementById('whackScore').textContent = whackState.score;
+        document.getElementById('whackHits').textContent = whackState.hits;
+        document.getElementById('whackBombs').textContent = whackState.bombs;
+    }
+
+    async function finishWhackGame() {
+        whackState.active = false;
+        if (whackState.timer) {
+            clearInterval(whackState.timer);
+            whackState.timer = null;
+        }
+        document.removeEventListener('visibilitychange', whackVisibilityHandler);
+        try {
+            var data = await apiRequest('/api/game/play/whack_mole', {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: 'finish',
+                    score: whackState.score,
+                    hits: whackState.hits,
+                    bombs: whackState.bombs
+                })
+            });
+            var el = document.getElementById('whackResult');
+            if (!el) return;
+            var winClass = data.won ? 'win' : 'lose';
+            var bonusInfo = data.is_member && data.won ? '<div style="font-size:12px;color:#34d399;">👑 ' + currentTier + '会员+' + memberBonusRate + '%加成已应用</div>' : '';
+            el.innerHTML = '<div class="result-box">' +
+                '<div style="font-size:48px;margin-bottom:8px;">' + (data.won ? '🎉' : '😔') + '</div>' +
+                '<div class="big ' + winClass + '">' + data.message + '</div>' +
+                '<div style="font-size:14px;color:rgba(255,255,255,0.6);margin-top:8px;">得分 ' + data.score + ' · 打中 ' + data.hits + ' · 炸弹 ' + data.bombs + '</div>' +
+                (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' 积分</div>' : '') +
+                bonusInfo +
+                renderBonusMessage(data.bonus_message) +
+                '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
+                '<div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">' +
+                '<button class="btn btn-warning" onclick="startWhackGame()">🔄 再来一局</button>' +
+                '<button class="btn btn-outline" onclick="backToGames()">← 返回大厅</button>' +
+                '</div>' +
+                '</div>';
+            if (data.won) {
+                showMessage('🎉 得分 ' + data.score + '！+' + data.points_earned + ' 积分', 'success');
+                showPointsPopup(data.points_earned);
+            } else showMessage('😔 得分 ' + data.score + '，未获得积分', 'warning');
+            if (data.card_drop) showCardDrop(data.card_drop);
+            updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
+            loadStats();
+            checkNewAchievements();
+        } catch (e) {
+            showMessage(e.message || '结算失败', 'error');
+        }
+    }
+
+    async function checkUrlParams() {
+        var params = new URLSearchParams(window.location.search);
+        var directGame = params.get('game');
+        if (directGame) {
+            var valid = ['dice', 'blackjack', 'guess_number', 'rock_paper_scissors', 'roulette', 'lucky_wheel', 'memory_cards', 'whack_mole'];
+            if (valid.indexOf(directGame) !== -1) {
+                setTimeout(function() { startGame(directGame); }, 400);
+            }
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', async function() {
+        await loadMemberStatus();
+        await loadGames();
+        try {
+            var achData = await apiRequest('/api/game/achievements');
+            if (achData.achievements) {
+                achData.achievements.forEach(function(a) {
+                    if (a.unlocked) shownAchievements[a.id] = true;
+                });
+            }
+        } catch (e) {}
+        checkUrlParams();
     });
 </script>
 </body>

@@ -58,7 +58,7 @@ app.config['START_TIME'] = time.time()
 limiter = Limiter(
     app=app,
     key_func=get_remote_address,
-    default_limits=["500 per day", "120 per hour"],
+    default_limits=["5000 per day", "1200 per hour"],
     storage_uri="memory://",
     strategy="fixed-window"
 )
@@ -14570,6 +14570,28 @@ def admin_reply_feedback():
         'message': '反馈回复成功'
     })
 
+@app.route('/api/admin/migrate-game-stats', methods=['POST'])
+@csrf_protect
+@admin_login_required
+def admin_migrate_game_stats():
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    modified_count = 0
+    for username in list(users.keys()):
+        try:
+            if gm.migrate_game_stats(username):
+                modified_count += 1
+        except Exception as e:
+            log.error(f"migrate_game_stats error for {username}: {e}")
+    if modified_count > 0:
+        save_users()
+    return jsonify({
+        'success': True,
+        'message': f'已迁移 {modified_count} 个用户的游戏统计数据',
+        'count': modified_count
+    })
+
 @app.route('/api/game/list', methods=['GET'])
 @login_required
 def get_game_list():
@@ -14595,6 +14617,43 @@ def get_game_stats():
     if not gm:
         return jsonify({'error': '游戏服务未初始化'}), 500
     return jsonify(gm.get_stats(username))
+
+@app.route('/api/game/stats/self-check', methods=['GET'])
+@login_required
+def game_stats_self_check():
+    username = session['user']['username']
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    stats = gm.get_user_game_stats(username)
+    if not stats:
+        return jsonify({'error': '用户不存在'}), 400
+    user_data = users.get(username, {})
+    history = user_data.get('game_history', [])
+    history_plays = len(history)
+    game_plays_total = sum(stats.get('game_plays', {}).values())
+    issues = []
+    if stats.get('total_plays', 0) < game_plays_total:
+        issues.append(f"总游玩次数({stats.get('total_plays', 0)})小于各游戏次数之和({game_plays_total})")
+    if game_plays_total == 0 and history_plays > 0:
+        issues.append(f"各游戏次数为0，但历史记录有{history_plays}条，建议迁移")
+    if stats.get('today_wins', 0) > stats.get('today_plays', 0):
+        issues.append(f"今日胜场({stats.get('today_wins', 0)})大于今日游玩次数({stats.get('today_plays', 0)})")
+    if stats.get('total_wins', 0) > stats.get('total_plays', 0):
+        issues.append(f"总胜场({stats.get('total_wins', 0)})大于总游玩次数({stats.get('total_plays', 0)})")
+    return jsonify({
+        'total_plays': stats.get('total_plays', 0),
+        'total_wins': stats.get('total_wins', 0),
+        'today_plays': stats.get('today_plays', 0),
+        'today_wins': stats.get('today_wins', 0),
+        'today_points': stats.get('today_points', 0),
+        'total_points_earned': stats.get('total_points_earned', 0),
+        'game_plays': stats.get('game_plays', {}),
+        'game_wins': stats.get('game_wins', {}),
+        'history_count': history_plays,
+        'issues': issues,
+        'consistent': len(issues) == 0
+    })
 
 @app.route('/api/game/play/<game_id>', methods=['POST'])
 @login_required
@@ -14657,6 +14716,17 @@ def play_game(game_id):
                 except (ValueError, TypeError):
                     return jsonify({'error': '无效的卡片位置'}), 400
             result = gm.play_memory_cards(username, action, index)
+        elif game_id == 'whack_mole':
+            action = data.get('action')
+            try:
+                score = int(data.get('score', 0))
+                hits = int(data.get('hits', 0))
+                bombs = int(data.get('bombs', 0))
+            except (ValueError, TypeError):
+                score = 0
+                hits = 0
+                bombs = 0
+            result = gm.play_whack_mole(username, action, score, hits, bombs)
         else:
             return jsonify({'error': '游戏不存在'}), 400
         if result.get('success'):
@@ -14865,6 +14935,226 @@ def get_memory_game_state():
         'moves': state.get('moves', 0)
     })
 
+@app.route('/api/game/achievements', methods=['GET'])
+@login_required
+def get_achievements():
+    username = session['user']['username']
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    return jsonify(gm.get_achievements(username))
+
+
+@app.route('/api/game/achievements/claim', methods=['POST'])
+@csrf_protect
+@login_required
+def claim_achievement():
+    username = session['user']['username']
+    data = request.get_json() or {}
+    achievement_id = data.get('achievement_id', '').strip()
+    if not achievement_id:
+        return jsonify({'error': '缺少成就ID'}), 400
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    success, message = gm.claim_achievement_reward(username, achievement_id)
+    if success:
+        reload_if_changed()
+        return jsonify({'success': True, 'message': message})
+    return jsonify({'error': message}), 400
+
+
+@app.route('/api/game/achievements/claim-all', methods=['POST'])
+@csrf_protect
+@login_required
+def claim_all_achievements():
+    username = session['user']['username']
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    success, message, total = gm.claim_all_achievement_rewards(username)
+    if success:
+        reload_if_changed()
+        return jsonify({'success': True, 'message': message, 'total_reward': total})
+    return jsonify({'error': message}), 400
+
+
+@app.route('/api/game/items/shop', methods=['GET'])
+@login_required
+def get_item_shop():
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    return jsonify({'items': gm.get_item_shop()})
+
+
+@app.route('/api/game/items/list', methods=['GET'])
+@login_required
+def get_user_items():
+    username = session['user']['username']
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    items = gm.get_user_items(username)
+    effects = gm.get_active_effects(username)
+    return jsonify({'items': list(items.values()), 'active_effects': effects})
+
+
+@app.route('/api/game/items/buy', methods=['POST'])
+@csrf_protect
+@login_required
+def buy_item():
+    username = session['user']['username']
+    data = request.get_json() or {}
+    item_id = data.get('item_id', '').strip()
+    if not item_id:
+        return jsonify({'error': '缺少道具ID'}), 400
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    success, message = gm.buy_item(username, item_id)
+    if success:
+        reload_if_changed()
+        return jsonify({'success': True, 'message': message})
+    return jsonify({'error': message}), 400
+
+
+@app.route('/api/game/items/use', methods=['POST'])
+@csrf_protect
+@login_required
+def use_item():
+    username = session['user']['username']
+    data = request.get_json() or {}
+    item_id = data.get('item_id', '').strip()
+    if not item_id:
+        return jsonify({'error': '缺少道具ID'}), 400
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    success, message = gm.use_item(username, item_id)
+    if success:
+        reload_if_changed()
+        return jsonify({'success': True, 'message': message})
+    return jsonify({'error': message}), 400
+
+
+@app.route('/api/game/leaderboard', methods=['GET'])
+@login_required
+def get_leaderboard():
+    period = request.args.get('period', 'total')
+    if period not in ['today', 'week', 'total']:
+        period = 'total'
+    limit = request.args.get('limit', 100, type=int)
+    if limit < 1:
+        limit = 1
+    if limit > 100:
+        limit = 100
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    username = session['user']['username']
+    board = gm.get_leaderboard(period, limit)
+    for idx, entry in enumerate(board):
+        entry['rank'] = idx + 1
+        entry['is_self'] = (entry['username'] == username)
+    return jsonify({'period': period, 'leaderboard': board})
+
+
+@app.route('/api/game/personal-stats', methods=['GET'])
+@login_required
+def get_personal_stats():
+    username = session['user']['username']
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    stats = gm.get_personal_stats(username)
+    if not stats:
+        return jsonify({'error': '获取失败'}), 400
+    return jsonify(stats)
+
+@app.route('/api/game/collection/overview', methods=['GET'])
+@login_required
+def get_collection_overview():
+    username = session['user']['username']
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    return jsonify(gm.get_collection_overview(username))
+
+
+@app.route('/api/game/collection/disenchant', methods=['POST'])
+@csrf_protect
+@login_required
+def disenchant_card():
+    username = session['user']['username']
+    data = request.get_json() or {}
+    game_id = data.get('game_id', '').strip()
+    card_id = data.get('card_id', '').strip()
+    if not game_id or not card_id:
+        return jsonify({'error': '参数错误'}), 400
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    success, message, points = gm.disenchant_card(username, game_id, card_id)
+    if success:
+        reload_if_changed()
+        return jsonify({'success': True, 'message': message, 'points': points})
+    return jsonify({'error': message}), 400
+
+@app.route('/api/game/collection/disenchant-all', methods=['POST'])
+@csrf_protect
+@login_required
+def disenchant_all_cards():
+    username = session['user']['username']
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    success, message, total_points, details, total_cards = gm.disenchant_all_duplicates(username, max_details=100)
+    if success:
+        reload_if_changed()
+        return jsonify({
+            'success': True,
+            'message': message,
+            'total_points': total_points,
+            'details': details,
+            'total_cards_disenchanted': total_cards,
+            'truncated': len(details) < total_cards
+        })
+    return jsonify({'error': message}), 400
+
+
+@app.route('/api/game/collection/disenchantable', methods=['GET'])
+@login_required
+def get_disenchantable_cards():
+    username = session['user']['username']
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    cards = gm.get_disenchantable_cards(username)
+    total_value = sum(c['total_value'] for c in cards)
+    return jsonify({
+        'cards': cards,
+        'count': len(cards),
+        'total_value': total_value
+    })
+
+
+@app.route('/api/membership/supreme-requirements', methods=['GET'])
+@login_required
+def check_supreme_requirements_api():
+    username = session['user']['username']
+    meets, total_plays, win_rate = game.check_supreme_requirements(users, username)
+    req = game.MEMBERSHIP_TIERS['supreme']['requirements']
+    return jsonify({
+        'meets_requirements': meets,
+        'total_plays': total_plays,
+        'win_rate': win_rate,
+        'required_plays': req['min_total_plays'],
+        'required_win_rate': req['min_win_rate'],
+        'plays_met': total_plays >= req['min_total_plays'],
+        'win_rate_met': win_rate > req['min_win_rate']
+    })
+
 @app.route('/api/game/lucky_wheel/segments', methods=['GET'])
 @login_required
 def get_lucky_wheel_segments():
@@ -14878,6 +15168,135 @@ def get_lucky_wheel_segments():
     segments = gm.get_lucky_wheel_segments()
     return jsonify({
         'segments': [{'label': s['label'], 'color': s['color'], 'multiplier': s['multiplier']} for s in segments]
+    })
+
+@app.route('/api/game/checkin/status', methods=['GET'])
+@login_required
+def get_checkin_status():
+    username = session['user']['username']
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    return jsonify(gm.get_checkin_status(username))
+
+
+@app.route('/api/game/checkin/claim', methods=['POST'])
+@csrf_protect
+@login_required
+def claim_checkin():
+    username = session['user']['username']
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    success, message, reward = gm.claim_checkin(username)
+    if success:
+        reload_if_changed()
+        return jsonify({
+            'success': True,
+            'message': message,
+            'reward': reward
+        })
+    return jsonify({'error': message}), 400
+
+
+@app.route('/api/game/daily-first-win/status', methods=['GET'])
+@login_required
+def get_daily_first_win_status():
+    username = session['user']['username']
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    return jsonify(gm.get_daily_first_win_status(username))
+
+
+@app.route('/api/game/daily-first-win/claim', methods=['POST'])
+@csrf_protect
+@login_required
+def claim_daily_first_win():
+    username = session['user']['username']
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    success, message = gm.claim_daily_first_win(username)
+    if success:
+        reload_if_changed()
+        return jsonify({'success': True, 'message': message})
+    return jsonify({'error': message}), 400
+
+
+@app.route('/api/game/chests/status', methods=['GET'])
+@login_required
+def get_chests_status():
+    username = session['user']['username']
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    return jsonify(gm.get_chest_status(username))
+
+
+@app.route('/api/game/chests/open', methods=['POST'])
+@csrf_protect
+@login_required
+def open_chest():
+    username = session['user']['username']
+    data = request.get_json() or {}
+    try:
+        chest_plays = int(data.get('chest_plays', 0))
+    except (ValueError, TypeError):
+        return jsonify({'error': '无效的宝箱参数'}), 400
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    result = gm.open_chest(username, chest_plays)
+    success, message, points, item_reward = result
+    if success:
+        reload_if_changed()
+        return jsonify({
+            'success': True,
+            'message': message,
+            'points': points,
+            'item_reward': item_reward
+        })
+    return jsonify({'error': message}), 400
+
+
+@app.route('/api/game/daily-bonus/status', methods=['GET'])
+@login_required
+def get_daily_bonus_status():
+    username = session['user']['username']
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    return jsonify(gm.get_daily_bonus_status(username))
+
+
+@app.route('/api/game/daily-bonus/spin', methods=['POST'])
+@csrf_protect
+@login_required
+def spin_daily_bonus():
+    username = session['user']['username']
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    success, message, reward = gm.spin_daily_bonus(username)
+    if success:
+        reload_if_changed()
+        return jsonify({'success': True, 'message': message, 'reward': reward})
+    return jsonify({'error': message}), 400
+
+
+@app.route('/api/game/dashboard', methods=['GET'])
+@login_required
+def get_game_dashboard():
+    username = session['user']['username']
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    return jsonify({
+        'checkin': gm.get_checkin_status(username),
+        'daily_first_win': gm.get_daily_first_win_status(username),
+        'chests': gm.get_chest_status(username),
+        'daily_bonus': gm.get_daily_bonus_status(username)
     })
 
 @app.route('/api/membership/tiers', methods=['GET'])
@@ -15206,6 +15625,20 @@ if __name__ == '__main__':
     migrate_first_attendance_date()
     migrate_user_data()
     log.info("用户数据迁移完成")
+    
+    game.migrate_game_membership_data(users, save_users)
+gm_init = game.get_game_manager()
+if gm_init:
+    migrated = 0
+    for _uname in list(users.keys()):
+        try:
+            if gm_init.migrate_game_stats(_uname):
+                migrated += 1
+        except Exception as _e:
+            log.error(f"migrate_game_stats startup error for {_uname}: {_e}")
+    if migrated > 0:
+        save_users()
+        log.info(f"游戏统计数据迁移完成，共处理 {migrated} 个用户")
 
     if not os.getenv('ADMIN_PASSWORD_HASH'):
         print("\n" + "="*60)
