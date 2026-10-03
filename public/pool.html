@@ -7,112 +7,399 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:'Segoe UI','PingFang SC',Roboto,'Helvetica Neue',sans-serif;background:linear-gradient(135deg,#0b1a2e 0%,#1e2f4a 100%);min-height:100vh;padding:20px;position:relative;overflow-x:hidden}
-        body::before{content:'';position:fixed;width:200%;height:200%;background:radial-gradient(circle,rgba(255,255,255,0.04) 1px,transparent 1px);background-size:40px 40px;animation:float 20s linear infinite;pointer-events:none}
-        @keyframes float{0%{transform:translate(0,0)}100%{transform:translate(40px,40px)}}
-        .container{max-width:720px;margin:0 auto;background:rgba(255,255,255,0.97);border-radius:36px;padding:32px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);position:relative;z-index:1;animation:slideUp 0.6s ease-out}
-        @keyframes slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
-        .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px}
-        .header h1{font-size:24px;background:linear-gradient(135deg,#6c8cff,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-        .back-btn{padding:8px 20px;background:linear-gradient(135deg,#6c8cff,#a78bfa);color:white;border:none;border-radius:40px;cursor:pointer;font-size:14px;text-decoration:none;transition:all 0.3s}
-        .back-btn:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(108,140,255,0.4)}
-        .user-info-bar{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:rgba(108,140,255,0.08);border-radius:14px;margin-bottom:20px;flex-wrap:wrap;gap:8px}
-        .user-info-bar .username{font-weight:600;color:#1e293b}
-        .user-info-bar .points{font-size:14px;color:#6c8cff;font-weight:600}
-        .tabs{display:flex;gap:4px;margin-bottom:20px;background:#f1f5f9;border-radius:14px;padding:4px;overflow-x:auto}
-        .tab-btn{flex:1;padding:12px 16px;border:none;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s;background:transparent;color:#64748b;white-space:nowrap}
-        .tab-btn:hover{color:#1e293b;background:rgba(108,140,255,0.08)}
-        .tab-btn.active{background:white;color:#6c8cff;box-shadow:0 2px 8px rgba(108,140,255,0.2)}
+        body{
+            font-family:'Segoe UI','PingFang SC',Roboto,'Helvetica Neue',sans-serif;
+            background:linear-gradient(160deg,#0a0a1f 0%,#141432 50%,#1e1e4a 100%);
+            min-height:100vh;
+            padding:20px;
+            position:relative;
+            overflow-x:hidden;
+        }
+        body::before{
+            content:'';
+            position:fixed;
+            top:-20%;
+            right:-10%;
+            width:60%;
+            height:60%;
+            background:radial-gradient(circle,rgba(99,102,241,0.18),transparent 70%);
+            pointer-events:none;
+            animation:glow 10s ease-in-out infinite;
+        }
+        body::after{
+            content:'';
+            position:fixed;
+            bottom:-20%;
+            left:-10%;
+            width:60%;
+            height:60%;
+            background:radial-gradient(circle,rgba(236,72,153,0.12),transparent 70%);
+            pointer-events:none;
+            animation:glow 12s ease-in-out infinite reverse;
+        }
+        @keyframes glow{0%,100%{transform:scale(1);opacity:0.8}50%{transform:scale(1.1);opacity:1}}
+        .container{
+            max-width:720px;
+            margin:0 auto;
+            background:rgba(20,20,50,0.8);
+            backdrop-filter:blur(24px);
+            -webkit-backdrop-filter:blur(24px);
+            border-radius:36px;
+            padding:32px;
+            box-shadow:0 30px 70px rgba(0,0,0,0.6),0 0 0 1px rgba(99,102,241,0.15) inset;
+            border:1px solid rgba(99,102,241,0.2);
+            position:relative;
+            z-index:1;
+            animation:slideUp 0.6s cubic-bezier(0.16,1,0.3,1);
+        }
+        @keyframes slideUp{from{opacity:0;transform:translateY(40px) scale(0.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+        .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:26px;flex-wrap:wrap;gap:12px}
+        .header h1{
+            font-size:24px;
+            background:linear-gradient(135deg,#818cf8,#c084fc);
+            -webkit-background-clip:text;
+            background-clip:text;
+            color:transparent;
+            font-weight:800;
+            letter-spacing:-0.3px;
+        }
+        .back-btn{
+            padding:9px 22px;
+            background:linear-gradient(135deg,#6366f1,#a855f7);
+            color:white;
+            border:none;
+            border-radius:40px;
+            cursor:pointer;
+            font-size:14px;
+            text-decoration:none;
+            transition:all 0.3s;
+            font-weight:700;
+            box-shadow:0 6px 18px rgba(99,102,241,0.3);
+        }
+        .back-btn:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(99,102,241,0.45)}
+        .user-info-bar{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            padding:14px 18px;
+            background:rgba(99,102,241,0.1);
+            border-radius:16px;
+            margin-bottom:22px;
+            flex-wrap:wrap;
+            gap:8px;
+            border:1px solid rgba(99,102,241,0.2);
+        }
+        .user-info-bar .username{font-weight:800;color:#c7d2fe}
+        .user-info-bar .points{font-size:14px;color:#818cf8;font-weight:700}
+        .tabs{
+            display:flex;
+            gap:6px;
+            margin-bottom:22px;
+            background:rgba(99,102,241,0.08);
+            border-radius:16px;
+            padding:5px;
+            overflow-x:auto;
+            border:1px solid rgba(99,102,241,0.15);
+        }
+        .tab-btn{
+            flex:1;
+            padding:13px 18px;
+            border:none;
+            border-radius:12px;
+            font-size:14px;
+            font-weight:700;
+            cursor:pointer;
+            transition:all 0.3s;
+            background:transparent;
+            color:#94a3b8;
+            white-space:nowrap;
+        }
+        .tab-btn:hover{color:#c7d2fe;background:rgba(99,102,241,0.1)}
+        .tab-btn.active{
+            background:linear-gradient(135deg,#6366f1,#a855f7);
+            color:white;
+            box-shadow:0 8px 24px rgba(99,102,241,0.35);
+        }
         .tab-content{display:none}
         .tab-content.active{display:block;animation:fadeIn 0.3s ease}
         @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-        .pool-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;margin-bottom:24px}
-        .stat-card{background:#f1f5f9;border-radius:16px;padding:14px 10px;text-align:center;transition:all 0.2s;border:1px solid #e2e8f0}
-        .stat-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.06)}
-        .stat-card .label{font-size:12px;color:#64748b;margin-bottom:4px}
-        .stat-card .value{font-size:22px;font-weight:700;color:#0f172a}
-        .stat-card .value.pool{color:#6c8cff}
-        .stat-card .value.reward{color:#22c55e}
-        .stat-card .value.base{color:#f59e0b}
-        .stat-card .value.cons{color:#8b5cf6}
-        .stat-card .value.eligible{color:#ec4899}
-        .stat-card .value.newbie{color:#06b6d4}
-        .stat-card .value.claimed{color:#22c55e}
-        .dynamic-range{font-size:11px;color:#94a3b8;margin-top:2px}
-        .pool-preview{background:linear-gradient(135deg,#eef2ff,#e0e7ff);border-radius:20px;padding:24px 20px;margin-bottom:24px;text-align:center;border:1px solid #c7d2fe}
-        .pool-preview .label{font-size:14px;color:#475569;margin-bottom:6px;font-weight:500}
-        .pool-preview .reward-amount{font-size:42px;font-weight:800;color:#16a34a;line-height:1.2}
-        .pool-preview .reward-amount .unit{font-size:18px;font-weight:400;color:#64748b;margin-left:4px}
-        .pool-preview .reward-amount.locked{color:#ef4444}
-        .pool-preview .sub-info{font-size:13px;color:#64748b;margin-top:8px}
-        .pool-preview .bonus-info{font-size:12px;color:#8b5cf6;margin-top:4px;font-weight:500}
-        .claim-btn{width:100%;padding:16px;background:linear-gradient(135deg,#22c55e,#16a34a);color:white;border:none;border-radius:60px;font-size:18px;font-weight:700;cursor:pointer;transition:all 0.3s;margin-bottom:14px}
-        .claim-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 20px rgba(34,197,94,0.35)}
-        .claim-btn:disabled{opacity:0.5;cursor:not-allowed}
-        .claim-btn.claimed{background:#94a3b8}
-        .claim-btn.locked{background:#f59e0b}
-        .claim-btn.unavailable{background:#ef4444}
-        .claim-btn.cooldown{background:#8b5cf6}
-        .claim-btn.newbie{background:linear-gradient(135deg,#06b6d4,#0891b2)}
-        .claim-btn.newbie:hover:not(:disabled){box-shadow:0 8px 20px rgba(6,182,212,0.35)}
-        .claim-btn.newbie-disabled{background:#94a3b8}
-        .info-text{text-align:center;font-size:13px;color:#64748b;margin-top:14px;line-height:1.9}
-        .info-text strong{color:#6c8cff}
-        .info-text .highlight{color:#f59e0b;font-weight:600}
-        .info-text .newbie-highlight{color:#06b6d4;font-weight:600}
-        .update-timer{text-align:center;font-size:12px;color:#94a3b8;margin-top:16px}
-        .loading{text-align:center;padding:60px 20px;color:#94a3b8}
-        .loading i{font-size:32px;margin-bottom:12px;display:block}
-        .error-msg{background:#fef2f2;color:#ef4444;padding:12px 16px;border-radius:12px;margin-bottom:16px;border-left:4px solid #ef4444;display:none;font-size:14px}
-        .success-msg{background:#f0fdf4;color:#16a34a;padding:12px 16px;border-radius:12px;margin-bottom:16px;border-left:4px solid #22c55e;display:none;font-size:14px}
-        .status-badge{display:inline-block;padding:4px 18px;border-radius:30px;font-size:13px;font-weight:600;margin-top:10px}
-        .status-badge.claimed{background:#dcfce7;color:#16a34a}
-        .status-badge.unclaimed{background:#fef3c7;color:#f59e0b}
-        .status-badge.locked{background:#fee2e2;color:#ef4444}
-        .status-badge.ready{background:#e0e7ff;color:#6c8cff}
-        .status-badge.cooldown{background:#ede9fe;color:#7c3aed}
-        .status-badge.newbie-ready{background:#cffafe;color:#0891b2}
-        .status-badge.newbie-claimed{background:#dcfce7;color:#16a34a}
-        .status-badge.newbie-locked{background:#fee2e2;color:#ef4444}
-        .attendance-info{background:linear-gradient(135deg,#fef9c3,#fde68a);border-radius:14px;padding:14px 16px;margin-bottom:16px;text-align:center;border:1px solid #fcd34d}
-        .attendance-info .days{font-size:26px;font-weight:800;color:#b45309}
-        .attendance-info .required{font-size:14px;color:#92400e}
-        .attendance-info .required .highlight{color:#b45309;font-weight:700}
-        .cons-info{background:#f3f4f6;border-radius:12px;padding:12px 16px;margin-bottom:16px;text-align:center;border:1px solid #d1d5db;font-size:13px;color:#374151}
-        .cons-info .cons-value{font-weight:700;color:#6c8cff}
-        .cons-info .newbie-value{font-weight:700;color:#06b6d4}
-        .error-boundary{background:#fef2f2;border:2px solid #fecaca;border-radius:16px;padding:20px;margin-bottom:20px;text-align:center;display:none}
-        .error-boundary .error-icon{font-size:48px;color:#dc2626;margin-bottom:12px}
-        .error-boundary .error-title{font-size:18px;font-weight:700;color:#dc2626;margin-bottom:8px}
-        .error-boundary .retry-btn{padding:10px 32px;background:#dc2626;color:white;border:none;border-radius:40px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s}
-        .error-boundary .retry-btn:hover{background:#b91c1c;transform:translateY(-2px)}
-        .tier-info{background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-radius:12px;padding:12px 16px;margin-bottom:16px;text-align:center;border:1px solid #bbf7d0;font-size:13px;color:#166534}
-        .tier-info .tier-value{font-weight:700;color:#16a34a}
-        .newbie-info{background:linear-gradient(135deg,#cffafe,#a5f3fc);border-radius:12px;padding:12px 16px;margin-bottom:16px;text-align:center;border:1px solid #67e8f9;font-size:13px;color:#0e7490}
-        .newbie-info .newbie-value{font-weight:700;color:#0891b2}
-        .action-row{display:flex;gap:10px;margin-top:8px;flex-wrap:wrap;justify-content:center}
-        .action-row button{background:none;border:1px solid #c7d2fe;border-radius:40px;padding:8px 18px;color:#6c8cff;cursor:pointer;font-size:13px;transition:all 0.2s}
-        .action-row button:hover{background:#eef2ff;border-color:#6c8cff}
-        .action-row button.newbie-action{border-color:#67e8f9;color:#0891b2}
-        .action-row button.newbie-action:hover{background:#cffafe;border-color:#06b6d4}
-        .yesterday-details{background:#f8fafc;border-radius:12px;padding:16px;margin-top:12px;font-size:13px;display:none;border:1px solid #e2e8f0}
-        .yesterday-details .top-list{display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:12px;margin-top:6px}
-        .yesterday-details .top-list .medal{font-weight:600}
-        .cooldown-container{background:linear-gradient(135deg,#ede9fe,#ddd6fe);border-radius:12px;padding:14px 16px;margin-bottom:16px;text-align:center;border:1px solid #c4b5fd;display:none}
-        .cooldown-container .cooldown-title{font-size:14px;font-weight:600;color:#5b21b6}
-        .cooldown-container .cooldown-timer{font-size:28px;font-weight:800;color:#7c3aed;margin:4px 0;font-family:monospace}
-        .cooldown-container .cooldown-sub{font-size:12px;color:#7c3aed}
-        .cooldown-container .cooldown-bar{width:100%;height:6px;background:#e5e7eb;border-radius:4px;margin-top:8px;overflow:hidden}
-        .cooldown-container .cooldown-bar-fill{height:100%;background:linear-gradient(90deg,#8b5cf6,#6d28d9);border-radius:4px;transition:width 1s linear}
-        .newbie-activity{display:flex;gap:12px;justify-content:center;margin:12px 0;flex-wrap:wrap}
-        .activity-badge{padding:6px 16px;border-radius:30px;font-size:13px;font-weight:600}
-        .activity-badge.active{background:#dcfce7;color:#16a34a}
-        .activity-badge.inactive{background:#fee2e2;color:#ef4444}
-        .activity-badge.neutral{background:#f1f5f9;color:#64748b}
-        @media(max-width:600px){.container{padding:20px}.pool-stats{grid-template-columns:repeat(2,1fr);gap:10px}.pool-preview .reward-amount{font-size:32px}.header h1{font-size:20px}.claim-btn{font-size:16px;padding:14px}}
-        @media(max-width:400px){.pool-stats{grid-template-columns:1fr 1fr}.stat-card{padding:10px}.stat-card .value{font-size:18px}}
-        .perf-badge{position:fixed;bottom:20px;right:20px;background:rgba(15,23,42,0.85);color:#4ade80;padding:6px 14px;border-radius:40px;font-size:12px;font-family:monospace;font-weight:600;z-index:1000;backdrop-filter:blur(6px)}
-        .tab-btn .badge{display:inline-block;background:#ec4899;color:white;border-radius:20px;padding:0 8px;font-size:10px;line-height:18px;margin-left:4px}
+        .pool-stats{
+            display:grid;
+            grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
+            gap:14px;
+            margin-bottom:24px;
+        }
+        .stat-card{
+            background:rgba(99,102,241,0.08);
+            border-radius:18px;
+            padding:16px 12px;
+            text-align:center;
+            transition:all 0.2s;
+            border:1px solid rgba(99,102,241,0.15);
+        }
+        .stat-card:hover{transform:translateY(-3px);box-shadow:0 12px 30px rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.35)}
+        .stat-card .label{font-size:12px;color:#94a3b8;margin-bottom:6px;font-weight:600}
+        .stat-card .value{font-size:22px;font-weight:800;color:#e2e8f0;letter-spacing:-0.3px}
+        .stat-card .value.pool{color:#818cf8}
+        .stat-card .value.reward{color:#34d399}
+        .stat-card .value.base{color:#fbbf24}
+        .stat-card .value.cons{color:#c084fc}
+        .stat-card .value.eligible{color:#f472b6}
+        .stat-card .value.newbie{color:#22d3ee}
+        .stat-card .value.claimed{color:#34d399}
+        .dynamic-range{font-size:11px;color:#64748b;margin-top:4px;font-weight:500}
+        .pool-preview{
+            background:linear-gradient(135deg,rgba(99,102,241,0.15),rgba(168,85,247,0.1));
+            border-radius:22px;
+            padding:26px 22px;
+            margin-bottom:24px;
+            text-align:center;
+            border:1px solid rgba(99,102,241,0.25);
+        }
+        .pool-preview .label{font-size:14px;color:#c7d2fe;margin-bottom:8px;font-weight:600}
+        .pool-preview .reward-amount{font-size:44px;font-weight:800;color:#34d399;line-height:1.2;letter-spacing:-1px}
+        .pool-preview .reward-amount .unit{font-size:18px;font-weight:500;color:#94a3b8;margin-left:6px}
+        .pool-preview .reward-amount.locked{color:#f87171}
+        .pool-preview .sub-info{font-size:13px;color:#94a3b8;margin-top:10px;font-weight:500}
+        .pool-preview .bonus-info{font-size:12px;color:#c084fc;margin-top:6px;font-weight:600}
+        .claim-btn{
+            width:100%;
+            padding:17px;
+            background:linear-gradient(135deg,#10b981,#059669);
+            color:white;
+            border:none;
+            border-radius:60px;
+            font-size:17px;
+            font-weight:800;
+            cursor:pointer;
+            transition:all 0.3s;
+            margin-bottom:16px;
+            box-shadow:0 10px 28px rgba(16,185,129,0.35);
+            letter-spacing:0.3px;
+        }
+        .claim-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 16px 40px rgba(16,185,129,0.5)}
+        .claim-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none;box-shadow:none}
+        .claim-btn.claimed{background:rgba(120,113,108,0.3);color:#d6d3d1;box-shadow:none}
+        .claim-btn.locked{background:linear-gradient(135deg,#f59e0b,#d97706);box-shadow:0 10px 28px rgba(245,158,11,0.35)}
+        .claim-btn.unavailable{background:linear-gradient(135deg,#ef4444,#dc2626);box-shadow:0 10px 28px rgba(239,68,68,0.35)}
+        .claim-btn.cooldown{background:linear-gradient(135deg,#8b5cf6,#7c3aed);box-shadow:0 10px 28px rgba(139,92,246,0.35)}
+        .claim-btn.newbie{background:linear-gradient(135deg,#06b6d4,#0891b2);box-shadow:0 10px 28px rgba(6,182,212,0.35)}
+        .claim-btn.newbie:hover:not(:disabled){box-shadow:0 16px 40px rgba(6,182,212,0.5)}
+        .claim-btn.newbie-disabled{background:rgba(120,113,108,0.3);color:#d6d3d1;box-shadow:none}
+        .info-text{
+            text-align:center;
+            font-size:13px;
+            color:#94a3b8;
+            margin-top:16px;
+            line-height:2;
+            font-weight:500;
+        }
+        .info-text strong{color:#818cf8}
+        .info-text .highlight{color:#fbbf24;font-weight:700}
+        .info-text .newbie-highlight{color:#22d3ee;font-weight:700}
+        .update-timer{text-align:center;font-size:12px;color:#64748b;margin-top:18px;font-weight:600}
+        .loading{text-align:center;padding:60px 20px;color:#94a3b8;font-weight:600}
+        .loading i{font-size:36px;margin-bottom:14px;display:block;color:#818cf8}
+        .error-msg{
+            background:rgba(248,113,113,0.12);
+            color:#fca5a5;
+            padding:14px 18px;
+            border-radius:14px;
+            margin-bottom:18px;
+            border-left:4px solid #f87171;
+            display:none;
+            font-size:14px;
+            font-weight:700;
+        }
+        .success-msg{
+            background:rgba(52,211,153,0.12);
+            color:#6ee7b7;
+            padding:14px 18px;
+            border-radius:14px;
+            margin-bottom:18px;
+            border-left:4px solid #34d399;
+            display:none;
+            font-size:14px;
+            font-weight:700;
+        }
+        .status-badge{
+            display:inline-block;
+            padding:6px 20px;
+            border-radius:30px;
+            font-size:13px;
+            font-weight:800;
+            margin-top:12px;
+        }
+        .status-badge.claimed{background:rgba(52,211,153,0.15);color:#6ee7b7;border:1px solid rgba(52,211,153,0.25)}
+        .status-badge.unclaimed{background:rgba(251,191,36,0.15);color:#fcd34d;border:1px solid rgba(251,191,36,0.25)}
+        .status-badge.locked{background:rgba(248,113,113,0.15);color:#fca5a5;border:1px solid rgba(248,113,113,0.25)}
+        .status-badge.ready{background:rgba(99,102,241,0.15);color:#a5b4fc;border:1px solid rgba(99,102,241,0.25)}
+        .status-badge.cooldown{background:rgba(139,92,246,0.15);color:#c4b5fd;border:1px solid rgba(139,92,246,0.25)}
+        .status-badge.newbie-ready{background:rgba(6,182,212,0.15);color:#67e8f9;border:1px solid rgba(6,182,212,0.25)}
+        .status-badge.newbie-claimed{background:rgba(52,211,153,0.15);color:#6ee7b7;border:1px solid rgba(52,211,153,0.25)}
+        .status-badge.newbie-locked{background:rgba(248,113,113,0.15);color:#fca5a5;border:1px solid rgba(248,113,113,0.25)}
+        .attendance-info{
+            background:linear-gradient(135deg,rgba(251,191,36,0.12),rgba(245,158,11,0.08));
+            border-radius:16px;
+            padding:16px 18px;
+            margin-bottom:18px;
+            text-align:center;
+            border:1px solid rgba(251,191,36,0.25);
+        }
+        .attendance-info .days{font-size:28px;font-weight:800;color:#fbbf24;margin:4px 0}
+        .attendance-info .required{font-size:14px;color:#fcd34d;font-weight:600}
+        .attendance-info .required .highlight{color:#fbbf24;font-weight:800}
+        .cons-info{
+            background:rgba(139,92,246,0.1);
+            border-radius:14px;
+            padding:14px 18px;
+            margin-bottom:18px;
+            text-align:center;
+            border:1px solid rgba(139,92,246,0.2);
+            font-size:13px;
+            color:#c4b5fd;
+            font-weight:600;
+        }
+        .cons-info .cons-value{font-weight:800;color:#c084fc}
+        .cons-info .newbie-value{font-weight:800;color:#22d3ee}
+        .error-boundary{
+            background:rgba(248,113,113,0.1);
+            border:2px solid rgba(248,113,113,0.25);
+            border-radius:20px;
+            padding:22px;
+            margin-bottom:22px;
+            text-align:center;
+            display:none;
+            backdrop-filter:blur(8px);
+        }
+        .error-boundary .error-icon{font-size:48px;color:#f87171;margin-bottom:14px;filter:drop-shadow(0 0 16px rgba(248,113,113,0.4))}
+        .error-boundary .error-title{font-size:18px;font-weight:800;color:#fca5a5;margin-bottom:8px}
+        .error-boundary .retry-btn{
+            padding:12px 36px;
+            background:linear-gradient(135deg,#ef4444,#dc2626);
+            color:white;
+            border:none;
+            border-radius:40px;
+            font-size:14px;
+            font-weight:800;
+            cursor:pointer;
+            transition:all 0.3s;
+            box-shadow:0 8px 24px rgba(239,68,68,0.35);
+        }
+        .error-boundary .retry-btn:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(239,68,68,0.5)}
+        .tier-info{
+            background:linear-gradient(135deg,rgba(52,211,153,0.1),rgba(16,185,129,0.08));
+            border-radius:14px;
+            padding:14px 18px;
+            margin-bottom:18px;
+            text-align:center;
+            border:1px solid rgba(52,211,153,0.2);
+            font-size:13px;
+            color:#6ee7b7;
+            font-weight:600;
+            line-height:1.7;
+        }
+        .tier-info .tier-value{font-weight:800;color:#34d399}
+        .newbie-info{
+            background:linear-gradient(135deg,rgba(6,182,212,0.15),rgba(8,145,178,0.1));
+            border-radius:16px;
+            padding:18px;
+            margin-bottom:18px;
+            text-align:center;
+            border:1px solid rgba(6,182,212,0.25);
+            font-size:13px;
+            color:#67e8f9;
+            font-weight:600;
+            line-height:1.7;
+        }
+        .newbie-info .newbie-value{font-weight:800;color:#22d3ee}
+        .action-row{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;justify-content:center}
+        .action-row button{
+            background:rgba(99,102,241,0.08);
+            border:1px solid rgba(99,102,241,0.25);
+            border-radius:40px;
+            padding:10px 22px;
+            color:#a5b4fc;
+            cursor:pointer;
+            font-size:13px;
+            transition:all 0.2s;
+            font-weight:700;
+        }
+        .action-row button:hover{background:rgba(99,102,241,0.15);border-color:#6366f1;color:#c7d2fe;transform:translateY(-1px)}
+        .action-row button.newbie-action{border-color:rgba(6,182,212,0.3);color:#67e8f9}
+        .action-row button.newbie-action:hover{background:rgba(6,182,212,0.15);border-color:#06b6d4;color:#a5f3fc}
+        .yesterday-details{
+            background:rgba(99,102,241,0.06);
+            border-radius:14px;
+            padding:18px;
+            margin-top:14px;
+            font-size:13px;
+            display:none;
+            border:1px solid rgba(99,102,241,0.15);
+            color:#c7d2fe;
+            font-weight:500;
+        }
+        .yesterday-details .top-list{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;margin-top:8px}
+        .yesterday-details .top-list .medal{font-weight:700;color:#c7d2fe}
+        .cooldown-container{
+            background:linear-gradient(135deg,rgba(139,92,246,0.15),rgba(109,40,217,0.1));
+            border-radius:16px;
+            padding:18px;
+            margin-bottom:18px;
+            text-align:center;
+            border:1px solid rgba(139,92,246,0.3);
+            display:none;
+        }
+        .cooldown-container .cooldown-title{font-size:14px;font-weight:800;color:#c4b5fd}
+        .cooldown-container .cooldown-timer{font-size:30px;font-weight:800;color:#a78bfa;margin:6px 0;font-family:'SF Mono',monospace;letter-spacing:2px}
+        .cooldown-container .cooldown-sub{font-size:12px;color:#c4b5fd;font-weight:600}
+        .cooldown-container .cooldown-bar{width:100%;height:6px;background:rgba(139,92,246,0.15);border-radius:4px;margin-top:10px;overflow:hidden}
+        .cooldown-container .cooldown-bar-fill{height:100%;background:linear-gradient(90deg,#8b5cf6,#a78bfa);border-radius:4px;transition:width 1s linear}
+        .newbie-activity{display:flex;gap:12px;justify-content:center;margin:14px 0;flex-wrap:wrap}
+        .activity-badge{padding:7px 18px;border-radius:30px;font-size:13px;font-weight:800}
+        .activity-badge.active{background:rgba(52,211,153,0.15);color:#6ee7b7;border:1px solid rgba(52,211,153,0.25)}
+        .activity-badge.inactive{background:rgba(248,113,113,0.15);color:#fca5a5;border:1px solid rgba(248,113,113,0.25)}
+        .activity-badge.neutral{background:rgba(99,102,241,0.1);color:#a5b4fc;border:1px solid rgba(99,102,241,0.2)}
+        @media(max-width:600px){
+            .container{padding:22px 18px;border-radius:28px}
+            .pool-stats{grid-template-columns:repeat(2,1fr);gap:10px}
+            .pool-preview .reward-amount{font-size:34px}
+            .header h1{font-size:20px}
+            .claim-btn{font-size:15px;padding:15px}
+        }
+        @media(max-width:400px){
+            .pool-stats{grid-template-columns:1fr 1fr}
+            .stat-card{padding:12px}
+            .stat-card .value{font-size:18px}
+        }
+        .perf-badge{
+            position:fixed;
+            bottom:20px;
+            right:20px;
+            background:rgba(15,23,42,0.85);
+            color:#4ade80;
+            padding:7px 16px;
+            border-radius:40px;
+            font-size:12px;
+            font-family:'SF Mono',monospace;
+            font-weight:700;
+            z-index:1000;
+            backdrop-filter:blur(12px);
+            letter-spacing:0.5px;
+            border:1px solid rgba(74,222,128,0.2);
+            box-shadow:0 8px 24px rgba(0,0,0,0.3);
+        }
+        .tab-btn .badge{
+            display:inline-block;
+            background:#ec4899;
+            color:white;
+            border-radius:20px;
+            padding:0 8px;
+            font-size:10px;
+            line-height:18px;
+            margin-left:4px;
+            font-weight:800;
+        }
         .tab-btn .badge.newbie{background:#06b6d4}
     </style>
 </head>
@@ -159,12 +446,12 @@
             <div class="cons-info">
                 <i class="fas fa-fire"></i> 连续签到: <span class="cons-value" id="consecutiveDays">0</span> 天 &nbsp;|&nbsp;
                 加成系数: <span class="cons-value" id="consBonus">100%</span>
-                <span style="display:block;font-size:11px;color:#8b5cf6;margin-top:2px;" id="bonusDetail">主池按基数分配 · 奖励池额外加成</span>
+                <span style="display:block;font-size:11px;color:#c4b5fd;margin-top:4px;" id="bonusDetail">主池按基数分配 · 奖励池额外加成</span>
             </div>
 
             <div class="tier-info" id="tierInfo">
                 📊 池子来源: 系统积分池每日划拨 · 上限为系统池余额的 80%
-                <br><span style="font-size:12px;color:#15803d;">当前可瓜分 <span class="tier-value" id="eligibleCountDisplay">0</span> 人 · 系统池余额: <span class="tier-value" id="poolRangeDisplay">--</span></span>
+                <br><span style="font-size:12px;color:#34d399;">当前可瓜分 <span class="tier-value" id="eligibleCountDisplay">0</span> 人 · 系统池余额: <span class="tier-value" id="poolRangeDisplay">--</span></span>
             </div>
 
             <div id="cooldownContainer" class="cooldown-container">
@@ -205,7 +492,7 @@
                 <p>📌 连续签到加成: ≥7天 100%｜4-6天 70%｜1-3天 40%｜断签归零</p>
                 <p>📌 新用户(注册≤14天) 额外 +15% 基数</p>
                 <p>📌 领取后冷却 <span class="highlight">24</span> 小时，防止频繁领取</p>
-                <p style="margin-top:8px;font-size:11px;color:#94a3b8;">数据每10分钟刷新 · 每人每日限领一次</p>
+                <p style="margin-top:10px;font-size:11px;color:#64748b;">数据每10分钟刷新 · 每人每日限领一次</p>
             </div>
 
             <div class="update-timer" id="updateTimer">下次更新: --</div>
@@ -215,9 +502,9 @@
     <div id="tab-newbie" class="tab-content">
         <div id="newbieContent" style="display:none;">
             <div class="newbie-info">
-                <i class="fas fa-gift" style="font-size:20px;display:block;margin-bottom:6px;"></i>
+                <i class="fas fa-gift" style="font-size:22px;display:block;margin-bottom:8px;"></i>
                 <div>🎉 新人专属福利 · 注册 <span class="newbie-value" id="newbieDaysOld">--</span> 天</div>
-                <div style="font-size:12px;color:#0e7490;margin-top:4px;">注册 ≤ 7 天可领取 · 每日限领 1 次</div>
+                <div style="font-size:12px;color:#67e8f9;margin-top:6px;font-weight:500;">注册 ≤ 7 天可领取 · 每日限领 1 次</div>
             </div>
 
             <div class="pool-stats">
@@ -234,10 +521,10 @@
 
             <div class="cons-info">
                 <span class="newbie-value" id="newbieMultiplier">--</span> 倍活跃度加成
-                <span style="display:block;font-size:11px;color:#0891b2;margin-top:2px;" id="newbieMultiplierDetail">签到 +100% · 登录 +100% · 注册天数衰减</span>
+                <span style="display:block;font-size:11px;color:#67e8f9;margin-top:4px;font-weight:500;" id="newbieMultiplierDetail">签到 +100% · 登录 +100% · 注册天数衰减</span>
             </div>
 
-            <div class="pool-preview" style="background:linear-gradient(135deg,#cffafe,#a5f3fc);border-color:#67e8f9;">
+            <div class="pool-preview" style="background:linear-gradient(135deg,rgba(6,182,212,0.15),rgba(8,145,178,0.1));border-color:rgba(6,182,212,0.3);">
                 <div class="label">🎁 今日可领取</div>
                 <div class="reward-amount" id="newbieReward">-- <span class="unit">积分</span></div>
                 <div class="sub-info" id="newbiePreviewSub">基于活跃度动态计算</div>
@@ -256,7 +543,7 @@
                 <p>📌 注册天数衰减: 第1天 100% → 第7天 50%</p>
                 <p>📌 最高奖励不超过系统积分池的 <span class="newbie-highlight">1%</span></p>
                 <p>📌 奖池资金来源于 <span class="newbie-highlight">系统积分池</span></p>
-                <p style="margin-top:8px;font-size:11px;color:#94a3b8;">每日限领一次 · 奖励自动发放至邮箱</p>
+                <p style="margin-top:10px;font-size:11px;color:#64748b;">每日限领一次 · 奖励自动发放至邮箱</p>
             </div>
 
             <div class="update-timer" id="newbieUpdateTimer">下次更新: --</div>
@@ -745,7 +1032,7 @@
         } catch (error) {
             showError('新人奖池加载失败: ' + error.message);
             document.getElementById('newbieContent').style.display = 'block';
-            document.getElementById('newbieContent').innerHTML = '<div style="text-align:center;padding:40px;color:#ef4444;"><i class="fas fa-exclamation-circle" style="font-size:32px;display:block;margin-bottom:12px;"></i>加载失败: ' + error.message + '</div>';
+            document.getElementById('newbieContent').innerHTML = '<div style="text-align:center;padding:40px;color:#fca5a5;font-weight:600;"><i class="fas fa-exclamation-circle" style="font-size:36px;display:block;margin-bottom:14px;"></i>加载失败: ' + error.message + '</div>';
         }
     }
 
@@ -831,19 +1118,19 @@
                 el.style.display = 'block';
                 return;
             }
-            var html = '<div style="font-weight:600;margin-bottom:8px;">📊 昨日瓜分明细 (' + data.date + ')</div>';
-            html += '<div style="display:flex;justify-content:space-around;margin-bottom:12px;flex-wrap:wrap;gap:4px;">';
-            html += '<span>总发放: <strong>' + data.total_payout + '</strong> 积分</span>';
-            html += '<span>参与人数: <strong>' + data.user_count + '</strong></span>';
-            html += '<span>您获得: <strong>' + data.user_reward + '</strong> 积分</span>';
+            var html = '<div style="font-weight:700;margin-bottom:10px;color:#c7d2fe;">📊 昨日瓜分明细 (' + data.date + ')</div>';
+            html += '<div style="display:flex;justify-content:space-around;margin-bottom:14px;flex-wrap:wrap;gap:6px;">';
+            html += '<span>总发放: <strong style="color:#a5b4fc;">' + data.total_payout + '</strong> 积分</span>';
+            html += '<span>参与人数: <strong style="color:#a5b4fc;">' + data.user_count + '</strong></span>';
+            html += '<span>您获得: <strong style="color:#6ee7b7;">' + data.user_reward + '</strong> 积分</span>';
             html += '</div>';
             if (data.top_10 && data.top_10.length > 0) {
-                html += '<div style="font-weight:600;margin-bottom:4px;">🏆 前十榜单</div>';
+                html += '<div style="font-weight:700;margin-bottom:6px;color:#c7d2fe;">🏆 前十榜单</div>';
                 html += '<div class="top-list">';
                 data.top_10.forEach(function(item, index) {
                     var medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : (index + 1) + '.';
                     html += '<div class="medal">' + medal + ' ' + item.username + '</div>';
-                    html += '<div style="text-align:right;color:#16a34a;">+' + item.reward + '</div>';
+                    html += '<div style="text-align:right;color:#6ee7b7;font-weight:700;">+' + item.reward + '</div>';
                 });
                 html += '</div>';
             }

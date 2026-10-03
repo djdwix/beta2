@@ -156,7 +156,33 @@
         .cdk-reward-row input[type="number"]{flex:0 0 80px;padding:8px 12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#fff;font-size:13px;outline:none}
         .cdk-reward-row .remove-reward-btn{flex:0 0 auto;padding:6px 12px;background:rgba(239,68,68,0.7);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:12px}
         .cdk-reward-row .remove-reward-btn:hover{background:#ef4444}
-        @media(max-width:768px){.admin-container{padding:12px 16px}.login-card{padding:32px 24px;width:95%}.stats-grid{grid-template-columns:repeat(2,1fr)}.admin-header .left h1{font-size:18px}.form-row{flex-direction:column}.form-group{min-width:100%}.cdk-reward-row{flex-wrap:wrap}}
+        .membership-stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:20px}
+        .membership-stat-row .ms-card{background:linear-gradient(145deg,rgba(251,191,36,0.08),rgba(245,158,11,0.02));border-radius:12px;padding:12px 16px;border:1px solid rgba(251,191,36,0.15);text-align:center}
+        .membership-stat-row .ms-card .ms-label{font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:4px}
+        .membership-stat-row .ms-card .ms-value{font-size:20px;font-weight:700;color:#fbbf24}
+        .expiring-list{display:grid;gap:8px}
+        .expiring-item{background:rgba(248,113,113,0.06);border:1px solid rgba(248,113,113,0.15);border-radius:12px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+        .expiring-item .ei-info{flex:1;min-width:200px}
+        .expiring-item .ei-username{font-weight:600;color:#fff;font-size:14px}
+        .expiring-item .ei-tier{font-size:12px;color:#fbbf24;margin-top:2px}
+        .expiring-item .ei-time{font-size:12px;color:#f87171;font-weight:600;margin-top:4px}
+        .auction-card-admin{background:linear-gradient(145deg,rgba(251,191,36,0.06),rgba(245,158,11,0.02));border:1px solid rgba(251,191,36,0.25);border-radius:14px;padding:16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+        .auction-card-admin .aca-left{display:flex;align-items:center;gap:12px;flex:1;min-width:220px}
+        .auction-card-admin .aca-emoji{font-size:40px}
+        .auction-card-admin .aca-info{flex:1;min-width:0}
+        .auction-card-admin .aca-name{font-size:15px;font-weight:700;color:#fff}
+        .auction-card-admin .aca-meta{font-size:12px;color:rgba(255,255,255,0.5);margin-top:2px}
+        .auction-card-admin .aca-price{font-size:14px;font-weight:700;color:#fbbf24;margin-top:4px}
+        .auction-card-admin .aca-actions{display:flex;gap:8px;flex-wrap:wrap}
+        @media(max-width:768px){
+            .admin-container{padding:12px 16px}
+            .login-card{padding:32px 24px;width:95%}
+            .stats-grid{grid-template-columns:repeat(2,1fr)}
+            .admin-header .left h1{font-size:18px}
+            .form-row{flex-direction:column}
+            .form-group{min-width:100%}
+            .cdk-reward-row{flex-wrap:wrap}
+        }
     </style>
 </head>
 <body>
@@ -212,6 +238,9 @@
         <div class="stat-card"><div class="label">用户总积分</div><div class="value" id="userTotalPoints">-</div></div>
         <div class="stat-card"><div class="label">📬 邮件总数</div><div class="value blue" id="mailTotal">-</div></div>
         <div class="stat-card"><div class="label">📬 未领取</div><div class="value gold" id="mailUnclaimed">-</div></div>
+        <div class="stat-card"><div class="label">👑 会员总数</div><div class="value gold" id="membershipTotal">-</div></div>
+        <div class="stat-card"><div class="label">⏰ 即将到期</div><div class="value red" id="membershipExpiring">-</div></div>
+        <div class="stat-card"><div class="label">🔨 活跃拍卖</div><div class="value gold" id="auctionActiveCount">-</div></div>
     </div>
 
     <div class="tabs">
@@ -220,6 +249,8 @@
         <button class="tab-btn" data-tab="restrict"><i class="fas fa-ban"></i> 账号风控</button>
         <button class="tab-btn" data-tab="reissue"><i class="fas fa-rotate-left"></i> 补发卡密</button>
         <button class="tab-btn" data-tab="users"><i class="fas fa-users"></i> 用户管理</button>
+        <button class="tab-btn" data-tab="membership"><i class="fas fa-crown"></i> 会员管理</button>
+        <button class="tab-btn" data-tab="auction"><i class="fas fa-gavel"></i> 拍卖管理</button>
         <button class="tab-btn" data-tab="knowledge"><i class="fas fa-database"></i> 知识库管理</button>
         <button class="tab-btn" data-tab="feedback"><i class="fas fa-comments"></i> 反馈管理</button>
     </div>
@@ -386,6 +417,86 @@
         <div id="usersPagination" class="pagination"></div>
     </div>
 
+    <div id="membershipTab" class="tab-content">
+        <div class="section-title"><i class="fas fa-crown"></i> 会员管理</div>
+        <div class="membership-stat-row">
+            <div class="ms-card"><div class="ms-label">👑 会员总数</div><div class="ms-value" id="msTotal">-</div></div>
+            <div class="ms-card"><div class="ms-label">🥇 普通会员</div><div class="ms-value" id="msNormal">-</div></div>
+            <div class="ms-card"><div class="ms-label">🥇 黄金会员</div><div class="ms-value" id="msGold">-</div></div>
+            <div class="ms-card"><div class="ms-label">💎 钻石会员</div><div class="ms-value" id="msDiamond">-</div></div>
+            <div class="ms-card"><div class="ms-label">👑 至尊会员</div><div class="ms-value" id="msSupreme">-</div></div>
+            <div class="ms-card"><div class="ms-label">♾️ 永久会员</div><div class="ms-value" id="msLifetime">-</div></div>
+            <div class="ms-card"><div class="ms-label">⏰ 即将到期</div><div class="ms-value" id="msExpiring">-</div></div>
+        </div>
+        <div style="background:rgba(248,113,113,0.06);border:1px solid rgba(248,113,113,0.15);border-radius:16px;padding:20px;margin-bottom:20px">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:14px">
+                <div style="font-size:14px;font-weight:600;color:#f87171"><i class="fas fa-clock"></i> 即将到期会员（3天内）</div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <button class="btn btn-warning btn-sm" id="sendExpiringRemindersBtn"><i class="fas fa-paper-plane"></i> 批量发送到期提醒</button>
+                    <button class="btn btn-outline btn-sm" id="refreshExpiringBtn"><i class="fas fa-rotate"></i> 刷新</button>
+                </div>
+            </div>
+            <div id="expiringListContainer" class="expiring-list"><div class="loading"><i class="fas fa-spinner fa-spin"></i>加载中...</div></div>
+        </div>
+        <div style="background:rgba(248,113,113,0.06);border:1px solid rgba(248,113,113,0.15);border-radius:16px;padding:20px;margin-bottom:20px">
+            <div style="font-size:14px;font-weight:600;color:#f87171;margin-bottom:12px"><i class="fas fa-user-minus"></i> 手动移除会员</div>
+            <div class="form-row">
+                <div class="form-group" style="flex:0 0 280px"><label>用户名</label><input type="text" id="revokeMembershipUsername" placeholder="输入要移除会员的用户名"></div>
+                <div class="form-group" style="flex:0 0 260px">
+                    <label>积分处理</label>
+                    <select id="revokeRefundOption">
+                        <option value="true">按比例退款并退回用户（扣减系统积分池）</option>
+                        <option value="false">不退款（仅移除会员）</option>
+                    </select>
+                </div>
+                <div class="form-group" style="flex:0 0 auto">
+                    <label style="opacity:0">操作</label>
+                    <button class="btn btn-danger" id="revokeMembershipBtn"><i class="fas fa-user-minus"></i> 确认移除</button>
+                    <button class="btn btn-outline" id="restoreMembershipBtn" style="margin-left:8px;"><i class="fas fa-undo"></i> 恢复上次移除</button>
+                </div>
+            </div>
+            <div id="revokeMembershipResult" style="margin-top:12px;"></div>
+        </div>
+        <div style="background:rgba(102,126,234,0.06);border:1px solid rgba(102,126,234,0.15);border-radius:16px;padding:20px;margin-bottom:20px">
+            <div style="font-size:14px;font-weight:600;color:#a78bfa;margin-bottom:12px"><i class="fas fa-tools"></i> 数据维护</div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap">
+                <button class="btn btn-primary btn-sm" id="migrateMembershipBtn"><i class="fas fa-sync-alt"></i> 迁移会员数据</button>
+                <span style="font-size:12px;color:rgba(255,255,255,0.4);align-self:center;">将旧版会员数据迁移为新的有效期格式</span>
+            </div>
+            <div id="migrateResult" style="margin-top:12px;"></div>
+        </div>
+        <div>
+            <div style="font-weight:500;color:rgba(255,255,255,0.6);font-size:13px;margin-bottom:12px">会员列表</div>
+            <div class="table-wrap" id="membershipListContainer"><div class="loading"><i class="fas fa-spinner fa-spin"></i>加载中...</div></div>
+        </div>
+    </div>
+
+    <div id="auctionTab" class="tab-content">
+        <div class="section-title"><i class="fas fa-gavel"></i> 拍卖管理</div>
+        <div style="background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.15);border-radius:16px;padding:20px;margin-bottom:20px">
+            <div style="font-size:14px;font-weight:600;color:#fbbf24;margin-bottom:12px"><i class="fas fa-magic"></i> 服务器自动拍卖控制</div>
+            <div style="font-size:13px;color:rgba(255,255,255,0.6);line-height:1.6;margin-bottom:14px;">
+                服务器每 <strong style="color:#fbbf24;">6 小时</strong> 自动上架一张随机传说卡，最多同时 <strong style="color:#fbbf24;">3 场</strong>进行中。每 10 分钟自动结算到期拍卖。
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <button class="btn btn-warning" id="generateAuctionBtn"><i class="fas fa-plus-circle"></i> 立即生成一场拍卖</button>
+                <button class="btn btn-success" id="settleAllAuctionsBtn"><i class="fas fa-check-circle"></i> 立即结算所有到期拍卖</button>
+                <button class="btn btn-outline" id="refreshAuctionBtn"><i class="fas fa-rotate"></i> 刷新列表</button>
+            </div>
+            <div id="auctionAdminResult" style="margin-top:12px;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+            <span style="font-weight:500;color:rgba(255,255,255,0.6);font-size:13px">当前进行中的服务器拍卖</span>
+        </div>
+        <div id="auctionListContainer">
+            <div class="loading"><i class="fas fa-spinner fa-spin"></i>加载中...</div>
+        </div>
+        <div class="section-title" style="margin-top:28px;"><i class="fas fa-history"></i> 已结束拍卖（最近20条）</div>
+        <div id="auctionHistoryContainer">
+            <div class="loading"><i class="fas fa-spinner fa-spin"></i>加载中...</div>
+        </div>
+    </div>
+
     <div id="knowledgeTab" class="tab-content">
         <div class="section-title"><i class="fas fa-database"></i> 知识库管理</div>
         <div style="margin-bottom:20px;background:rgba(255,255,255,0.03);border-radius:16px;padding:20px;border:1px solid rgba(255,255,255,0.05)">
@@ -486,6 +597,15 @@
         'plcard_code':'PL随机卡','premium_boost_code':'高级加成卡','cancellation_code':'注销卡'
     };
 
+    var TIER_NAMES = {
+        'none':'普通用户','normal':'普通会员','gold':'黄金会员','diamond':'钻石会员','supreme':'至尊会员',
+        'normal_lifetime':'普通会员(永久)','gold_lifetime':'黄金会员(永久)','diamond_lifetime':'钻石会员(永久)'
+    };
+    var TIER_ICONS = {
+        'none':'👤','normal':'👑','gold':'🥇','diamond':'💎','supreme':'👑',
+        'normal_lifetime':'👑','gold_lifetime':'🥇','diamond_lifetime':'💎'
+    };
+
     function buildRewardRow(){
         var optHtml='';
         CDK_REWARD_OPTIONS.forEach(function(o){optHtml+='<option value="'+o.v+'">'+o.t+'</option>';});
@@ -523,10 +643,379 @@
         });
     }
 
-    async function loadStats(){try{var d=await apiRequest('/api/admin/stats');document.getElementById('totalUsers').textContent=d.users.total;document.getElementById('verifiedUsers').textContent=d.users.verified;document.getElementById('unverifiedUsers').textContent=d.users.unverified;document.getElementById('loginRestricted').textContent=d.users.login_restricted||0;document.getElementById('mallRestricted').textContent=d.users.mall_restricted||0;document.getElementById('generateRestricted').textContent=d.users.generate_phone_restricted||0;document.getElementById('feedbackRestricted').textContent=d.users.feedback_restricted||0;document.getElementById('totalPoints').textContent=d.total_points.toFixed(2);document.getElementById('userTotalPoints').textContent=d.user_total_points.toFixed(2);document.getElementById('mailTotal').textContent=d.mail?.total||0;document.getElementById('mailUnclaimed').textContent=d.mail?.unclaimed||0;hideErrorBoundary()}catch(e){console.error(e);showMessage('加载统计数据失败: '+e.message,'error');showErrorBoundary('加载统计数据失败: '+e.message)}}
+    async function loadStats(){
+        try{
+            var d=await apiRequest('/api/admin/stats');
+            document.getElementById('totalUsers').textContent=d.users.total;
+            document.getElementById('verifiedUsers').textContent=d.users.verified;
+            document.getElementById('unverifiedUsers').textContent=d.users.unverified;
+            document.getElementById('loginRestricted').textContent=d.users.login_restricted||0;
+            document.getElementById('mallRestricted').textContent=d.users.mall_restricted||0;
+            document.getElementById('generateRestricted').textContent=d.users.generate_phone_restricted||0;
+            document.getElementById('feedbackRestricted').textContent=d.users.feedback_restricted||0;
+            document.getElementById('totalPoints').textContent=d.total_points.toFixed(2);
+            document.getElementById('userTotalPoints').textContent=d.user_total_points.toFixed(2);
+            document.getElementById('mailTotal').textContent=d.mail?.total||0;
+            document.getElementById('mailUnclaimed').textContent=d.mail?.unclaimed||0;
+            if(d.membership){
+                document.getElementById('membershipTotal').textContent=d.membership.total||0;
+                document.getElementById('membershipExpiring').textContent=d.membership.expiring||0;
+            }
+            if(d.auction){
+                document.getElementById('auctionActiveCount').textContent=d.auction.active||0;
+            }
+            hideErrorBoundary();
+        }catch(e){console.error(e);showMessage('加载统计数据失败: '+e.message,'error');showErrorBoundary('加载统计数据失败: '+e.message)}
+    }
 
-    async function loadUsers(page){page=page||currentUserPage;try{var d=await apiRequest('/api/admin/users?page='+page+'&per_page=20&search='+encodeURIComponent(currentUserSearch));var c=document.getElementById('usersListContainer');if(d.users.length===0){c.innerHTML='<div class="empty-state"><i class="fas fa-users-slash"></i>暂无用户</div>';document.getElementById('usersPagination').innerHTML='';return}
-    var html='<table><thead><tr><th>用户名</th><th>邮箱</th><th>总积分</th><th>认证</th><th>签到</th><th>限制状态</th><th>注册时间</th></tr></thead><tbody>';d.users.forEach(function(u){var restrictBadges='';if(u.loginRestricted)restrictBadges+='<span class="on">登录</span>';else restrictBadges+='<span class="off">登录</span>';if(u.mallRestricted)restrictBadges+='<span class="on">商城</span>';else restrictBadges+='<span class="off">商城</span>';if(u.generatePhoneRestricted)restrictBadges+='<span class="on">生成</span>';else restrictBadges+='<span class="off">生成</span>';if(u.feedbackRestricted)restrictBadges+='<span class="on">反馈</span>';else restrictBadges+='<span class="off">反馈</span>';var verifiedBadge=u.isVerified?badge('已认证','success'):badge('未认证','danger');html+='<tr><td><strong>'+escapeHtml(u.username)+'</strong></td><td>'+escapeHtml(u.email)+'</td><td>'+u.totalPoints.toFixed(2)+'</td><td>'+verifiedBadge+'</td><td>'+u.attendanceTotalDays+'天</td><td><div class="restrict-badge">'+restrictBadges+'</div></td><td>'+formatDate(u.createdAt)+'</td></tr>'});html+='</tbody></table>';c.innerHTML=html;currentUserTotalPages=d.total_pages||1;var pg=document.getElementById('usersPagination');var pgHtml='';for(var i=1;i<=currentUserTotalPages;i++){pgHtml+='<button class="'+(i===page?'active':'')+'" onclick="loadUsers('+i+')">'+i+'</button>'}pg.innerHTML=pgHtml}catch(e){console.error(e);document.getElementById('usersListContainer').innerHTML='<div class="loading"><i class="fas fa-exclamation-triangle" style="color:#f87171;"></i>加载失败</div>'}}
+    async function loadUsers(page){
+        page=page||currentUserPage;
+        try{
+            var d=await apiRequest('/api/admin/users?page='+page+'&per_page=20&search='+encodeURIComponent(currentUserSearch));
+            var c=document.getElementById('usersListContainer');
+            if(d.users.length===0){c.innerHTML='<div class="empty-state"><i class="fas fa-users-slash"></i>暂无用户</div>';document.getElementById('usersPagination').innerHTML='';return}
+            var html='<table><thead><tr><th>用户名</th><th>邮箱</th><th>总积分</th><th>会员</th><th>认证</th><th>签到</th><th>限制状态</th><th>注册时间</th></tr></thead><tbody>';
+            d.users.forEach(function(u){
+                var restrictBadges='';
+                if(u.loginRestricted)restrictBadges+='<span class="on">登录</span>';else restrictBadges+='<span class="off">登录</span>';
+                if(u.mallRestricted)restrictBadges+='<span class="on">商城</span>';else restrictBadges+='<span class="off">商城</span>';
+                if(u.generatePhoneRestricted)restrictBadges+='<span class="on">生成</span>';else restrictBadges+='<span class="off">生成</span>';
+                if(u.feedbackRestricted)restrictBadges+='<span class="on">反馈</span>';else restrictBadges+='<span class="off">反馈</span>';
+                var verifiedBadge=u.isVerified?badge('已认证','success'):badge('未认证','danger');
+                var tier=u.memberTier||'none';
+                var tierIcon=TIER_ICONS[tier]||'👤';
+                var tierName=TIER_NAMES[tier]||'普通用户';
+                var tierBadge=tier==='none'?badge(tierName,'neutral'):badge(tierIcon+' '+tierName,'purple');
+                var lifetimeTag='';
+                if(tier.indexOf('_lifetime')!==-1){lifetimeTag=' <span style="font-size:10px;color:#34d399;">♾️</span>';}
+                html+='<tr><td><strong>'+escapeHtml(u.username)+'</strong></td><td>'+escapeHtml(u.email)+'</td><td>'+u.totalPoints.toFixed(2)+'</td><td>'+tierBadge+lifetimeTag+'</td><td>'+verifiedBadge+'</td><td>'+u.attendanceTotalDays+'天</td><td><div class="restrict-badge">'+restrictBadges+'</div></td><td>'+formatDate(u.createdAt)+'</td></tr>';
+            });
+            html+='</tbody></table>';
+            c.innerHTML=html;
+            currentUserTotalPages=d.total_pages||1;
+            var pg=document.getElementById('usersPagination');
+            var pgHtml='';
+            for(var i=1;i<=currentUserTotalPages;i++){pgHtml+='<button class="'+(i===page?'active':'')+'" onclick="loadUsers('+i+')">'+i+'</button>'}
+            pg.innerHTML=pgHtml;
+        }catch(e){console.error(e);document.getElementById('usersListContainer').innerHTML='<div class="loading"><i class="fas fa-exclamation-triangle" style="color:#f87171;"></i>加载失败</div>'}
+    }
+
+    async function loadMembershipStats(){
+        try{
+            var d=await apiRequest('/api/admin/users?per_page=1000');
+            var total=0,normal=0,gold=0,diamond=0,supreme=0,lifetime=0;
+            d.users.forEach(function(u){
+                var tier=u.memberTier||'none';
+                if(tier!=='none'){
+                    total++;
+                    if(tier.indexOf('_lifetime')!==-1)lifetime++;
+                    var base=tier.replace('_lifetime','');
+                    if(base==='normal')normal++;
+                    else if(base==='gold')gold++;
+                    else if(base==='diamond')diamond++;
+                    else if(base==='supreme')supreme++;
+                }
+            });
+            document.getElementById('msTotal').textContent=total;
+            document.getElementById('msNormal').textContent=normal;
+            document.getElementById('msGold').textContent=gold;
+            document.getElementById('msDiamond').textContent=diamond;
+            document.getElementById('msSupreme').textContent=supreme;
+            document.getElementById('msLifetime').textContent=lifetime;
+        }catch(e){console.error('Load membership stats error:',e)}
+    }
+
+    async function loadMembershipList(){
+        try{
+            var d=await apiRequest('/api/admin/users?per_page=1000');
+            var c=document.getElementById('membershipListContainer');
+            var members=d.users.filter(function(u){return u.memberTier&&u.memberTier!=='none'});
+            if(members.length===0){
+                c.innerHTML='<div class="empty-state"><i class="fas fa-crown"></i>暂无会员</div>';
+                return;
+            }
+            var html='<table><thead><tr><th>用户名</th><th>邮箱</th><th>会员等级</th><th>类型</th><th>总积分</th><th>签到天数</th><th>注册时间</th><th>操作</th></tr></thead><tbody>';
+            members.forEach(function(u){
+                var tier=u.memberTier||'none';
+                var base=tier.replace('_lifetime','');
+                var tierIcon=TIER_ICONS[base]||'👑';
+                var tierName=TIER_NAMES[tier]||tier;
+                var isLifetime=tier.indexOf('_lifetime')!==-1;
+                var typeBadge=isLifetime?badge('♾️ 永久','success'):badge('📅 月卡','info');
+                var tierBadge=badge(tierIcon+' '+tierName,'purple');
+                html+='<tr><td><strong>'+escapeHtml(u.username)+'</strong></td><td>'+escapeHtml(u.email)+'</td><td>'+tierBadge+'</td><td>'+typeBadge+'</td><td>'+u.totalPoints.toFixed(2)+'</td><td>'+u.attendanceTotalDays+'天</td><td>'+formatDate(u.createdAt)+'</td><td><button class="action-btn action-btn-danger" onclick="revokeMembershipFromList(\''+escapeHtml(u.username)+'\')"><i class="fas fa-user-minus"></i> 移除</button></td></tr>';
+            });
+            html+='</tbody></table>';
+            c.innerHTML=html;
+        }catch(e){console.error(e);document.getElementById('membershipListContainer').innerHTML='<div class="loading"><i class="fas fa-exclamation-triangle" style="color:#f87171;"></i>加载失败</div>'}
+    }
+
+    async function loadExpiringMemberships(){
+        try{
+            var d=await apiRequest('/api/admin/membership/expiring-list');
+            var c=document.getElementById('expiringListContainer');
+            var expiring=d.expiring||[];
+            document.getElementById('msExpiring').textContent=expiring.length;
+            document.getElementById('membershipExpiring').textContent=expiring.length;
+            if(expiring.length===0){
+                c.innerHTML='<div class="empty-state" style="padding:20px;"><i class="fas fa-check-circle" style="color:#34d399;"></i>暂无即将到期的会员</div>';
+                return;
+            }
+            var html='';
+            expiring.forEach(function(item){
+                var base=item.tier.replace('_lifetime','');
+                var tierIcon=TIER_ICONS[base]||'👑';
+                var tierName=TIER_NAMES[item.tier]||item.tier;
+                var timeText='';
+                if(item.days_left>0)timeText=item.days_left+' 天 '+item.hours_left+' 小时后到期';
+                else timeText=item.hours_left+' 小时后到期';
+                html+='<div class="expiring-item"><div class="ei-info"><div class="ei-username">'+escapeHtml(item.username)+'</div><div class="ei-tier">'+tierIcon+' '+tierName+'</div><div class="ei-time">⏰ '+timeText+'</div></div><div style="font-size:12px;color:rgba(255,255,255,0.5);">到期时间: '+formatTime(item.expires_at)+'</div></div>';
+            });
+            c.innerHTML=html;
+        }catch(e){console.error('Load expiring error:',e);document.getElementById('expiringListContainer').innerHTML='<div class="loading"><i class="fas fa-exclamation-triangle" style="color:#f87171;"></i>加载失败</div>'}
+    }
+
+    async function sendExpiringReminders(){
+        var btn=document.getElementById('sendExpiringRemindersBtn');
+        btn.disabled=true;
+        var originalText=btn.innerHTML;
+        btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> 发送中...';
+        try{
+            var d=await apiRequest('/api/admin/send-expiring-reminders',{method:'POST',body:JSON.stringify({})});
+            showMessage(d.message,'success');
+            loadExpiringMemberships();
+        }catch(e){
+            showMessage(e.message,'error');
+        }finally{
+            btn.disabled=false;
+            btn.innerHTML=originalText;
+        }
+    }
+
+    async function migrateMembershipData(){
+        var btn=document.getElementById('migrateMembershipBtn');
+        btn.disabled=true;
+        var originalText=btn.innerHTML;
+        btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> 迁移中...';
+        try{
+            var d=await apiRequest('/api/admin/migrate-membership',{method:'POST',body:JSON.stringify({})});
+            showMessage(d.message,'success');
+            document.getElementById('migrateResult').innerHTML='<div style="background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.15);border-radius:12px;padding:12px 16px;color:#a7f3d0;"><i class="fas fa-check-circle" style="color:#34d399;"></i> '+escapeHtml(d.message)+(d.modified?' · 数据已更新':' · 无需更新')+'</div>';
+        }catch(e){
+            showMessage(e.message,'error');
+        }finally{
+            btn.disabled=false;
+            btn.innerHTML=originalText;
+        }
+    }
+
+    async function revokeMembership(){
+        var username=document.getElementById('revokeMembershipUsername').value.trim();
+        if(!username){showMessage('请输入用户名','error');return}
+        var refundOption=document.getElementById('revokeRefundOption').value==='true';
+        var refundText=refundOption?'将按剩余有效期比例退款并退回用户（扣减系统积分池）':'将不退还积分';
+        showModal('确定要移除用户 <code style="color:#a78bfa;">'+escapeHtml(username)+'</code> 的会员资格吗？<br><span style="color:#f87171;font-size:13px;">'+refundText+'</span><br><span style="color:rgba(255,255,255,0.5);font-size:12px;margin-top:6px;display:inline-block;">移除后可通过「恢复上次移除」按钮撤销。</span>',async function(){
+            var btn=document.getElementById('revokeMembershipBtn');
+            btn.disabled=true;
+            var originalText=btn.innerHTML;
+            btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> 处理中...';
+            try{
+                var d=await apiRequest('/api/admin/membership/revoke',{method:'POST',body:JSON.stringify({username:username,refund:refundOption})});
+                var extraHtml='';
+                if(d.refund_amount>0){
+                    extraHtml='<div style="margin-top:8px;font-size:12px;color:rgba(255,255,255,0.7);">💰 退款详情：'+escapeHtml(d.refund_detail)+'</div>';
+                    extraHtml+='<div style="margin-top:4px;font-size:12px;color:rgba(255,255,255,0.7);">👤 退回用户：<strong style="color:#34d399;">+'+d.refunded_to_user.toFixed(2)+'</strong> 积分（已存入理财账户）</div>';
+                    extraHtml+='<div style="margin-top:4px;font-size:12px;color:rgba(255,255,255,0.7);">📉 扣减系统池：<strong style="color:#f87171;">-'+d.refunded_from_system.toFixed(2)+'</strong> 积分</div>';
+                    extraHtml+='<div style="margin-top:4px;font-size:12px;color:rgba(255,255,255,0.4);">系统池余额：'+d.system_points_remaining.toFixed(2)+' 积分</div>';
+                }else{
+                    extraHtml='<div style="margin-top:8px;font-size:12px;color:rgba(255,255,255,0.5);">未执行退款（管理员选择不退款）</div>';
+                }
+                showMessage(d.message,'success');
+                document.getElementById('revokeMembershipResult').innerHTML='<div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:12px;padding:12px 16px;color:#fca5a5;"><i class="fas fa-user-minus" style="color:#f87171;"></i> 已移除 <strong>'+escapeHtml(username)+'</strong> 的会员（原等级：'+escapeHtml(d.old_tier_name)+'）'+extraHtml+'</div>';
+                document.getElementById('revokeMembershipUsername').value='';
+                loadStats();
+                loadMembershipStats();
+                loadMembershipList();
+                loadExpiringMemberships();
+            }catch(e){
+                showMessage(e.message,'error');
+            }finally{
+                btn.disabled=false;
+                btn.innerHTML=originalText;
+            }
+        });
+    }
+
+    function revokeMembershipFromList(username){
+        document.getElementById('revokeMembershipUsername').value=username;
+        var tabBtn=document.querySelector('.tab-btn[data-tab="membership"]');
+        if(tabBtn)tabBtn.click();
+        setTimeout(function(){
+            window.scrollTo({top:0,behavior:'smooth'});
+            var btn=document.getElementById('revokeMembershipBtn');
+            if(btn)btn.focus();
+        },100);
+    }
+
+    async function restoreMembership(){
+        var username=document.getElementById('revokeMembershipUsername').value.trim();
+        if(!username){showMessage('请输入用户名','error');return}
+        showModal('确定要恢复用户 <code style="color:#a78bfa;">'+escapeHtml(username)+'</code> 上次被移除的会员吗？',async function(){
+            var btn=document.getElementById('restoreMembershipBtn');
+            btn.disabled=true;
+            var originalText=btn.innerHTML;
+            btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> 处理中...';
+            try{
+                var d=await apiRequest('/api/admin/membership/restore',{method:'POST',body:JSON.stringify({username:username})});
+                showMessage(d.message,'success');
+                document.getElementById('revokeMembershipResult').innerHTML='<div style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);border-radius:12px;padding:12px 16px;color:#a7f3d0;"><i class="fas fa-check-circle" style="color:#34d399;"></i> '+escapeHtml(d.message)+'</div>';
+                document.getElementById('revokeMembershipUsername').value='';
+                loadStats();
+                loadMembershipStats();
+                loadMembershipList();
+                loadExpiringMemberships();
+            }catch(e){
+                showMessage(e.message,'error');
+            }finally{
+                btn.disabled=false;
+                btn.innerHTML=originalText;
+            }
+        });
+    }
+
+    async function loadAuctions(){
+        try{
+            var d=await apiRequest('/api/auction/list?page=1&per_page=100');
+            var c=document.getElementById('auctionListContainer');
+            var auctions=(d.auctions||[]).filter(function(a){return a.is_server_generated});
+            if(auctions.length===0){
+                c.innerHTML='<div class="empty-state"><i class="fas fa-gavel"></i>当前无进行中的服务器拍卖</div>';
+                return;
+            }
+            var now=Date.now();
+            var html='';
+            auctions.forEach(function(a){
+                var remain=Math.max(0,a.end_at-now);
+                var remainText=formatCountdown(remain);
+                var hasBidder=!!a.current_bidder;
+                html+='<div class="auction-card-admin">';
+                html+='<div class="aca-left">';
+                html+='<div class="aca-emoji">'+a.card_emoji+'</div>';
+                html+='<div class="aca-info">';
+                html+='<div class="aca-name">'+escapeHtml(a.card_name)+'</div>';
+                html+='<div class="aca-meta">👑 '+(a.rarity_name||'传说')+' · 起拍价 '+a.start_price+' G币</div>';
+                html+='<div class="aca-price">🪙 当前 '+a.current_bid+' G币</div>';
+                if(hasBidder){
+                    html+='<div class="aca-meta">最高出价者: <strong style="color:#34d399;">'+escapeHtml(a.current_bidder)+'</strong> · '+a.bid_count+'次出价</div>';
+                }else{
+                    html+='<div class="aca-meta" style="color:rgba(255,255,255,0.4);">暂无出价</div>';
+                }
+                html+='<div class="aca-meta">⏱️ 剩余 '+remainText+' · 结束时间: '+formatTime(a.end_at)+'</div>';
+                html+='</div>';
+                html+='</div>';
+                html+='<div class="aca-actions">';
+                html+='<button class="btn btn-danger btn-sm" onclick="forceSettleAuction(\''+a.id+'\')"><i class="fas fa-gavel"></i> 强制结算</button>';
+                html+='</div>';
+                html+='</div>';
+            });
+            c.innerHTML=html;
+        }catch(e){
+            console.error(e);
+            document.getElementById('auctionListContainer').innerHTML='<div class="loading"><i class="fas fa-exclamation-triangle" style="color:#f87171;"></i>加载失败: '+escapeHtml(e.message)+'</div>';
+        }
+    }
+
+    function formatCountdown(ms){
+        if(ms<=0)return '已结束';
+        var s=Math.floor(ms/1000);
+        var d=Math.floor(s/86400);
+        var h=Math.floor((s%86400)/3600);
+        var m=Math.floor((s%3600)/60);
+        if(d>0)return d+'天'+h+'时';
+        if(h>0)return h+'时'+m+'分';
+        return m+'分';
+    }
+
+    function forceSettleAuction(auctionId){
+        showModal('确定要立即结算这场拍卖吗？<br><span style="color:rgba(255,255,255,0.5);font-size:12px;">结算后最高出价者获得卡牌，其他人的G币全额退还。</span>',async function(){
+            try{
+                var d=await apiRequest('/api/admin/auction/settle-all',{method:'POST',body:JSON.stringify({})});
+                showMessage(d.message,'success');
+                loadAuctions();
+                loadStats();
+            }catch(e){
+                showMessage(e.message,'error');
+            }
+        });
+    }
+
+    async function generateAuction(){
+        var btn=document.getElementById('generateAuctionBtn');
+        btn.disabled=true;
+        var originalText=btn.innerHTML;
+        btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> 生成中...';
+        try{
+            var d=await apiRequest('/api/admin/auction/generate',{method:'POST',body:JSON.stringify({})});
+            showMessage(d.message,'success');
+            document.getElementById('auctionAdminResult').innerHTML='<div style="background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.15);border-radius:12px;padding:12px 16px;color:#a7f3d0;"><i class="fas fa-check-circle" style="color:#34d399;"></i> '+escapeHtml(d.message)+'</div>';
+            loadAuctions();
+            loadStats();
+        }catch(e){
+            showMessage(e.message,'error');
+        }finally{
+            btn.disabled=false;
+            btn.innerHTML=originalText;
+        }
+    }
+
+    async function settleAllAuctions(){
+        var btn=document.getElementById('settleAllAuctionsBtn');
+        btn.disabled=true;
+        var originalText=btn.innerHTML;
+        btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> 结算中...';
+        try{
+            var d=await apiRequest('/api/admin/auction/settle-all',{method:'POST',body:JSON.stringify({})});
+            showMessage(d.message,'success');
+            document.getElementById('auctionAdminResult').innerHTML='<div style="background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.15);border-radius:12px;padding:12px 16px;color:#a7f3d0;"><i class="fas fa-check-circle" style="color:#34d399;"></i> '+escapeHtml(d.message)+'</div>';
+            loadAuctions();
+            loadStats();
+        }catch(e){
+            showMessage(e.message,'error');
+        }finally{
+            btn.disabled=false;
+            btn.innerHTML=originalText;
+        }
+    }
+
+    async function loadAuctionHistory(){
+        try{
+            var d=await apiRequest('/api/auction/list?page=1&per_page=100');
+            var c=document.getElementById('auctionHistoryContainer');
+            var auctions=(d.auctions||[]).filter(function(a){return a.is_server_generated});
+            if(auctions.length===0){
+                c.innerHTML='<div class="empty-state"><i class="fas fa-history"></i>暂无历史记录</div>';
+                return;
+            }
+            var html='<div class="table-wrap"><table><thead><tr><th>卡牌</th><th>稀有度</th><th>起拍价</th><th>成交价</th><th>中标者</th><th>结束时间</th></tr></thead><tbody>';
+            auctions.slice(0,20).forEach(function(a){
+                var winner=a.winner||a.current_bidder||'-';
+                var finalPrice=a.final_price||a.current_bid||a.start_price;
+                html+='<tr>';
+                html+='<td>'+a.card_emoji+' '+escapeHtml(a.card_name)+'</td>';
+                html+='<td style="color:'+(a.rarity_color||'#fbbf24')+'">'+(a.rarity_name||'传说')+'</td>';
+                html+='<td>'+a.start_price+' G币</td>';
+                html+='<td><strong style="color:#fbbf24;">'+finalPrice+' G币</strong></td>';
+                html+='<td>'+escapeHtml(winner)+'</td>';
+                html+='<td>'+formatTime(a.end_at)+'</td>';
+                html+='</tr>';
+            });
+            html+='</tbody></table></div>';
+            c.innerHTML=html;
+        }catch(e){
+            console.error(e);
+            document.getElementById('auctionHistoryContainer').innerHTML='<div class="loading"><i class="fas fa-exclamation-triangle" style="color:#f87171;"></i>加载失败</div>';
+        }
+    }
 
     async function loadRestrictedUsers(){
         try{
@@ -868,12 +1357,17 @@
         loadUsers(1);
         loadKnowledgeBase();
         loadFeedbackList(1);
+        loadMembershipStats();
+        loadMembershipList();
+        loadExpiringMemberships();
+        loadAuctions();
+        loadAuctionHistory();
         document.getElementById('cdkRewardsContainer').innerHTML='';
         addRewardRow();
     }
 
     document.getElementById('logoutAdminBtn').addEventListener('click',logoutAdmin);
-    document.getElementById('refreshBtn').addEventListener('click',function(){loadStats();loadRestrictedUsers();loadCdkPackages();loadAnnouncements();loadUsers(currentUserPage);loadKnowledgeBase();loadFeedbackList(currentFeedbackPage);showMessage('数据已刷新','success')});
+    document.getElementById('refreshBtn').addEventListener('click',function(){loadStats();loadRestrictedUsers();loadCdkPackages();loadAnnouncements();loadUsers(currentUserPage);loadKnowledgeBase();loadFeedbackList(currentFeedbackPage);loadMembershipStats();loadMembershipList();loadExpiringMemberships();loadAuctions();loadAuctionHistory();showMessage('数据已刷新','success')});
     document.getElementById('reissueBtn').addEventListener('click',reissueCancellation);
     document.getElementById('createCdkBtn').addEventListener('click',createCdkPackage);
     document.getElementById('addRewardBtn').addEventListener('click',addRewardRow);
@@ -896,7 +1390,17 @@
     document.getElementById('feedbackSearchFilter').addEventListener('keypress',function(e){if(e.key==='Enter'){currentFeedbackSearch=this.value.trim();currentFeedbackStatus=document.getElementById('feedbackStatusFilter').value;currentFeedbackPage=1;loadFeedbackList(1)}});
     document.getElementById('feedbackStatusFilter').addEventListener('change',function(){currentFeedbackSearch=document.getElementById('feedbackSearchFilter').value.trim();currentFeedbackStatus=this.value;currentFeedbackPage=1;loadFeedbackList(1)});
 
-    document.querySelectorAll('.tab-btn').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.tab-btn').forEach(function(x){x.classList.remove('active')});b.classList.add('active');document.querySelectorAll('.tab-content').forEach(function(x){x.classList.remove('active')});var id=b.getAttribute('data-tab');document.getElementById(id+'Tab').classList.add('active');if(id==='restrict')loadRestrictedUsers();if(id==='cdk')loadCdkPackages();if(id==='announcement')loadAnnouncements();if(id==='users')loadUsers(currentUserPage);if(id==='knowledge')loadKnowledgeBase();if(id==='feedback')loadFeedbackList(1)})});
+    document.getElementById('sendExpiringRemindersBtn').addEventListener('click',sendExpiringReminders);
+    document.getElementById('refreshExpiringBtn').addEventListener('click',loadExpiringMemberships);
+    document.getElementById('migrateMembershipBtn').addEventListener('click',migrateMembershipData);
+    document.getElementById('revokeMembershipBtn').addEventListener('click',revokeMembership);
+    document.getElementById('restoreMembershipBtn').addEventListener('click',restoreMembership);
+
+    document.getElementById('generateAuctionBtn').addEventListener('click',generateAuction);
+    document.getElementById('settleAllAuctionsBtn').addEventListener('click',settleAllAuctions);
+    document.getElementById('refreshAuctionBtn').addEventListener('click',function(){loadAuctions();loadAuctionHistory();loadStats();showMessage('拍卖数据已刷新','success')});
+
+    document.querySelectorAll('.tab-btn').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.tab-btn').forEach(function(x){x.classList.remove('active')});b.classList.add('active');document.querySelectorAll('.tab-content').forEach(function(x){x.classList.remove('active')});var id=b.getAttribute('data-tab');document.getElementById(id+'Tab').classList.add('active');if(id==='restrict')loadRestrictedUsers();if(id==='cdk')loadCdkPackages();if(id==='announcement')loadAnnouncements();if(id==='users')loadUsers(currentUserPage);if(id==='knowledge')loadKnowledgeBase();if(id==='feedback')loadFeedbackList(1);if(id==='membership'){loadMembershipStats();loadMembershipList();loadExpiringMemberships()}if(id==='auction'){loadAuctions();loadAuctionHistory()}})});
 
     async function init(){if(isInitialized)return;isInitialized=true;try{await fetchCsrfToken().catch(function(e){});var token=localStorage.getItem('adminToken');if(token){currentToken=token;document.getElementById('loginContainer').style.display='none';document.getElementById('adminContainer').style.display='block';document.getElementById('tokenDisplay').innerHTML='<span class="valid">●</span> 已认证';initAdminData()}hideErrorBoundary()}catch(error){console.error('Init error:',error);showErrorBoundary('初始化失败: '+(error.message||'网络连接失败'))}}
     init();

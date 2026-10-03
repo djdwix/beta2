@@ -7,83 +7,102 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:'Segoe UI','PingFang SC',Roboto,sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;padding:20px}
-        .container{max-width:500px;margin:0 auto;background:rgba(255,255,255,0.98);border-radius:32px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);padding:24px;animation:slideUp 0.6s ease-out;position:relative}
-        @keyframes slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
-        .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px}
-        .header h2{font-size:22px;color:#333}
-        .header .stats{font-size:13px;color:#666;background:#f0f0f0;padding:6px 14px;border-radius:40px}
-        .header .stats span{font-weight:600;color:#667eea}
-        .month-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
-        .month-nav button{padding:8px 16px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;border-radius:40px;cursor:pointer;font-size:14px;transition:all 0.3s}
-        .month-nav button:hover{transform:scale(1.05);box-shadow:0 4px 12px rgba(102,126,234,0.3)}
-        .month-nav .month-label{font-size:18px;font-weight:600;color:#333}
-        .weekday-header{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:8px;text-align:center;font-size:13px;color:#888;font-weight:500}
-        .weekday-header .weekend{color:#e74c3c}
-        .calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
-        .calendar-day{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:12px;font-size:15px;font-weight:500;color:#333;background:#f8f9fa;transition:all 0.2s;position:relative;min-height:48px;cursor:pointer;user-select:none}
-        .calendar-day:hover{transform:scale(1.05);box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:5}
-        .calendar-day.empty{background:transparent;cursor:default}
-        .calendar-day.empty:hover{transform:none;box-shadow:none}
-        .calendar-day.today{background:linear-gradient(135deg,#667eea,#764ba2);color:white;font-weight:700;box-shadow:0 4px 12px rgba(102,126,234,0.3)}
-        .calendar-day.signed{background:linear-gradient(135deg,#27ae60,#2ecc71);color:white}
-        .calendar-day.signed.today{background:linear-gradient(135deg,#27ae60,#2ecc71);color:white}
-        .calendar-day.weekend:not(.signed):not(.today){color:#e74c3c}
-        .calendar-day .check-mark{font-size:10px;margin-top:1px}
-        .calendar-day .day-number{font-size:16px;font-weight:600}
+        body{font-family:'Segoe UI','PingFang SC',Roboto,sans-serif;background:linear-gradient(135deg,#6366f1 0%,#a855f7 50%,#ec4899 100%);min-height:100vh;padding:20px;display:flex;align-items:center;justify-content:center}
+        .container{width:100%;max-width:520px;background:rgba(255,255,255,0.98);border-radius:36px;box-shadow:0 30px 60px -15px rgba(0,0,0,0.3),0 0 0 1px rgba(255,255,255,0.6) inset;padding:28px;animation:slideUp 0.6s cubic-bezier(0.16,1,0.3,1);position:relative;overflow:hidden}
+        .container::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle at 30% 20%,rgba(168,85,247,0.08),transparent 50%),radial-gradient(circle at 80% 80%,rgba(99,102,241,0.08),transparent 50%);pointer-events:none}
+        @keyframes slideUp{from{opacity:0;transform:translateY(40px) scale(0.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+        .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px;position:relative;z-index:1}
+        .header h2{font-size:24px;color:#1e1b4b;font-weight:800;letter-spacing:-0.5px;display:flex;align-items:center;gap:8px}
+        .header .stats{font-size:13px;color:#7c3aed;background:linear-gradient(135deg,#ede9fe,#fae8ff);padding:8px 16px;border-radius:40px;font-weight:600;box-shadow:0 2px 8px rgba(124,58,237,0.1)}
+        .header .stats span{font-weight:800;color:#7c3aed}
+        .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;position:relative;z-index:1}
+        .stats-row .stat-item{text-align:center;padding:18px 8px;background:linear-gradient(145deg,#f8fafc,#eef2ff);border-radius:20px;border:1px solid rgba(99,102,241,0.08);transition:all 0.3s}
+        .stats-row .stat-item:hover{transform:translateY(-3px);box-shadow:0 10px 24px -8px rgba(99,102,241,0.25)}
+        .stats-row .stat-item .num{font-size:26px;font-weight:800;color:#6366f1;line-height:1.2;letter-spacing:-0.5px}
+        .stats-row .stat-item .label{font-size:11px;color:#94a3b8;margin-top:6px;font-weight:600;letter-spacing:0.3px}
+        .stats-row .stat-item .num.green{color:#10b981}
+        .stats-row .stat-item .num.orange{color:#f59e0b}
+        .month-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;position:relative;z-index:1}
+        .month-nav button{width:42px;height:42px;background:linear-gradient(135deg,#6366f1,#a855f7);color:white;border:none;border-radius:14px;cursor:pointer;font-size:14px;transition:all 0.3s;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px -2px rgba(99,102,241,0.4)}
+        .month-nav button:hover{transform:translateY(-2px) scale(1.05);box-shadow:0 8px 20px -4px rgba(99,102,241,0.5)}
+        .month-nav button:active{transform:translateY(0) scale(0.98)}
+        .month-nav .month-label{font-size:19px;font-weight:800;color:#1e1b4b;letter-spacing:-0.3px}
+        .weekday-header{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:10px;text-align:center;font-size:12px;color:#94a3b8;font-weight:700;letter-spacing:0.5px;position:relative;z-index:1}
+        .weekday-header .weekend{color:#f43f5e}
+        .calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;position:relative;z-index:1}
+        .calendar-day{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:16px;font-size:15px;font-weight:600;color:#334155;background:#f8fafc;transition:all 0.2s cubic-bezier(0.16,1,0.3,1);position:relative;min-height:52px;cursor:pointer;user-select:none;border:1.5px solid transparent}
+        .calendar-day:hover{transform:scale(1.08);box-shadow:0 8px 20px -6px rgba(99,102,241,0.3);z-index:5;border-color:rgba(99,102,241,0.2)}
+        .calendar-day.empty{background:transparent;cursor:default;border-color:transparent}
+        .calendar-day.empty:hover{transform:none;box-shadow:none;border-color:transparent}
+        .calendar-day.today{background:linear-gradient(135deg,#6366f1,#a855f7);color:white;font-weight:800;box-shadow:0 6px 18px -4px rgba(99,102,241,0.5);border-color:transparent}
+        .calendar-day.signed{background:linear-gradient(135deg,#10b981,#34d399);color:white;border-color:transparent}
+        .calendar-day.signed.today{background:linear-gradient(135deg,#10b981,#34d399);color:white}
+        .calendar-day.weekend:not(.signed):not(.today){color:#f43f5e}
+        .calendar-day .check-mark{font-size:10px;margin-top:1px;font-weight:800}
+        .calendar-day .day-number{font-size:16px;font-weight:700;line-height:1}
         .calendar-day.signed .day-number{color:white}
         .calendar-day.today .day-number{color:white}
-        .calendar-day .reward-dot{width:6px;height:6px;border-radius:50%;background:#ffd700;position:absolute;bottom:4px;right:4px;box-shadow:0 0 6px rgba(255,215,0,0.6)}
-        .calendar-day.signed .reward-dot{background:#fff;box-shadow:0 0 6px rgba(255,255,255,0.6)}
-        .calendar-day.today .reward-dot{background:#fff;box-shadow:0 0 6px rgba(255,255,255,0.6)}
-        .legend{display:flex;justify-content:center;gap:24px;margin-top:20px;padding-top:16px;border-top:1px solid #eee}
-        .legend-item{display:flex;align-items:center;gap:8px;font-size:13px;color:#666}
-        .legend-dot{width:16px;height:16px;border-radius:4px}
-        .legend-dot.today-dot{background:linear-gradient(135deg,#667eea,#764ba2)}
-        .legend-dot.signed-dot{background:linear-gradient(135deg,#27ae60,#2ecc71)}
-        .legend-dot.empty-dot{background:#f0f0f0;border:1px solid #ddd}
-        .back-link{display:inline-block;margin-top:16px;padding:10px 24px;background:#764ba2;color:#333;border:none;border-radius:40px;cursor:pointer;font-size:14px;text-decoration:none;transition:all 0.3s;text-align:center;width:100%}
-        .back-link:hover{background:#764ba2}
-        .stats-row{display:flex;justify-content:space-around;padding:16px;background:#f8f9fa;border-radius:16px;margin-bottom:20px}
-        .stats-row .stat-item{text-align:center}
-        .stats-row .stat-item .num{font-size:24px;font-weight:700;color:#667eea}
-        .stats-row .stat-item .label{font-size:12px;color:#888;margin-top:4px}
-        .stats-row .stat-item .num.green{color:#27ae60}
-        .stats-row .stat-item .num.orange{color:#f39c12}
-        .tooltip{position:fixed;background:rgba(30,30,50,0.95);backdrop-filter:blur(12px);color:white;border-radius:16px;padding:20px;min-width:280px;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,0.5);z-index:1000;pointer-events:none;opacity:0;transition:opacity 0.25s ease,transform 0.25s ease;transform:translateY(8px) scale(0.97);border:1px solid rgba(255,255,255,0.1)}
+        .calendar-day .reward-dot{width:7px;height:7px;border-radius:50%;background:#fbbf24;position:absolute;bottom:5px;right:5px;box-shadow:0 0 8px rgba(251,191,36,0.8)}
+        .calendar-day.signed .reward-dot{background:#fff;box-shadow:0 0 8px rgba(255,255,255,0.8)}
+        .calendar-day.today .reward-dot{background:#fff;box-shadow:0 0 8px rgba(255,255,255,0.8)}
+        .legend{display:flex;justify-content:center;gap:20px;margin-top:24px;padding-top:20px;border-top:1px solid rgba(99,102,241,0.1);position:relative;z-index:1;flex-wrap:wrap}
+        .legend-item{display:flex;align-items:center;gap:8px;font-size:12px;color:#64748b;font-weight:600}
+        .legend-dot{width:16px;height:16px;border-radius:6px}
+        .legend-dot.today-dot{background:linear-gradient(135deg,#6366f1,#a855f7);box-shadow:0 2px 6px rgba(99,102,241,0.3)}
+        .legend-dot.signed-dot{background:linear-gradient(135deg,#10b981,#34d399);box-shadow:0 2px 6px rgba(16,185,129,0.3)}
+        .legend-dot.empty-dot{background:#f1f5f9;border:1.5px solid #e2e8f0}
+        .back-link{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:20px;padding:14px 24px;background:linear-gradient(135deg,#6366f1,#a855f7);color:white;border:none;border-radius:18px;cursor:pointer;font-size:15px;font-weight:700;text-decoration:none;transition:all 0.3s;text-align:center;width:100%;position:relative;z-index:1;box-shadow:0 6px 20px -6px rgba(99,102,241,0.5)}
+        .back-link:hover{transform:translateY(-2px);box-shadow:0 10px 28px -6px rgba(99,102,241,0.6)}
+        .back-link:active{transform:translateY(0)}
+        .tooltip{position:fixed;background:rgba(15,23,42,0.96);backdrop-filter:blur(16px);color:white;border-radius:22px;padding:22px;min-width:280px;max-width:340px;box-shadow:0 30px 70px -10px rgba(0,0,0,0.6);z-index:1000;pointer-events:none;opacity:0;transition:opacity 0.25s ease,transform 0.25s ease;transform:translateY(10px) scale(0.96);border:1px solid rgba(255,255,255,0.12)}
         .tooltip.visible{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
-        .tooltip .close-btn{position:absolute;top:8px;right:12px;background:none;border:none;color:rgba(255,255,255,0.5);font-size:18px;cursor:pointer;pointer-events:auto;transition:color 0.2s}
+        .tooltip .close-btn{position:absolute;top:10px;right:14px;background:none;border:none;color:rgba(255,255,255,0.4);font-size:20px;cursor:pointer;pointer-events:auto;transition:color 0.2s;line-height:1}
         .tooltip .close-btn:hover{color:white}
-        .tooltip .date-label{font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:4px}
-        .tooltip .day-label{font-size:20px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;flex-wrap:wrap;gap:8px}
-        .tooltip .day-label .status-badge{font-size:12px;font-weight:600;padding:2px 12px;border-radius:20px;display:inline-block}
-        .tooltip .day-label .status-badge.signed{background:rgba(39,174,96,0.3);color:#2ecc71}
-        .tooltip .day-label .status-badge.unsigned{background:rgba(231,76,60,0.3);color:#e74c3c}
-        .tooltip .day-label .status-badge.future{background:rgba(102,126,234,0.3);color:#667eea}
-        .tooltip .day-label .status-badge.unsigned-past{background:rgba(231,76,60,0.2);color:#e74c3c}
-        .tooltip .reward-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06)}
+        .tooltip .date-label{font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:4px;font-weight:600;letter-spacing:0.3px}
+        .tooltip .day-label{font-size:20px;font-weight:800;margin-bottom:14px;display:flex;align-items:center;flex-wrap:wrap;gap:8px;letter-spacing:-0.3px}
+        .tooltip .day-label .status-badge{font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;display:inline-block;letter-spacing:0.3px}
+        .tooltip .day-label .status-badge.signed{background:rgba(16,185,129,0.25);color:#34d399}
+        .tooltip .day-label .status-badge.unsigned{background:rgba(244,63,94,0.25);color:#fb7185}
+        .tooltip .day-label .status-badge.future{background:rgba(99,102,241,0.25);color:#a5b4fc}
+        .tooltip .day-label .status-badge.unsigned-past{background:rgba(244,63,94,0.15);color:#fb7185}
+        .tooltip .reward-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06)}
         .tooltip .reward-item:last-child{border-bottom:none}
-        .tooltip .reward-item .icon{font-size:18px;width:32px;text-align:center}
-        .tooltip .reward-item .info{flex:1}
-        .tooltip .reward-item .info .name{font-size:14px;font-weight:500}
-        .tooltip .reward-item .info .desc{font-size:11px;color:rgba(255,255,255,0.5)}
-        .tooltip .reward-item .value{font-size:13px;font-weight:600;color:#ffd700;text-align:right;min-width:80px}
-        .tooltip .no-reward{color:rgba(255,255,255,0.4);font-size:13px;text-align:center;padding:12px 0}
-        .tooltip .future-hint{font-size:11px;color:rgba(255,255,255,0.3);text-align:center;padding:8px 0 0 0;border-top:1px solid rgba(255,255,255,0.06);margin-top:8px}
-        .tooltip .streak-info{display:flex;gap:16px;padding:8px 0 12px 0;border-bottom:1px solid rgba(255,255,255,0.06);margin-bottom:8px}
+        .tooltip .reward-item .icon{font-size:20px;width:34px;text-align:center;flex-shrink:0}
+        .tooltip .reward-item .info{flex:1;min-width:0}
+        .tooltip .reward-item .info .name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .tooltip .reward-item .info .desc{font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px}
+        .tooltip .reward-item .value{font-size:13px;font-weight:700;color:#fbbf24;text-align:right;min-width:80px;flex-shrink:0}
+        .tooltip .no-reward{color:rgba(255,255,255,0.4);font-size:13px;text-align:center;padding:14px 0}
+        .tooltip .future-hint{font-size:11px;color:rgba(255,255,255,0.35);text-align:center;padding:10px 0 0 0;border-top:1px solid rgba(255,255,255,0.06);margin-top:10px;font-weight:500}
+        .tooltip .streak-info{display:flex;gap:20px;padding:10px 0 14px 0;border-bottom:1px solid rgba(255,255,255,0.06);margin-bottom:10px;justify-content:center}
         .tooltip .streak-info .item{text-align:center}
-        .tooltip .streak-info .item .num{font-size:18px;font-weight:700;color:#ffd700}
-        .tooltip .streak-info .item .label{font-size:10px;color:rgba(255,255,255,0.4)}
+        .tooltip .streak-info .item .num{font-size:20px;font-weight:800;color:#fbbf24;letter-spacing:-0.5px}
+        .tooltip .streak-info .item .label{font-size:10px;color:rgba(255,255,255,0.4);margin-top:3px;font-weight:600;letter-spacing:0.3px}
         .tooltip-overlay{position:fixed;top:0;left:0;width:100%;height:100%;z-index:999;display:none}
         .tooltip-overlay.active{display:block}
-        .debug-info{font-size:11px;color:#999;background:#f5f5f5;padding:8px 12px;border-radius:8px;margin-top:12px;word-break:break-all}
-        .error-boundary{background:#fef2f2;border:2px solid #fecaca;border-radius:16px;padding:20px;margin-bottom:20px;text-align:center;display:none}
-        .error-boundary .error-icon{font-size:48px;color:#dc2626;margin-bottom:12px}
-        .error-boundary .error-title{font-size:18px;font-weight:700;color:#dc2626;margin-bottom:8px}
-        .error-boundary .error-desc{font-size:14px;color:#666;margin-bottom:16px}
-        .error-boundary .retry-btn{padding:10px 32px;background:#dc2626;color:white;border:none;border-radius:40px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s}
-        .error-boundary .retry-btn:hover{background:#b91c1c;transform:translateY(-2px);box-shadow:0 4px 12px rgba(220,38,38,0.3)}
-        @media(max-width:480px){.container{padding:16px;border-radius:24px}.calendar-day{font-size:13px;min-height:40px;border-radius:8px}.calendar-day .day-number{font-size:14px}.month-nav .month-label{font-size:16px}.stats-row .stat-item .num{font-size:20px}.header h2{font-size:18px}.tooltip{min-width:200px;max-width:280px;padding:16px;left:10px!important;right:10px!important;margin:0 auto}.tooltip .day-label{font-size:17px}.tooltip .reward-item .value{font-size:11px;min-width:60px}}
+        .error-boundary{background:linear-gradient(135deg,#fef2f2,#fff1f2);border:2px solid #fecaca;border-radius:24px;padding:24px;margin-bottom:24px;text-align:center;display:none;position:relative;z-index:1}
+        .error-boundary .error-icon{font-size:48px;color:#ef4444;margin-bottom:14px}
+        .error-boundary .error-title{font-size:18px;font-weight:800;color:#dc2626;margin-bottom:8px}
+        .error-boundary .error-desc{font-size:14px;color:#64748b;margin-bottom:18px;line-height:1.5}
+        .error-boundary .retry-btn{padding:12px 36px;background:linear-gradient(135deg,#ef4444,#dc2626);color:white;border:none;border-radius:40px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.3s;box-shadow:0 6px 18px -4px rgba(239,68,68,0.5)}
+        .error-boundary .retry-btn:hover{transform:translateY(-2px);box-shadow:0 10px 28px -6px rgba(239,68,68,0.6)}
+        @media(max-width:480px){
+            body{padding:12px}
+            .container{padding:20px;border-radius:28px}
+            .header h2{font-size:20px}
+            .calendar-day{font-size:13px;min-height:42px;border-radius:12px}
+            .calendar-day .day-number{font-size:14px}
+            .month-nav .month-label{font-size:17px}
+            .month-nav button{width:38px;height:38px;border-radius:12px}
+            .stats-row .stat-item{padding:14px 6px;border-radius:16px}
+            .stats-row .stat-item .num{font-size:22px}
+            .stats-row .stat-item .label{font-size:10px}
+            .tooltip{min-width:200px;max-width:280px;padding:18px;left:10px!important;right:10px!important;margin:0 auto;border-radius:18px}
+            .tooltip .day-label{font-size:17px}
+            .tooltip .reward-item .value{font-size:11px;min-width:60px}
+            .legend{gap:14px}
+            .legend-item{font-size:11px}
+        }
     </style>
 </head>
 <body>
@@ -123,8 +142,6 @@
             <div class="legend-item"><div class="legend-dot today-dot"></div><span>今天</span></div>
             <div class="legend-item"><div class="legend-dot signed-dot"></div><span>已签到</span></div>
         </div>
-
-        <div class="debug-info" id="debugInfo">加载中...</div>
 
         <a href="/" class="back-link"><i class="fas fa-arrow-left"></i> 返回</a>
     </div>
@@ -279,8 +296,6 @@
                 var data = await apiRequest('/api/attendance/calendar?year=' + year + '&month=' + month);
                 currentData = data;
                 renderCalendar(data);
-                var debugEl = document.getElementById('debugInfo');
-                debugEl.innerHTML = '🔍 调试信息:<br>首次签到: ' + (data.first_attendance_date || '未设置') + '<br>最后签到: ' + (data.last_attendance_date || '未设置') + '<br>累计签到: ' + (data.total_attendance_days || 0) + '天<br>连续签到: ' + (data.consecutive_days || 0) + '天<br>本月日期数: ' + data.days.length;
                 hideErrorBoundary();
             } catch (error) {
                 console.error('Load calendar failed:', error);

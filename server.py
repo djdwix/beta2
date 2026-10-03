@@ -194,6 +194,10 @@ NEWBIE_POOL_FILE = os.path.join(DATA_DIR, 'newbie_pool.enc')
 NEWBIE_POOL_CLAIMS_FILE = os.path.join(DATA_DIR, 'newbie_pool_claims.enc')
 FUND_DATA_FILE = os.path.join(DATA_DIR, 'fund_data.enc')
 FUND_HISTORY_FILE = os.path.join(DATA_DIR, 'fund_history.enc')
+ACTIVITIES_FILE = os.path.join(DATA_DIR, 'activities.enc')
+USER_ACTIVITY_RECORDS_FILE = os.path.join(DATA_DIR, 'user_activity_records.enc')
+EMAIL_PUSH_RECORDS_FILE = os.path.join(DATA_DIR, 'email_push_records.enc')
+ANALYTICS_CACHE_FILE = os.path.join(DATA_DIR, 'analytics_cache.enc')
 NAV_DATA_FILE = os.path.join(DATA_DIR, 'nav_data.enc')
 NAV_HOLDINGS_FILE = os.path.join(DATA_DIR, 'nav_holdings.enc')
 NAV_HISTORY_FILE = os.path.join(DATA_DIR, 'nav_history.enc')
@@ -562,7 +566,7 @@ def save_fund_rate():
     FILE_MODIFICATION_TIMES['fund_rate'] = get_file_mtime(FUND_RATE_FILE)
 
 def reload_if_changed():
-    global users, phone_records, auth_codes, reset_codes, point_codes, premium_point_codes, boost_codes, special_point_codes, makeup_codes, gamblers_codes, box_codes, plcard_codes, premium_boost_codes, user_boosts, identity_verifications, cancellation_codes, restricted_users, cdk_packages, user_cdk_records, announcements, pl_exchange_records, pl_rate_data, user_pl_balances, system_total_points, orders, user_pay_passwords, user_code_limits, coupons, user_coupons, coupon_grants, pl_transfers, gateway_cards, mail_attachments, mail_read_receipts, pool_records, user_pool_claims, fund_data, fund_history, fund_rate, nav_data, nav_holdings, nav_history, gateway_stock, feedbacks
+    global users, phone_records, auth_codes, reset_codes, point_codes, premium_point_codes, boost_codes, special_point_codes, makeup_codes, gamblers_codes, box_codes, plcard_codes, premium_boost_codes, user_boosts, identity_verifications, cancellation_codes, restricted_users, cdk_packages, user_cdk_records, announcements, pl_exchange_records, pl_rate_data, user_pl_balances, system_total_points, orders, user_pay_passwords, user_code_limits, coupons, user_coupons, coupon_grants, pl_transfers, gateway_cards, mail_attachments, mail_read_receipts, pool_records, user_pool_claims, fund_data, fund_history, fund_rate, nav_data, nav_holdings, nav_history, gateway_stock, feedbacks, activities, user_activity_records, email_push_records, analytics_cache
 
     users_mtime = get_file_mtime(USERS_FILE)
     phone_mtime = get_file_mtime(PHONE_RECORDS_FILE)
@@ -608,6 +612,10 @@ def reload_if_changed():
     nav_history_mtime = get_file_mtime(NAV_HISTORY_FILE)
     gateway_stock_mtime = get_file_mtime(GATEWAY_STOCK_FILE)
     feedbacks_mtime = get_file_mtime(FEEDBACKS_FILE)
+    activities_mtime = get_file_mtime(ACTIVITIES_FILE)
+    user_activity_records_mtime = get_file_mtime(USER_ACTIVITY_RECORDS_FILE)
+    email_push_records_mtime = get_file_mtime(EMAIL_PUSH_RECORDS_FILE)
+    analytics_cache_mtime = get_file_mtime(ANALYTICS_CACHE_FILE)
 
     if users_mtime != FILE_MODIFICATION_TIMES.get('users', 0):
         users = load_data(USERS_FILE, {})
@@ -785,6 +793,22 @@ def reload_if_changed():
         feedbacks = load_data(FEEDBACKS_FILE, {})
         FILE_MODIFICATION_TIMES['feedbacks'] = feedbacks_mtime
 
+    if activities_mtime != FILE_MODIFICATION_TIMES.get('activities', 0):
+        activities = load_data(ACTIVITIES_FILE, {})
+        FILE_MODIFICATION_TIMES['activities'] = activities_mtime
+
+    if user_activity_records_mtime != FILE_MODIFICATION_TIMES.get('user_activity_records', 0):
+        user_activity_records = load_data(USER_ACTIVITY_RECORDS_FILE, {})
+        FILE_MODIFICATION_TIMES['user_activity_records'] = user_activity_records_mtime
+
+    if email_push_records_mtime != FILE_MODIFICATION_TIMES.get('email_push_records', 0):
+        email_push_records = load_data(EMAIL_PUSH_RECORDS_FILE, {})
+        FILE_MODIFICATION_TIMES['email_push_records'] = email_push_records_mtime
+
+    if analytics_cache_mtime != FILE_MODIFICATION_TIMES.get('analytics_cache', 0):
+        analytics_cache = load_data(ANALYTICS_CACHE_FILE, {})
+        FILE_MODIFICATION_TIMES['analytics_cache'] = analytics_cache_mtime
+
 users = load_data(USERS_FILE, {})
 phone_records = load_data(PHONE_RECORDS_FILE, {})
 auth_codes = load_data(AUTH_CODES_FILE, {})
@@ -826,6 +850,10 @@ fund_history = load_data(FUND_HISTORY_FILE, {})
 nav_data = load_data(NAV_DATA_FILE, {})
 nav_holdings = load_data(NAV_HOLDINGS_FILE, {})
 nav_history = load_data(NAV_HISTORY_FILE, {})
+activities = load_data(ACTIVITIES_FILE, {})
+user_activity_records = load_data(USER_ACTIVITY_RECORDS_FILE, {})
+email_push_records = load_data(EMAIL_PUSH_RECORDS_FILE, {})
+analytics_cache = load_data(ANALYTICS_CACHE_FILE, {})
 fund_rate = load_data(FUND_RATE_FILE, {})
 gateway_stock = load_data(GATEWAY_STOCK_FILE, {})
 feedbacks = load_data(FEEDBACKS_FILE, {})
@@ -862,6 +890,10 @@ FILE_MODIFICATION_TIMES['user_coupons'] = get_file_mtime(USER_COUPONS_FILE)
 FILE_MODIFICATION_TIMES['coupon_grants'] = get_file_mtime(COUPON_GRANTS_FILE)
 FILE_MODIFICATION_TIMES['pl_transfers'] = get_file_mtime(PL_TRANSFERS_FILE)
 FILE_MODIFICATION_TIMES['gateway_cards'] = get_file_mtime(GATEWAY_CARDS_FILE)
+FILE_MODIFICATION_TIMES['activities'] = get_file_mtime(ACTIVITIES_FILE)
+FILE_MODIFICATION_TIMES['user_activity_records'] = get_file_mtime(USER_ACTIVITY_RECORDS_FILE)
+FILE_MODIFICATION_TIMES['email_push_records'] = get_file_mtime(EMAIL_PUSH_RECORDS_FILE)
+FILE_MODIFICATION_TIMES['analytics_cache'] = get_file_mtime(ANALYTICS_CACHE_FILE)
 FILE_MODIFICATION_TIMES['mail_attachments'] = get_file_mtime(MAIL_ATTACHMENTS_FILE)
 FILE_MODIFICATION_TIMES['mail_read_receipts'] = get_file_mtime(MAIL_READ_RECEIPTS_FILE)
 FILE_MODIFICATION_TIMES['pool_records'] = get_file_mtime(POOL_RECORDS_FILE)
@@ -939,6 +971,22 @@ def save_identity_verifications():
 def save_cancellation_codes():
     save_data(CANCELLATION_CODES_FILE, cancellation_codes)
     FILE_MODIFICATION_TIMES['cancellation'] = get_file_mtime(CANCELLATION_CODES_FILE)
+
+def save_activities():
+    save_data(ACTIVITIES_FILE, activities)
+    FILE_MODIFICATION_TIMES['activities'] = get_file_mtime(ACTIVITIES_FILE)
+
+def save_user_activity_records():
+    save_data(USER_ACTIVITY_RECORDS_FILE, user_activity_records)
+    FILE_MODIFICATION_TIMES['user_activity_records'] = get_file_mtime(USER_ACTIVITY_RECORDS_FILE)
+
+def save_email_push_records():
+    save_data(EMAIL_PUSH_RECORDS_FILE, email_push_records)
+    FILE_MODIFICATION_TIMES['email_push_records'] = get_file_mtime(EMAIL_PUSH_RECORDS_FILE)
+
+def save_analytics_cache():
+    save_data(ANALYTICS_CACHE_FILE, analytics_cache)
+    FILE_MODIFICATION_TIMES['analytics_cache'] = get_file_mtime(ANALYTICS_CACHE_FILE)
 
 def save_restricted_users():
     save_data(RESTRICTED_USERS_FILE, restricted_users)
@@ -1349,6 +1397,33 @@ def calculate_fund_interest(username):
     save_fund_data()
     return interest
 
+def cleanup_expired_feedbacks():
+    current_time = int(time.time() * 1000)
+    expire_ms = 12 * 60 * 60 * 1000
+    feedbacks_to_remove = []
+
+    for fid, fb in feedbacks.items():
+        status = fb.get('status', 'pending')
+        if status not in ['replied', 'closed']:
+            continue
+
+        if status == 'closed':
+            base_time = fb.get('closed_at', 0) or fb.get('replied_at', 0) or fb.get('created_at', 0)
+        else:
+            base_time = fb.get('replied_at', 0) or fb.get('created_at', 0)
+
+        if base_time > 0 and current_time - base_time >= expire_ms:
+            feedbacks_to_remove.append(fid)
+
+    for fid in feedbacks_to_remove:
+        del feedbacks[fid]
+
+    if feedbacks_to_remove:
+        save_feedbacks()
+        log.info(f"清理了 {len(feedbacks_to_remove)} 条过期反馈记录")
+
+    return len(feedbacks_to_remove)
+
 def fund_interest_loop():
     while True:
         time.sleep(3600)
@@ -1357,6 +1432,108 @@ def fund_interest_loop():
                 calculate_fund_interest(username)
         except Exception as e:
             log.error(f"Fund interest loop error: {e}")
+
+def pl_rate_updater():
+    while True:
+        time.sleep(PL_FLUCTUATION_INTERVAL)
+        generate_new_pl_rate()
+
+def cleanup_expired_captcha_loop():
+    while True:
+        time.sleep(60)
+        try:
+            current_time = int(time.time())
+            captcha_data = load_captcha_storage()
+            captcha_ids_to_remove = []
+            for captcha_id, data in captcha_data.items():
+                created_at = data.get('created_at', 0)
+                if current_time - created_at > 300:
+                    captcha_ids_to_remove.append(captcha_id)
+            for captcha_id in captcha_ids_to_remove:
+                if captcha_id in captcha_data:
+                    del captcha_data[captcha_id]
+            if captcha_ids_to_remove:
+                save_captcha_storage(captcha_data)
+        except Exception as e:
+            log.error(f"Cleanup expired captcha error: {e}")
+
+def auto_grant_coupons_loop():
+    while True:
+        time.sleep(300)
+        try:
+            auto_grant_coupons()
+        except Exception as e:
+            log.error(f"Auto grant coupons error: {e}")
+
+def cleanup_mail_attachments_loop():
+    while True:
+        time.sleep(300)
+        try:
+            cleanup_expired_mail_attachments()
+        except Exception as e:
+            log.error(f"Cleanup mail attachments error: {e}")
+
+def cleanup_boost_checker():
+    while True:
+        time.sleep(60)
+        cleanup_all_expired_data()
+        try:
+            burn_excess_system_points()
+        except Exception as e:
+            log.error(f"Burn excess system points error: {e}")
+
+def auto_settle_auctions():
+    while True:
+        time.sleep(300)
+        try:
+            all_auctions = game.get_auctions(users)
+            now_ms = int(time.time() * 1000)
+            for auction in all_auctions:
+                if auction.get('end_at', 0) <= now_ms:
+                    game.settle_auction(users, save_users, auction['id'])
+        except Exception as e:
+            log.error(f"Auto settle auctions error: {e}")
+
+def pool_reward_loop():
+    while True:
+        time.sleep(3600)
+        try:
+            settle_yesterday_pool_unclaimed()
+            settle_pool_funds()
+        except Exception as e:
+            log.error(f"Pool reward loop error: {e}")
+
+def feedback_cleanup_loop():
+    while True:
+        try:
+            cleanup_expired_feedbacks()
+        except Exception as e:
+            log.error(f"清理过期反馈异常: {e}")
+        time.sleep(120)
+
+auction_settle_thread = threading.Thread(target=auto_settle_auctions, daemon=True)
+auction_settle_thread.start()
+
+boost_cleanup_thread = threading.Thread(target=cleanup_boost_checker, daemon=True)
+boost_cleanup_thread.start()
+
+pool_thread = threading.Thread(target=pool_reward_loop, daemon=True)
+pool_thread.start()
+
+feedback_cleanup_thread = threading.Thread(target=feedback_cleanup_loop, daemon=True)
+feedback_cleanup_thread.start()
+
+mail_cleanup_thread = threading.Thread(target=cleanup_mail_attachments_loop, daemon=True)
+mail_cleanup_thread.start()
+
+coupon_grant_thread = threading.Thread(target=auto_grant_coupons_loop, daemon=True)
+coupon_grant_thread.start()
+
+captcha_cleanup_thread = threading.Thread(target=cleanup_expired_captcha_loop, daemon=True)
+captcha_cleanup_thread.start()
+
+pl_thread = threading.Thread(target=pl_rate_updater, daemon=True)
+pl_thread.start()
 
 fund_interest_thread = threading.Thread(target=fund_interest_loop, daemon=True)
 fund_interest_thread.start()
@@ -1449,14 +1626,6 @@ def transfer_pl(username, target_username, amount, password):
         'to_username': target_username,
         'new_balance': get_user_pl_balance(username)
     }, None
-
-def pl_rate_updater():
-    while True:
-        time.sleep(PL_FLUCTUATION_INTERVAL)
-        generate_new_pl_rate()
-
-pl_thread = threading.Thread(target=pl_rate_updater, daemon=True)
-pl_thread.start()
 
 used_phone_numbers = set()
 
@@ -2536,28 +2705,6 @@ def cleanup_unverified_users():
     for username in users_to_delete:
         delete_user_completely(username)
 
-def cleanup_expired_captcha_loop():
-    while True:
-        time.sleep(60)
-        try:
-            current_time = int(time.time())
-            captcha_data = load_captcha_storage()
-            captcha_ids_to_remove = []
-            for captcha_id, data in captcha_data.items():
-                created_at = data.get('created_at', 0)
-                if current_time - created_at > 300:
-                    captcha_ids_to_remove.append(captcha_id)
-            for captcha_id in captcha_ids_to_remove:
-                if captcha_id in captcha_data:
-                    del captcha_data[captcha_id]
-            if captcha_ids_to_remove:
-                save_captcha_storage(captcha_data)
-        except Exception as e:
-            log.error(f"Cleanup expired captcha error: {e}")
-
-captcha_cleanup_thread = threading.Thread(target=cleanup_expired_captcha_loop, daemon=True)
-captcha_cleanup_thread.start()
-
 def cleanup_inactive_users():
     current_time = datetime.now()
     users_to_delete = []
@@ -2964,15 +3111,6 @@ def process_pool_reward_for_user(username):
         traceback.print_exc()
         return None, f'处理失败: {str(e)}'
 
-def pool_reward_loop():
-    while True:
-        time.sleep(3600)
-        try:
-            settle_yesterday_pool_unclaimed()
-            settle_pool_funds()
-        except Exception as e:
-            log.error(f"Pool reward loop error: {e}")
-
 def get_newbie_pool_status():
     today = datetime.now().strftime('%Y-%m-%d')
     system_total = load_system_total_points()
@@ -3185,41 +3323,6 @@ def add_game_points(username, points):
         save_users()
         return True
     return False
-
-def cleanup_expired_feedbacks():
-    current_time = int(time.time() * 1000)
-    expire_ms = 12 * 60 * 60 * 1000
-    feedbacks_to_remove = []
-
-    for fid, fb in feedbacks.items():
-        status = fb.get('status', 'pending')
-        if status not in ['replied', 'closed']:
-            continue
-
-        if status == 'closed':
-            base_time = fb.get('closed_at', 0) or fb.get('replied_at', 0) or fb.get('created_at', 0)
-        else:
-            base_time = fb.get('replied_at', 0) or fb.get('created_at', 0)
-
-        if base_time > 0 and current_time - base_time >= expire_ms:
-            feedbacks_to_remove.append(fid)
-
-    for fid in feedbacks_to_remove:
-        del feedbacks[fid]
-
-    if feedbacks_to_remove:
-        save_feedbacks()
-        log.info(f"清理了 {len(feedbacks_to_remove)} 条过期反馈记录")
-
-    return len(feedbacks_to_remove)
-
-def feedback_cleanup_loop():
-    while True:
-        try:
-            cleanup_expired_feedbacks()
-        except Exception as e:
-            log.error(f"清理过期反馈异常: {e}")
-        time.sleep(120)
 
 def cleanup_all_expired_data():
     current_time = int(time.time() * 1000)
@@ -4524,17 +4627,6 @@ def auto_grant_coupons():
             grant_coupon_to_user(username, coupon_type, discount, threshold, random.randint(24, 72), '', desc)
         save_users()
 
-def auto_grant_coupons_loop():
-    while True:
-        time.sleep(300)
-        try:
-            auto_grant_coupons()
-        except Exception as e:
-            log.error(f"Auto grant coupons error: {e}")
-
-coupon_grant_thread = threading.Thread(target=auto_grant_coupons_loop, daemon=True)
-coupon_grant_thread.start()
-
 def get_current_period():
     return int(time.time()) // PL_FLUCTUATION_INTERVAL
 
@@ -5308,6 +5400,8 @@ def admin_get_users():
             except:
                 pass
 
+        member_tier = game.get_member_tier(users, username)
+
         user_list.append({
             'username': username,
             'email': user_data.get('email', ''),
@@ -5322,7 +5416,8 @@ def admin_get_users():
             'daysSinceReg': days_since_reg,
             'attendanceTotalDays': user_data.get('attendanceTotalDays', 0),
             'attendanceConsecutiveDays': user_data.get('attendanceConsecutiveDays', 0),
-            'hasCancellationCode': user_data.get('cancellationCodePurchased', False)
+            'hasCancellationCode': user_data.get('cancellationCodePurchased', False),
+            'memberTier': member_tier
         })
 
     total = len(user_list)
@@ -5937,6 +6032,16 @@ def admin_get_stats():
     total_mail_attachments = len(mail_attachments)
     unclaimed_mail = sum(1 for a in mail_attachments.values() if not a.get('claimed', False))
 
+    member_count = 0
+    for uname in users:
+        if game.is_game_member(users, uname):
+            member_count += 1
+
+    gm = game.get_game_manager()
+    expiring_count = 0
+    if gm:
+        expiring_count = len(gm.check_expiring_memberships())
+
     return jsonify({
         'users': {
             'total': total_users,
@@ -5952,6 +6057,10 @@ def admin_get_stats():
         'mail': {
             'total': total_mail_attachments,
             'unclaimed': unclaimed_mail
+        },
+        'membership': {
+            'total': member_count,
+            'expiring': expiring_count
         }
     })
 
@@ -8857,7 +8966,7 @@ def use_premium_boost_code():
 
 @app.route('/api/account/cancel', methods=['POST'])
 @csrf_protect
-@limiter.limit('2 per day')
+@limiter.limit('20 per day')
 @login_required
 def cancel_account():
     start_time = time.time()
@@ -10642,17 +10751,6 @@ def do_claim_mail_attachment_with_message(attachment_id, username):
     else:
         return False, '领取失败，请重试'
 
-def cleanup_mail_attachments_loop():
-    while True:
-        time.sleep(300)
-        try:
-            cleanup_expired_mail_attachments()
-        except Exception as e:
-            log.error(f"Cleanup mail attachments error: {e}")
-
-mail_cleanup_thread = threading.Thread(target=cleanup_mail_attachments_loop, daemon=True)
-mail_cleanup_thread.start()
-
 def cleanup_captcha_for_order(order_id):
     captcha_data = load_captcha_storage()
     captcha_ids_to_remove = []
@@ -10675,24 +10773,6 @@ def cleanup_captcha_by_id(captcha_id):
         save_captcha_storage(captcha_data)
         return True
     return False
-
-def cleanup_boost_checker():
-    while True:
-        time.sleep(60)
-        cleanup_all_expired_data()
-        try:
-            burn_excess_system_points()
-        except Exception as e:
-            log.error(f"Burn excess system points error: {e}")
-
-boost_cleanup_thread = threading.Thread(target=cleanup_boost_checker, daemon=True)
-boost_cleanup_thread.start()
-
-pool_thread = threading.Thread(target=pool_reward_loop, daemon=True)
-pool_thread.start()
-
-feedback_cleanup_thread = threading.Thread(target=feedback_cleanup_loop, daemon=True)
-feedback_cleanup_thread.start()
 
 @app.route('/api/login', methods=['POST'])
 @csrf_protect
@@ -10875,11 +10955,15 @@ def check_auth():
                 save_users()
 
             mail_count = sum(1 for a in mail_attachments.values() if a.get('username') == username and not a.get('claimed', False))
-            
+
             fund_balance = get_user_fund_balance(username)
             total_points_with_fund = user_data.get('totalPoints', 0) + fund_balance
             effective_points = get_user_effective_points(username)
             price_multiplier = get_price_multiplier(username)
+
+            gcoin_data = game.get_gcoin_data(users, username)
+            if not gcoin_data:
+                gcoin_data = {'balance': 0, 'total_earned': 0, 'total_spent': 0}
 
             return jsonify({
                 'authenticated': True,
@@ -10908,7 +10992,8 @@ def check_auth():
                 'plcardMaxCount': 10,
                 'mailCount': mail_count,
                 'effectivePoints': effective_points,
-                'priceMultiplier': price_multiplier
+                'priceMultiplier': price_multiplier,
+                'gcoins': gcoin_data
             })
     return jsonify({'authenticated': False})
 
@@ -14592,6 +14677,502 @@ def admin_migrate_game_stats():
         'count': modified_count
     })
 
+@app.route('/api/admin/send-expiring-reminders', methods=['POST'])
+@csrf_protect
+@admin_login_required
+def admin_send_expiring_reminders():
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    expiring = gm.check_expiring_memberships()
+    sent = 0
+    failed = 0
+    for item in expiring:
+        username = item['username']
+        user_data = users.get(username, {})
+        user_email = user_data.get('email', '')
+        if not user_email:
+            failed += 1
+            continue
+        try:
+            tier_name = game.MEMBERSHIP_TIERS.get(item['tier'], {}).get('name', item['tier'])
+            days_left = item.get('days_left', 0)
+            subject = f'【会员到期提醒】您的{tier_name}即将到期'
+            body = f"""尊敬的用户 {username}：
+
+您的{tier_name}将在 {days_left} 天后到期。
+到期后将自动降级为普通用户，每日游戏次数和积分加成将恢复为基础值。
+
+续费可享受连续续费优惠（9折/8.5折/8折）。
+请前往游戏中心会员页面续费。
+
+感谢您的支持！
+"""
+            email_service.send_email(user_email, subject, body)
+            sent += 1
+        except Exception as e:
+            log.error(f"Send expiring reminder to {username} failed: {e}")
+            failed += 1
+    return jsonify({
+        'success': True,
+        'message': f'已发送 {sent} 封提醒邮件，失败 {failed} 封',
+        'sent': sent,
+        'failed': failed,
+        'total': len(expiring)
+    })
+
+@app.route('/api/admin/migrate-membership', methods=['POST'])
+@csrf_protect
+@admin_login_required
+def admin_migrate_membership():
+    modified = game.migrate_game_membership_data(users, save_users)
+    if modified:
+        save_users()
+    return jsonify({
+        'success': True,
+        'message': '会员数据迁移完成',
+        'modified': modified
+    })
+
+@app.route('/api/admin/membership/revoke', methods=['POST'])
+@csrf_protect
+@admin_login_required
+def admin_revoke_membership_api():
+    data = request.get_json()
+    username = data.get('username', '').strip()
+    refund = data.get('refund', True)
+
+    if not username or username not in users:
+        return jsonify({'error': '用户不存在'}), 400
+
+    user_data = users.get(username, {})
+    if not user_data.get('membership', {}).get('is_member', False):
+        return jsonify({'error': '该用户不是会员'}), 400
+
+    success, message, refund_amount, snapshot = game.admin_revoke_membership(
+        users, save_users, username, refund=refund
+    )
+
+    if not success:
+        return jsonify({'error': message}), 400
+
+    refunded_to_user = 0
+    refunded_to_system = 0
+
+    if refund and refund_amount > 0:
+        add_points_without_limit(username, refund_amount)
+        refunded_to_user = refund_amount
+        deduct_system_total_points(refund_amount)
+        refunded_to_system = refund_amount
+
+        fund_record_id = f"fund_revoke_{int(time.time()*1000)}_{random.randint(1000,9999)}"
+        fund_history[fund_record_id] = {
+            'id': fund_record_id,
+            'username': username,
+            'type': 'refund',
+            'amount': round(refund_amount, 2),
+            'reason': f'会员移除退款：{snapshot.get("refund_detail", "")}',
+            'timestamp': int(time.time() * 1000)
+        }
+        save_fund_history()
+
+    return jsonify({
+        'success': True,
+        'message': message,
+        'refund_amount': refund_amount,
+        'refund_detail': snapshot.get('refund_detail', ''),
+        'old_tier': snapshot.get('old_tier', 'none'),
+        'old_tier_name': snapshot.get('old_tier_name', ''),
+        'refunded_to_user': refunded_to_user,
+        'refunded_from_system': refunded_to_system,
+        'system_points_remaining': round(system_total_points, 2),
+        'username': username
+    })
+
+
+@app.route('/api/admin/membership/restore', methods=['POST'])
+@csrf_protect
+@admin_login_required
+def admin_restore_membership_api():
+    data = request.get_json()
+    username = data.get('username', '').strip()
+
+    if not username or username not in users:
+        return jsonify({'error': '用户不存在'}), 400
+
+    success, message = game.admin_restore_membership(users, save_users, username)
+    if not success:
+        return jsonify({'error': message}), 400
+
+    return jsonify({
+        'success': True,
+        'message': message,
+        'username': username
+    })
+
+@app.route('/api/admin/auction/generate', methods=['POST'])
+@csrf_protect
+@admin_login_required
+def admin_generate_auction():
+    success, message, auction_id = game.server_generate_random_auction(analytics_cache, save_analytics_cache)
+    if not success:
+        return jsonify({'error': message}), 400
+    return jsonify({
+        'success': True,
+        'message': message,
+        'auction_id': auction_id
+    })
+
+
+@app.route('/api/admin/auction/settle-all', methods=['POST'])
+@csrf_protect
+@admin_login_required
+def admin_settle_all_auctions():
+    count = game.auto_settle_server_auctions(
+        users, save_users, analytics_cache, save_analytics_cache,
+        mail_attachments, save_mail_attachments
+    )
+    return jsonify({'success': True, 'message': f'已结算 {count} 场拍卖'})
+
+def auto_auction_loop():
+    while True:
+        time.sleep(600)
+        try:
+            game.auto_settle_server_auctions(
+                users, save_users, analytics_cache, save_analytics_cache,
+                mail_attachments, save_mail_attachments
+            )
+            if game.should_create_new_auction(analytics_cache, save_analytics_cache):
+                game.server_generate_random_auction(analytics_cache, save_analytics_cache)
+        except Exception as e:
+            log.error(f"Auto auction loop error: {e}")
+
+@app.route('/api/admin/membership/expiring-list', methods=['GET'])
+@admin_login_required
+def admin_membership_expiring_list():
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    expiring = gm.check_expiring_memberships()
+    return jsonify({'expiring': expiring, 'total': len(expiring)})
+
+@app.route('/api/auction/list', methods=['GET'])
+def get_auction_list_api():
+    # 支持两种鉴权：普通用户 session 或 admin token
+    admin_token = request.headers.get('X-Admin-Token', '')
+    is_admin = admin_token and admin_token in admin_sessions and admin_sessions[admin_token] > time.time()
+    
+    if not is_admin:
+        if 'user' not in session:
+            return jsonify({'error': '请先登录'}), 401
+    
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    sort_by = request.args.get('sort', 'ending').strip()
+
+    all_auctions = game.get_all_auctions_combined(users, analytics_cache)
+
+    if sort_by == 'price':
+        all_auctions.sort(key=lambda x: x.get('current_bid', 0))
+    elif sort_by == 'newest':
+        all_auctions.sort(key=lambda x: -x.get('created_at', 0))
+    else:
+        all_auctions.sort(key=lambda x: x.get('end_at', 0))
+
+    total = len(all_auctions)
+    start = (page - 1) * per_page
+    end = start + per_page
+
+    return jsonify({
+        'auctions': all_auctions[start:end],
+        'total': total,
+        'page': page,
+        'per_page': per_page,
+        'total_pages': (total + per_page - 1) // per_page if total > 0 else 1,
+        'sort': sort_by
+    })
+
+@app.route('/api/auction/bid', methods=['POST'])
+@csrf_protect
+@login_required
+@identity_required
+def place_bid_api():
+    start_time = time.time()
+    username = session['user']['username']
+    data = request.get_json()
+    auction_id = data.get('auction_id', '').strip()
+    try:
+        bid_amount = int(data.get('bid_amount', 0))
+    except (ValueError, TypeError):
+        return jsonify({'error': '出价金额格式错误'}), 400
+
+    if not auction_id:
+        return jsonify({'error': '缺少拍卖ID'}), 400
+
+    if auction_id.startswith('srv_auc_'):
+        success, message = game.place_bid_server_auction(
+            users, save_users, username, auction_id, bid_amount,
+            analytics_cache, save_analytics_cache
+        )
+    else:
+        success, message = game.place_bid(users, save_users, username, auction_id, bid_amount)
+
+    if not success:
+        return jsonify({'error': message}), 400
+    reload_if_changed()
+    response_time = int((time.time() - start_time) * 1000)
+    gcoin_data = game.get_gcoin_data(users, username)
+    return jsonify({
+        'success': True,
+        'message': message,
+        'new_gcoin_balance': gcoin_data.get('balance', 0) if gcoin_data else 0,
+        'responseTime': response_time
+    })
+
+
+@app.route('/api/auction/my-bids', methods=['GET'])
+@login_required
+def get_my_auction_bids():
+    username = session['user']['username']
+    result = []
+    if 'server_auctions' in analytics_cache:
+        for auc_id, auc in analytics_cache['server_auctions'].items():
+            user_bids = [b for b in auc.get('bids', []) if b.get('bidder') == username]
+            if not user_bids:
+                continue
+            latest_user_bid = user_bids[-1].get('amount', 0)
+            is_winning = auc.get('current_bidder') == username and auc.get('status') == 'active'
+            result.append({
+                'id': auc_id,
+                'card_name': auc.get('card_name', ''),
+                'card_emoji': auc.get('card_emoji', ''),
+                'rarity': auc.get('rarity', 'legendary'),
+                'rarity_name': game.CARD_RARITY_NAMES.get(auc.get('rarity', 'legendary'), ''),
+                'rarity_color': game.CARD_RARITY_COLORS.get(auc.get('rarity', 'legendary'), '#fff'),
+                'current_bid': auc.get('current_bid', 0),
+                'current_bidder': auc.get('current_bidder', ''),
+                'my_latest_bid': latest_user_bid,
+                'my_bid_count': len(user_bids),
+                'is_winning': is_winning,
+                'status': auc.get('status', 'active'),
+                'winner': auc.get('winner', ''),
+                'final_price': auc.get('final_price', 0),
+                'end_at': auc.get('end_at', 0),
+                'start_at': auc.get('start_at', 0)
+            })
+    result.sort(key=lambda x: -x.get('end_at', 0))
+    return jsonify({'bids': result, 'total': len(result)})
+
+@app.route('/api/auction/settle', methods=['POST'])
+@csrf_protect
+@admin_login_required
+def settle_auction_api():
+    data = request.get_json()
+    auction_id = data.get('auction_id', '').strip()
+    if not auction_id:
+        return jsonify({'error': '缺少拍卖ID'}), 400
+    success, message, final_price = game.settle_auction(users, save_users, auction_id)
+    if not success:
+        return jsonify({'error': message}), 400
+    reload_if_changed()
+    return jsonify({
+        'success': True,
+        'message': message,
+        'final_price': final_price
+    })
+
+@app.route('/api/market/listings', methods=['GET'])
+@login_required
+def get_market_listings_api():
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    game_filter = request.args.get('game_id', '').strip()
+    rarity_filter = request.args.get('rarity', '').strip()
+    search = request.args.get('search', '').strip()
+
+    all_listings = game.get_market_listings(users)
+
+    if game_filter:
+        all_listings = [l for l in all_listings if l.get('game_id') == game_filter]
+    if rarity_filter:
+        all_listings = [l for l in all_listings if l.get('rarity') == rarity_filter]
+    if search:
+        all_listings = [l for l in all_listings if search.lower() in l.get('card_name', '').lower() or search.lower() in l.get('seller', '').lower()]
+
+    total = len(all_listings)
+    start = (page - 1) * per_page
+    end = start + per_page
+
+    return jsonify({
+        'listings': all_listings[start:end],
+        'total': total,
+        'page': page,
+        'per_page': per_page,
+        'total_pages': (total + per_page - 1) // per_page if total > 0 else 1,
+        'filters': {
+            'game_id': game_filter,
+            'rarity': rarity_filter,
+            'search': search
+        }
+    })
+
+
+@app.route('/api/market/my-listings', methods=['GET'])
+@login_required
+def get_my_market_listings():
+    username = session['user']['username']
+    listings = game.get_user_market_listings(users, username)
+    return jsonify({'listings': listings, 'total': len(listings)})
+
+
+@app.route('/api/market/create', methods=['POST'])
+@csrf_protect
+@login_required
+@identity_required
+def create_market_listing_api():
+    start_time = time.time()
+    username = session['user']['username']
+    data = request.get_json()
+    game_id = data.get('game_id', '').strip()
+    card_id = data.get('card_id', '').strip()
+    try:
+        quantity = int(data.get('quantity', 1))
+        price_gcoins = int(data.get('price_gcoins', 0))
+    except (ValueError, TypeError):
+        return jsonify({'error': '参数格式错误'}), 400
+
+    if not game_id or not card_id:
+        return jsonify({'error': '请选择要出售的卡牌'}), 400
+
+    success, message, listing_id = game.create_market_listing(
+        users, save_users, username, game_id, card_id, quantity, price_gcoins
+    )
+    if not success:
+        return jsonify({'error': message}), 400
+    reload_if_changed()
+    response_time = int((time.time() - start_time) * 1000)
+    return jsonify({
+        'success': True,
+        'message': message,
+        'listing_id': listing_id,
+        'responseTime': response_time
+    })
+
+
+@app.route('/api/market/cancel', methods=['POST'])
+@csrf_protect
+@login_required
+def cancel_market_listing_api():
+    username = session['user']['username']
+    data = request.get_json()
+    listing_id = data.get('listing_id', '').strip()
+    if not listing_id:
+        return jsonify({'error': '缺少挂单ID'}), 400
+    success, message = game.cancel_market_listing(users, save_users, username, listing_id)
+    if not success:
+        return jsonify({'error': message}), 400
+    reload_if_changed()
+    return jsonify({'success': True, 'message': message})
+
+
+@app.route('/api/market/buy', methods=['POST'])
+@csrf_protect
+@login_required
+@identity_required
+def buy_market_listing_api():
+    start_time = time.time()
+    username = session['user']['username']
+    data = request.get_json()
+    listing_id = data.get('listing_id', '').strip()
+    if not listing_id:
+        return jsonify({'error': '缺少挂单ID'}), 400
+    success, message, detail = game.buy_market_listing(users, save_users, username, listing_id)
+    if not success:
+        return jsonify({'error': message}), 400
+    reload_if_changed()
+    response_time = int((time.time() - start_time) * 1000)
+    return jsonify({
+        'success': True,
+        'message': message,
+        'detail': detail,
+        'responseTime': response_time
+    })
+
+@app.route('/api/gcoin/balance', methods=['GET'])
+@login_required
+def get_gcoin_balance():
+    username = session['user']['username']
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    gcoin_data = game.get_gcoin_data(users, username)
+    if not gcoin_data:
+        return jsonify({'balance': 0, 'total_earned': 0, 'total_spent': 0})
+    return jsonify(gcoin_data)
+
+
+@app.route('/api/gcoin/exchange/points-to-gcoins', methods=['POST'])
+@csrf_protect
+@login_required
+@identity_required
+def exchange_points_to_gcoins_api():
+    start_time = time.time()
+    username = session['user']['username']
+    data = request.get_json()
+    points_amount = float(data.get('points', 0))
+    if points_amount <= 0:
+        return jsonify({'error': '请输入有效的积分数量'}), 400
+    success, message, gcoins = game.exchange_points_to_gcoins(users, save_users, username, points_amount)
+    if not success:
+        return jsonify({'error': message}), 400
+    reload_if_changed()
+    response_time = int((time.time() - start_time) * 1000)
+    gcoin_data = game.get_gcoin_data(users, username)
+    return jsonify({
+        'success': True,
+        'message': message,
+        'gcoins_earned': gcoins,
+        'new_balance': gcoin_data.get('balance', 0),
+        'responseTime': response_time
+    })
+
+
+@app.route('/api/gcoin/exchange/gcoins-to-points', methods=['POST'])
+@csrf_protect
+@login_required
+@identity_required
+def exchange_gcoins_to_points_api():
+    start_time = time.time()
+    username = session['user']['username']
+    data = request.get_json()
+    gcoin_amount = int(data.get('gcoins', 0))
+    if gcoin_amount <= 0:
+        return jsonify({'error': '请输入有效的G币数量'}), 400
+    success, message, points = game.exchange_gcoins_to_points(users, save_users, username, gcoin_amount)
+    if not success:
+        return jsonify({'error': message}), 400
+    reload_if_changed()
+    response_time = int((time.time() - start_time) * 1000)
+    gcoin_data = game.get_gcoin_data(users, username)
+    user_data = users.get(username, {})
+    return jsonify({
+        'success': True,
+        'message': message,
+        'points_earned': points,
+        'new_gcoin_balance': gcoin_data.get('balance', 0),
+        'new_points_balance': user_data.get('totalPoints', 0),
+        'responseTime': response_time
+    })
+
+
+@app.route('/api/gcoin/exchange-rate', methods=['GET'])
+def get_gcoin_exchange_rate():
+    return jsonify({
+        'points_to_gcoins': game.GCOIN_EXCHANGE_RATE,
+        'gcoins_to_points': 1.0 / game.GCOIN_EXCHANGE_RATE,
+        'description': f'1 积分 = {int(game.GCOIN_EXCHANGE_RATE)} G币'
+    })
+
 @app.route('/api/game/list', methods=['GET'])
 @login_required
 def get_game_list():
@@ -14616,7 +15197,10 @@ def get_game_stats():
     gm = game.get_game_manager()
     if not gm:
         return jsonify({'error': '游戏服务未初始化'}), 500
-    return jsonify(gm.get_stats(username))
+    stats = gm.get_stats(username)
+    gcoin_data = game.get_gcoin_data(users, username)
+    stats['gcoins'] = gcoin_data
+    return jsonify(stats)
 
 @app.route('/api/game/stats/self-check', methods=['GET'])
 @login_required
@@ -14684,17 +15268,21 @@ def play_game(game_id):
                 bet_value = int(data.get('bet_value', 7))
             except (ValueError, TypeError):
                 bet_value = 7
-            result = gm.play_dice(username, bet_type, bet_value)
+            reroll = bool(data.get('reroll', False))
+            result = gm.play_dice(username, bet_type, bet_value, reroll)
         elif game_id == 'blackjack':
-            result = gm.play_blackjack(username)
+            double = bool(data.get('double', False))
+            insurance = bool(data.get('insurance', False))
+            result = gm.play_blackjack(username, double, insurance)
         elif game_id == 'guess_number':
             guess = data.get('guess')
+            difficulty = data.get('difficulty', 'normal')
             if guess is not None:
                 try:
                     guess = int(guess)
                 except (ValueError, TypeError):
                     return jsonify({'error': '请输入有效的数字'}), 400
-            result = gm.play_guess_number(username, guess)
+            result = gm.play_guess_number(username, guess, difficulty)
         elif game_id == 'rock_paper_scissors':
             player_move = data.get('move')
             result = gm.play_rps(username, player_move)
@@ -14704,20 +15292,23 @@ def play_game(game_id):
                 bet_value = int(data.get('bet_value', 0))
             except (ValueError, TypeError):
                 bet_value = 0
-            result = gm.play_roulette(username, bet_type, bet_value)
+            bet_combo = data.get('bet_combo')
+            result = gm.play_roulette(username, bet_type, bet_value, bet_combo)
         elif game_id == 'lucky_wheel':
             result = gm.play_lucky_wheel(username)
         elif game_id == 'memory_cards':
             action = data.get('action')
             index = data.get('index')
+            difficulty = data.get('difficulty', 'normal')
             if index is not None:
                 try:
                     index = int(index)
                 except (ValueError, TypeError):
                     return jsonify({'error': '无效的卡片位置'}), 400
-            result = gm.play_memory_cards(username, action, index)
+            result = gm.play_memory_cards(username, action, index, difficulty)
         elif game_id == 'whack_mole':
             action = data.get('action')
+            difficulty = data.get('difficulty', 'normal')
             try:
                 score = int(data.get('score', 0))
                 hits = int(data.get('hits', 0))
@@ -14726,11 +15317,21 @@ def play_game(game_id):
                 score = 0
                 hits = 0
                 bombs = 0
-            result = gm.play_whack_mole(username, action, score, hits, bombs)
+            result = gm.play_whack_mole(username, action, score, hits, bombs, difficulty)
+        elif game_id == 'dice_royale':
+            result = gm.play_dice_royale(username)
+        elif game_id == 'blackjack_tournament':
+            result = gm.play_blackjack_tournament(username)
+        elif game_id == 'treasure_hunt':
+            result = gm.play_treasure_hunt(username)
+        elif game_id == 'boss_battle':
+            result = gm.play_boss_battle(username)
         else:
             return jsonify({'error': '游戏不存在'}), 400
         if result.get('success'):
             result['responseTime'] = int((time.time() - start_time) * 1000)
+            if 'drops' not in result:
+                result['drops'] = []
             return jsonify(result)
         else:
             return jsonify({'error': result.get('error', '游戏失败')}), 400
@@ -14784,6 +15385,7 @@ def get_membership_status():
     membership = game.get_membership_data(users, username)
     stats = gm.get_stats(username) if gm else {}
     tier = game.get_member_tier(users, username)
+    expire_info = game.get_member_expire_info(users, username)
     return jsonify({
         'is_member': game.is_game_member(users, username),
         'tier': tier,
@@ -14794,9 +15396,38 @@ def get_membership_status():
         'bonus_rate': game.get_member_bonus_rate(users, username) * 100,
         'daily_task_bonus': game.get_member_daily_task_bonus(users, username),
         'exclusive_games': game.get_member_exclusive_games(users, username),
+        'drop_multiplier': game.get_member_drop_multiplier(users, username),
         'expires_at': membership.get('expires_at', 0) if membership else 0,
-        'activated_at': membership.get('activated_at', 0) if membership else 0
+        'activated_at': membership.get('activated_at', 0) if membership else 0,
+        'lifetime': membership.get('lifetime', False) if membership else False,
+        'auto_renew': membership.get('auto_renew', False) if membership else False,
+        'renew_count': membership.get('renew_count', 0) if membership else 0,
+        'previous_tier': membership.get('previous_tier', 'none') if membership else 'none',
+        'expire_info': expire_info
     })
+
+@app.route('/api/membership/renew', methods=['POST'])
+@csrf_protect
+@login_required
+@identity_required
+def renew_membership_api():
+    start_time = time.time()
+    username = session['user']['username']
+    if is_login_restricted(username):
+        return jsonify({'error': '账号已被限制'}), 403
+    success, message, paid = game.renew_membership(users, save_users, username)
+    if success:
+        reload_if_changed()
+        expire_info = game.get_member_expire_info(users, username)
+        response_time = int((time.time() - start_time) * 1000)
+        return jsonify({
+            'success': True,
+            'message': message,
+            'paid': paid,
+            'expire_info': expire_info,
+            'responseTime': response_time
+        })
+    return jsonify({'error': message}), 400
 
 @app.route('/api/membership/buy', methods=['POST'])
 @csrf_protect
@@ -14811,9 +15442,16 @@ def buy_membership():
         return jsonify({'error': '您已是会员，请使用升级功能'}), 400
     data = request.get_json() or {}
     tier = data.get('tier', 'normal')
-    success, message = game.activate_game_membership(users, save_users, username, tier)
+    coupon_id = data.get('coupon_id', '')
+    success, message, paid = game.activate_game_membership(users, save_users, username, tier, coupon_id)
     if success:
+        if coupon_id:
+            stats = game_manager.get_user_game_stats(username)
+            if stats:
+                stats['membership_coupon_used'] = stats.get('membership_coupon_used', 0) + 1
+                save_users()
         reload_if_changed()
+        expire_info = game.get_member_expire_info(users, username)
         response_time = int((time.time() - start_time) * 1000)
         return jsonify({
             'success': True,
@@ -14822,6 +15460,9 @@ def buy_membership():
             'tier': tier,
             'max_plays': game.get_member_max_plays(users, username),
             'bonus_rate': game.get_member_bonus_rate(users, username) * 100,
+            'paid': paid,
+            'coupon_used': bool(coupon_id),
+            'expire_info': expire_info,
             'responseTime': response_time
         })
     else:
@@ -14982,10 +15623,11 @@ def claim_all_achievements():
 @app.route('/api/game/items/shop', methods=['GET'])
 @login_required
 def get_item_shop():
+    username = session['user']['username']
     gm = game.get_game_manager()
     if not gm:
         return jsonify({'error': '游戏服务未初始化'}), 500
-    return jsonify({'items': gm.get_item_shop()})
+    return jsonify({'items': gm.get_item_shop(username)})
 
 
 @app.route('/api/game/items/list', methods=['GET'])
@@ -15155,6 +15797,42 @@ def check_supreme_requirements_api():
         'win_rate_met': win_rate > req['min_win_rate']
     })
 
+@app.route('/api/membership/coupons', methods=['GET'])
+@login_required
+def get_membership_coupons():
+    username = session['user']['username']
+    coupons = game.get_user_membership_coupons(users, username)
+    return jsonify({'coupons': coupons, 'total': len(coupons)})
+
+@app.route('/api/membership/coupon-check', methods=['GET'])
+@login_required
+def check_membership_coupon():
+    username = session['user']['username']
+    tier = request.args.get('tier', 'normal')
+    tier_info = game.MEMBERSHIP_TIERS.get(tier)
+    if not tier_info:
+        return jsonify({'error': '无效的会员等级'}), 400
+    tier_price = tier_info['price']
+    current_tier = game.get_member_tier(users, username)
+    if current_tier != 'none':
+        current_price = game.MEMBERSHIP_TIERS.get(current_tier, {}).get('price', 0)
+        tier_price = round(tier_price - current_price, 2)
+    coupon = game.get_best_membership_coupon(users, username, tier_price)
+    all_coupons = game.get_user_membership_coupons(users, username)
+    return jsonify({
+        'best_coupon': coupon,
+        'all_coupons': all_coupons,
+        'original_price': tier_price,
+        'final_price': round(tier_price - coupon['discount'], 2) if coupon else tier_price
+    })
+
+@app.route('/api/membership/expiring-check', methods=['GET'])
+@login_required
+def check_membership_expiring():
+    username = session['user']['username']
+    info = game.get_member_expire_info(users, username)
+    return jsonify(info)
+
 @app.route('/api/game/lucky_wheel/segments', methods=['GET'])
 @login_required
 def get_lucky_wheel_segments():
@@ -15299,6 +15977,92 @@ def get_game_dashboard():
         'daily_bonus': gm.get_daily_bonus_status(username)
     })
 
+@app.route('/api/game/level/status', methods=['GET'])
+@login_required
+def get_level_status():
+    username = session['user']['username']
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    level_info = gm.get_user_level(username)
+    stats = gm.get_user_game_stats(username)
+    levels = game.LEVEL_SYSTEM['levels']
+    next_level = None
+    for lvl in levels:
+        if lvl['level'] > level_info['level']:
+            next_level = lvl
+            break
+    progress = {}
+    if next_level:
+        current_plays = stats.get('total_plays', 0)
+        current_wins = stats.get('total_wins', 0)
+        current_points = int(stats.get('total_points_earned', 0))
+        progress = {
+            'plays_current': current_plays,
+            'plays_target': next_level['min_plays'],
+            'plays_pct': min(100, round(current_plays / max(1, next_level['min_plays']) * 100, 1)),
+            'wins_current': current_wins,
+            'wins_target': next_level['min_wins'],
+            'wins_pct': min(100, round(current_wins / max(1, next_level['min_wins']) * 100, 1)),
+            'points_current': current_points,
+            'points_target': next_level['min_points'],
+            'points_pct': min(100, round(current_points / max(1, next_level['min_points']) * 100, 1))
+        }
+    return jsonify({
+        'current_level': level_info,
+        'next_level': next_level,
+        'progress': progress,
+        'all_levels': levels
+    })
+
+
+@app.route('/api/game/titles/list', methods=['GET'])
+@login_required
+def get_titles_list():
+    username = session['user']['username']
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    unlocked = gm.get_unlocked_titles(username)
+    unlocked_ids = [t['id'] for t in unlocked]
+    user_data = users.get(username, {})
+    chosen = user_data.get('chosen_title', '')
+    all_titles = []
+    for t in game.TITLE_SYSTEM['titles']:
+        all_titles.append({
+            'id': t['id'],
+            'name': t['name'],
+            'icon': t['icon'],
+            'condition_type': t['condition_type'],
+            'condition_value': t['condition_value'],
+            'unlocked': t['id'] in unlocked_ids,
+            'is_chosen': t['id'] == chosen
+        })
+    current_title = gm.get_user_title(username)
+    return jsonify({
+        'titles': all_titles,
+        'unlocked_count': len(unlocked_ids),
+        'total_count': len(all_titles),
+        'current_title': current_title
+    })
+
+
+@app.route('/api/game/titles/set', methods=['POST'])
+@csrf_protect
+@login_required
+def set_title():
+    username = session['user']['username']
+    data = request.get_json() or {}
+    title_id = data.get('title_id', '').strip()
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    success, message = gm.set_user_title(username, title_id)
+    if success:
+        reload_if_changed()
+        return jsonify({'success': True, 'message': message})
+    return jsonify({'error': message}), 400
+
 @app.route('/api/membership/tiers', methods=['GET'])
 def get_membership_tiers():
     tiers = []
@@ -15312,7 +16076,12 @@ def get_membership_tiers():
             'max_plays': info['max_plays'],
             'bonus_rate': info['bonus_rate'] * 100,
             'daily_task_bonus': info['daily_task_bonus'],
-            'exclusive_games': info['exclusive_games']
+            'exclusive_games': info['exclusive_games'],
+            'duration_days': info.get('duration_days', 30),
+            'auto_renew': info.get('auto_renew', False),
+            'renew_discount': info.get('renew_discount', 1.0),
+            'drop_multiplier': info.get('drop_multiplier', 1.0),
+            'is_lifetime': info.get('duration_days', 30) == 0
         })
     return jsonify({'tiers': tiers})
 
@@ -15328,11 +16097,18 @@ def upgrade_membership():
         return jsonify({'error': '账号已被限制'}), 403
     data = request.get_json() or {}
     new_tier = data.get('tier', '').strip()
+    coupon_id = data.get('coupon_id', '')
     if not new_tier:
         return jsonify({'error': '请选择会员等级'}), 400
-    success, message = game.upgrade_membership(users, save_users, username, new_tier)
+    success, message, paid = game.upgrade_membership(users, save_users, username, new_tier, coupon_id)
     if success:
+        if coupon_id:
+            stats = game_manager.get_user_game_stats(username)
+            if stats:
+                stats['membership_coupon_used'] = stats.get('membership_coupon_used', 0) + 1
+                save_users()
         reload_if_changed()
+        expire_info = game.get_member_expire_info(users, username)
         response_time = int((time.time() - start_time) * 1000)
         return jsonify({
             'success': True,
@@ -15341,6 +16117,9 @@ def upgrade_membership():
             'tier': new_tier,
             'max_plays': game.get_member_max_plays(users, username),
             'bonus_rate': game.get_member_bonus_rate(users, username) * 100,
+            'paid': paid,
+            'coupon_used': bool(coupon_id),
+            'expire_info': expire_info,
             'responseTime': response_time
         })
     return jsonify({'error': message}), 400

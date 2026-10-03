@@ -200,6 +200,21 @@
         'legendary': '#fbbf24'
     };
 
+    var GAME_ORDER = [
+        'dice',
+        'blackjack',
+        'guess_number',
+        'rock_paper_scissors',
+        'roulette',
+        'whack_mole',
+        'lucky_wheel',
+        'memory_cards',
+        'dice_royale',
+        'blackjack_tournament',
+        'treasure_hunt',
+        'boss_battle'
+    ];
+
     async function loadCollection() {
         try {
             var data = await apiRequest('/api/game/collection/overview');
@@ -229,10 +244,11 @@
             }
             html += '</div>';
             var gameProgress = data.game_progress || {};
-            var gameOrder = ['dice', 'blackjack', 'guess_number', 'rock_paper_scissors', 'roulette', 'lucky_wheel', 'memory_cards', 'whack_mole'];
-            gameOrder.forEach(function(gameId) {
+            var renderedGames = 0;
+            GAME_ORDER.forEach(function(gameId) {
                 var gp = gameProgress[gameId];
                 if (!gp) return;
+                renderedGames++;
                 var badgeClass = gp.complete ? 'complete' : 'partial';
                 var badgeText = gp.complete ? '✅ 已集齐' : gp.owned + '/' + gp.total;
                 html += '<div class="game-section">';
@@ -259,6 +275,9 @@
                 html += '</div>';
                 html += '</div>';
             });
+            if (renderedGames === 0) {
+                html += '<div class="loading">暂无卡牌数据</div>';
+            }
             content.innerHTML = html;
         } catch (e) {
             document.getElementById('content').innerHTML = '<div class="loading">加载失败: ' + escapeHtml(e.message) + '</div>';

@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🔨 传说卡拍卖行</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+        body{font-family:'Segoe UI','PingFang SC',sans-serif;background:linear-gradient(135deg,#0a0a1a 0%,#1a1a3e 50%,#0d0d2b 100%);min-height:100vh;color:#e8e8f0;padding:20px;touch-action:manipulation}
+        .container{max-width:1200px;margin:0 auto}
+        .header{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;background:rgba(255,255,255,0.06);border-radius:20px;border:1px solid rgba(255,255,255,0.08);margin-bottom:24px;flex-wrap:wrap;gap:12px}
+        .header h1{font-size:24px;background:linear-gradient(135deg,#fbbf24,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+        .header .right-group{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+        .header .gcoin-badge{background:linear-gradient(135deg,#fbbf24,#d97706);color:#1a1a2e;padding:6px 16px;border-radius:20px;font-weight:700;font-size:14px}
+        .header .back-btn{padding:8px 20px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:40px;color:#d1d5db;cursor:pointer;transition:all 0.3s;font-size:13px;text-decoration:none;min-height:40px;display:flex;align-items:center}
+        .header .back-btn:hover{background:rgba(255,255,255,0.15)}
+        .info-banner{background:linear-gradient(135deg,rgba(251,191,36,0.1),rgba(245,158,11,0.03));border:1px solid rgba(251,191,36,0.2);border-radius:16px;padding:16px 24px;margin-bottom:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+        .info-banner .ib-icon{font-size:32px}
+        .info-banner .ib-text{font-size:14px;color:rgba(255,255,255,0.75);line-height:1.6;flex:1;min-width:200px}
+        .info-banner .ib-text strong{color:#fbbf24}
+        .tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+        .tab{padding:10px 24px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:40px;color:rgba(255,255,255,0.6);cursor:pointer;transition:all 0.3s;font-size:14px;font-weight:500;min-height:44px;display:flex;align-items:center}
+        .tab:hover{background:rgba(255,255,255,0.08)}
+        .tab.active{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border-color:transparent}
+        .tab-content{display:none}
+        .tab-content.active{display:block}
+        .section{background:rgba(255,255,255,0.04);border-radius:20px;padding:24px;border:1px solid rgba(255,255,255,0.06);margin-bottom:20px}
+        .section-title{font-size:18px;font-weight:700;color:#fff;margin-bottom:16px;display:flex;align-items:center;gap:10px}
+        .filter-bar{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
+        .filter-bar select{padding:10px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:#fff;font-size:14px;outline:none;min-height:44px}
+        .filter-bar select option{background:#1a1a2e;color:#fff}
+        .auction-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+        .auction-card{background:linear-gradient(145deg,rgba(251,191,36,0.06),rgba(245,158,11,0.02));border:2px solid rgba(251,191,36,0.3);border-radius:18px;padding:20px;transition:all 0.3s;display:flex;flex-direction:column;gap:12px;position:relative;overflow:hidden}
+        .auction-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#fbbf24,#ec4899,#a78bfa)}
+        .auction-card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(251,191,36,0.25)}
+        .auction-card.ended{opacity:0.6}
+        .auction-timer{position:absolute;top:12px;right:12px;background:rgba(248,113,113,0.25);color:#fca5a5;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;z-index:2}
+        .auction-timer.urgent{background:rgba(248,113,113,0.5);color:#fff;animation:pulseTimer 1s infinite}
+        @keyframes pulseTimer{0%,100%{opacity:1}50%{opacity:0.6}}
+        .auction-badge{position:absolute;top:12px;left:12px;background:linear-gradient(135deg,#fbbf24,#d97706);color:#1a1a2e;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:800;z-index:2}
+        .auction-header{display:flex;align-items:center;gap:14px;margin-top:8px}
+        .auction-emoji{font-size:52px;filter:drop-shadow(0 0 12px rgba(251,191,36,0.5))}
+        .auction-info{flex:1;min-width:0}
+        .auction-name{font-size:17px;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .auction-rarity{font-size:12px;font-weight:700;margin-top:2px;color:#fbbf24}
+        .auction-game{font-size:12px;color:rgba(255,255,255,0.5);margin-top:2px}
+        .auction-price-block{padding:12px;background:rgba(0,0,0,0.2);border-radius:12px}
+        .auction-price-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+        .auction-price-row:last-child{margin-bottom:0}
+        .auction-price-row .label{font-size:12px;color:rgba(255,255,255,0.5)}
+        .auction-price-row .value{font-size:18px;font-weight:800;color:#fbbf24}
+        .auction-price-row .value.small{font-size:13px;color:#fff;font-weight:600}
+        .auction-bidder{font-size:12px;color:#34d399;text-align:center;padding:6px;background:rgba(52,211,153,0.08);border-radius:8px}
+        .auction-bidder.none{color:rgba(255,255,255,0.4);background:rgba(255,255,255,0.04)}
+        .btn-bid{width:100%;padding:12px;background:linear-gradient(135deg,#fbbf24,#d97706);border:none;border-radius:40px;color:#1a1a2e;font-weight:800;font-size:15px;cursor:pointer;transition:all 0.3s;min-height:48px}
+        .btn-bid:hover{transform:scale(1.03);box-shadow:0 8px 30px rgba(251,191,36,0.5)}
+        .btn-bid:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+        .my-bid-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+        .my-bid-card.winning{border-color:rgba(52,211,153,0.4);background:rgba(52,211,153,0.06)}
+        .my-bid-card.losing{border-color:rgba(248,113,113,0.3);background:rgba(248,113,113,0.06)}
+        .my-bid-card.won{border-color:rgba(251,191,36,0.5);background:rgba(251,191,36,0.08)}
+        .my-bid-emoji{font-size:44px}
+        .my-bid-info{flex:1;min-width:200px}
+        .my-bid-name{font-size:16px;font-weight:700;color:#fff}
+        .my-bid-meta{font-size:12px;color:rgba(255,255,255,0.5);margin-top:4px}
+        .my-bid-status{font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px}
+        .my-bid-status.winning{background:rgba(52,211,153,0.2);color:#34d399}
+        .my-bid-status.losing{background:rgba(248,113,113,0.2);color:#f87171}
+        .my-bid-status.won{background:linear-gradient(135deg,#fbbf24,#d97706);color:#1a1a2e}
+        .my-bid-status.lost{background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.5)}
+        .empty-state{text-align:center;padding:60px 20px;color:rgba(255,255,255,0.3)}
+        .empty-state .icon{font-size:48px;display:block;margin-bottom:12px}
+        .loading{text-align:center;padding:40px;color:rgba(255,255,255,0.3)}
+        .loading .spinner{width:40px;height:40px;border:3px solid rgba(255,255,255,0.1);border-top-color:#fbbf24;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .message{position:fixed;bottom:24px;right:24px;padding:14px 24px;border-radius:16px;z-index:9999;animation:slideUp 0.35s ease;max-width:420px;box-shadow:0 12px 40px rgba(0,0,0,0.5);font-size:14px;display:flex;align-items:center;gap:10px}
+        .message-success{background:#065f46;color:#a7f3d0;border:1px solid rgba(52,211,153,0.2)}
+        .message-error{background:#7f1d1d;color:#fca5a5;border:1px solid rgba(239,68,68,0.2)}
+        .message-warning{background:#78350f;color:#fde68a;border:1px solid rgba(251,191,36,0.2)}
+        @keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+        .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);display:none;align-items:center;justify-content:center;z-index:10000;padding:20px}
+        .modal-overlay.active{display:flex}
+        .modal-box{background:linear-gradient(145deg,#1a1a3e,#0d0d2b);border-radius:20px;padding:28px;border:1px solid rgba(255,255,255,0.1);max-width:500px;width:100%;animation:modalIn 0.3s ease}
+        @keyframes modalIn{from{transform:scale(0.9);opacity:0}to{transform:scale(1);opacity:1}}
+        .modal-box h3{font-size:20px;color:#fff;font-weight:700;margin-bottom:16px;text-align:center}
+        .modal-box .modal-info{background:rgba(255,255,255,0.04);border-radius:12px;padding:16px;margin-bottom:16px}
+        .modal-box .modal-info .info-row{display:flex;justify-content:space-between;margin-bottom:8px;font-size:14px}
+        .modal-box .modal-info .info-row:last-child{margin-bottom:0}
+        .modal-box .modal-info .info-row .label{color:rgba(255,255,255,0.5)}
+        .modal-box .modal-info .info-row .value{color:#fff;font-weight:600}
+        .modal-box .modal-info .info-row .value.gold{color:#fbbf24}
+        .modal-box .bid-input-row{margin-bottom:16px}
+        .modal-box .bid-input-row label{display:block;font-size:13px;color:rgba(255,255,255,0.6);margin-bottom:6px}
+        .modal-box .bid-input-row input{width:100%;padding:14px 16px;background:rgba(255,255,255,0.06);border:2px solid rgba(251,191,36,0.3);border-radius:12px;color:#fbbf24;font-size:20px;font-weight:700;text-align:center;outline:none}
+        .modal-box .bid-input-row input:focus{border-color:#fbbf24;background:rgba(251,191,36,0.05)}
+        .modal-box .quick-bids{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+        .modal-box .quick-bids button{padding:8px 16px;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.3);border-radius:20px;color:#fbbf24;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;min-height:36px}
+        .modal-box .quick-bids button:hover{background:rgba(251,191,36,0.3)}
+        .modal-box .modal-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+        .modal-box .modal-actions button{padding:12px 28px;border:none;border-radius:40px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s;min-height:44px}
+        .modal-box .modal-actions .btn-cancel-modal{background:rgba(255,255,255,0.08);color:#d1d5db}
+        .modal-box .modal-actions .btn-confirm{background:linear-gradient(135deg,#fbbf24,#d97706);color:#1a1a2e}
+        .pagination{display:flex;justify-content:center;gap:6px;margin-top:20px;flex-wrap:wrap}
+        .pagination button{padding:6px 14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.06);border-radius:8px;color:rgba(255,255,255,0.5);cursor:pointer;font-size:12px;transition:all 0.2s;min-height:36px}
+        .pagination button:hover{background:rgba(255,255,255,0.08)}
+        .pagination button.active{background:rgba(102,126,234,0.2);color:#a78bfa;border-color:rgba(102,126,234,0.2)}
+        @media(max-width:768px){
+            body{padding:12px}
+            .header{padding:12px 16px}
+            .header h1{font-size:20px}
+            .section{padding:16px}
+            .auction-grid{grid-template-columns:1fr;gap:12px}
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🔨 传说卡拍卖行</h1>
+        <div class="right-group">
+            <div class="gcoin-badge">🪙 <span id="gcoinBalance">0</span> G币</div>
+            <a href="/GAME/" class="back-btn">← 返回游戏大厅</a>
+        </div>
+    </div>
+
+    <div class="info-banner">
+        <span class="ib-icon">🔨</span>
+        <div class="ib-text">
+            服务器每隔几小时自动上架一张 <strong>传说卡</strong>，全民竞拍。
+            拍卖成交后，最高出价者获得卡牌，其他人的 G币全额退还。
+            流拍时卡牌回收，重新进入随机池。
+        </div>
+    </div>
+
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('browse', event)">🔨 正在拍卖</div>
+        <div class="tab" onclick="switchTab('mybids', event)">📊 我的竞拍</div>
+    </div>
+
+    <div class="tab-content active" id="tab-browse">
+        <div class="section">
+            <div class="section-title">🔨 正在拍卖的传说卡</div>
+            <div class="filter-bar">
+                <select id="auctionGameFilter" onchange="loadAuctions(1)">
+                    <option value="">全部游戏</option>
+                    <option value="dice">🎲 骰子大战</option>
+                    <option value="blackjack">🃏 二十一点</option>
+                    <option value="guess_number">🎯 猜数字</option>
+                    <option value="rock_paper_scissors">🤖 石头剪刀布</option>
+                    <option value="roulette">🎡 轮盘赌</option>
+                    <option value="whack_mole">🔨 打地鼠</option>
+                    <option value="lucky_wheel">🎰 幸运转盘</option>
+                    <option value="memory_cards">🧠 记忆翻牌</option>
+                    <option value="dice_royale">👑 骰子王者</option>
+                    <option value="blackjack_tournament">🏆 21点锦标赛</option>
+                    <option value="treasure_hunt">💎 寻宝迷宫</option>
+                    <option value="boss_battle">⚔️ 挑战BOSS</option>
+                </select>
+                <select id="auctionSortFilter" onchange="loadAuctions(1)">
+                    <option value="ending">按结束时间</option>
+                    <option value="price">按价格</option>
+                    <option value="newest">最新发布</option>
+                </select>
+                <button class="btn btn-outline" onclick="loadAuctions(1)" style="padding:10px 20px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#d1d5db;cursor:pointer;font-size:14px;min-height:44px;">🔄 刷新</button>
+            </div>
+            <div id="auctionListContainer">
+                <div class="loading"><div class="spinner"></div>加载中...</div>
+            </div>
+            <div class="pagination" id="auctionPagination"></div>
+        </div>
+    </div>
+
+    <div class="tab-content" id="tab-mybids">
+        <div class="section">
+            <div class="section-title">📊 我的竞拍记录</div>
+            <div id="myBidsContainer">
+                <div class="loading"><div class="spinner"></div>加载中...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="bidModal">
+    <div class="modal-box">
+        <h3>🔨 出价竞拍</h3>
+        <div class="modal-info" id="bidModalInfo"></div>
+        <div class="bid-input-row">
+            <label>您的出价（G币）</label>
+            <input type="number" id="bidAmountInput" min="1" step="10" placeholder="输入出价金额">
+        </div>
+        <div class="quick-bids">
+            <button onclick="quickBid(10)">+10</button>
+            <button onclick="quickBid(50)">+50</button>
+            <button onclick="quickBid(100)">+100</button>
+            <button onclick="quickBid(500)">+500</button>
+            <button onclick="quickBid(1000)">+1000</button>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-cancel-modal" onclick="closeBidModal()">取消</button>
+            <button class="btn-confirm" onclick="confirmBid()">确认出价</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    var csrfToken = null;
+    var csrfTokenLastFetch = 0;
+    var currentGcoinBalance = 0;
+    var currentUser = null;
+    var pendingBidAuctionId = null;
+    var pendingBidCurrentPrice = 0;
+    var currentPage = 1;
+    var countdownTimers = {};
+
+    function getCsrfTokenFromCookie() {
+        try {
+            var c = document.cookie.split(';');
+            for (var i = 0; i < c.length; i++) {
+                var cookie = c[i].trim();
+                if (cookie.indexOf('csrf_token=') === 0) {
+                    return cookie.substring('csrf_token='.length, cookie.length);
+                }
+            }
+        } catch (e) {}
+        return null;
+    }
+
+    function setCsrfTokenCookie(token) {
+        try {
+            var expires = new Date(Date.now() + 300000).toUTCString();
+            document.cookie = 'csrf_token=' + token + '; expires=' + expires + '; path=/; SameSite=Strict; Secure';
+        } catch (e) {}
+    }
+
+    async function fetchCsrfToken() {
+        if (csrfToken && (Date.now() - csrfTokenLastFetch) < 300000) return csrfToken;
+        var cookieToken = getCsrfTokenFromCookie();
+        if (cookieToken) {
+            csrfToken = cookieToken;
+            csrfTokenLastFetch = Date.now();
+            return csrfToken;
+        }
+        try {
+            var res = await fetch('/api/csrf-token', {
+                method: 'GET',
+                credentials: 'include',
+                headers: { 'Accept': 'application/json' }
+            });
+            var data = await res.json();
+            if (data.csrf_token) {
+                csrfToken = data.csrf_token;
+                csrfTokenLastFetch = Date.now();
+                setCsrfTokenCookie(csrfToken);
+                return csrfToken;
+            }
+            throw new Error('No CSRF token');
+        } catch (e) {
+            throw new Error('Failed to fetch CSRF token');
+        }
+    }
+
+    async function apiRequest(url, options) {
+        if (!options) options = {};
+        options.credentials = 'include';
+        if (!options.headers) options.headers = {};
+        options.headers['Content-Type'] = 'application/json';
+        options.headers['Accept'] = 'application/json';
+        var method = (options.method || 'GET').toUpperCase();
+        if (method === 'GET' || method === 'HEAD') {
+            var res = await fetch(url, options);
+            var data = await res.json();
+            if (!res.ok) throw new Error(data.error || '请求失败: ' + res.status);
+            return data;
+        }
+        var token = await fetchCsrfToken();
+        options.headers['X-CSRF-Token'] = token;
+        var res = await fetch(url, options);
+        var data = await res.json();
+        if (!res.ok) {
+            if (res.status === 403 && data.error && data.error.indexOf('CSRF') !== -1) {
+                csrfToken = null;
+                var newToken = await fetchCsrfToken();
+                options.headers['X-CSRF-Token'] = newToken;
+                var retryRes = await fetch(url, options);
+                var retryData = await retryRes.json();
+                if (!retryRes.ok) throw new Error(retryData.error || '请求失败: ' + retryRes.status);
+                return retryData;
+            }
+            throw new Error(data.error || '请求失败: ' + res.status);
+        }
+        return data;
+    }
+
+    function showMessage(msg, type) {
+        var d = document.createElement('div');
+        d.className = 'message message-' + type;
+        var icon = type === 'success' ? '✅' : type === 'error' ? '❌' : '⚠️';
+        d.innerHTML = icon + ' ' + msg;
+        document.body.appendChild(d);
+        setTimeout(function() { d.remove(); }, 3500);
+    }
+
+    function escapeHtml(t) {
+        if (!t) return '';
+        var d = document.createElement('div');
+        d.textContent = t;
+        return d.innerHTML;
+    }
+
+    function switchTab(tab, evt) {
+        document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+        document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
+        if (evt && evt.currentTarget) evt.currentTarget.classList.add('active');
+        var content = document.getElementById('tab-' + tab);
+        if (content) content.classList.add('active');
+        if (tab === 'mybids') loadMyBids();
+        if (tab === 'browse') loadAuctions(1);
+    }
+
+    async function loadBalances() {
+        try {
+            var gcoinData = await apiRequest('/api/gcoin/balance');
+            currentGcoinBalance = gcoinData.balance || 0;
+            document.getElementById('gcoinBalance').textContent = currentGcoinBalance;
+        } catch (e) {
+            console.error('Load balances error:', e);
+        }
+    }
+
+    function formatCountdown(ms) {
+        if (ms <= 0) return '已结束';
+        var totalSec = Math.floor(ms / 1000);
+        var days = Math.floor(totalSec / 86400);
+        var hours = Math.floor((totalSec % 86400) / 3600);
+        var minutes = Math.floor((totalSec % 3600) / 60);
+        var seconds = totalSec % 60;
+        if (days > 0) return days + '天' + hours + '时';
+        if (hours > 0) return hours + '时' + minutes + '分';
+        if (minutes > 0) return minutes + '分' + seconds + '秒';
+        return seconds + '秒';
+    }
+
+    function startCountdown() {
+        Object.keys(countdownTimers).forEach(function(id) {
+            clearInterval(countdownTimers[id]);
+            delete countdownTimers[id];
+        });
+        document.querySelectorAll('.auction-timer').forEach(function(el) {
+            var auctionId = el.dataset.auction;
+            var endAt = parseInt(el.dataset.end);
+            var updateFn = function() {
+                var now = Date.now();
+                var remain = endAt - now;
+                if (remain <= 0) {
+                    el.textContent = '已结束';
+                    el.classList.add('urgent');
+                    clearInterval(countdownTimers[auctionId]);
+                    return;
+                }
+                el.textContent = '⏱️ ' + formatCountdown(remain);
+                if (remain < 3600000) {
+                    el.classList.add('urgent');
+                }
+            };
+            updateFn();
+            countdownTimers[auctionId] = setInterval(updateFn, 1000);
+        });
+    }
+
+    async function loadAuctions(page) {
+        page = page || 1;
+        currentPage = page;
+        try {
+            var params = new URLSearchParams();
+            params.append('page', page);
+            params.append('per_page', 20);
+            var gameFilter = document.getElementById('auctionGameFilter').value;
+            var sortFilter = document.getElementById('auctionSortFilter').value;
+            if (gameFilter) params.append('game_id', gameFilter);
+            if (sortFilter) params.append('sort', sortFilter);
+
+            var data = await apiRequest('/api/auction/list?' + params.toString());
+            var container = document.getElementById('auctionListContainer');
+            if (!data.auctions || data.auctions.length === 0) {
+                container.innerHTML = '<div class="empty-state"><span class="icon">🔨</span>暂无可竞拍的传说卡，请稍后再来</div>';
+                document.getElementById('auctionPagination').innerHTML = '';
+                return;
+            }
+            var now = Date.now();
+            var html = '<div class="auction-grid">';
+            data.auctions.forEach(function(a) {
+                var isEnded = a.end_at <= now;
+                var remain = Math.max(0, a.end_at - now);
+                var currentBid = a.current_bid || a.start_price;
+                var hasBidder = !!a.current_bidder;
+                var bidderText = hasBidder ? '👤 ' + escapeHtml(a.current_bidder) : '等待出价';
+                html += '<div class="auction-card' + (isEnded ? ' ended' : '') + '">';
+                html += '<div class="auction-badge">👑 传说卡</div>';
+                html += '<div class="auction-timer' + (remain < 3600000 && !isEnded ? ' urgent' : '') + '" data-auction="' + a.id + '" data-end="' + a.end_at + '">' + (isEnded ? '已结束' : '⏱️ ' + formatCountdown(remain)) + '</div>';
+                html += '<div class="auction-header">';
+                html += '<div class="auction-emoji">' + a.card_emoji + '</div>';
+                html += '<div class="auction-info">';
+                html += '<div class="auction-name">' + escapeHtml(a.card_name) + '</div>';
+                html += '<div class="auction-rarity">' + (a.rarity_name || '传说') + '</div>';
+                html += '</div>';
+                html += '</div>';
+                html += '<div class="auction-price-block">';
+                html += '<div class="auction-price-row"><span class="label">起拍价</span><span class="value small">🪙 ' + a.start_price + '</span></div>';
+                html += '<div class="auction-price-row"><span class="label">' + (hasBidder ? '当前最高' : '等待出价') + '</span><span class="value">🪙 ' + currentBid + '</span></div>';
+                html += '</div>';
+                html += '<div class="auction-bidder' + (!hasBidder ? ' none' : '') + '">' + bidderText + (hasBidder ? ' · ' + a.bid_count + '次出价' : '') + '</div>';
+                if (isEnded) {
+                    html += '<button class="btn-bid" disabled>已结束</button>';
+                } else {
+                    html += '<button class="btn-bid" onclick="openBidModal(\'' + a.id + '\', ' + currentBid + ', \'' + escapeHtml(a.card_name) + '\', \'' + a.card_emoji + '\', \'' + (a.rarity_name || '传说') + '\', \'' + (a.rarity_color || '#fbbf24') + '\')">🔨 出价</button>';
+                }
+                html += '</div>';
+            });
+            html += '</div>';
+            container.innerHTML = html;
+            renderAuctionPagination(data.page, data.total_pages);
+            startCountdown();
+        } catch (e) {
+            document.getElementById('auctionListContainer').innerHTML = '<div class="loading">加载失败: ' + escapeHtml(e.message) + '</div>';
+        }
+    }
+
+    function renderAuctionPagination(currentPage, totalPages) {
+        var container = document.getElementById('auctionPagination');
+        if (totalPages <= 1) {
+            container.innerHTML = '';
+            return;
+        }
+        var html = '';
+        for (var i = 1; i <= totalPages; i++) {
+            html += '<button class="' + (i === currentPage ? 'active' : '') + '" onclick="loadAuctions(' + i + ')">' + i + '</button>';
+        }
+        container.innerHTML = html;
+    }
+
+    async function loadMyBids() {
+        try {
+            var data = await apiRequest('/api/auction/my-bids');
+            var container = document.getElementById('myBidsContainer');
+            if (!data.bids || data.bids.length === 0) {
+                container.innerHTML = '<div class="empty-state"><span class="icon">📊</span>您还没有参与过竞拍</div>';
+                return;
+            }
+            var now = Date.now();
+            var html = '';
+            data.bids.forEach(function(b) {
+                var statusClass = '';
+                var statusText = '';
+                if (b.status === 'active') {
+                    if (b.is_winning) {
+                        statusClass = 'winning';
+                        statusText = '🏆 领先中';
+                    } else {
+                        statusClass = 'losing';
+                        statusText = '📉 被超越';
+                    }
+                } else if (b.status === 'sold') {
+                    if (b.winner === currentUser) {
+                        statusClass = 'won';
+                        statusText = '🎉 竞得';
+                    } else {
+                        statusClass = 'lost';
+                        statusText = '❌ 未竞得';
+                    }
+                } else {
+                    statusClass = 'lost';
+                    statusText = '⚪ 已流拍';
+                }
+                html += '<div class="my-bid-card ' + statusClass + '">';
+                html += '<div class="my-bid-emoji">' + b.card_emoji + '</div>';
+                html += '<div class="my-bid-info">';
+                html += '<div class="my-bid-name">' + escapeHtml(b.card_name) + '</div>';
+                html += '<div class="my-bid-meta">我的出价: 🪙 ' + b.my_latest_bid + ' · 共 ' + b.my_bid_count + ' 次</div>';
+                html += '<div class="my-bid-meta">当前最高: 🪙 ' + b.current_bid + ' · ' + (b.current_bidder ? escapeHtml(b.current_bidder) : '无人出价') + '</div>';
+                html += '</div>';
+                html += '<span class="my-bid-status ' + statusClass + '">' + statusText + '</span>';
+                html += '</div>';
+            });
+            container.innerHTML = html;
+        } catch (e) {
+            document.getElementById('myBidsContainer').innerHTML = '<div class="loading">加载失败: ' + escapeHtml(e.message) + '</div>';
+        }
+    }
+
+    function openBidModal(auctionId, currentPrice, cardName, cardEmoji, rarityName, rarityColor) {
+        pendingBidAuctionId = auctionId;
+        pendingBidCurrentPrice = currentPrice;
+        var minBid = currentPrice + 10;
+        var infoHtml = '';
+        infoHtml += '<div class="info-row"><span class="label">拍品</span><span class="value">' + cardEmoji + ' ' + escapeHtml(cardName) + '</span></div>';
+        infoHtml += '<div class="info-row"><span class="label">稀有度</span><span class="value" style="color:' + rarityColor + '">' + rarityName + '</span></div>';
+        infoHtml += '<div class="info-row"><span class="label">当前最高价</span><span class="value gold">🪙 ' + currentPrice + '</span></div>';
+        infoHtml += '<div class="info-row"><span class="label">最低出价</span><span class="value gold">🪙 ' + minBid + '</span></div>';
+        infoHtml += '<div class="info-row"><span class="label">您的余额</span><span class="value">🪙 ' + currentGcoinBalance + '</span></div>';
+        document.getElementById('bidModalInfo').innerHTML = infoHtml;
+        var input = document.getElementById('bidAmountInput');
+        input.value = minBid;
+        input.min = minBid;
+        document.getElementById('bidModal').classList.add('active');
+        setTimeout(function() { input.focus(); input.select(); }, 100);
+    }
+
+    function quickBid(amount) {
+        var input = document.getElementById('bidAmountInput');
+        var current = parseInt(input.value) || 0;
+        input.value = current + amount;
+    }
+
+    function closeBidModal() {
+        document.getElementById('bidModal').classList.remove('active');
+        pendingBidAuctionId = null;
+        pendingBidCurrentPrice = 0;
+    }
+
+    async function confirmBid() {
+        if (!pendingBidAuctionId) return;
+        var input = document.getElementById('bidAmountInput');
+        var bidAmount = parseInt(input.value);
+        if (isNaN(bidAmount) || bidAmount <= pendingBidCurrentPrice) {
+            showMessage('出价必须高于当前价', 'error');
+            return;
+        }
+        if (bidAmount > currentGcoinBalance) {
+            showMessage('G币余额不足', 'error');
+            return;
+        }
+        try {
+            var data = await apiRequest('/api/auction/bid', {
+                method: 'POST',
+                body: JSON.stringify({
+                    auction_id: pendingBidAuctionId,
+                    bid_amount: bidAmount
+                })
+            });
+            showMessage(data.message, 'success');
+            closeBidModal();
+            loadBalances();
+            loadAuctions(currentPage);
+            loadMyBids();
+        } catch (e) {
+            showMessage(e.message, 'error');
+        }
+    }
+
+    document.getElementById('bidModal').addEventListener('click', function(e) {
+        if (e.target === this) closeBidModal();
+    });
+
+    document.addEventListener('DOMContentLoaded', async function() {
+        try {
+            var authData = await apiRequest('/api/check-auth');
+            if (authData.authenticated) {
+                currentUser = authData.username;
+            }
+        } catch (e) {}
+        loadBalances();
+        loadAuctions(1);
+    });
+
+    setInterval(loadBalances, 30000);
+</script>
+</body>
+</html>

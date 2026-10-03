@@ -14,130 +14,177 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: #f0f2f5;
+            background: linear-gradient(160deg, #0c1e3e 0%, #1a3a6b 50%, #0f2847 100%);
             min-height: 100vh;
-            color: #1a1a2e;
+            color: #e2e8f0;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: -20%;
+            right: -10%;
+            width: 60%;
+            height: 60%;
+            background: radial-gradient(circle, rgba(56,189,248,0.15), transparent 70%);
+            pointer-events: none;
+            animation: glow 8s ease-in-out infinite;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: -20%;
+            left: -10%;
+            width: 60%;
+            height: 60%;
+            background: radial-gradient(circle, rgba(99,102,241,0.12), transparent 70%);
+            pointer-events: none;
+            animation: glow 10s ease-in-out infinite reverse;
+        }
+
+        @keyframes glow {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 1; }
         }
 
         .container {
             max-width: 520px;
             margin: 0 auto;
             padding: 24px 16px;
+            position: relative;
+            z-index: 1;
         }
 
         .card {
-            background: #ffffff;
-            border-radius: 24px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-            padding: 28px 24px;
-            margin-bottom: 20px;
+            background: rgba(20, 35, 65, 0.75);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-radius: 28px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(56,189,248,0.12) inset;
+            padding: 32px 28px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(56,189,248,0.15);
         }
 
         h1 {
             font-size: 28px;
-            font-weight: 600;
+            font-weight: 800;
             text-align: center;
-            margin-bottom: 8px;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
+            letter-spacing: -0.5px;
         }
 
         .subtitle {
             text-align: center;
-            color: #666;
+            color: #94a3b8;
             font-size: 13px;
-            margin-bottom: 28px;
+            margin-bottom: 30px;
+            font-weight: 500;
+            line-height: 1.6;
         }
 
         .quick-verify-section {
-            background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 24px;
-            border: 2px solid #4caf50;
+            background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(5,150,105,0.1));
+            border-radius: 20px;
+            padding: 22px;
+            margin-bottom: 26px;
+            border: 2px solid rgba(16,185,129,0.4);
             position: relative;
+            backdrop-filter: blur(8px);
         }
 
         .quick-verify-section .badge {
             position: absolute;
-            top: -10px;
-            right: 16px;
-            background: #4caf50;
+            top: -12px;
+            right: 20px;
+            background: linear-gradient(135deg, #10b981, #059669);
             color: white;
-            padding: 2px 16px;
+            padding: 4px 18px;
             border-radius: 20px;
             font-size: 11px;
-            font-weight: 700;
+            font-weight: 800;
             letter-spacing: 1px;
+            box-shadow: 0 6px 18px rgba(16,185,129,0.4);
         }
 
         .quick-verify-section .title {
             font-size: 18px;
-            font-weight: 700;
-            color: #2e7d32;
-            margin-bottom: 8px;
+            font-weight: 800;
+            color: #6ee7b7;
+            margin-bottom: 10px;
             display: flex;
             align-items: center;
             gap: 8px;
         }
 
         .quick-verify-section .title i {
-            font-size: 20px;
+            font-size: 22px;
+            color: #10b981;
         }
 
         .quick-verify-section .desc {
             font-size: 13px;
-            color: #1b5e20;
-            margin-bottom: 12px;
+            color: #a7f3d0;
+            margin-bottom: 14px;
             line-height: 1.6;
+            font-weight: 500;
         }
 
         .quick-verify-section .stats {
             font-size: 12px;
-            color: #2e7d32;
-            background: rgba(255,255,255,0.6);
-            padding: 8px 14px;
-            border-radius: 8px;
-            margin-bottom: 12px;
+            color: #6ee7b7;
+            background: rgba(16,185,129,0.12);
+            padding: 10px 16px;
+            border-radius: 12px;
+            margin-bottom: 14px;
             display: flex;
             justify-content: space-between;
             flex-wrap: wrap;
-            gap: 4px;
+            gap: 6px;
+            border: 1px solid rgba(16,185,129,0.25);
         }
 
         .quick-verify-section .stats .num {
-            font-weight: 700;
-            color: #1b5e20;
+            font-weight: 800;
+            color: #34d399;
         }
 
         .quick-verify-section .stats .num.warning {
-            color: #e65100;
+            color: #fbbf24;
         }
 
         .quick-verify-btn {
             width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #43a047, #2e7d32);
+            padding: 15px;
+            background: linear-gradient(135deg, #10b981, #059669);
             color: white;
             border: none;
             border-radius: 40px;
             font-size: 16px;
-            font-weight: 700;
+            font-weight: 800;
             cursor: pointer;
             transition: all 0.3s;
+            box-shadow: 0 8px 24px rgba(16,185,129,0.35);
+            letter-spacing: 0.3px;
         }
 
         .quick-verify-btn:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(46, 125, 50, 0.3);
+            box-shadow: 0 14px 34px rgba(16,185,129,0.5);
         }
 
         .quick-verify-btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
             transform: none;
+            box-shadow: none;
         }
 
         .quick-verify-btn .spinner {
@@ -157,54 +204,57 @@
         }
 
         .quick-result {
-            margin-top: 12px;
-            padding: 12px 16px;
-            border-radius: 12px;
+            margin-top: 14px;
+            padding: 14px 18px;
+            border-radius: 14px;
             font-size: 13px;
             display: none;
+            backdrop-filter: blur(8px);
         }
 
         .quick-result.success {
             display: block;
-            background: #e8f5e9;
-            color: #2e7d32;
-            border: 1px solid #a5d6a7;
+            background: rgba(16,185,129,0.15);
+            color: #6ee7b7;
+            border: 1px solid rgba(16,185,129,0.3);
         }
 
         .quick-result.error {
             display: block;
-            background: #ffebee;
-            color: #c62828;
-            border: 1px solid #ef9a9a;
+            background: rgba(239,68,68,0.15);
+            color: #fca5a5;
+            border: 1px solid rgba(239,68,68,0.3);
         }
 
         .quick-result .info-row {
             display: flex;
             justify-content: space-between;
-            padding: 4px 0;
+            padding: 6px 0;
             font-size: 12px;
             flex-wrap: wrap;
+            gap: 4px;
         }
 
         .quick-result .info-row .label {
-            color: #666;
+            color: #94a3b8;
         }
 
         .quick-result .info-row .value {
-            font-weight: 600;
-            color: #1b5e20;
+            font-weight: 700;
+            color: #6ee7b7;
         }
 
         .quick-result .info-row .value.warning {
-            color: #e65100;
+            color: #fbbf24;
         }
 
         .divider {
             display: flex;
             align-items: center;
-            margin: 20px 0;
-            color: #999;
+            margin: 22px 0;
+            color: #64748b;
             font-size: 12px;
+            font-weight: 600;
         }
 
         .divider::before,
@@ -212,31 +262,33 @@
             content: '';
             flex: 1;
             height: 1px;
-            background: #e0e0e0;
+            background: linear-gradient(90deg, transparent, rgba(56,189,248,0.3), transparent);
         }
 
         .divider::before {
-            margin-right: 16px;
+            margin-right: 18px;
         }
 
         .divider::after {
-            margin-left: 16px;
+            margin-left: 18px;
         }
 
         .privacy-badge {
-            background: #e8f0fe;
+            background: rgba(56,189,248,0.1);
             border-radius: 16px;
-            padding: 12px 16px;
-            margin-bottom: 20px;
+            padding: 14px 18px;
+            margin-bottom: 22px;
             display: flex;
             align-items: center;
-            gap: 12px;
-            border-left: 4px solid #2a5298;
+            gap: 14px;
+            border-left: 4px solid #38bdf8;
+            backdrop-filter: blur(8px);
         }
 
         .privacy-badge i {
-            font-size: 24px;
-            color: #2a5298;
+            font-size: 26px;
+            color: #38bdf8;
+            filter: drop-shadow(0 0 8px rgba(56,189,248,0.5));
         }
 
         .privacy-badge-text {
@@ -244,71 +296,78 @@
         }
 
         .privacy-badge-title {
-            font-weight: 600;
+            font-weight: 800;
             font-size: 14px;
-            color: #1e3c72;
+            color: #7dd3fc;
             margin-bottom: 4px;
         }
 
         .privacy-badge-desc {
             font-size: 12px;
-            color: #5a6e8a;
+            color: #94a3b8;
+            line-height: 1.6;
         }
 
         .upload-area {
-            border: 2px dashed #cbd5e1;
-            border-radius: 20px;
-            padding: 32px 20px;
+            border: 2px dashed rgba(56,189,248,0.4);
+            border-radius: 22px;
+            padding: 34px 20px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.2s ease;
-            background: #fafbfc;
-            margin-bottom: 24px;
+            transition: all 0.25s ease;
+            background: rgba(56,189,248,0.04);
+            margin-bottom: 26px;
         }
 
         .upload-area:hover {
-            border-color: #2a5298;
-            background: #f5f7fa;
+            border-color: #38bdf8;
+            background: rgba(56,189,248,0.08);
+            transform: translateY(-2px);
         }
 
         .upload-area.dragover {
-            border-color: #2a5298;
-            background: #eef2ff;
+            border-color: #38bdf8;
+            background: rgba(56,189,248,0.12);
+            transform: scale(1.02);
         }
 
         .upload-icon {
             font-size: 48px;
-            color: #94a3b8;
-            margin-bottom: 12px;
+            color: #38bdf8;
+            margin-bottom: 14px;
+            filter: drop-shadow(0 0 12px rgba(56,189,248,0.4));
         }
 
         .upload-text {
-            color: #475569;
+            color: #cbd5e1;
             font-size: 14px;
             margin-bottom: 8px;
+            font-weight: 600;
         }
 
         .upload-hint {
-            color: #94a3b8;
+            color: #64748b;
             font-size: 12px;
         }
 
         .security-note {
-            background: #fef9e6;
+            background: rgba(56,189,248,0.08);
             border-radius: 12px;
             padding: 10px 14px;
-            margin-top: 12px;
+            margin-top: 14px;
             font-size: 11px;
-            color: #b45309;
+            color: #7dd3fc;
             display: flex;
             align-items: center;
             gap: 8px;
             justify-content: center;
+            border: 1px solid rgba(56,189,248,0.15);
+            font-weight: 600;
         }
 
         .preview-area {
             display: none;
-            margin-bottom: 24px;
+            margin-bottom: 26px;
             position: relative;
         }
 
@@ -316,226 +375,264 @@
             width: 100%;
             max-height: 200px;
             object-fit: contain;
-            border-radius: 12px;
-            background: #f8f9fa;
-            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            background: rgba(15,23,42,0.5);
+            border: 1px solid rgba(56,189,248,0.2);
         }
 
         .reupload-btn {
             position: absolute;
-            top: 8px;
-            right: 8px;
-            background: rgba(0,0,0,0.6);
-            color: white;
-            border: none;
+            top: 10px;
+            right: 10px;
+            background: rgba(15,23,42,0.85);
+            color: #7dd3fc;
+            border: 1px solid rgba(56,189,248,0.3);
             border-radius: 20px;
-            padding: 6px 12px;
+            padding: 7px 14px;
             font-size: 12px;
             cursor: pointer;
             transition: all 0.2s;
+            font-weight: 700;
+            backdrop-filter: blur(8px);
         }
 
         .reupload-btn:hover {
-            background: rgba(0,0,0,0.8);
+            background: rgba(56,189,248,0.2);
+            color: #bae6fd;
         }
 
         .ocr-status {
             display: none;
-            padding: 12px 16px;
-            border-radius: 12px;
+            padding: 14px 18px;
+            border-radius: 14px;
             font-size: 13px;
-            margin-bottom: 20px;
+            margin-bottom: 22px;
+            font-weight: 600;
+            backdrop-filter: blur(8px);
         }
 
         .ocr-status.loading {
-            background: #eef2ff;
-            color: #1e3c72;
+            background: rgba(56,189,248,0.12);
+            color: #7dd3fc;
             display: block;
+            border: 1px solid rgba(56,189,248,0.25);
         }
 
         .ocr-status.success {
-            background: #e6f7e6;
-            color: #2e7d32;
+            background: rgba(16,185,129,0.12);
+            color: #6ee7b7;
             display: block;
+            border: 1px solid rgba(16,185,129,0.25);
         }
 
         .ocr-status.error {
-            background: #ffebee;
-            color: #c62828;
+            background: rgba(239,68,68,0.12);
+            color: #fca5a5;
             display: block;
+            border: 1px solid rgba(239,68,68,0.25);
         }
 
         .ocr-status.warning {
-            background: #fff3e0;
-            color: #e65100;
+            background: rgba(245,158,11,0.12);
+            color: #fcd34d;
             display: block;
+            border: 1px solid rgba(245,158,11,0.25);
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 22px;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
+            margin-bottom: 10px;
+            font-weight: 700;
             font-size: 14px;
-            color: #334155;
+            color: #cbd5e1;
         }
 
         .form-group label i {
             width: 20px;
-            color: #2a5298;
+            color: #38bdf8;
+            margin-right: 6px;
         }
 
         .form-group input, .form-group select {
             width: 100%;
-            padding: 12px 16px;
-            border: 1px solid #cbd5e1;
-            border-radius: 12px;
+            padding: 14px 18px;
+            border: 2px solid rgba(56,189,248,0.2);
+            border-radius: 14px;
             font-size: 15px;
-            background: #ffffff;
-            transition: all 0.2s;
+            background: rgba(15,23,42,0.5);
+            color: #e2e8f0;
+            transition: all 0.25s;
+            font-weight: 500;
+            outline: none;
+        }
+
+        .form-group input::placeholder {
+            color: #64748b;
         }
 
         .form-group input:focus, .form-group select:focus {
             outline: none;
-            border-color: #2a5298;
-            box-shadow: 0 0 0 3px rgba(42, 82, 152, 0.1);
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 4px rgba(56,189,248,0.15);
+            background: rgba(15,23,42,0.7);
         }
 
         .form-group input:disabled {
-            background: #f1f5f9;
+            background: rgba(15,23,42,0.3);
+            color: #64748b;
+            cursor: not-allowed;
+            border-color: rgba(56,189,248,0.1);
+        }
+
+        .form-group select:disabled {
+            background: rgba(15,23,42,0.3);
             color: #64748b;
             cursor: not-allowed;
         }
 
-        .form-group select:disabled {
-            background: #f1f5f9;
-            color: #64748b;
-            cursor: not-allowed;
+        .form-group select option {
+            background: #0c1e3e;
+            color: #e2e8f0;
         }
 
         .edit-hint {
             font-size: 11px;
-            color: #94a3b8;
-            margin-top: 6px;
+            color: #64748b;
+            margin-top: 8px;
             text-align: right;
+            font-weight: 500;
         }
 
         .edit-warning {
             font-size: 11px;
-            color: #f59e0b;
-            margin-top: 6px;
+            color: #fbbf24;
+            margin-top: 8px;
             text-align: right;
+            font-weight: 600;
         }
 
         .info-row {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 12px 16px;
-            margin-bottom: 12px;
+            background: rgba(15,23,42,0.4);
+            border-radius: 14px;
+            padding: 14px 18px;
+            margin-bottom: 14px;
             font-size: 13px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border: 1px solid rgba(56,189,248,0.1);
         }
 
         .info-label {
-            color: #64748b;
+            color: #94a3b8;
+            font-weight: 600;
         }
 
         .info-value {
-            font-weight: 500;
-            color: #1e293b;
+            font-weight: 700;
+            color: #e2e8f0;
         }
 
         .info-value.valid {
-            color: #2e7d32;
+            color: #6ee7b7;
         }
 
         .info-value.invalid {
-            color: #c62828;
+            color: #fca5a5;
         }
 
         .btn {
             width: 100%;
-            padding: 14px;
+            padding: 16px;
             border: none;
             border-radius: 40px;
             font-size: 16px;
-            font-weight: 600;
+            font-weight: 800;
             cursor: pointer;
-            transition: all 0.2s;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            transition: all 0.3s;
+            background: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%);
             color: white;
+            box-shadow: 0 8px 24px rgba(56,189,248,0.35);
+            letter-spacing: 0.3px;
         }
 
         .btn:hover:not(:disabled) {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(30, 60, 114, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 14px 34px rgba(56,189,248,0.5);
         }
 
         .btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
             transform: none;
+            box-shadow: none;
         }
 
         .status-card {
-            background: #f0fdf4;
-            border-radius: 20px;
-            padding: 20px;
+            background: rgba(16,185,129,0.1);
+            border-radius: 24px;
+            padding: 24px;
             text-align: center;
-            margin-bottom: 20px;
-            border: 1px solid #bbf7d0;
+            margin-bottom: 24px;
+            border: 1px solid rgba(16,185,129,0.3);
+            backdrop-filter: blur(8px);
         }
 
         .status-card.verified {
-            background: #f0fdf4;
-            border-color: #bbf7d0;
+            background: rgba(16,185,129,0.1);
+            border-color: rgba(16,185,129,0.3);
         }
 
         .status-card.not-verified {
-            background: #fef2f2;
-            border-color: #fecaca;
+            background: rgba(239,68,68,0.1);
+            border-color: rgba(239,68,68,0.3);
         }
 
         .status-icon {
-            font-size: 48px;
-            margin-bottom: 12px;
+            font-size: 52px;
+            margin-bottom: 14px;
         }
 
         .status-card.verified .status-icon i {
-            color: #22c55e;
+            color: #34d399;
+            filter: drop-shadow(0 0 16px rgba(52,211,153,0.5));
         }
 
         .status-card.not-verified .status-icon i {
-            color: #ef4444;
+            color: #f87171;
+            filter: drop-shadow(0 0 16px rgba(248,113,113,0.5));
         }
 
         .status-title {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 8px;
+            font-size: 20px;
+            font-weight: 800;
+            margin-bottom: 10px;
+            color: #e2e8f0;
         }
 
         .status-message {
             font-size: 13px;
-            color: #666;
+            color: #94a3b8;
+            line-height: 1.7;
+            font-weight: 500;
         }
 
         .reward-badge {
-            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
             border-radius: 20px;
-            padding: 12px 16px;
+            padding: 14px 18px;
             text-align: center;
-            margin-top: 20px;
+            margin-top: 22px;
+            box-shadow: 0 8px 24px rgba(245,158,11,0.3);
         }
 
         .reward-badge p {
             color: white;
-            font-weight: 500;
+            font-weight: 700;
             font-size: 14px;
         }
 
@@ -551,60 +648,69 @@
         }
 
         .nav-links a {
-            padding: 10px 20px;
-            background: #ffffff;
+            padding: 12px 24px;
+            background: rgba(56,189,248,0.1);
+            border: 1px solid rgba(56,189,248,0.25);
             border-radius: 40px;
-            color: #475569;
+            color: #7dd3fc;
             text-decoration: none;
             font-size: 13px;
-            font-weight: 500;
-            transition: all 0.2s;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            font-weight: 700;
+            transition: all 0.25s;
+            backdrop-filter: blur(8px);
         }
 
         .nav-links a:hover {
-            background: #1e3c72;
-            color: white;
+            background: rgba(56,189,248,0.2);
+            color: #bae6fd;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(56,189,248,0.25);
         }
 
         .message {
             display: none;
-            padding: 12px 16px;
-            border-radius: 12px;
-            margin-bottom: 16px;
+            padding: 14px 18px;
+            border-radius: 14px;
+            margin-bottom: 18px;
             font-size: 13px;
+            font-weight: 700;
+            backdrop-filter: blur(8px);
         }
 
         .message.success {
-            background: #e6f7e6;
-            color: #2e7d32;
+            background: rgba(16,185,129,0.15);
+            color: #6ee7b7;
             display: block;
+            border: 1px solid rgba(16,185,129,0.3);
         }
 
         .message.error {
-            background: #ffebee;
-            color: #c62828;
+            background: rgba(239,68,68,0.15);
+            color: #fca5a5;
             display: block;
+            border: 1px solid rgba(239,68,68,0.3);
         }
 
         .message.info {
-            background: #eef2ff;
-            color: #1e3c72;
+            background: rgba(56,189,248,0.15);
+            color: #7dd3fc;
             display: block;
+            border: 1px solid rgba(56,189,248,0.3);
         }
 
         .message.warning {
-            background: #fff3e0;
-            color: #e65100;
+            background: rgba(245,158,11,0.15);
+            color: #fcd34d;
             display: block;
+            border: 1px solid rgba(245,158,11,0.3);
         }
 
         .ocr-progress {
             width: 100%;
-            height: 4px;
-            background: #e2e8f0;
-            border-radius: 2px;
-            margin-top: 10px;
+            height: 5px;
+            background: rgba(15,23,42,0.5);
+            border-radius: 3px;
+            margin-top: 12px;
             overflow: hidden;
             display: none;
         }
@@ -612,8 +718,9 @@
         .ocr-progress-bar {
             width: 0%;
             height: 100%;
-            background: linear-gradient(90deg, #2a5298, #4a7cbf);
+            background: linear-gradient(90deg, #38bdf8, #6366f1);
             transition: width 0.3s ease;
+            border-radius: 3px;
         }
 
         .ocr-status.loading .ocr-progress {
@@ -621,19 +728,20 @@
         }
 
         .data-notice {
-            background: #f0f9ff;
-            border-radius: 12px;
-            padding: 12px 16px;
-            margin-top: 20px;
+            background: rgba(56,189,248,0.08);
+            border-radius: 16px;
+            padding: 16px 18px;
+            margin-top: 22px;
             display: flex;
             align-items: flex-start;
-            gap: 10px;
-            border: 1px solid #bae6fd;
+            gap: 12px;
+            border: 1px solid rgba(56,189,248,0.2);
+            backdrop-filter: blur(8px);
         }
 
         .data-notice i {
-            font-size: 18px;
-            color: #0284c7;
+            font-size: 20px;
+            color: #38bdf8;
             margin-top: 2px;
         }
 
@@ -642,16 +750,16 @@
         }
 
         .data-notice-title {
-            font-weight: 600;
+            font-weight: 800;
             font-size: 13px;
-            color: #0369a1;
-            margin-bottom: 4px;
+            color: #7dd3fc;
+            margin-bottom: 6px;
         }
 
         .data-notice-text {
             font-size: 11px;
-            color: #475569;
-            line-height: 1.5;
+            color: #94a3b8;
+            line-height: 1.7;
         }
 
         input.error-border {
@@ -663,41 +771,45 @@
         }
 
         .id-edit-rule {
-            background: #fef9e6;
-            border-radius: 12px;
-            padding: 10px 14px;
-            margin-bottom: 16px;
+            background: rgba(245,158,11,0.1);
+            border-radius: 14px;
+            padding: 12px 16px;
+            margin-bottom: 18px;
             font-size: 12px;
-            color: #b45309;
+            color: #fcd34d;
             border-left: 3px solid #f59e0b;
+            line-height: 1.7;
+            font-weight: 500;
         }
 
         .gender-auto-info {
-            background: #e8f0fe;
+            background: rgba(56,189,248,0.08);
             border-radius: 12px;
-            padding: 8px 12px;
-            margin-top: 8px;
+            padding: 10px 14px;
+            margin-top: 10px;
             font-size: 11px;
-            color: #1e3c72;
+            color: #7dd3fc;
             display: flex;
             align-items: center;
             gap: 8px;
+            border: 1px solid rgba(56,189,248,0.15);
+            font-weight: 500;
         }
 
         .action-row {
             display: flex;
             gap: 12px;
-            margin-bottom: 24px;
+            margin-bottom: 26px;
         }
 
         .action-row .upload-area {
             flex: 1;
             margin-bottom: 0;
-            padding: 20px 12px;
+            padding: 22px 14px;
         }
 
         .action-row .upload-area .upload-icon {
-            font-size: 32px;
+            font-size: 34px;
         }
 
         .action-row .upload-area .upload-text {
@@ -709,83 +821,88 @@
         }
 
         .camera-btn {
-            flex: 0 0 80px;
-            background: #1e3c72;
+            flex: 0 0 90px;
+            background: linear-gradient(135deg, #38bdf8, #6366f1);
             color: white;
             border: none;
-            border-radius: 20px;
+            border-radius: 22px;
             font-size: 14px;
-            font-weight: 500;
+            font-weight: 700;
             cursor: pointer;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 4px;
-            transition: all 0.2s;
-            padding: 8px;
+            gap: 6px;
+            transition: all 0.25s;
+            padding: 10px;
+            box-shadow: 0 8px 24px rgba(56,189,248,0.3);
         }
 
         .camera-btn i {
-            font-size: 28px;
+            font-size: 30px;
         }
 
         .camera-btn:hover {
-            background: #2a5298;
-            transform: scale(1.02);
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 14px 34px rgba(56,189,248,0.45);
         }
 
         .camera-btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
             transform: none;
+            box-shadow: none;
         }
 
         .error-boundary {
-            background: #fef2f2;
-            border: 2px solid #fecaca;
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 20px;
+            background: rgba(239,68,68,0.12);
+            border: 2px solid rgba(239,68,68,0.3);
+            border-radius: 20px;
+            padding: 22px;
+            margin-bottom: 22px;
             text-align: center;
             display: none;
+            backdrop-filter: blur(8px);
         }
 
         .error-boundary .error-icon {
             font-size: 48px;
-            color: #dc2626;
-            margin-bottom: 12px;
+            color: #f87171;
+            margin-bottom: 14px;
+            filter: drop-shadow(0 0 16px rgba(248,113,113,0.4));
         }
 
         .error-boundary .error-title {
             font-size: 18px;
-            font-weight: 700;
-            color: #dc2626;
+            font-weight: 800;
+            color: #fca5a5;
             margin-bottom: 8px;
         }
 
         .error-boundary .error-desc {
             font-size: 14px;
-            color: #666;
-            margin-bottom: 16px;
+            color: #94a3b8;
+            margin-bottom: 18px;
+            line-height: 1.6;
         }
 
         .error-boundary .retry-btn {
-            padding: 10px 32px;
-            background: #dc2626;
+            padding: 12px 36px;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
             color: white;
             border: none;
             border-radius: 40px;
             font-size: 14px;
-            font-weight: 600;
+            font-weight: 800;
             cursor: pointer;
             transition: all 0.3s;
+            box-shadow: 0 8px 24px rgba(239,68,68,0.35);
         }
 
         .error-boundary .retry-btn:hover {
-            background: #b91c1c;
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+            box-shadow: 0 14px 34px rgba(239,68,68,0.5);
         }
 
         .loading-overlay {
@@ -793,25 +910,29 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 40px 20px;
-            background: white;
-            border-radius: 24px;
-            margin-bottom: 20px;
+            padding: 44px 20px;
+            background: rgba(20, 35, 65, 0.75);
+            backdrop-filter: blur(24px);
+            border-radius: 28px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(56,189,248,0.15);
         }
 
         .loading-overlay .spinner {
-            width: 48px;
-            height: 48px;
-            border: 4px solid #e5e7eb;
-            border-top-color: #2a5298;
+            width: 52px;
+            height: 52px;
+            border: 4px solid rgba(56,189,248,0.15);
+            border-top-color: #38bdf8;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
-            margin-bottom: 16px;
+            margin-bottom: 18px;
+            filter: drop-shadow(0 0 12px rgba(56,189,248,0.5));
         }
 
         .loading-overlay .loading-text {
-            color: #666;
+            color: #94a3b8;
             font-size: 14px;
+            font-weight: 600;
         }
 
         @media (max-width: 480px) {
@@ -819,7 +940,7 @@
                 padding: 16px 12px;
             }
             .card {
-                padding: 20px 16px;
+                padding: 24px 20px;
             }
             h1 {
                 font-size: 24px;
@@ -828,17 +949,17 @@
                 flex-direction: column;
             }
             .action-row .upload-area {
-                padding: 24px 12px;
+                padding: 26px 14px;
             }
             .camera-btn {
                 flex: 1;
                 flex-direction: row;
-                padding: 12px 16px;
+                padding: 14px 18px;
                 border-radius: 40px;
-                gap: 8px;
+                gap: 10px;
             }
             .camera-btn i {
-                font-size: 20px;
+                font-size: 22px;
             }
             .quick-verify-section .stats {
                 flex-direction: column;
@@ -852,13 +973,11 @@
         <h1><i class="fas fa-id-card"></i> 身份认证</h1>
         <p class="subtitle">上传身份证照片自动识别信息，完成认证可获得PL和优惠券奖励</p>
 
-        <!-- 加载状态 -->
         <div id="loadingOverlay" class="loading-overlay">
             <div class="spinner"></div>
             <div class="loading-text">⏳ 加载中，请稍候...</div>
         </div>
 
-        <!-- 错误边界 -->
         <div id="errorBoundary" class="error-boundary">
             <div class="error-icon"><i class="fas fa-exclamation-triangle"></i></div>
             <div class="error-title">⚠️ 加载失败</div>
@@ -902,7 +1021,7 @@
                     </div>
                     <div class="upload-text">点击或拖拽上传</div>
                     <div class="upload-hint">JPG / PNG</div>
-                    <div class="security-note" style="margin-top:6px;font-size:10px;padding:4px 8px;">
+                    <div class="security-note" style="margin-top:8px;font-size:10px;padding:5px 10px;">
                         <i class="fas fa-lock"></i>
                         <span>仅前端识别</span>
                     </div>
@@ -991,16 +1110,12 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js">
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script>
-        // ============================================================
-        // CSRF TOKEN MANAGEMENT - SECURITY FIX
-        // ============================================================
         var csrfToken = null;
         var csrfTokenRefreshPromise = null;
         var csrfTokenLastFetch = 0;
-        var CSRF_TOKEN_TTL = 300000; // 5 minutes
+        var CSRF_TOKEN_TTL = 300000;
 
         function getCsrfTokenFromCookie() {
             try {
@@ -1021,132 +1136,94 @@
             try {
                 var expires = new Date(Date.now() + CSRF_TOKEN_TTL).toUTCString();
                 document.cookie = 'csrf_token=' + token + '; expires=' + expires + '; path=/; SameSite=Strict; Secure';
-            } catch (e) {
-                // Ignore cookie errors
-            }
+            } catch (e) {}
         }
 
         function fetchCsrfToken() {
             if (csrfTokenRefreshPromise) {
                 return csrfTokenRefreshPromise;
             }
-
-            // Check if we have a valid token in memory
             if (csrfToken && (Date.now() - csrfTokenLastFetch) < CSRF_TOKEN_TTL) {
                 return Promise.resolve(csrfToken);
             }
-
-            // Check cookie
             var cookieToken = getCsrfTokenFromCookie();
             if (cookieToken) {
                 csrfToken = cookieToken;
                 csrfTokenLastFetch = Date.now();
                 return Promise.resolve(csrfToken);
             }
-
             csrfTokenRefreshPromise = fetch('/api/csrf-token', {
-                    method: 'GET',
-                    credentials: 'include',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Cache-Control': 'no-cache'
-                    }
-                })
-                .then(function(response) {
-                    if (!response.ok) {
-                        throw new Error('Failed to fetch CSRF token: HTTP ' + response.status);
-                    }
-                    return response.json();
-                })
-                .then(function(data) {
-                    if (!data.csrf_token) {
-                        throw new Error('No CSRF token in response');
-                    }
-                    csrfToken = data.csrf_token;
-                    csrfTokenLastFetch = Date.now();
-                    setCsrfTokenCookie(csrfToken);
-                    csrfTokenRefreshPromise = null;
-                    return csrfToken;
-                })
-                .catch(function(error) {
-                    csrfTokenRefreshPromise = null;
-                    console.error('CSRF token fetch error:', error);
-                    // Clear invalid token
-                    csrfToken = null;
-                    throw error;
-                });
-
+                method: 'GET',
+                credentials: 'include',
+                headers: { 'Accept': 'application/json', 'Cache-Control': 'no-cache' }
+            }).then(function(response) {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch CSRF token: HTTP ' + response.status);
+                }
+                return response.json();
+            }).then(function(data) {
+                if (!data.csrf_token) {
+                    throw new Error('No CSRF token in response');
+                }
+                csrfToken = data.csrf_token;
+                csrfTokenLastFetch = Date.now();
+                setCsrfTokenCookie(csrfToken);
+                csrfTokenRefreshPromise = null;
+                return csrfToken;
+            }).catch(function(error) {
+                csrfTokenRefreshPromise = null;
+                console.error('CSRF token fetch error:', error);
+                csrfToken = null;
+                throw error;
+            });
             return csrfTokenRefreshPromise;
         }
 
-        // ============================================================
-        // API REQUEST WITH CSRF PROTECTION
-        // ============================================================
         function apiRequest(url, options) {
             if (!options) options = {};
-
-            // Always include credentials
             options.credentials = 'include';
-
-            // Initialize headers
             if (!options.headers) options.headers = {};
             options.headers['Content-Type'] = 'application/json';
             options.headers['Accept'] = 'application/json';
-
             var method = (options.method || 'GET').toUpperCase();
-
-            // For GET requests, just fetch
             if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') {
-                return fetch(url, options)
-                    .then(function(response) {
-                        return response.json().then(function(data) {
-                            if (!response.ok) {
-                                throw new Error(data.error || '请求失败: ' + response.status);
-                            }
-                            return data;
-                        });
-                    });
-            }
-
-            // For non-GET requests, add CSRF token
-            return fetchCsrfToken()
-                .then(function(token) {
-                    options.headers['X-CSRF-Token'] = token;
-                    return fetch(url, options);
-                })
-                .then(function(response) {
+                return fetch(url, options).then(function(response) {
                     return response.json().then(function(data) {
                         if (!response.ok) {
-                            // Check for CSRF error
-                            if (response.status === 403 && data.error && data.error.includes('CSRF')) {
-                                // Token expired, refresh and retry once
-                                csrfToken = null;
-                                csrfTokenLastFetch = 0;
-                                return fetchCsrfToken()
-                                    .then(function(newToken) {
-                                        options.headers['X-CSRF-Token'] = newToken;
-                                        return fetch(url, options);
-                                    })
-                                    .then(function(retryResponse) {
-                                        return retryResponse.json().then(function(retryData) {
-                                            if (!retryResponse.ok) {
-                                                throw new Error(retryData.error || '请求失败: ' +
-                                                    retryResponse.status);
-                                            }
-                                            return retryData;
-                                        });
-                                    });
-                            }
                             throw new Error(data.error || '请求失败: ' + response.status);
                         }
                         return data;
                     });
                 });
+            }
+            return fetchCsrfToken().then(function(token) {
+                options.headers['X-CSRF-Token'] = token;
+                return fetch(url, options);
+            }).then(function(response) {
+                return response.json().then(function(data) {
+                    if (!response.ok) {
+                        if (response.status === 403 && data.error && data.error.includes('CSRF')) {
+                            csrfToken = null;
+                            csrfTokenLastFetch = 0;
+                            return fetchCsrfToken().then(function(newToken) {
+                                options.headers['X-CSRF-Token'] = newToken;
+                                return fetch(url, options);
+                            }).then(function(retryResponse) {
+                                return retryResponse.json().then(function(retryData) {
+                                    if (!retryResponse.ok) {
+                                        throw new Error(retryData.error || '请求失败: ' + retryResponse.status);
+                                    }
+                                    return retryData;
+                                });
+                            });
+                        }
+                        throw new Error(data.error || '请求失败: ' + response.status);
+                    }
+                    return data;
+                });
+            });
         }
 
-        // ============================================================
-        // APPLICATION CODE
-        // ============================================================
         var isVerified = false;
         var verifiedAt = null;
         var currentOcrWorker = null;
@@ -1284,7 +1361,7 @@
                     <div class="status-message">认证时间：${data?.verified_at || '未知'}</div>
                     <div class="status-message">姓名：${data?.real_name || '未知'}</div>
                     <div class="status-message">证件号：${data?.id_number_masked || '未知'}</div>
-                    <div class="status-message" style="margin-top:8px;color:#22c55e;"><i class="fas fa-gift"></i> 已获得PL和优惠券奖励</div>
+                    <div class="status-message" style="margin-top:10px;color:#6ee7b7;"><i class="fas fa-gift"></i> 已获得PL和优惠券奖励</div>
                 `;
             } else {
                 statusCard.className = 'status-card not-verified';
@@ -1293,7 +1370,7 @@
                     <div class="status-icon"><i class="fas fa-exclamation-triangle"></i></div>
                     <div class="status-title">未认证</div>
                     <div class="status-message">请完成身份认证后使用完整功能</div>
-                    <div class="status-message" style="margin-top:8px;color:#f59e0b;"><i class="fas fa-gift"></i> 认证后可获得PL和2张优惠券</div>
+                    <div class="status-message" style="margin-top:10px;color:#fcd34d;"><i class="fas fa-gift"></i> 认证后可获得PL和2张优惠券</div>
                 `;
             }
             statusCard.style.display = 'block';
@@ -1433,23 +1510,23 @@
 
                 if (age !== null) {
                     if (age >= 10 && age <= 80) {
-                        ageInfo.innerHTML = '<span style="color:#2e7d32;">' + age + '岁 ✓ 符合要求（10-80岁）</span>';
+                        ageInfo.innerHTML = '<span style="color:#6ee7b7;">' + age + '岁 ✓ 符合要求（10-80岁）</span>';
                         ageInfo.className = 'info-value valid';
                     } else {
-                        ageInfo.innerHTML = '<span style="color:#c62828;">' + age + '岁 ✗ 不符合要求（需10-80岁）</span>';
+                        ageInfo.innerHTML = '<span style="color:#fca5a5;">' + age + '岁 ✗ 不符合要求（需10-80岁）</span>';
                         ageInfo.className = 'info-value invalid';
                     }
                 } else {
-                    ageInfo.innerHTML = '<span style="color:#c62828;">无法计算年龄</span>';
+                    ageInfo.innerHTML = '<span style="color:#fca5a5;">无法计算年龄</span>';
                     ageInfo.className = 'info-value invalid';
                 }
 
                 if (actualGender && selectedGender) {
                     if (actualGender === selectedGender) {
-                        genderMatchInfo.innerHTML = '<span style="color:#2e7d32;">' + actualGender + ' ✓ 与身份证一致</span>';
+                        genderMatchInfo.innerHTML = '<span style="color:#6ee7b7;">' + actualGender + ' ✓ 与身份证一致</span>';
                         genderMatchInfo.className = 'info-value valid';
                     } else {
-                        genderMatchInfo.innerHTML = '<span style="color:#c62828;">身份证显示：' + actualGender + ' ✗ 与选择不一致</span>';
+                        genderMatchInfo.innerHTML = '<span style="color:#fca5a5;">身份证显示：' + actualGender + ' ✗ 与选择不一致</span>';
                         genderMatchInfo.className = 'info-value invalid';
                     }
                 } else if (actualGender) {
@@ -1460,7 +1537,7 @@
                     genderMatchInfo.className = 'info-value';
                 }
             } else if (idNumber.length > 0 && idNumber.length !== 18) {
-                document.getElementById('ageInfo').innerHTML = '<span style="color:#c62828;">身份证号码需为18位</span>';
+                document.getElementById('ageInfo').innerHTML = '<span style="color:#fca5a5;">身份证号码需为18位</span>';
                 document.getElementById('ageInfo').className = 'info-value invalid';
                 document.getElementById('genderMatchInfo').innerHTML = '<span>请填写完整18位身份证号码</span>';
                 document.getElementById('genderMatchInfo').className = 'info-value';
@@ -1480,9 +1557,6 @@
             }
         }
 
-        // ============================================================
-        // FILE UPLOAD HANDLING
-        // ============================================================
         var uploadArea = document.getElementById('uploadArea');
         var fileInput = document.getElementById('idCardInput');
         var previewArea = document.getElementById('previewArea');
@@ -1618,9 +1692,6 @@
             reader.readAsDataURL(file);
         }
 
-        // ============================================================
-        // OCR FUNCTIONS
-        // ============================================================
         async function performOCR(file) {
             ocrStatus.className = 'ocr-status loading';
             ocrStatus.innerHTML =
@@ -1941,9 +2012,6 @@
             return result;
         }
 
-        // ============================================================
-        // FORM EVENT HANDLERS
-        // ============================================================
         document.getElementById('realName').addEventListener('input', function(e) {
             if (isProcessing) return;
             var value = e.target.value;
@@ -2101,13 +2169,13 @@
                     resultDiv.className = 'quick-result success';
                     resultDiv.innerHTML =
                         `
-                        <div style="font-weight:700;margin-bottom:8px;">✅ ${response.message}</div>
+                        <div style="font-weight:800;margin-bottom:10px;">✅ ${response.message}</div>
                         <div class="info-row"><span class="label">使用姓名</span><span class="value">${response.real_name}</span></div>
                         <div class="info-row"><span class="label">证件号</span><span class="value">${response.id_number_masked}</span></div>
                         <div class="info-row"><span class="label">PL奖励</span><span class="value">${response.pl_reward.toFixed(4)} PL</span></div>
                         <div class="info-row"><span class="label">剩余可用</span><span class="value ${response.stats.available < 5 ? 'warning' : ''}">${response.stats.available} 张</span></div>
                         <div class="info-row"><span class="label">身份证总数</span><span class="value">${response.stats.unique_total || response.stats.total} 张</span></div>
-                        ${response.all_used ? '<div style="margin-top:8px;color:#e65100;font-weight:600;">⚠️ 所有身份证已使用完毕，快速认证已禁用</div>' : ''}
+                        ${response.all_used ? '<div style="margin-top:10px;color:#fbbf24;font-weight:700;">⚠️ 所有身份证已使用完毕，快速认证已禁用</div>' : ''}
                     `;
                     resultDiv.style.display = 'block';
 
@@ -2137,9 +2205,6 @@
             }
         });
 
-        // ============================================================
-        // RETRY FUNCTION
-        // ============================================================
         async function retryInit() {
             hideErrorBoundary();
             showLoading(true);
@@ -2148,9 +2213,6 @@
             await init();
         }
 
-        // ============================================================
-        // INITIALIZATION
-        // ============================================================
         async function init() {
             if (isInitialized) return;
             isInitialized = true;
@@ -2158,14 +2220,12 @@
             try {
                 showLoading(true);
 
-                // Pre-fetch CSRF token
                 try {
                     await fetchCsrfToken();
                 } catch (csrfError) {
                     console.warn('CSRF token pre-fetch failed, will retry on demand:', csrfError);
                 }
 
-                // Check authentication
                 var authData = await checkAuth();
                 if (!authData) {
                     if (initRetryCount < MAX_INIT_RETRIES) {
@@ -2176,7 +2236,6 @@
                     return;
                 }
 
-                // Check identity status
                 await checkIdentityStatus();
                 await checkQuickVerifyStatus();
 
@@ -2191,9 +2250,7 @@
             }
         }
 
-        // Start initialization on page load
         document.addEventListener('DOMContentLoaded', function() {
-            // Set a timeout to show error if loading takes too long
             var loadTimeout = setTimeout(function() {
                 if (!isInitialized) {
                     showLoading(false);
@@ -2206,7 +2263,6 @@
             });
         });
 
-        // Also run if DOM is already loaded
         if (document.readyState === 'complete' || document.readyState === 'interactive') {
             var loadTimeout = setTimeout(function() {
                 if (!isInitialized) {

@@ -10,13 +10,20 @@
         .container{max-width:1200px;margin:0 auto}
         .header{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;background:rgba(255,255,255,0.06);border-radius:20px;border:1px solid rgba(255,255,255,0.08);margin-bottom:24px;flex-wrap:wrap;gap:12px}
         .header h1{font-size:24px;background:linear-gradient(135deg,#fbbf24,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-        .header .stats{display:flex;gap:20px;flex-wrap:wrap;font-size:13px;color:rgba(255,255,255,0.6)}
+        .header .stats{display:flex;gap:12px;flex-wrap:wrap;font-size:13px;color:rgba(255,255,255,0.6)}
         .header .stats span{background:rgba(255,255,255,0.06);padding:4px 14px;border-radius:20px}
         .header .right-group{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
         .header .back-btn{padding:8px 20px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:40px;color:#d1d5db;cursor:pointer;transition:all 0.3s;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;min-height:40px}
         .header .back-btn:hover{background:rgba(255,255,255,0.15)}
         .membership-btn{padding:8px 20px;background:linear-gradient(135deg,#fbbf24,#d97706);border:none;border-radius:40px;color:#1a1a2e;cursor:pointer;font-weight:600;font-size:13px;text-decoration:none;transition:all 0.3s;display:inline-block}
         .membership-btn:hover{transform:scale(1.05);box-shadow:0 4px 20px rgba(251,191,36,0.3)}
+        .expiry-banner{background:linear-gradient(135deg,rgba(248,113,113,0.15),rgba(220,38,38,0.05));border:1px solid rgba(248,113,113,0.3);border-radius:16px;padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;animation:expiryPulse 2s infinite}
+        @keyframes expiryPulse{0%,100%{border-color:rgba(248,113,113,0.3)}50%{border-color:rgba(248,113,113,0.6)}}
+        .expiry-banner .eb-info{display:flex;align-items:center;gap:10px;font-size:14px;color:#fca5a5;flex:1;min-width:200px}
+        .expiry-banner .eb-icon{font-size:24px}
+        .expiry-banner .eb-info strong{color:#f87171;font-size:15px}
+        .expiry-banner .eb-btn{padding:8px 20px;background:linear-gradient(135deg,#f87171,#dc2626);border:none;border-radius:40px;color:#fff;font-weight:600;font-size:13px;cursor:pointer;text-decoration:none;display:inline-block;transition:all 0.3s;min-height:40px;line-height:24px}
+        .expiry-banner .eb-btn:hover{transform:scale(1.05);box-shadow:0 4px 20px rgba(248,113,113,0.4)}
         .tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
         .tab{padding:10px 24px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:40px;color:rgba(255,255,255,0.6);cursor:pointer;transition:all 0.3s;font-size:14px;font-weight:500;min-height:44px;display:flex;align-items:center;text-decoration:none}
         .tab:hover{background:rgba(255,255,255,0.08)}
@@ -33,6 +40,7 @@
         .game-card .reward{font-size:12px;color:#fbbf24}
         .game-card.disabled{opacity:0.4;cursor:not-allowed;pointer-events:none}
         .game-card .exclusive-tag{position:absolute;top:8px;right:8px;font-size:10px;background:linear-gradient(135deg,#fbbf24,#d97706);color:#1a1a2e;padding:2px 8px;border-radius:10px;font-weight:600}
+        .game-card.legendary-game{border-color:rgba(251,191,36,0.4);background:linear-gradient(145deg,rgba(251,191,36,0.06),rgba(245,158,11,0.02))}
         .game-area{background:rgba(255,255,255,0.04);border-radius:20px;padding:24px;border:1px solid rgba(255,255,255,0.06);display:none}
         .game-area.active{display:block}
         .game-area .game-title{font-size:20px;font-weight:600;color:#fff;margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
@@ -152,7 +160,9 @@
         .wheel-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:60px;height:60px;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;z-index:5;border:4px solid rgba(255,255,255,0.2)}
         .wheel-label{position:absolute;top:50%;left:50%;transform-origin:0 0;font-size:14px;font-weight:700;color:#fff;white-space:nowrap;pointer-events:none;text-align:center;width:60px;margin-left:-30px;margin-top:-10px;z-index:3}
         .memory-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:400px;margin:16px auto}
+        .memory-grid.hard{grid-template-columns:repeat(6,1fr);gap:6px;max-width:520px}
         .memory-card{aspect-ratio:1;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:32px;cursor:pointer;transition:all 0.3s;border:2px solid rgba(255,255,255,0.1);user-select:none}
+        .memory-grid.hard .memory-card{font-size:22px;border-radius:8px}
         .memory-card:hover{transform:scale(1.05)}
         .memory-card.flipped{background:rgba(255,255,255,0.1)}
         .memory-card.matched{background:rgba(52,211,153,0.2);border-color:#34d399;cursor:default}
@@ -165,6 +175,7 @@
         .stat-card .stat-value.red{color:#f87171}
         .stat-card .stat-value.gold{color:#fbbf24}
         .stat-card .stat-value.blue{color:#60a5fa}
+        .stat-card .stat-value.purple{color:#a78bfa}
         .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px}
         .points-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-size:48px;font-weight:900;color:#fbbf24;text-shadow:0 0 30px rgba(251,191,36,0.8);z-index:10000;pointer-events:none;animation:pointsFloat 1.5s ease-out forwards}
         @keyframes pointsFloat{0%{transform:translate(-50%,-50%) scale(0.5);opacity:0}30%{transform:translate(-50%,-70%) scale(1.3);opacity:1}100%{transform:translate(-50%,-120%) scale(1);opacity:0}}
@@ -188,6 +199,46 @@
         .whack-status .stat-value.red{color:#f87171}
         .card-drop-toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);padding:14px 24px;border-radius:16px;background:linear-gradient(135deg,rgba(102,126,234,0.95),rgba(118,75,162,0.95));color:#fff;font-size:14px;font-weight:600;z-index:9998;box-shadow:0 12px 40px rgba(102,126,234,0.5);animation:cardDrop 3s ease-out forwards;display:flex;align-items:center;gap:12px;border:2px solid rgba(255,255,255,0.2);max-width:90%}
         @keyframes cardDrop{0%{transform:translate(-50%,50px);opacity:0}10%{transform:translate(-50%,0);opacity:1}90%{transform:translate(-50%,0);opacity:1}100%{transform:translate(-50%,-30px);opacity:0}}
+        .coupon-drop-toast{position:fixed;bottom:180px;left:50%;transform:translateX(-50%);padding:14px 24px;border-radius:16px;background:linear-gradient(135deg,rgba(251,191,36,0.95),rgba(245,158,11,0.95));color:#1a1a2e;font-size:14px;font-weight:700;z-index:9998;box-shadow:0 12px 40px rgba(251,191,36,0.6);animation:couponDrop 4s ease-out forwards;display:flex;align-items:center;gap:12px;border:2px solid rgba(255,255,255,0.4);max-width:90%}
+        @keyframes couponDrop{0%{transform:translate(-50%,50px);opacity:0}10%{transform:translate(-50%,0);opacity:1}85%{transform:translate(-50%,0);opacity:1}100%{transform:translate(-50%,-30px);opacity:0}}
+        .item-drop-toast{position:fixed;bottom:260px;left:50%;transform:translateX(-50%);padding:14px 24px;border-radius:16px;background:linear-gradient(135deg,rgba(167,139,250,0.95),rgba(124,58,237,0.95));color:#fff;font-size:14px;font-weight:600;z-index:9998;box-shadow:0 12px 40px rgba(167,139,250,0.5);animation:itemDrop 3.5s ease-out forwards;display:flex;align-items:center;gap:12px;border:2px solid rgba(255,255,255,0.2);max-width:90%}
+        @keyframes itemDrop{0%{transform:translate(-50%,50px);opacity:0}10%{transform:translate(-50%,0);opacity:1}85%{transform:translate(-50%,0);opacity:1}100%{transform:translate(-50%,-30px);opacity:0}}
+        .points-drop-toast{position:fixed;bottom:340px;left:50%;transform:translateX(-50%);padding:14px 24px;border-radius:16px;background:linear-gradient(135deg,rgba(52,211,153,0.95),rgba(5,150,105,0.95));color:#fff;font-size:14px;font-weight:700;z-index:9998;box-shadow:0 12px 40px rgba(52,211,153,0.5);animation:pointsDrop 3s ease-out forwards;display:flex;align-items:center;gap:12px;border:2px solid rgba(255,255,255,0.2);max-width:90%}
+        @keyframes pointsDrop{0%{transform:translate(-50%,50px);opacity:0}10%{transform:translate(-50%,0);opacity:1}85%{transform:translate(-50%,0);opacity:1}100%{transform:translate(-50%,-30px);opacity:0}}
+        .gcoin-drop-toast{position:fixed;bottom:420px;left:50%;transform:translateX(-50%);padding:14px 24px;border-radius:16px;background:linear-gradient(135deg,rgba(251,191,36,0.95),rgba(217,119,6,0.95));color:#1a1a2e;font-size:14px;font-weight:800;z-index:9998;box-shadow:0 12px 40px rgba(251,191,36,0.7);animation:gcoinDrop 3.2s ease-out forwards;display:flex;align-items:center;gap:12px;border:2px solid rgba(255,255,255,0.4);max-width:90%}
+        @keyframes gcoinDrop{0%{transform:translate(-50%,50px);opacity:0}10%{transform:translate(-50%,0);opacity:1}85%{transform:translate(-50%,0);opacity:1}100%{transform:translate(-50%,-30px);opacity:0}}
+        .diff-selector{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+        .diff-btn{padding:8px 20px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:20px;color:rgba(255,255,255,0.6);cursor:pointer;transition:all 0.2s;font-size:13px;min-height:40px}
+        .diff-btn:hover{background:rgba(255,255,255,0.12)}
+        .diff-btn.active{background:rgba(102,126,234,0.3);border-color:#667eea;color:#a78bfa}
+        .combo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:8px 0}
+        .combo-btn{padding:10px 12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:rgba(255,255,255,0.7);cursor:pointer;transition:all 0.2s;font-size:13px;min-height:44px;text-align:center}
+        .combo-btn:hover{background:rgba(255,255,255,0.12)}
+        .combo-btn.active{background:rgba(102,126,234,0.3);border-color:#667eea;color:#a78bfa}
+        .insurance-panel{background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:12px;padding:12px 16px;margin:12px 0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+        .insurance-panel .ip-info{font-size:13px;color:rgba(255,255,255,0.7);line-height:1.5}
+        .insurance-panel .ip-toggle{padding:8px 20px;background:rgba(251,191,36,0.2);border:1px solid rgba(251,191,36,0.4);border-radius:20px;color:#fbbf24;cursor:pointer;font-weight:600;font-size:13px;min-height:40px;transition:all 0.2s}
+        .insurance-panel .ip-toggle.active{background:linear-gradient(135deg,#fbbf24,#d97706);color:#1a1a2e}
+        .level-badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:10px;background:rgba(52,211,153,0.15);color:#34d399;margin-left:6px}
+        .title-badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:10px;background:rgba(167,139,250,0.15);color:#a78bfa;margin-left:6px}
+        .treasure-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:360px;margin:20px auto}
+        .treasure-cell{aspect-ratio:1;background:linear-gradient(135deg,#1a1a3e,#0d0d2b);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:44px;cursor:pointer;border:3px solid rgba(255,255,255,0.1);transition:all 0.3s;user-select:none}
+        .treasure-cell.revealed{background:rgba(52,211,153,0.15);border-color:#34d399}
+        .treasure-cell.bomb{background:rgba(248,113,113,0.2);border-color:#f87171}
+        .treasure-cell:hover{transform:scale(1.05);border-color:rgba(251,191,36,0.5)}
+        .boss-combat{background:rgba(255,255,255,0.03);border-radius:16px;padding:16px;margin:12px 0}
+        .boss-hp-bar,.player-hp-bar{height:24px;background:rgba(255,255,255,0.08);border-radius:12px;overflow:hidden;margin:8px 0;position:relative}
+        .boss-hp-fill{height:100%;background:linear-gradient(90deg,#ef4444,#dc2626);transition:width 0.5s;border-radius:12px}
+        .player-hp-fill{height:100%;background:linear-gradient(90deg,#34d399,#059669);transition:width 0.5s;border-radius:12px}
+        .hp-text{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.8)}
+        .combat-log{font-family:monospace;font-size:12px;background:rgba(0,0,0,0.3);border-radius:10px;padding:12px;max-height:180px;overflow-y:auto;margin-top:12px}
+        .combat-log .log-line{padding:4px 0;color:rgba(255,255,255,0.7)}
+        .combat-log .log-crit{color:#fbbf24;font-weight:700}
+        .combat-log .log-damage{color:#f87171}
+        .tournament-rounds{display:grid;gap:8px;margin:12px 0}
+        .tournament-round{background:rgba(255,255,255,0.04);border-radius:12px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-left:4px solid #fbbf24}
+        .tournament-round.win{border-left-color:#34d399;background:rgba(52,211,153,0.06)}
+        .tournament-round.lose{border-left-color:#f87171;background:rgba(248,113,113,0.06)}
         @media(max-width:768px){
             body{padding:12px}
             .game-grid{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
@@ -202,6 +253,8 @@
             .wheel-label{font-size:12px;width:50px;margin-left:-25px;margin-top:-8px}
             .memory-grid{gap:8px}
             .memory-card{font-size:24px}
+            .memory-grid.hard{grid-template-columns:repeat(6,1fr);gap:4px;max-width:100%}
+            .memory-grid.hard .memory-card{font-size:18px}
             .header{padding:12px 16px}
             .header h1{font-size:20px}
             .header .stats{gap:8px;font-size:12px}
@@ -210,6 +263,8 @@
             .stats-grid{grid-template-columns:repeat(2,1fr)}
             .whack-grid{gap:8px;max-width:300px}
             .whack-hole{font-size:36px}
+            .treasure-grid{gap:8px;max-width:300px}
+            .treasure-cell{font-size:36px}
         }
     </style>
 </head>
@@ -218,26 +273,36 @@
     <div class="header">
         <h1>🎮 游戏中心</h1>
         <div class="stats" id="statsBar">
-            <span>🎯 今日游戏: <span id="todayPlays">0</span>/<span id="maxPlays">5</span></span>
+            <span>🎯 今日: <span id="todayPlays">0</span>/<span id="maxPlays">5</span></span>
             <span>🏆 胜率: <span id="winRate">0</span>%</span>
-            <span>⭐ 总胜场: <span id="totalWins">0</span></span>
+            <span>⭐ 胜场: <span id="totalWins">0</span></span>
+            <span>💰 积分: <span id="pointsDisplay">0</span></span>
+            <span id="gcoinDisplay" style="color:#fbbf24;font-weight:600;">🪙 0 G币</span>
+            <span id="levelDisplay" style="color:#34d399;font-weight:600;">🌱 新手</span>
+            <span id="titleDisplay" style="color:#a78bfa;font-weight:600;display:none;">🐣 初出茅庐</span>
             <span id="memberStatus" style="color:rgba(255,255,255,0.4);font-weight:600;">👑 普通</span>
             <span id="bonusDisplay" style="color:rgba(255,255,255,0.3);font-size:12px;">加成: +0%</span>
+            <span id="dropDisplay" style="color:rgba(255,255,255,0.3);font-size:12px;display:none;">掉落: x1.0</span>
             <span id="streakDisplay" style="color:rgba(255,255,255,0.3);font-size:12px;display:none;">🔥 连赢: 0</span>
         </div>
         <div class="right-group">
             <a href="/GAME/collection.html" class="membership-btn" style="background:linear-gradient(135deg,#a78bfa,#7c3aed);color:#fff;">📖 卡牌收集</a>
+            <a href="/GAME/market.html" class="membership-btn" style="background:linear-gradient(135deg,#60a5fa,#2563eb);color:#fff;">📈 交易市场</a>
+            <a href="/GAME/auction.html" class="membership-btn" style="background:linear-gradient(135deg,#f87171,#dc2626);color:#fff;">🔨 拍卖行</a>
             <a href="/GAME/dashboard.html" class="membership-btn" style="background:linear-gradient(135deg,#34d399,#059669);">🎁 每日福利</a>
             <a href="/GAME/membership.html" class="membership-btn">👑 会员中心</a>
             <a href="/" class="back-btn">← 返回主控台</a>
         </div>
     </div>
 
+    <div id="expiryBanner" style="display:none;"></div>
+
     <div class="tabs">
         <div class="tab active" onclick="switchTab('games', event)">🎮 游戏</div>
         <div class="tab" onclick="switchTab('tasks', event)">📋 每日任务</div>
         <div class="tab" onclick="switchTab('history', event)">📜 游戏记录</div>
         <div class="tab" onclick="switchTab('achievements', event)">🎖️ 成就</div>
+        <div class="tab" onclick="switchTab('titles', event)">🏅 称号</div>
         <div class="tab" onclick="switchTab('items', event)">🎁 道具</div>
         <div class="tab" onclick="switchTab('leaderboard', event)">🏆 排行榜</div>
         <div class="tab" onclick="switchTab('stats', event)">📊 我的战绩</div>
@@ -294,6 +359,20 @@
         </div>
     </div>
 
+    <div class="tab-content" id="tab-titles">
+        <div class="task-header">
+            <h3>🏅 称号收藏</h3>
+            <div class="task-summary">已解锁: <strong id="titleProgress">0/0</strong></div>
+        </div>
+        <div id="currentTitleDisplay" style="text-align:center;padding:20px;background:rgba(167,139,250,0.08);border-radius:16px;border:1px solid rgba(167,139,250,0.2);margin-bottom:16px;">
+            <div style="font-size:14px;color:rgba(255,255,255,0.5);margin-bottom:8px;">当前称号</div>
+            <div id="currentTitleBox" style="font-size:24px;font-weight:700;color:#a78bfa;">未装备</div>
+        </div>
+        <div class="task-list" id="titleList">
+            <div class="skeleton"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+        </div>
+    </div>
+
     <div class="tab-content" id="tab-items">
         <div class="task-header">
             <h3>🎁 道具背包</h3>
@@ -337,6 +416,7 @@
             <span id="gameTitle">游戏</span>
             <span id="gameMemberBadge" class="member-badge" style="display:none;">👑 会员</span>
             <span id="gameBonusBadge" class="bonus-indicator" style="display:none;">+30% 加成</span>
+            <span id="gameDropBadge" class="bonus-indicator" style="display:none;color:#a78bfa;">掉落 x1.5</span>
             <span id="gameStreakBadge" class="streak-badge" style="display:none;">🔥 连赢 0</span>
             <button class="back" onclick="backToGames()">← 返回</button>
         </div>
@@ -354,14 +434,20 @@
     var rpsGameActive = false;
     var isMember = false;
     var memberBonusRate = 0;
+    var memberDropMultiplier = 1.0;
     var currentTier = 'none';
     var currentWinStreak = 0;
     var currentLbPeriod = 'total';
-    var memoryState = { cards: [], flipped: [], matched: [], moves: 0, lock: false };
-    var whackState = { score: 0, hits: 0, bombs: 0, active: false, timeLeft: 0, timer: null, duration: 30 };
+    var memoryState = { cards: [], flipped: [], matched: [], moves: 0, lock: false, difficulty: 'normal' };
+    var whackState = { score: 0, hits: 0, bombs: 0, active: false, timeLeft: 0, timer: null, duration: 30, difficulty: 'normal' };
+    var treasureState = { revealed: [], treasures: 0, bombs: 0, grid: [], lock: false };
+    var bossState = { active: false, bossHp: 150, playerHp: 100, damageDealt: 0, turn: 0, log: [] };
+    var tournamentState = { active: false };
     var shownAchievements = {};
     var isAnimating = false;
     var lastPointsPopupTime = 0;
+    var currentPoints = 0;
+    var currentGcoins = 0;
 
     function getCsrfTokenFromCookie() {
         try {
@@ -458,7 +544,7 @@
         lastPointsPopupTime = now;
         var d = document.createElement('div');
         d.className = 'points-popup';
-        d.textContent = '+' + points;
+        d.textContent = '+' + points + ' G币';
         document.body.appendChild(d);
         setTimeout(function() { d.remove(); }, 1500);
     }
@@ -476,7 +562,7 @@
     }
 
     function showCardDrop(drop) {
-        if (!drop) return;
+        if (!drop || !drop.card) return;
         var d = document.createElement('div');
         d.className = 'card-drop-toast';
         var color = drop.rarity_color || '#fff';
@@ -487,6 +573,89 @@
             '</div>';
         document.body.appendChild(d);
         setTimeout(function() { d.remove(); }, 3000);
+    }
+
+    function showCouponDrop(drop) {
+        if (!drop) return;
+        var d = document.createElement('div');
+        d.className = 'coupon-drop-toast';
+        d.innerHTML = '<span style="font-size:32px;">🎟️</span>' +
+            '<div>' +
+            '<div style="font-size:12px;opacity:0.8;">🎉 获得会员优惠券</div>' +
+            '<div style="font-size:15px;font-weight:800;">' + escapeHtml(drop.desc) + '</div>' +
+            '<div style="font-size:11px;opacity:0.7;margin-top:2px;">已存入会员中心，7天内有效</div>' +
+            '</div>';
+        document.body.appendChild(d);
+        setTimeout(function() { d.remove(); }, 4000);
+    }
+
+    function showItemDrop(drop) {
+        if (!drop) return;
+        var d = document.createElement('div');
+        d.className = 'item-drop-toast';
+        d.innerHTML = '<span style="font-size:32px;">' + drop.icon + '</span>' +
+            '<div>' +
+            '<div style="font-size:12px;opacity:0.8;">🎁 获得道具</div>' +
+            '<div style="font-size:15px;font-weight:700;">' + escapeHtml(drop.name) + ' x1</div>' +
+            '</div>';
+        document.body.appendChild(d);
+        setTimeout(function() { d.remove(); }, 3500);
+    }
+
+    function showPointsDrop(drop) {
+        if (!drop) return;
+        var d = document.createElement('div');
+        d.className = 'points-drop-toast';
+        d.innerHTML = '<span style="font-size:32px;">🧧</span>' +
+            '<div>' +
+            '<div style="font-size:12px;opacity:0.8;">🎉 积分红包</div>' +
+            '<div style="font-size:16px;font-weight:800;">+' + drop.amount + ' 积分</div>' +
+            '</div>';
+        document.body.appendChild(d);
+        setTimeout(function() { d.remove(); }, 3000);
+    }
+
+    function showGcoinDrop(drop) {
+        if (!drop) return;
+        var d = document.createElement('div');
+        d.className = 'gcoin-drop-toast';
+        d.innerHTML = '<span style="font-size:32px;">🪙</span>' +
+            '<div>' +
+            '<div style="font-size:12px;opacity:0.8;">🎉 G币掉落</div>' +
+            '<div style="font-size:16px;font-weight:800;">+' + drop.amount + ' G币</div>' +
+            '</div>';
+        document.body.appendChild(d);
+        setTimeout(function() { d.remove(); }, 3200);
+    }
+
+    function renderAllDrops(drops) {
+        if (!drops || drops.length === 0) return;
+        var cardDrops = drops.filter(function(d) { return d.type === 'card'; });
+        var couponDrops = drops.filter(function(d) { return d.type === 'membership_coupon'; });
+        var itemDrops = drops.filter(function(d) { return d.type === 'item'; });
+        var pointsDrops = drops.filter(function(d) { return d.type === 'points_bonus'; });
+        var gcoinDrops = drops.filter(function(d) { return d.type === 'gcoin'; });
+        var delay = 0;
+        couponDrops.forEach(function(d) {
+            setTimeout(function() { showCouponDrop(d); }, delay);
+            delay += 400;
+        });
+        itemDrops.forEach(function(d) {
+            setTimeout(function() { showItemDrop(d); }, delay);
+            delay += 400;
+        });
+        pointsDrops.forEach(function(d) {
+            setTimeout(function() { showPointsDrop(d); }, delay);
+            delay += 400;
+        });
+        gcoinDrops.forEach(function(d) {
+            setTimeout(function() { showGcoinDrop(d); }, delay);
+            delay += 400;
+        });
+        cardDrops.forEach(function(d) {
+            setTimeout(function() { showCardDrop(d); }, delay);
+            delay += 400;
+        });
     }
 
     async function checkNewAchievements() {
@@ -537,6 +706,7 @@
         if (tab === 'tasks') loadTasks();
         if (tab === 'history') loadHistory();
         if (tab === 'achievements') loadAchievements();
+        if (tab === 'titles') loadTitles();
         if (tab === 'items') loadItems();
         if (tab === 'leaderboard') loadLeaderboard();
         if (tab === 'stats') loadPersonalStats();
@@ -548,22 +718,83 @@
             isMember = data.is_member || false;
             memberBonusRate = data.bonus_rate || 0;
             currentTier = data.tier || 'none';
+            memberDropMultiplier = data.drop_multiplier || 1.0;
             var el = document.getElementById('memberStatus');
             var tierName = data.tier_name || '普通';
+            var baseTier = currentTier.indexOf('_lifetime') !== -1 ? currentTier.replace('_lifetime', '') : currentTier;
             if (isMember) {
                 var icons = {'normal': '👑', 'gold': '🥇', 'diamond': '💎', 'supreme': '👑'};
-                el.textContent = (icons[currentTier] || '👑') + ' ' + tierName;
-                el.style.color = currentTier === 'supreme' ? '#ec4899' : currentTier === 'diamond' ? '#a78bfa' : currentTier === 'gold' ? '#fbbf24' : '#fbbf24';
+                el.textContent = (icons[baseTier] || '👑') + ' ' + tierName;
+                el.style.color = baseTier === 'supreme' ? '#ec4899' : baseTier === 'diamond' ? '#a78bfa' : '#fbbf24';
                 document.getElementById('bonusDisplay').textContent = '加成: +' + memberBonusRate + '%';
                 document.getElementById('bonusDisplay').style.color = '#34d399';
+                if (memberDropMultiplier > 1.0) {
+                    document.getElementById('dropDisplay').style.display = 'inline';
+                    document.getElementById('dropDisplay').textContent = '掉落: x' + memberDropMultiplier;
+                    document.getElementById('dropDisplay').style.color = '#a78bfa';
+                } else {
+                    document.getElementById('dropDisplay').style.display = 'none';
+                }
             } else {
                 el.textContent = '👑 普通';
                 el.style.color = 'rgba(255,255,255,0.4)';
                 document.getElementById('bonusDisplay').textContent = '加成: +0%';
                 document.getElementById('bonusDisplay').style.color = 'rgba(255,255,255,0.3)';
+                document.getElementById('dropDisplay').style.display = 'none';
+            }
+            if (data.expire_info) {
+                renderExpiryBanner(data.expire_info);
             }
         } catch (e) {
             console.error('Member status error:', e);
+        }
+    }
+
+    function renderExpiryBanner(info) {
+        var banner = document.getElementById('expiryBanner');
+        if (!info || !info.is_member || !info.is_expiring || info.is_lifetime) {
+            banner.style.display = 'none';
+            return;
+        }
+        banner.style.display = 'block';
+        var days = info.days_left || 0;
+        var hours = info.hours_left || 0;
+        var timeText = days > 0 ? (days + ' 天 ' + hours + ' 小时') : (hours + ' 小时');
+        banner.innerHTML = '<div class="expiry-banner">' +
+            '<div class="eb-info">' +
+            '<span class="eb-icon">⚠️</span>' +
+            '<div>您的会员将在 <strong>' + timeText + '</strong> 后到期，续费可享折扣优惠</div>' +
+            '</div>' +
+            '<a href="/GAME/membership.html" class="eb-btn">🔄 立即续费</a>' +
+            '</div>';
+    }
+
+    async function loadLevelStatus() {
+        try {
+            var data = await apiRequest('/api/game/level/status');
+            var lvl = data.current_level;
+            var el = document.getElementById('levelDisplay');
+            if (el && lvl) {
+                el.textContent = lvl.icon + ' ' + lvl.name + ' Lv.' + lvl.level;
+            }
+        } catch (e) {
+            console.error('Load level error:', e);
+        }
+    }
+
+    async function loadTitleDisplay() {
+        try {
+            var data = await apiRequest('/api/game/titles/list');
+            var el = document.getElementById('titleDisplay');
+            var ct = data.current_title;
+            if (el && ct && ct.name) {
+                el.textContent = ct.icon + ' ' + ct.name;
+                el.style.display = 'inline';
+            } else if (el) {
+                el.style.display = 'none';
+            }
+        } catch (e) {
+            console.error('Load title display error:', e);
         }
     }
 
@@ -585,18 +816,51 @@
                     streakEl.style.display = 'none';
                 }
             }
+            if (data.gcoins) {
+                currentGcoins = data.gcoins.balance || 0;
+                var gcoinEl = document.getElementById('gcoinDisplay');
+                if (gcoinEl) gcoinEl.textContent = '🪙 ' + currentGcoins + ' G币';
+            }
             if (data.is_member) {
                 isMember = true;
                 currentTier = data.member_tier || 'normal';
                 memberBonusRate = data.member_bonus_rate || 0;
+                var baseTier = currentTier.indexOf('_lifetime') !== -1 ? currentTier.replace('_lifetime', '') : currentTier;
                 var icons = {'normal': '👑', 'gold': '🥇', 'diamond': '💎', 'supreme': '👑'};
-                document.getElementById('memberStatus').textContent = (icons[currentTier] || '👑') + ' ' + (data.member_tier_name || '会员');
-                document.getElementById('memberStatus').style.color = currentTier === 'supreme' ? '#ec4899' : currentTier === 'diamond' ? '#a78bfa' : currentTier === 'gold' ? '#fbbf24' : '#fbbf24';
+                document.getElementById('memberStatus').textContent = (icons[baseTier] || '👑') + ' ' + (data.member_tier_name || '会员');
+                document.getElementById('memberStatus').style.color = baseTier === 'supreme' ? '#ec4899' : baseTier === 'diamond' ? '#a78bfa' : '#fbbf24';
                 document.getElementById('bonusDisplay').textContent = '加成: +' + memberBonusRate + '%';
                 document.getElementById('bonusDisplay').style.color = '#34d399';
             }
+            if (data.level_info) {
+                var levelEl = document.getElementById('levelDisplay');
+                if (levelEl) {
+                    levelEl.textContent = data.level_info.icon + ' ' + data.level_info.name + ' Lv.' + data.level_info.level;
+                }
+            }
+            if (data.title_info) {
+                var titleEl = document.getElementById('titleDisplay');
+                if (titleEl && data.title_info.name) {
+                    titleEl.textContent = data.title_info.icon + ' ' + data.title_info.name;
+                    titleEl.style.display = 'inline';
+                } else if (titleEl) {
+                    titleEl.style.display = 'none';
+                }
+            }
+            await updatePointsDisplay();
         } catch (e) {
             console.error('Stats error:', e);
+        }
+    }
+
+    async function updatePointsDisplay() {
+        try {
+            var data = await apiRequest('/api/get-points');
+            currentPoints = data.totalPoints || 0;
+            var pointsEl = document.getElementById('pointsDisplay');
+            if (pointsEl) pointsEl.textContent = currentPoints.toFixed(2);
+        } catch (e) {
+            console.error('Update points error:', e);
         }
     }
 
@@ -610,22 +874,26 @@
             isMember = isMemberFlag;
             currentTier = data.stats.member_tier || 'none';
             memberBonusRate = data.stats.member_bonus_rate || 0;
+            var legendaryGames = ['dice_royale', 'blackjack_tournament', 'treasure_hunt', 'boss_battle'];
             data.games.forEach(function(g) {
                 var disabled = remaining <= 0 ? 'disabled' : '';
                 var memberTag = isMemberFlag ? ' <span style="font-size:10px;color:#fbbf24;">👑</span>' : '';
                 var bonusTag = isMemberFlag ? ' <span style="font-size:10px;color:#34d399;">+' + memberBonusRate + '%</span>' : '';
                 var exclusiveTag = g.exclusive ? '<span class="exclusive-tag">专属</span>' : '';
-                html += '<div class="game-card ' + disabled + '" onclick="window.location.href=\'/GAME/details.html?game=' + g.id + '\'">';
+                var legendaryClass = legendaryGames.indexOf(g.id) !== -1 ? ' legendary-game' : '';
+                html += '<div class="game-card' + legendaryClass + ' ' + disabled + '" onclick="window.location.href=\'/GAME/details.html?game=' + g.id + '\'">';
                 html += exclusiveTag;
                 html += '<span class="emoji">' + g.emoji + '</span>';
                 html += '<div class="name">' + escapeHtml(g.name) + memberTag + '</div>';
                 html += '<div class="desc">' + escapeHtml(g.description) + '</div>';
-                html += '<div class="reward">🎁 ' + g.min_points + '~' + g.max_points + ' 积分' + bonusTag + '</div>';
+                html += '<div class="reward">🎁 ' + g.min_points + '~' + g.max_points + ' G币' + bonusTag + '</div>';
                 html += '</div>';
             });
             grid.innerHTML = html;
             await loadStats();
             await loadMemberStatus();
+            await loadLevelStatus();
+            await loadTitleDisplay();
         } catch (e) {
             console.error('Load games error:', e);
             document.getElementById('gameGrid').innerHTML = '<div class="loading">加载失败: ' + escapeHtml(e.message) + '</div>';
@@ -721,11 +989,12 @@
                     'dice': '🎲', 'blackjack': '🃏', 'guess_number': '🎯',
                     'rock_paper_scissors': '🤖', 'roulette': '🎡',
                     'lucky_wheel': '🎰', 'memory_cards': '🧠',
-                    'whack_mole': '🔨'
+                    'whack_mole': '🔨', 'dice_royale': '👑',
+                    'blackjack_tournament': '🏆', 'treasure_hunt': '💎', 'boss_battle': '⚔️'
                 };
                 var icon = icons[r.game_id] || '🎮';
                 var pointsClass = r.won ? 'win' : 'lose';
-                var pointsText = r.won ? '+' + r.points_earned : (r.points_earned > 0 ? '+' + r.points_earned : '0');
+                var pointsText = r.won ? '+' + r.points_earned + ' G币' : (r.points_earned > 0 ? '+' + r.points_earned + ' G币' : '0');
                 html += '<div class="history-record">';
                 html += '<div class="history-left">';
                 html += '<span class="history-icon">' + icon + '</span>';
@@ -851,6 +1120,62 @@
         }
     }
 
+    async function loadTitles() {
+        try {
+            var data = await apiRequest('/api/game/titles/list');
+            document.getElementById('titleProgress').textContent = data.unlocked_count + '/' + data.total_count;
+            var ct = data.current_title;
+            var currentBox = document.getElementById('currentTitleBox');
+            if (ct && ct.name) {
+                currentBox.textContent = ct.icon + ' ' + ct.name;
+                currentBox.style.color = '#a78bfa';
+            } else {
+                currentBox.textContent = '未装备';
+                currentBox.style.color = 'rgba(255,255,255,0.4)';
+            }
+            var html = '';
+            data.titles.forEach(function(t) {
+                var itemClass = t.unlocked ? (t.is_chosen ? 'completed' : '') : '';
+                html += '<div class="task-item ' + itemClass + '">';
+                html += '<div class="task-info" style="display:flex;align-items:center;gap:12px;">';
+                html += '<div style="font-size:32px;flex-shrink:0;">' + t.icon + '</div>';
+                html += '<div style="flex:1;min-width:0;">';
+                html += '<div class="task-name">' + escapeHtml(t.name) + (t.is_chosen ? ' ✅ 已装备' : '') + '</div>';
+                html += '<div class="task-progress">' + (t.unlocked ? '✅ 已解锁' : '🔒 未解锁') + '</div>';
+                html += '</div>';
+                html += '</div>';
+                if (t.unlocked) {
+                    if (t.is_chosen) {
+                        html += '<button class="task-btn claimed" disabled>已装备</button>';
+                    } else {
+                        html += '<button class="task-btn claimable" onclick="equipTitle(\'' + t.id + '\')">装备</button>';
+                    }
+                } else {
+                    html += '<button class="task-btn locked" disabled>未解锁</button>';
+                }
+                html += '</div>';
+            });
+            document.getElementById('titleList').innerHTML = html;
+        } catch (e) {
+            console.error('Load titles error:', e);
+            document.getElementById('titleList').innerHTML = '<div class="loading">加载失败: ' + escapeHtml(e.message) + '</div>';
+        }
+    }
+
+    async function equipTitle(titleId) {
+        try {
+            var data = await apiRequest('/api/game/titles/set', {
+                method: 'POST',
+                body: JSON.stringify({ title_id: titleId })
+            });
+            showMessage(data.message, 'success');
+            loadTitles();
+            loadTitleDisplay();
+        } catch (e) {
+            showMessage(e.message, 'error');
+        }
+    }
+
     async function loadItems() {
         try {
             var shopData = await apiRequest('/api/game/items/shop');
@@ -869,11 +1194,18 @@
                 if (active && active.expires_at > now) {
                     activeTag = '<div style="font-size:12px;color:#34d399;margin-top:4px;">✅ 生效中 (' + (active.expires_at - now) + '秒)</div>';
                 }
-                shopHtml += '<div class="task-item">';
+                var memberTag = '';
+                if (item.member_only) {
+                    memberTag = '<span style="display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;background:linear-gradient(135deg,#fbbf24,#d97706);color:#1a1a2e;margin-left:6px;font-weight:700;">会员专属</span>';
+                }
+                if (item.can_buy === false) {
+                    memberTag = '<span style="display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(248,113,113,0.2);color:#f87171;margin-left:6px;font-weight:700;">' + (item.lock_reason || '未解锁') + '</span>';
+                }
+                shopHtml += '<div class="task-item" style="' + (item.can_buy === false ? 'opacity:0.6;' : '') + '">';
                 shopHtml += '<div class="task-info" style="display:flex;align-items:center;gap:12px;">';
                 shopHtml += '<div style="font-size:32px;flex-shrink:0;">' + item.icon + '</div>';
                 shopHtml += '<div style="flex:1;min-width:0;">';
-                shopHtml += '<div class="task-name">' + escapeHtml(item.name) + (owned ? ' (拥有 x' + owned.count + ')' : '') + '</div>';
+                shopHtml += '<div class="task-name">' + escapeHtml(item.name) + memberTag + (owned ? ' <span style="color:#34d399;">(拥有 x' + owned.count + ')</span>' : '') + '</div>';
                 shopHtml += '<div class="task-progress">' + escapeHtml(item.desc) + '</div>';
                 shopHtml += activeTag;
                 shopHtml += '</div>';
@@ -883,7 +1215,11 @@
                 if (owned && owned.count > 0) {
                     shopHtml += '<button class="task-btn claimable" onclick="useItem(\'' + item.id + '\')">使用</button>';
                 }
-                shopHtml += '<button class="task-btn claimable" onclick="buyItem(\'' + item.id + '\')">购买</button>';
+                if (item.can_buy !== false) {
+                    shopHtml += '<button class="task-btn claimable" onclick="buyItem(\'' + item.id + '\')">购买</button>';
+                } else {
+                    shopHtml += '<button class="task-btn locked" disabled>不可购买</button>';
+                }
                 shopHtml += '</div>';
                 shopHtml += '</div>';
             });
@@ -972,12 +1308,14 @@
             board.forEach(function(entry) {
                 var rankIcon = entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : entry.rank === 3 ? '🥉' : '#' + entry.rank;
                 var tierIcon = {'normal': '👑', 'gold': '🥇', 'diamond': '💎', 'supreme': '👑'}[entry.member_tier] || '';
+                var levelTag = entry.level ? (' <span class="level-badge">' + (entry.level_icon || '') + ' Lv.' + entry.level + '</span>') : '';
+                var titleTag = entry.title ? (' <span class="title-badge">' + (entry.title_icon || '') + ' ' + escapeHtml(entry.title) + '</span>') : '';
                 var selfStyle = entry.is_self ? ' style="border-color:rgba(251,191,36,0.4);background:rgba(251,191,36,0.06);"' : '';
                 html += '<div class="history-record"' + selfStyle + '>';
                 html += '<div class="history-left">';
                 html += '<span class="history-icon" style="font-size:20px;">' + rankIcon + '</span>';
                 html += '<div class="history-detail">';
-                html += '<div class="history-game">' + escapeHtml(entry.username) + ' ' + tierIcon + (entry.is_self ? ' (你)' : '') + '</div>';
+                html += '<div class="history-game">' + escapeHtml(entry.username) + ' ' + tierIcon + levelTag + titleTag + (entry.is_self ? ' (你)' : '') + '</div>';
                 html += '<div class="history-meta">胜率 ' + entry.win_rate + '% · ' + entry.plays + '局 · ' + entry.points + '分</div>';
                 html += '</div>';
                 html += '</div>';
@@ -998,6 +1336,16 @@
             var data = await apiRequest('/api/game/personal-stats');
             var html = '';
             html += '<div class="stats-grid">';
+            if (data.level_info) {
+                html += '<div class="stat-card"><div class="stat-label">' + data.level_info.icon + ' 等级</div><div class="stat-value green">Lv.' + data.level_info.level + ' ' + escapeHtml(data.level_info.name) + '</div></div>';
+            }
+            if (data.title_info && data.title_info.name) {
+                html += '<div class="stat-card"><div class="stat-label">🏅 称号</div><div class="stat-value purple">' + data.title_info.icon + ' ' + escapeHtml(data.title_info.name) + '</div></div>';
+            }
+            if (data.gcoins) {
+                html += '<div class="stat-card"><div class="stat-label">🪙 G币余额</div><div class="stat-value gold">' + data.gcoins.balance + '</div></div>';
+                html += '<div class="stat-card"><div class="stat-label">🪙 累计获得G币</div><div class="stat-value gold">' + data.gcoins.total_earned + '</div></div>';
+            }
             html += '<div class="stat-card"><div class="stat-label">🎮 总局数</div><div class="stat-value">' + data.total_plays + '</div></div>';
             html += '<div class="stat-card"><div class="stat-label">🏆 总胜场</div><div class="stat-value green">' + data.total_wins + '</div></div>';
             html += '<div class="stat-card"><div class="stat-label">😔 总败场</div><div class="stat-value red">' + data.total_losses + '</div></div>';
@@ -1071,56 +1419,12 @@
         gameData = {};
         guessGameActive = false;
         rpsGameActive = false;
-        memoryState = { cards: [], flipped: [], matched: [], moves: 0, lock: false };
+        memoryState = { cards: [], flipped: [], matched: [], moves: 0, lock: false, difficulty: 'normal' };
+        treasureState = { revealed: [], treasures: 0, bombs: 0, grid: [], lock: false };
+        bossState = { active: false, bossHp: 150, playerHp: 100, damageDealt: 0, turn: 0, log: [] };
+        tournamentState = { active: false };
         loadStats();
         loadGames();
-    }
-
-    function startGame(gameId) {
-        currentGame = gameId;
-        document.getElementById('gameGrid').style.display = 'none';
-        var area = document.getElementById('gameArea');
-        area.classList.add('active');
-        var names = {
-            'dice': '🎲 骰子大战',
-            'blackjack': '🃏 二十一点',
-            'guess_number': '🎯 猜数字',
-            'rock_paper_scissors': '🤖 石头剪刀布',
-            'roulette': '🎡 轮盘赌',
-            'lucky_wheel': '🎰 幸运转盘',
-            'memory_cards': '🧠 记忆翻牌',
-            'whack_mole': '🔨 打地鼠'
-        };
-        document.getElementById('gameTitle').textContent = names[gameId] || '游戏';
-        var memberBadge = document.getElementById('gameMemberBadge');
-        var bonusBadge = document.getElementById('gameBonusBadge');
-        var streakBadge = document.getElementById('gameStreakBadge');
-        var tierNames = {'normal': '👑 普通会员', 'gold': '🥇 黄金会员', 'diamond': '💎 钻石会员', 'supreme': '👑 至尊会员'};
-        if (isMember) {
-            memberBadge.style.display = 'inline-block';
-            memberBadge.textContent = tierNames[currentTier] || '👑 会员';
-            bonusBadge.style.display = 'inline-block';
-            bonusBadge.textContent = '+' + memberBonusRate + '% 加成';
-        } else {
-            memberBadge.style.display = 'none';
-            bonusBadge.style.display = 'none';
-        }
-        if (currentWinStreak > 0) {
-            streakBadge.style.display = 'inline-block';
-            streakBadge.textContent = '🔥 连赢 ' + currentWinStreak;
-        } else {
-            streakBadge.style.display = 'none';
-        }
-        var content = document.getElementById('gameContent');
-        if (gameId === 'dice') renderDice(content);
-        else if (gameId === 'blackjack') renderBlackjack(content);
-        else if (gameId === 'guess_number') renderGuessNumber(content);
-        else if (gameId === 'rock_paper_scissors') renderRPS(content);
-        else if (gameId === 'roulette') renderRoulette(content);
-        else if (gameId === 'lucky_wheel') renderLuckyWheel(content);
-        else if (gameId === 'memory_cards') renderMemoryCards(content);
-        else if (gameId === 'whack_mole') renderWhackMole(content);
-        else content.innerHTML = '<div class="loading">加载中...</div>';
     }
 
     function updateStreakBadge(streak, loseStreak) {
@@ -1152,7 +1456,8 @@
 
     function renderDice(el) {
         gameData.betType = 'high';
-        var memberInfo = isMember ? '<div style="font-size:13px;color:#fbbf24;margin-bottom:8px;">👑 ' + currentTier + '会员 | 每日' + document.getElementById('maxPlays').textContent + '次 | 获胜积分+' + memberBonusRate + '%</div>' : '';
+        gameData.reroll = false;
+        var memberInfo = isMember ? '<div style="font-size:13px;color:#fbbf24;margin-bottom:8px;">👑 ' + currentTier + '会员 | 每日' + document.getElementById('maxPlays').textContent + '次 | 获胜G币+' + memberBonusRate + '%</div>' : '';
         el.innerHTML = '<p style="margin-bottom:12px;">🎲 你和AI各掷3个骰子，点数大者获胜！</p>' +
             memberInfo +
             '<div class="bet-options">' +
@@ -1160,6 +1465,13 @@
             '<button data-bet="low" onclick="selectDiceBet(this, \'low\')">📉 比小</button>' +
             '<button data-bet="over" onclick="selectDiceBet(this, \'over\')">⬆ 超过7点</button>' +
             '<button data-bet="under" onclick="selectDiceBet(this, \'under\')">⬇ 低于7点</button>' +
+            '<button data-bet="odd" onclick="selectDiceBet(this, \'odd\')">奇数</button>' +
+            '<button data-bet="even" onclick="selectDiceBet(this, \'even\')">偶数</button>' +
+            '<button data-bet="triple" onclick="selectDiceBet(this, \'triple\')">🎯 豹子(x2)</button>' +
+            '</div>' +
+            '<div class="insurance-panel">' +
+            '<div class="ip-info">🔄 重投卡：使用后本局可重投一次骰子</div>' +
+            '<button class="ip-toggle" id="diceRerollToggle" onclick="toggleDiceReroll()">未启用</button>' +
             '</div>' +
             '<button class="btn btn-primary" id="dicePlayBtn" onclick="playDice()">🎲 掷骰子</button>' +
             '<div id="diceResult" style="margin-top:16px;"></div>';
@@ -1175,6 +1487,20 @@
         gameData.betType = type;
     }
 
+    function toggleDiceReroll() {
+        gameData.reroll = !gameData.reroll;
+        var btn = document.getElementById('diceRerollToggle');
+        if (btn) {
+            if (gameData.reroll) {
+                btn.textContent = '✅ 已启用';
+                btn.classList.add('active');
+            } else {
+                btn.textContent = '未启用';
+                btn.classList.remove('active');
+            }
+        }
+    }
+
     async function playDice() {
         var btn = document.getElementById('dicePlayBtn');
         if (!btn || btn.disabled) return;
@@ -1183,7 +1509,7 @@
         try {
             var data = await apiRequest('/api/game/play/dice', {
                 method: 'POST',
-                body: JSON.stringify({ bet_type: gameData.betType || 'high' })
+                body: JSON.stringify({ bet_type: gameData.betType || 'high', reroll: gameData.reroll || false })
             });
             var el = document.getElementById('diceResult');
             if (!el) return;
@@ -1196,8 +1522,9 @@
                 '<div class="dice-row">' + playerDiceHtml + '</div>' +
                 '<div style="font-size:14px;color:rgba(255,255,255,0.5);margin-top:12px;">🤖 AI的骰子 (合计 ' + data.ai_total + ')</div>' +
                 '<div class="dice-row">' + aiDiceHtml + '</div>' +
+                (data.is_triple ? '<div style="color:#fbbf24;font-weight:700;margin-top:8px;">🎯 豹子！奖励翻倍</div>' : '') +
                 '<div class="big ' + winClass + '">' + data.message + '</div>' +
-                (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' 积分</div>' : '') +
+                (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' G币</div>' : '') +
                 bonusInfo +
                 renderBonusMessage(data.bonus_message) +
                 '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
@@ -1207,10 +1534,10 @@
                 '</div>' +
                 '</div>';
             if (data.won) {
-                showMessage('🎉 赢了！+' + data.points_earned + ' 积分', 'success');
+                showMessage('🎉 赢了！+' + data.points_earned + ' G币', 'success');
                 showPointsPopup(data.points_earned);
             } else showMessage('😔 输了，再试一次！', 'warning');
-            if (data.card_drop) showCardDrop(data.card_drop);
+            renderAllDrops(data.drops);
             updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
             loadStats();
             checkNewAchievements();
@@ -1223,11 +1550,48 @@
     }
 
     function renderBlackjack(el) {
-        var memberInfo = isMember ? '<div style="font-size:13px;color:#fbbf24;margin-bottom:8px;">👑 ' + currentTier + '会员 | 每日' + document.getElementById('maxPlays').textContent + '次 | 获胜积分+' + memberBonusRate + '%</div>' : '';
+        gameData.bjDouble = false;
+        gameData.bjInsurance = false;
+        var memberInfo = isMember ? '<div style="font-size:13px;color:#fbbf24;margin-bottom:8px;">👑 ' + currentTier + '会员 | 每日' + document.getElementById('maxPlays').textContent + '次 | 获胜G币+' + memberBonusRate + '%</div>' : '';
         el.innerHTML = '<p style="margin-bottom:12px;">🃏 你和庄家比21点，点数大者获胜（超过21点爆牌）</p>' +
             memberInfo +
+            '<div class="insurance-panel">' +
+            '<div class="ip-info">📄 双倍：使用重投卡后本局积分翻倍<br>🛡️ 保险：庄家明牌A时购买，庄家21点则理赔</div>' +
+            '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+            '<button class="ip-toggle" id="bjDoubleToggle" onclick="toggleBjDouble()">双倍</button>' +
+            '<button class="ip-toggle" id="bjInsuranceToggle" onclick="toggleBjInsurance()">保险</button>' +
+            '</div>' +
+            '</div>' +
             '<button class="btn btn-primary" id="bjPlayBtn" onclick="playBlackjack()">🃏 发牌</button>' +
             '<div id="bjResult" style="margin-top:16px;"></div>';
+    }
+
+    function toggleBjDouble() {
+        gameData.bjDouble = !gameData.bjDouble;
+        var btn = document.getElementById('bjDoubleToggle');
+        if (btn) {
+            if (gameData.bjDouble) {
+                btn.textContent = '✅ 双倍';
+                btn.classList.add('active');
+            } else {
+                btn.textContent = '双倍';
+                btn.classList.remove('active');
+            }
+        }
+    }
+
+    function toggleBjInsurance() {
+        gameData.bjInsurance = !gameData.bjInsurance;
+        var btn = document.getElementById('bjInsuranceToggle');
+        if (btn) {
+            if (gameData.bjInsurance) {
+                btn.textContent = '✅ 保险';
+                btn.classList.add('active');
+            } else {
+                btn.textContent = '保险';
+                btn.classList.remove('active');
+            }
+        }
     }
 
     async function playBlackjack() {
@@ -1238,7 +1602,7 @@
         try {
             var data = await apiRequest('/api/game/play/blackjack', {
                 method: 'POST',
-                body: JSON.stringify({})
+                body: JSON.stringify({ double: gameData.bjDouble || false, insurance: gameData.bjInsurance || false })
             });
             var el = document.getElementById('bjResult');
             if (!el) return;
@@ -1260,8 +1624,10 @@
                 '<div style="font-size:14px;color:rgba(255,255,255,0.5);margin-top:12px;">🤖 庄家的手牌 (合计 ' + data.dealer_total + ')</div>' +
                 '<div class="cards-row">' + dealerCards + '</div>' +
                 (data.dealer_hit_count > 0 ? '<div style="font-size:12px;color:rgba(255,255,255,0.3);">庄家补了 ' + data.dealer_hit_count + ' 张牌</div>' : '') +
+                (data.insurance_won ? '<div style="color:#34d399;font-weight:700;margin-top:8px;">🛡️ 保险理赔！</div>' : '') +
+                (data.is_double ? '<div style="color:#fbbf24;font-weight:700;margin-top:8px;">✨ 双倍奖励！</div>' : '') +
                 '<div class="big ' + winClass + '">' + data.message + '</div>' +
-                (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' 积分</div>' : '') +
+                (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' G币</div>' : '') +
                 bonusInfo +
                 renderBonusMessage(data.bonus_message) +
                 '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
@@ -1271,10 +1637,10 @@
                 '</div>' +
                 '</div>';
             if (data.won) {
-                showMessage('🎉 赢了！+' + data.points_earned + ' 积分', 'success');
+                showMessage('🎉 赢了！+' + data.points_earned + ' G币', 'success');
                 showPointsPopup(data.points_earned);
             } else showMessage('😔 输了，再试一次！', 'warning');
-            if (data.card_drop) showCardDrop(data.card_drop);
+            renderAllDrops(data.drops);
             updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
             loadStats();
             checkNewAchievements();
@@ -1288,9 +1654,15 @@
 
     function renderGuessNumber(el) {
         guessGameActive = false;
-        var memberInfo = isMember ? '<div style="font-size:13px;color:#fbbf24;margin-bottom:8px;">👑 ' + currentTier + '会员 | 每日' + document.getElementById('maxPlays').textContent + '次 | 获胜积分+' + memberBonusRate + '%</div>' : '';
-        el.innerHTML = '<p style="margin-bottom:12px;">🎯 1-100之间猜数字，你有7次机会！</p>' +
+        gameData.guessDifficulty = 'normal';
+        var memberInfo = isMember ? '<div style="font-size:13px;color:#fbbf24;margin-bottom:8px;">👑 ' + currentTier + '会员 | 每日' + document.getElementById('maxPlays').textContent + '次 | 获胜G币+' + memberBonusRate + '%</div>' : '';
+        el.innerHTML = '<p style="margin-bottom:12px;">🎯 猜数字，选择难度开始游戏！</p>' +
             memberInfo +
+            '<div class="diff-selector">' +
+            '<button class="diff-btn" onclick="selectGuessDiff(\'easy\', this)">😊 简单 (1-50, 7次)</button>' +
+            '<button class="diff-btn active" onclick="selectGuessDiff(\'normal\', this)">🎯 普通 (1-100, 7次)</button>' +
+            '<button class="diff-btn" onclick="selectGuessDiff(\'hard\', this)">🔥 困难 (1-200, 8次, x1.5奖励)</button>' +
+            '</div>' +
             '<button class="btn btn-primary" id="gnStartBtn" onclick="startGuessGame()">🎯 开始新游戏</button>' +
             '<div id="guessGameArea" style="display:none;margin-top:12px;">' +
             '<div id="guessStatus" style="margin-bottom:10px;font-size:14px;color:rgba(255,255,255,0.6);"></div>' +
@@ -1315,6 +1687,15 @@
         }, 100);
     }
 
+    function selectGuessDiff(diff, el) {
+        gameData.guessDifficulty = diff;
+        var parent = el.parentElement;
+        if (parent) {
+            parent.querySelectorAll('.diff-btn').forEach(function(b) { b.classList.remove('active'); });
+        }
+        el.classList.add('active');
+    }
+
     async function startGuessGame() {
         var startBtn = document.getElementById('gnStartBtn');
         if (!startBtn || startBtn.disabled) return;
@@ -1323,7 +1704,7 @@
         try {
             var data = await apiRequest('/api/game/play/guess_number', {
                 method: 'POST',
-                body: JSON.stringify({})
+                body: JSON.stringify({ difficulty: gameData.guessDifficulty || 'normal' })
             });
             if (data.success) {
                 guessGameActive = true;
@@ -1331,13 +1712,15 @@
                 document.getElementById('guessInput').disabled = false;
                 document.getElementById('guessSubmitBtn').disabled = false;
                 document.getElementById('guessResetBtn').style.display = 'none';
-                document.getElementById('guessStatus').textContent = '🎯 游戏已开始！剩余 ' + data.max_attempts + ' 次机会';
+                document.getElementById('guessStatus').textContent = '🎯 游戏已开始！范围 ' + data.range_min + '-' + data.range_max + '，剩余 ' + data.max_attempts + ' 次机会';
                 document.getElementById('guessHintArea').innerHTML = '';
                 document.getElementById('guessResult').innerHTML = '';
                 document.getElementById('guessInput').value = '';
+                document.getElementById('guessInput').max = data.range_max;
+                document.getElementById('guessInput').placeholder = data.range_min + '-' + data.range_max;
                 document.getElementById('guessInput').focus();
                 startBtn.textContent = '🔄 重新开始';
-                showMessage('🎯 游戏已开始！输入1-100之间的数字', 'success');
+                showMessage('🎯 游戏已开始！', 'success');
             } else {
                 showMessage(data.error || '启动失败', 'error');
             }
@@ -1353,8 +1736,8 @@
         var submitBtn = document.getElementById('guessSubmitBtn');
         if (!input || !submitBtn || submitBtn.disabled) return;
         var val = parseInt(input.value);
-        if (isNaN(val) || val < 1 || val > 100) {
-            showMessage('请输入1-100之间的数字', 'error');
+        if (isNaN(val) || val < 1) {
+            showMessage('请输入有效的数字', 'error');
             return;
         }
         submitBtn.disabled = true;
@@ -1371,7 +1754,7 @@
                 var winClass = data.won ? 'win' : 'lose';
                 var bonusInfo = data.is_member && data.won ? '<div style="font-size:12px;color:#34d399;">👑 ' + currentTier + '会员+' + memberBonusRate + '%加成已应用</div>' : '';
                 resultArea.innerHTML = '<div class="result-box"><div class="big ' + winClass + '">' + data.message + '</div>' +
-                    (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' 积分</div>' : '') +
+                    (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' G币</div>' : '') +
                     bonusInfo +
                     renderBonusMessage(data.bonus_message) +
                     '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
@@ -1390,7 +1773,7 @@
                     loadStats();
                     checkNewAchievements();
                 }
-                if (data.card_drop) showCardDrop(data.card_drop);
+                renderAllDrops(data.drops);
             } else if (data.hint) {
                 var hintClass = data.hint.indexOf('太大') !== -1 ? 'high' : 'low';
                 hintArea.innerHTML = '<div class="guess-hint ' + hintClass + '">' + data.hint + '</div>';
@@ -1431,7 +1814,7 @@
 
     function renderRPS(el) {
         rpsGameActive = false;
-        var memberInfo = isMember ? '<div style="font-size:13px;color:#fbbf24;margin-bottom:8px;">👑 ' + currentTier + '会员 | 每日' + document.getElementById('maxPlays').textContent + '次 | 获胜积分+' + memberBonusRate + '%</div>' : '';
+        var memberInfo = isMember ? '<div style="font-size:13px;color:#fbbf24;margin-bottom:8px;">👑 ' + currentTier + '会员 | 每日' + document.getElementById('maxPlays').textContent + '次 | 获胜G币+' + memberBonusRate + '%</div>' : '';
         el.innerHTML = '<p style="margin-bottom:12px;">🤖 石头剪刀布，三局两胜！选择你的出拳</p>' +
             memberInfo +
             '<button class="btn btn-primary" id="rpsStartBtn" onclick="startRPSGame()">🤖 开始对战</button>' +
@@ -1508,7 +1891,7 @@
                 var bonusInfo = data.is_member && data.won ? '<div style="font-size:12px;color:#34d399;">👑 ' + currentTier + '会员+' + memberBonusRate + '%加成已应用</div>' : '';
                 document.getElementById('rpsHistory').innerHTML = historyHtml;
                 document.getElementById('rpsResult').innerHTML = '<div class="result-box"><div class="big ' + winClass + '">' + data.message + '</div>' +
-                    (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' 积分</div>' : '') +
+                    (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' G币</div>' : '') +
                     bonusInfo +
                     renderBonusMessage(data.bonus_message) +
                     '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
@@ -1526,7 +1909,7 @@
                     loadStats();
                     checkNewAchievements();
                 }
-                if (data.card_drop) showCardDrop(data.card_drop);
+                renderAllDrops(data.drops);
             } else {
                 var cls = data.result === 'win' ? 'h-win' : data.result === 'lose' ? 'h-lose' : 'h-tie';
                 var historyItem = document.createElement('div');
@@ -1563,8 +1946,9 @@
 
     function renderRoulette(el) {
         gameData.rouletteBet = { type: 'number', value: 7 };
-        var memberInfo = isMember ? '<div style="font-size:13px;color:#fbbf24;margin-bottom:8px;">👑 ' + currentTier + '会员 | 每日' + document.getElementById('maxPlays').textContent + '次 | 获胜积分+' + memberBonusRate + '%</div>' : '';
-        el.innerHTML = '<p style="margin-bottom:12px;">🎡 猜数字（0-36）、颜色（红/黑）、奇偶、大小</p>' +
+        gameData.rouletteCombo = null;
+        var memberInfo = isMember ? '<div style="font-size:13px;color:#fbbf24;margin-bottom:8px;">👑 ' + currentTier + '会员 | 每日' + document.getElementById('maxPlays').textContent + '次 | 获胜G币+' + memberBonusRate + '%</div>' : '';
+        el.innerHTML = '<p style="margin-bottom:12px;">🎡 猜数字（0-36）、颜色（红/黑）、奇偶、大小、组合下注</p>' +
             memberInfo +
             '<div class="roulette-bet-options" id="rouletteBetOptions">' +
             '<button class="active-roulette" data-type="number" onclick="setRouletteBet(\'number\', 0, this)">🎯 数字</button>' +
@@ -1574,10 +1958,24 @@
             '<button data-type="odd" onclick="setRouletteBet(\'odd\', 0, this)">奇数</button>' +
             '<button data-type="high" onclick="setRouletteBet(\'high\', 0, this)">大(19-36)</button>' +
             '<button data-type="low" onclick="setRouletteBet(\'low\', 0, this)">小(1-18)</button>' +
+            '<button data-type="combo" onclick="setRouletteBet(\'combo\', 0, this)">🎰 组合(x4)</button>' +
             '</div>' +
-            '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0;">' +
+            '<div id="rouletteNumberArea" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0;">' +
             '<span style="font-size:13px;color:rgba(255,255,255,0.5);">数字下注:</span>' +
             '<input type="number" id="rouletteNumber" min="0" max="36" value="7" style="width:80px;padding:6px 10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#fff;font-size:14px;">' +
+            '</div>' +
+            '<div id="rouletteComboArea" style="display:none;">' +
+            '<div style="font-size:13px;color:rgba(255,255,255,0.6);margin:8px 0;">选择组合下注（×4赔率）：</div>' +
+            '<div class="combo-grid" id="comboGrid">' +
+            '<button class="combo-btn" onclick="selectCombo(\'red_high\', this)">🔴红 + ⬆️大</button>' +
+            '<button class="combo-btn" onclick="selectCombo(\'red_low\', this)">🔴红 + ⬇️小</button>' +
+            '<button class="combo-btn" onclick="selectCombo(\'black_high\', this)">⚫黑 + ⬆️大</button>' +
+            '<button class="combo-btn" onclick="selectCombo(\'black_low\', this)">⚫黑 + ⬇️小</button>' +
+            '<button class="combo-btn" onclick="selectCombo(\'red_even\', this)">🔴红 + 偶</button>' +
+            '<button class="combo-btn" onclick="selectCombo(\'red_odd\', this)">🔴红 + 奇</button>' +
+            '<button class="combo-btn" onclick="selectCombo(\'black_even\', this)">⚫黑 + 偶</button>' +
+            '<button class="combo-btn" onclick="selectCombo(\'black_odd\', this)">⚫黑 + 奇</button>' +
+            '</div>' +
             '</div>' +
             '<button class="btn btn-primary" id="roulettePlayBtn" onclick="playRoulette()">🎡 转轮盘</button>' +
             '<div id="rouletteResult" style="margin-top:16px;"></div>';
@@ -1587,19 +1985,33 @@
         var container = document.getElementById('rouletteBetOptions');
         if (container) {
             var btns = container.querySelectorAll('button');
-            btns.forEach(function(b) {
-                b.classList.remove('active-roulette');
-            });
+            btns.forEach(function(b) { b.classList.remove('active-roulette'); });
             el.classList.add('active-roulette');
         }
-        var numInput = document.getElementById('rouletteNumber');
+        var numArea = document.getElementById('rouletteNumberArea');
+        var comboArea = document.getElementById('rouletteComboArea');
         if (type === 'number') {
-            numInput.disabled = false;
-            gameData.rouletteBet = { type: type, value: parseInt(numInput.value) || 7 };
+            numArea.style.display = 'flex';
+            comboArea.style.display = 'none';
+            gameData.rouletteBet = { type: type, value: parseInt(document.getElementById('rouletteNumber').value) || 7 };
+        } else if (type === 'combo') {
+            numArea.style.display = 'none';
+            comboArea.style.display = 'block';
+            gameData.rouletteBet = { type: 'combo', value: 0 };
         } else {
-            numInput.disabled = true;
+            numArea.style.display = 'none';
+            comboArea.style.display = 'none';
             gameData.rouletteBet = { type: type, value: 0 };
         }
+    }
+
+    function selectCombo(comboType, el) {
+        var grid = document.getElementById('comboGrid');
+        if (grid) {
+            grid.querySelectorAll('.combo-btn').forEach(function(b) { b.classList.remove('active'); });
+        }
+        el.classList.add('active');
+        gameData.rouletteCombo = comboType;
     }
 
     async function playRoulette() {
@@ -1609,8 +2021,9 @@
         btn.textContent = '🎡 转轮盘中...';
         try {
             var bet = gameData.rouletteBet || { type: 'number', value: 7 };
-            var numInput = document.getElementById('rouletteNumber');
+            var payload = { bet_type: bet.type, bet_value: bet.value };
             if (bet.type === 'number') {
+                var numInput = document.getElementById('rouletteNumber');
                 var val = parseInt(numInput.value);
                 if (isNaN(val) || val < 0 || val > 36) {
                     showMessage('请输入0-36之间的数字', 'error');
@@ -1618,11 +2031,19 @@
                     btn.textContent = '🎡 转轮盘';
                     return;
                 }
-                bet.value = val;
+                payload.bet_value = val;
+            } else if (bet.type === 'combo') {
+                if (!gameData.rouletteCombo) {
+                    showMessage('请先选择一个组合', 'error');
+                    btn.disabled = false;
+                    btn.textContent = '🎡 转轮盘';
+                    return;
+                }
+                payload.bet_combo = { type: gameData.rouletteCombo, value: '' };
             }
             var data = await apiRequest('/api/game/play/roulette', {
                 method: 'POST',
-                body: JSON.stringify({ bet_type: bet.type, bet_value: bet.value })
+                body: JSON.stringify(payload)
             });
             var el = document.getElementById('rouletteResult');
             if (!el) return;
@@ -1635,8 +2056,9 @@
             el.innerHTML = '<div class="result-box">' +
                 '<div class="roulette-result ' + colorClass + '">' + data.result + '</div>' +
                 '<div style="font-size:14px;color:rgba(255,255,255,0.5);">' + data.color + '</div>' +
+                (data.is_combo ? '<div style="color:#a78bfa;font-weight:700;margin-top:8px;">🎰 组合下注 x4</div>' : '') +
                 '<div class="big ' + winClass + '">' + data.message + '</div>' +
-                (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' 积分</div>' : '') +
+                (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' G币</div>' : '') +
                 bonusInfo +
                 renderBonusMessage(data.bonus_message) +
                 '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
@@ -1646,10 +2068,10 @@
                 '</div>' +
                 '</div>';
             if (data.won) {
-                showMessage('🎉 赢了！+' + data.points_earned + ' 积分', 'success');
+                showMessage('🎉 赢了！+' + data.points_earned + ' G币', 'success');
                 showPointsPopup(data.points_earned);
             } else showMessage('😔 输了，再试一次！', 'warning');
-            if (data.card_drop) showCardDrop(data.card_drop);
+            renderAllDrops(data.drops);
             updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
             loadStats();
             checkNewAchievements();
@@ -1662,8 +2084,8 @@
     }
 
     async function renderLuckyWheel(el) {
-        var memberInfo = isMember ? '<div style="font-size:13px;color:#fbbf24;margin-bottom:8px;">🥇 ' + currentTier + '会员专属 | 每日' + document.getElementById('maxPlays').textContent + '次 | 获胜积分+' + memberBonusRate + '%</div>' : '';
-        el.innerHTML = '<p style="margin-bottom:12px;">🎰 转动幸运转盘，赢取高倍积分奖励！</p>' +
+        var memberInfo = isMember ? '<div style="font-size:13px;color:#fbbf24;margin-bottom:8px;">🥇 ' + currentTier + '会员专属 | 每日' + document.getElementById('maxPlays').textContent + '次 | 获胜G币+' + memberBonusRate + '%</div>' : '';
+        el.innerHTML = '<p style="margin-bottom:12px;">🎰 转动幸运转盘，赢取高倍G币奖励！</p>' +
             memberInfo +
             '<div class="wheel-container" id="wheelContainer">' +
             '<div class="wheel-pointer">▼</div>' +
@@ -1756,7 +2178,7 @@
                     '<div style="font-size:22px;font-weight:700;color:' + (data.won ? '#34d399' : '#f87171') + ';margin-bottom:8px;">' + escapeHtml(data.label) + '</div>' +
                     '<div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:8px;">' + multiplierText + '</div>' +
                     '<div class="big ' + winClass + '">' + data.message + '</div>' +
-                    (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' 积分</div>' : '') +
+                    (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' G币</div>' : '') +
                     bonusInfo +
                     renderBonusMessage(data.bonus_message) +
                     '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
@@ -1766,10 +2188,10 @@
                     '</div>' +
                     '</div>';
                 if (data.won) {
-                    showMessage('🎉 赢了！+' + data.points_earned + ' 积分', 'success');
+                    showMessage('🎉 赢了！+' + data.points_earned + ' G币', 'success');
                     showPointsPopup(data.points_earned);
                 } else showMessage('😔 谢谢参与！', 'warning');
-                if (data.card_drop) showCardDrop(data.card_drop);
+                renderAllDrops(data.drops);
                 updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
                 loadStats();
                 checkNewAchievements();
@@ -1786,9 +2208,14 @@
     }
 
     function renderMemoryCards(el) {
-        var memberInfo = isMember ? '<div style="font-size:13px;color:#fbbf24;margin-bottom:8px;">💎 ' + currentTier + '会员专属 | 每日' + document.getElementById('maxPlays').textContent + '次 | 获胜积分+' + memberBonusRate + '%</div>' : '';
-        el.innerHTML = '<p style="margin-bottom:12px;">🧠 翻开两张相同的牌即可配对，步数越少积分越高！</p>' +
+        gameData.memoryDifficulty = 'normal';
+        var memberInfo = isMember ? '<div style="font-size:13px;color:#fbbf24;margin-bottom:8px;">💎 ' + currentTier + '会员专属 | 每日' + document.getElementById('maxPlays').textContent + '次 | 获胜G币+' + memberBonusRate + '%</div>' : '';
+        el.innerHTML = '<p style="margin-bottom:12px;">🧠 翻开两张相同的牌即可配对，步数越少G币越高！</p>' +
             memberInfo +
+            '<div class="diff-selector">' +
+            '<button class="diff-btn active" onclick="selectMemoryDiff(\'normal\', this)">😊 普通 (16张)</button>' +
+            '<button class="diff-btn" onclick="selectMemoryDiff(\'hard\', this)">🔥 困难 (24张, x1.8奖励)</button>' +
+            '</div>' +
             '<button class="btn btn-primary" id="memoryStartBtn" onclick="startMemoryGame()">🧠 开始游戏</button>' +
             '<div id="memoryGameArea" style="display:none;margin-top:12px;">' +
             '<div id="memoryStatus" style="text-align:center;font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:8px;"></div>' +
@@ -1796,6 +2223,15 @@
             '<div id="memoryResult" style="margin-top:12px;"></div>' +
             '<button class="btn btn-outline" id="memoryResetBtn" onclick="resetMemoryGame()" style="display:none;margin-top:8px;">重新开始</button>' +
             '</div>';
+    }
+
+    function selectMemoryDiff(diff, el) {
+        gameData.memoryDifficulty = diff;
+        var parent = el.parentElement;
+        if (parent) {
+            parent.querySelectorAll('.diff-btn').forEach(function(b) { b.classList.remove('active'); });
+        }
+        el.classList.add('active');
     }
 
     async function startMemoryGame() {
@@ -1806,10 +2242,10 @@
         try {
             var data = await apiRequest('/api/game/play/memory_cards', {
                 method: 'POST',
-                body: JSON.stringify({ action: 'start' })
+                body: JSON.stringify({ action: 'start', difficulty: gameData.memoryDifficulty || 'normal' })
             });
             if (data.success) {
-                memoryState = { cards: data.cards, flipped: [], matched: [], moves: 0, lock: false };
+                memoryState = { cards: data.cards, flipped: [], matched: [], moves: 0, lock: false, difficulty: data.difficulty, total_pairs: data.total_pairs };
                 document.getElementById('memoryGameArea').style.display = 'block';
                 document.getElementById('memoryStatus').textContent = '🧠 翻牌配对中... 步数: 0';
                 document.getElementById('memoryResult').innerHTML = '';
@@ -1829,8 +2265,14 @@
 
     function renderMemoryGrid() {
         var grid = document.getElementById('memoryGrid');
+        var totalCards = memoryState.cards.length;
+        if (totalCards === 24) {
+            grid.className = 'memory-grid hard';
+        } else {
+            grid.className = 'memory-grid';
+        }
         var html = '';
-        for (var i = 0; i < memoryState.cards.length; i++) {
+        for (var i = 0; i < totalCards; i++) {
             var isFlipped = memoryState.flipped.indexOf(i) !== -1;
             var isMatched = memoryState.matched.indexOf(i) !== -1;
             var cls = 'memory-card';
@@ -1863,7 +2305,7 @@
                 document.getElementById('memoryStatus').textContent = '🏁 游戏结束！步数: ' + data.moves;
                 var winClass = data.won ? 'win' : 'lose';
                 document.getElementById('memoryResult').innerHTML = '<div class="result-box"><div class="big ' + winClass + '">' + data.message + '</div>' +
-                    (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' 积分</div>' : '') +
+                    (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' G币</div>' : '') +
                     renderBonusMessage(data.bonus_message) +
                     '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
                     '<div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">' +
@@ -1873,7 +2315,7 @@
                 document.getElementById('memoryResetBtn').style.display = 'inline-block';
                 updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
                 showPointsPopup(data.points_earned);
-                if (data.card_drop) showCardDrop(data.card_drop);
+                renderAllDrops(data.drops);
                 loadStats();
                 checkNewAchievements();
                 return;
@@ -1907,7 +2349,7 @@
     }
 
     function resetMemoryGame() {
-        memoryState = { cards: [], flipped: [], matched: [], moves: 0, lock: false };
+        memoryState = { cards: [], flipped: [], matched: [], moves: 0, lock: false, difficulty: 'normal' };
         document.getElementById('memoryGameArea').style.display = 'none';
         document.getElementById('memoryResult').innerHTML = '';
         document.getElementById('memoryStatus').textContent = '';
@@ -1918,9 +2360,15 @@
     }
 
     function renderWhackMole(el) {
-        var memberInfo = isMember ? '<div style="font-size:13px;color:#fbbf24;margin-bottom:8px;">👑 ' + currentTier + '会员 | 每日' + document.getElementById('maxPlays').textContent + '次 | 获胜积分+' + memberBonusRate + '%</div>' : '';
-        el.innerHTML = '<p style="margin-bottom:12px;">🔨 30秒内点击地鼠得分，避开炸弹！</p>' +
+        gameData.whackDifficulty = 'normal';
+        var memberInfo = isMember ? '<div style="font-size:13px;color:#fbbf24;margin-bottom:8px;">👑 ' + currentTier + '会员 | 每日' + document.getElementById('maxPlays').textContent + '次 | 获胜G币+' + memberBonusRate + '%</div>' : '';
+        el.innerHTML = '<p style="margin-bottom:12px;">🔨 限时点击地鼠得分，避开炸弹！</p>' +
             memberInfo +
+            '<div class="diff-selector">' +
+            '<button class="diff-btn" onclick="selectWhackDiff(\'easy\', this)">😊 简单 (45秒)</button>' +
+            '<button class="diff-btn active" onclick="selectWhackDiff(\'normal\', this)">🎯 普通 (30秒)</button>' +
+            '<button class="diff-btn" onclick="selectWhackDiff(\'hard\', this)">🔥 困难 (30秒, x1.4奖励)</button>' +
+            '</div>' +
             '<div class="whack-status">' +
             '<div class="stat"><div class="stat-label">⏱️ 剩余时间</div><div class="stat-value" id="whackTime">30</div></div>' +
             '<div class="stat"><div class="stat-label">🎯 得分</div><div class="stat-value gold" id="whackScore">0</div></div>' +
@@ -1944,6 +2392,15 @@
             '</div>';
     }
 
+    function selectWhackDiff(diff, el) {
+        gameData.whackDifficulty = diff;
+        var parent = el.parentElement;
+        if (parent) {
+            parent.querySelectorAll('.diff-btn').forEach(function(b) { b.classList.remove('active'); });
+        }
+        el.classList.add('active');
+    }
+
     async function startWhackGame() {
         var btn = document.getElementById('whackStartBtn');
         if (!btn || btn.disabled) return;
@@ -1952,10 +2409,10 @@
         try {
             var data = await apiRequest('/api/game/play/whack_mole', {
                 method: 'POST',
-                body: JSON.stringify({ action: 'start' })
+                body: JSON.stringify({ action: 'start', difficulty: gameData.whackDifficulty || 'normal' })
             });
             if (data.success) {
-                whackState = { score: 0, hits: 0, bombs: 0, active: true, timeLeft: data.duration, timer: null, duration: data.duration };
+                whackState = { score: 0, hits: 0, bombs: 0, active: true, timeLeft: data.duration, timer: null, duration: data.duration, difficulty: data.difficulty, spawn_min: data.spawn_interval_min || 400, spawn_max: data.spawn_interval_max || 700 };
                 document.getElementById('whackGameArea').style.display = 'block';
                 document.getElementById('whackTime').textContent = data.duration;
                 document.getElementById('whackScore').textContent = '0';
@@ -2026,7 +2483,9 @@
                 target.textContent = '';
             }
         }, hideDelay);
-        setTimeout(whackSpawnLoop, 400 + Math.random() * 300);
+        var spawnMin = whackState.spawn_min || 400;
+        var spawnMax = whackState.spawn_max || 700;
+        setTimeout(whackSpawnLoop, spawnMin + Math.random() * (spawnMax - spawnMin));
     }
 
     function whackHit(idx) {
@@ -2078,7 +2537,7 @@
                 '<div style="font-size:48px;margin-bottom:8px;">' + (data.won ? '🎉' : '😔') + '</div>' +
                 '<div class="big ' + winClass + '">' + data.message + '</div>' +
                 '<div style="font-size:14px;color:rgba(255,255,255,0.6);margin-top:8px;">得分 ' + data.score + ' · 打中 ' + data.hits + ' · 炸弹 ' + data.bombs + '</div>' +
-                (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' 积分</div>' : '') +
+                (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' G币</div>' : '') +
                 bonusInfo +
                 renderBonusMessage(data.bonus_message) +
                 '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
@@ -2088,10 +2547,10 @@
                 '</div>' +
                 '</div>';
             if (data.won) {
-                showMessage('🎉 得分 ' + data.score + '！+' + data.points_earned + ' 积分', 'success');
+                showMessage('🎉 得分 ' + data.score + '！+' + data.points_earned + ' G币', 'success');
                 showPointsPopup(data.points_earned);
-            } else showMessage('😔 得分 ' + data.score + '，未获得积分', 'warning');
-            if (data.card_drop) showCardDrop(data.card_drop);
+            } else showMessage('😔 得分 ' + data.score + '，未获得G币', 'warning');
+            renderAllDrops(data.drops);
             updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
             loadStats();
             checkNewAchievements();
@@ -2100,11 +2559,353 @@
         }
     }
 
+    function renderDiceRoyale(el) {
+        var memberInfo = isMember ? '<div style="font-size:13px;color:#fbbf24;margin-bottom:8px;">👑 ' + currentTier + '会员专属 | 每日' + document.getElementById('maxPlays').textContent + '次 | 获胜G币+' + memberBonusRate + '%</div>' : '';
+        el.innerHTML = '<p style="margin-bottom:12px;">👑 5颗骰子比大小，皇家骰（3+相同点数）翻倍奖励！</p>' +
+            memberInfo +
+            '<div style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:12px;padding:12px 16px;margin:12px 0;font-size:13px;color:rgba(255,255,255,0.7);">' +
+            '💡 每颗骰子按点数计分（1=10, 6=60），5颗骰子总和最高300分<br>' +
+            '🎯 三颗以上相同点数触发皇家骰，奖励翻倍' +
+            '</div>' +
+            '<button class="btn btn-warning" id="drPlayBtn" onclick="playDiceRoyale()">👑 掷骰子</button>' +
+            '<div id="drResult" style="margin-top:16px;"></div>';
+    }
+
+    async function playDiceRoyale() {
+        var btn = document.getElementById('drPlayBtn');
+        if (!btn || btn.disabled) return;
+        btn.disabled = true;
+        btn.textContent = '🎲 掷骰中...';
+        try {
+            var data = await apiRequest('/api/game/play/dice_royale', {
+                method: 'POST',
+                body: JSON.stringify({})
+            });
+            var el = document.getElementById('drResult');
+            if (!el) return;
+            var playerDiceHtml = data.player_dice.map(function(d) {
+                return '<div class="dice">' + d + '</div>';
+            }).join('');
+            var aiDiceHtml = data.ai_dice.map(function(d) {
+                return '<div class="dice">' + d + '</div>';
+            }).join('');
+            var winClass = data.won ? 'win' : 'lose';
+            var bonusInfo = data.is_member && data.won ? '<div style="font-size:12px;color:#34d399;">👑 ' + currentTier + '会员+' + memberBonusRate + '%加成已应用</div>' : '';
+            el.innerHTML = '<div class="result-box">' +
+                '<div style="font-size:14px;color:rgba(255,255,255,0.5);">🧑 你的骰子 (总分 ' + data.player_score + ')</div>' +
+                '<div class="dice-row">' + playerDiceHtml + '</div>' +
+                '<div style="font-size:14px;color:rgba(255,255,255,0.5);margin-top:12px;">🤖 AI的骰子 (总分 ' + data.ai_score + ')</div>' +
+                '<div class="dice-row">' + aiDiceHtml + '</div>' +
+                (data.is_royal ? '<div style="color:#fbbf24;font-weight:700;margin-top:8px;">👑 皇家骰！奖励翻倍</div>' : '') +
+                '<div class="big ' + winClass + '">' + data.message + '</div>' +
+                (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' G币</div>' : '') +
+                bonusInfo +
+                renderBonusMessage(data.bonus_message) +
+                '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
+                '<div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">' +
+                '<button class="btn btn-warning" onclick="playDiceRoyale()">🔄 再来一局</button>' +
+                '<button class="btn btn-outline" onclick="backToGames()">← 返回大厅</button>' +
+                '</div>' +
+                '</div>';
+            if (data.won) {
+                showMessage('🎉 赢了！+' + data.points_earned + ' G币', 'success');
+                showPointsPopup(data.points_earned);
+            } else showMessage('😔 输了，再试一次！', 'warning');
+            renderAllDrops(data.drops);
+            updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
+            loadStats();
+            checkNewAchievements();
+        } catch (e) {
+            showMessage(e.message || '游戏失败', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '👑 掷骰子';
+        }
+    }
+
+    function renderBlackjackTournament(el) {
+        var memberInfo = isMember ? '<div style="font-size:13px;color:#fbbf24;margin-bottom:8px;">💎 ' + currentTier + '会员专属 | 每日' + document.getElementById('maxPlays').textContent + '次 | 获胜G币+' + memberBonusRate + '%</div>' : '';
+        el.innerHTML = '<p style="margin-bottom:12px;">🏆 连续3局21点对决，赢2局以上获胜，全胜翻倍！</p>' +
+            memberInfo +
+            '<div style="background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.2);border-radius:12px;padding:12px 16px;margin:12px 0;font-size:13px;color:rgba(255,255,255,0.7);">' +
+            '🎯 3局21点对决，每局独立发牌<br>' +
+            '🏆 赢2局以上获胜，3局全胜奖励翻倍<br>' +
+            '💰 最高可获得400 G币' +
+            '</div>' +
+            '<button class="btn btn-success" id="btPlayBtn" onclick="playBlackjackTournament()">🏆 开始锦标赛</button>' +
+            '<div id="btResult" style="margin-top:16px;"></div>';
+    }
+
+    async function playBlackjackTournament() {
+        var btn = document.getElementById('btPlayBtn');
+        if (!btn || btn.disabled) return;
+        btn.disabled = true;
+        btn.textContent = '🏆 锦标赛进行中...';
+        try {
+            var data = await apiRequest('/api/game/play/blackjack_tournament', {
+                method: 'POST',
+                body: JSON.stringify({})
+            });
+            var el = document.getElementById('btResult');
+            if (!el) return;
+            var winClass = data.won ? 'win' : 'lose';
+            var bonusInfo = data.is_member && data.won ? '<div style="font-size:12px;color:#34d399;">👑 ' + currentTier + '会员+' + memberBonusRate + '%加成已应用</div>' : '';
+            var roundsHtml = '<div class="tournament-rounds">';
+            data.rounds_detail.forEach(function(r) {
+                var cls = r.won ? 'win' : 'lose';
+                roundsHtml += '<div class="tournament-round ' + cls + '">';
+                roundsHtml += '<span>第' + r.round + '局</span>';
+                roundsHtml += '<span>你 ' + r.player + ' vs 庄家 ' + r.dealer + '</span>';
+                roundsHtml += '<span style="font-weight:700;color:' + (r.won ? '#34d399' : '#f87171') + ';">' + (r.won ? '✅ 胜' : '❌ 负') + '</span>';
+                roundsHtml += '</div>';
+            });
+            roundsHtml += '</div>';
+            el.innerHTML = '<div class="result-box">' +
+                '<div style="font-size:48px;margin-bottom:8px;">' + (data.won ? (data.won_all ? '👑' : '🏆') : '😔') + '</div>' +
+                roundsHtml +
+                '<div class="big ' + winClass + '">' + data.message + '</div>' +
+                '<div style="color:#fbbf24;font-weight:700;margin-top:8px;">胜 ' + data.wins + ' / 3 局</div>' +
+                (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' G币</div>' : '') +
+                bonusInfo +
+                renderBonusMessage(data.bonus_message) +
+                '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
+                '<div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">' +
+                '<button class="btn btn-warning" onclick="playBlackjackTournament()">🔄 再来一局</button>' +
+                '<button class="btn btn-outline" onclick="backToGames()">← 返回大厅</button>' +
+                '</div>' +
+                '</div>';
+            if (data.won) {
+                showMessage('🎉 锦标赛胜利！+' + data.points_earned + ' G币', 'success');
+                showPointsPopup(data.points_earned);
+            } else showMessage('😔 锦标赛失败！', 'warning');
+            renderAllDrops(data.drops);
+            updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
+            loadStats();
+            checkNewAchievements();
+        } catch (e) {
+            showMessage(e.message || '游戏失败', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '🏆 开始锦标赛';
+        }
+    }
+
+    function renderTreasureHunt(el) {
+        var memberInfo = isMember ? '<div style="font-size:13px;color:#fbbf24;margin-bottom:8px;">👑 ' + currentTier + '会员专属 | 每日' + document.getElementById('maxPlays').textContent + '次 | 获胜G币+' + memberBonusRate + '%</div>' : '';
+        el.innerHTML = '<p style="margin-bottom:12px;">💎 9宫格翻牌找宝藏，避开炸弹！找到3个以上宝藏即可获胜</p>' +
+            memberInfo +
+            '<div style="background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.2);border-radius:12px;padding:12px 16px;margin:12px 0;font-size:13px;color:rgba(255,255,255,0.7);">' +
+            '💎 找到3个宝藏即可获胜<br>' +
+            '💰 找到5个宝藏可获得最高360 G币<br>' +
+            '💣 炸弹无奖励，但不会扣G币' +
+            '</div>' +
+            '<button class="btn btn-success" id="thPlayBtn" onclick="playTreasureHunt()">💎 开始寻宝</button>' +
+            '<div id="thResult" style="margin-top:16px;"></div>';
+    }
+
+    async function playTreasureHunt() {
+        var btn = document.getElementById('thPlayBtn');
+        if (!btn || btn.disabled) return;
+        btn.disabled = true;
+        btn.textContent = '💎 寻宝中...';
+        try {
+            var data = await apiRequest('/api/game/play/treasure_hunt', {
+                method: 'POST',
+                body: JSON.stringify({})
+            });
+            var el = document.getElementById('thResult');
+            if (!el) return;
+            var winClass = data.won ? 'win' : 'lose';
+            var bonusInfo = data.is_member && data.won ? '<div style="font-size:12px;color:#34d399;">👑 ' + currentTier + '会员+' + memberBonusRate + '%加成已应用</div>' : '';
+            var gridHtml = '<div class="treasure-grid">';
+            data.grid.forEach(function(cell, i) {
+                var emoji = '';
+                var cls = '';
+                if (cell === 'treasure') {
+                    emoji = '💎';
+                    cls = 'revealed';
+                } else if (cell === 'bomb') {
+                    emoji = '💣';
+                    cls = 'bomb';
+                } else {
+                    emoji = '·';
+                }
+                gridHtml += '<div class="treasure-cell ' + cls + '">' + emoji + '</div>';
+            });
+            gridHtml += '</div>';
+            el.innerHTML = '<div class="result-box">' +
+                '<div style="font-size:48px;margin-bottom:8px;">' + (data.won ? '💎' : '😔') + '</div>' +
+                gridHtml +
+                '<div class="big ' + winClass + '">' + data.message + '</div>' +
+                '<div style="font-size:14px;color:rgba(255,255,255,0.6);margin-top:8px;">💎 宝藏 ' + data.treasures + ' · 💣 炸弹 ' + data.bombs + '</div>' +
+                (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' G币</div>' : '') +
+                bonusInfo +
+                renderBonusMessage(data.bonus_message) +
+                '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
+                '<div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">' +
+                '<button class="btn btn-warning" onclick="playTreasureHunt()">🔄 再来一局</button>' +
+                '<button class="btn btn-outline" onclick="backToGames()">← 返回大厅</button>' +
+                '</div>' +
+                '</div>';
+            if (data.won) {
+                showMessage('🎉 找到 ' + data.treasures + ' 个宝藏！+' + data.points_earned + ' G币', 'success');
+                showPointsPopup(data.points_earned);
+            } else showMessage('😔 只找到 ' + data.treasures + ' 个宝藏', 'warning');
+            renderAllDrops(data.drops);
+            updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
+            loadStats();
+            checkNewAchievements();
+        } catch (e) {
+            showMessage(e.message || '游戏失败', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '💎 开始寻宝';
+        }
+    }
+
+    function renderBossBattle(el) {
+        var memberInfo = isMember ? '<div style="font-size:13px;color:#fbbf24;margin-bottom:8px;">👑 ' + currentTier + '至尊会员专属 | 每日' + document.getElementById('maxPlays').textContent + '次 | 获胜G币+' + memberBonusRate + '%</div>' : '';
+        el.innerHTML = '<p style="margin-bottom:12px;">⚔️ 与150HP的BOSS进行回合制对战！</p>' +
+            memberInfo +
+            '<div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:12px;padding:12px 16px;margin:12px 0;font-size:13px;color:rgba(255,255,255,0.7);">' +
+            '🎯 每回合攻击10-30伤害，20%概率暴击1.5倍<br>' +
+            '⚔️ BOSS每回合反击8-22伤害<br>' +
+            '🏆 20回合内击败BOSS即可获胜<br>' +
+            '💰 造成伤害越高奖励越多，最高600 G币' +
+            '</div>' +
+            '<button class="btn btn-danger" id="bbPlayBtn" onclick="playBossBattle()">⚔️ 挑战BOSS</button>' +
+            '<div id="bbResult" style="margin-top:16px;"></div>';
+    }
+
+    async function playBossBattle() {
+        var btn = document.getElementById('bbPlayBtn');
+        if (!btn || btn.disabled) return;
+        btn.disabled = true;
+        btn.textContent = '⚔️ 战斗中...';
+        try {
+            var data = await apiRequest('/api/game/play/boss_battle', {
+                method: 'POST',
+                body: JSON.stringify({})
+            });
+            var el = document.getElementById('bbResult');
+            if (!el) return;
+            var winClass = data.won ? 'win' : 'lose';
+            var bonusInfo = data.is_member && data.won ? '<div style="font-size:12px;color:#34d399;">👑 ' + currentTier + '会员+' + memberBonusRate + '%加成已应用</div>' : '';
+            var bossHpPct = Math.max(0, (data.boss_hp / 150) * 100);
+            var playerHpPct = Math.max(0, (data.player_hp / 100) * 100);
+            var logHtml = '<div class="combat-log">';
+            data.combat_log.forEach(function(line) {
+                var cls = '';
+                if (line.indexOf('暴击') !== -1) cls = 'log-crit';
+                else if (line.indexOf('BOSS对你造成') !== -1) cls = 'log-damage';
+                logHtml += '<div class="log-line ' + cls + '">' + escapeHtml(line) + '</div>';
+            });
+            logHtml += '</div>';
+            el.innerHTML = '<div class="result-box">' +
+                '<div style="font-size:48px;margin-bottom:8px;">' + (data.won ? '⚔️' : '😔') + '</div>' +
+                '<div class="boss-combat">' +
+                '<div style="font-size:14px;color:rgba(255,255,255,0.6);">🐲 BOSS HP</div>' +
+                '<div class="boss-hp-bar"><div class="boss-hp-fill" style="width:' + bossHpPct + '%"></div><div class="hp-text">' + data.boss_hp + ' / 150</div></div>' +
+                '<div style="font-size:14px;color:rgba(255,255,255,0.6);margin-top:12px;">🛡️ 你的 HP</div>' +
+                '<div class="player-hp-bar"><div class="player-hp-fill" style="width:' + playerHpPct + '%"></div><div class="hp-text">' + data.player_hp + ' / 100</div></div>' +
+                logHtml +
+                '</div>' +
+                '<div class="big ' + winClass + '">' + data.message + '</div>' +
+                '<div style="color:#fbbf24;font-weight:700;margin-top:8px;">⚔️ 造成伤害 ' + data.damage_dealt + ' · 回合数 ' + data.turns + '</div>' +
+                (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' G币</div>' : '') +
+                bonusInfo +
+                renderBonusMessage(data.bonus_message) +
+                '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
+                '<div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">' +
+                '<button class="btn btn-warning" onclick="playBossBattle()">🔄 再来一局</button>' +
+                '<button class="btn btn-outline" onclick="backToGames()">← 返回大厅</button>' +
+                '</div>' +
+                '</div>';
+            if (data.won) {
+                showMessage('🎉 击败BOSS！+' + data.points_earned + ' G币', 'success');
+                showPointsPopup(data.points_earned);
+            } else showMessage('😔 BOSS存活，挑战失败', 'warning');
+            renderAllDrops(data.drops);
+            updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
+            loadStats();
+            checkNewAchievements();
+        } catch (e) {
+            showMessage(e.message || '游戏失败', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '⚔️ 挑战BOSS';
+        }
+    }
+
+    function startGame(gameId) {
+        currentGame = gameId;
+        document.getElementById('gameGrid').style.display = 'none';
+        var area = document.getElementById('gameArea');
+        area.classList.add('active');
+        var names = {
+            'dice': '🎲 骰子大战',
+            'blackjack': '🃏 二十一点',
+            'guess_number': '🎯 猜数字',
+            'rock_paper_scissors': '🤖 石头剪刀布',
+            'roulette': '🎡 轮盘赌',
+            'lucky_wheel': '🎰 幸运转盘',
+            'memory_cards': '🧠 记忆翻牌',
+            'whack_mole': '🔨 打地鼠',
+            'dice_royale': '👑 骰子王者',
+            'blackjack_tournament': '🏆 21点锦标赛',
+            'treasure_hunt': '💎 寻宝迷宫',
+            'boss_battle': '⚔️ 挑战BOSS'
+        };
+        document.getElementById('gameTitle').textContent = names[gameId] || '游戏';
+        var memberBadge = document.getElementById('gameMemberBadge');
+        var bonusBadge = document.getElementById('gameBonusBadge');
+        var dropBadge = document.getElementById('gameDropBadge');
+        var streakBadge = document.getElementById('gameStreakBadge');
+        var baseTier = currentTier.indexOf('_lifetime') !== -1 ? currentTier.replace('_lifetime', '') : currentTier;
+        var tierNames = {'normal': '👑 普通会员', 'gold': '🥇 黄金会员', 'diamond': '💎 钻石会员', 'supreme': '👑 至尊会员'};
+        if (isMember) {
+            memberBadge.style.display = 'inline-block';
+            memberBadge.textContent = tierNames[baseTier] || '👑 会员';
+            bonusBadge.style.display = 'inline-block';
+            bonusBadge.textContent = '+' + memberBonusRate + '% 加成';
+            if (memberDropMultiplier > 1.0) {
+                dropBadge.style.display = 'inline-block';
+                dropBadge.textContent = '掉落 x' + memberDropMultiplier;
+            } else {
+                dropBadge.style.display = 'none';
+            }
+        } else {
+            memberBadge.style.display = 'none';
+            bonusBadge.style.display = 'none';
+            dropBadge.style.display = 'none';
+        }
+        if (currentWinStreak > 0) {
+            streakBadge.style.display = 'inline-block';
+            streakBadge.textContent = '🔥 连赢 ' + currentWinStreak;
+        } else {
+            streakBadge.style.display = 'none';
+        }
+        var content = document.getElementById('gameContent');
+        if (gameId === 'dice') renderDice(content);
+        else if (gameId === 'blackjack') renderBlackjack(content);
+        else if (gameId === 'guess_number') renderGuessNumber(content);
+        else if (gameId === 'rock_paper_scissors') renderRPS(content);
+        else if (gameId === 'roulette') renderRoulette(content);
+        else if (gameId === 'lucky_wheel') renderLuckyWheel(content);
+        else if (gameId === 'memory_cards') renderMemoryCards(content);
+        else if (gameId === 'whack_mole') renderWhackMole(content);
+        else if (gameId === 'dice_royale') renderDiceRoyale(content);
+        else if (gameId === 'blackjack_tournament') renderBlackjackTournament(content);
+        else if (gameId === 'treasure_hunt') renderTreasureHunt(content);
+        else if (gameId === 'boss_battle') renderBossBattle(content);
+        else content.innerHTML = '<div class="loading">加载中...</div>';
+    }
+
     async function checkUrlParams() {
         var params = new URLSearchParams(window.location.search);
         var directGame = params.get('game');
         if (directGame) {
-            var valid = ['dice', 'blackjack', 'guess_number', 'rock_paper_scissors', 'roulette', 'lucky_wheel', 'memory_cards', 'whack_mole'];
+            var valid = ['dice', 'blackjack', 'guess_number', 'rock_paper_scissors', 'roulette', 'lucky_wheel', 'memory_cards', 'whack_mole', 'dice_royale', 'blackjack_tournament', 'treasure_hunt', 'boss_battle'];
             if (valid.indexOf(directGame) !== -1) {
                 setTimeout(function() { startGame(directGame); }, 400);
             }

@@ -4,61 +4,60 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>订单跳转中...</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:'Segoe UI','PingFang SC',Roboto,sans-serif;background:linear-gradient(145deg,#0b0e1a 0%,#1a1f35 100%);min-height:100vh;display:flex;justify-content:center;align-items:center;padding:20px}
-        .container{background:rgba(22,28,50,0.85);backdrop-filter:blur(18px);border-radius:40px;box-shadow:0 30px 60px rgba(0,0,0,0.7);max-width:420px;width:100%;padding:40px 32px;border:1px solid rgba(255,255,255,0.08);text-align:center}
-        .icon-container{margin-bottom:24px}
-        .icon-container .spinner{width:64px;height:64px;border:4px solid rgba(255,255,255,0.1);border-top-color:#7c8cff;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block}
+        body{font-family:'Segoe UI','PingFang SC',Roboto,sans-serif;background:linear-gradient(145deg,#0a0d1a 0%,#141a30 50%,#1a1f3a 100%);min-height:100vh;display:flex;justify-content:center;align-items:center;padding:20px;position:relative;overflow-x:hidden}
+        body::before{content:'';position:fixed;top:-30%;right:-20%;width:70%;height:70%;background:radial-gradient(circle,rgba(124,140,255,0.1),transparent 70%);pointer-events:none}
+        body::after{content:'';position:fixed;bottom:-30%;left:-20%;width:70%;height:70%;background:radial-gradient(circle,rgba(167,139,250,0.08),transparent 70%);pointer-events:none}
+        .container{background:rgba(20,26,48,0.82);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-radius:36px;box-shadow:0 30px 70px rgba(0,0,0,0.6),0 0 0 1px rgba(255,255,255,0.06) inset;max-width:440px;width:100%;padding:44px 34px;border:1px solid rgba(255,255,255,0.08);text-align:center;position:relative;z-index:1}
+        .icon-container{margin-bottom:26px;min-height:72px;display:flex;align-items:center;justify-content:center}
+        .icon-container .spinner{width:68px;height:68px;border:4px solid rgba(255,255,255,0.08);border-top-color:#7c8cff;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block}
         @keyframes spin{to{transform:rotate(360deg)}}
-        .icon-container .success-icon{font-size:64px;color:#4ade80;display:none}
-        .icon-container .error-icon{font-size:64px;color:#f87171;display:none}
-        .icon-container .warning-icon{font-size:64px;color:#f7c948;display:none}
-        .icon-container .info-icon{font-size:64px;color:#7c8cff;display:none}
-        .icon-container .frozen-icon{font-size:64px;color:#a78bfa;display:none}
-        .title{color:#f0f3ff;font-size:22px;font-weight:600;margin-bottom:8px}
-        .subtitle{color:#8892b0;font-size:14px;margin-bottom:20px;min-height:24px}
-        .status-box{background:rgba(255,255,255,0.03);border-radius:16px;padding:16px 20px;margin-bottom:20px;border:1px solid rgba(255,255,255,0.05)}
-        .status-box .status-label{font-size:12px;color:#6a7a9a}
-        .status-box .status-value{font-size:16px;font-weight:600;color:#e6f1ff;margin-top:4px}
-        .status-box .status-value.success{color:#4ade80}
-        .status-box .status-value.error{color:#f87171}
-        .status-box .status-value.warning{color:#f7c948}
-        .status-box .status-value.paid{color:#4ade80}
-        .status-box .status-value.cancelled{color:#f87171}
-        .status-box .status-value.expired{color:#f87171}
-        .status-box .status-value.refunded{color:#f7c948}
+        .icon-container .success-icon{font-size:68px;color:#4ade80;display:none;filter:drop-shadow(0 0 24px rgba(74,222,128,0.5))}
+        .icon-container .error-icon{font-size:68px;color:#f87171;display:none;filter:drop-shadow(0 0 24px rgba(248,113,113,0.5))}
+        .icon-container .warning-icon{font-size:68px;color:#f7c948;display:none;filter:drop-shadow(0 0 24px rgba(247,201,72,0.5))}
+        .icon-container .info-icon{font-size:68px;color:#7c8cff;display:none;filter:drop-shadow(0 0 24px rgba(124,140,255,0.5))}
+        .icon-container .frozen-icon{font-size:68px;color:#a78bfa;display:none;filter:drop-shadow(0 0 24px rgba(167,139,250,0.5))}
+        .title{color:#f0f3ff;font-size:22px;font-weight:800;margin-bottom:10px;letter-spacing:-0.3px}
+        .subtitle{color:#8892b0;font-size:13px;margin-bottom:22px;min-height:22px;line-height:1.6}
+        .status-box{background:rgba(255,255,255,0.025);border-radius:20px;padding:18px 22px;margin-bottom:22px;border:1px solid rgba(255,255,255,0.05)}
+        .status-box .status-label{font-size:11px;color:#6a7a9a;font-weight:600;letter-spacing:0.5px}
+        .status-box .status-value{font-size:17px;font-weight:800;color:#e6f1ff;margin-top:6px;letter-spacing:0.3px}
+        .status-box .status-value.success,.status-box .status-value.paid{color:#4ade80}
+        .status-box .status-value.error,.status-box .status-value.cancelled,.status-box .status-value.expired{color:#f87171}
+        .status-box .status-value.warning,.status-box .status-value.refunded{color:#f7c948}
         .status-box .status-value.frozen{color:#a78bfa}
-        .order-detail{font-size:13px;color:#8892b0;margin-top:8px}
-        .order-detail span{color:#e6f1ff}
-        .btn-group{display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;justify-content:center}
-        .btn{display:inline-block;padding:12px 32px;border:none;border-radius:40px;font-size:15px;font-weight:600;cursor:pointer;transition:all 0.25s;text-decoration:none}
-        .btn-primary{background:linear-gradient(135deg,#7c8cff,#a78bfa);color:#fff}
-        .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 25px #7c8cff40}
-        .btn-success{background:linear-gradient(135deg,#4ade80,#22d3ee);color:#0b0e1a}
-        .btn-success:hover{transform:translateY(-2px);box-shadow:0 8px 25px #4ade8040}
-        .btn-warning{background:linear-gradient(135deg,#f7c948,#f39c12);color:#0b0e1a}
-        .btn-warning:hover{transform:translateY(-2px);box-shadow:0 8px 25px #f7c94840}
-        .btn-outline{background:transparent;border:1px solid rgba(255,255,255,0.2);color:#8892b0}
-        .btn-outline:hover{background:rgba(255,255,255,0.05)}
-        .btn-danger{background:linear-gradient(135deg,#f87171,#e74c3c);color:#fff}
-        .btn-danger:hover{transform:translateY(-2px);box-shadow:0 8px 25px #f8717140}
-        .btn:disabled{opacity:0.5;cursor:not-allowed;transform:none!important}
-        .progress-bar{width:100%;height:3px;background:rgba(255,255,255,0.05);border-radius:3px;margin-top:24px;overflow:hidden}
-        .progress-bar .progress-fill{height:100%;background:linear-gradient(90deg,#7c8cff,#a78bfa);border-radius:3px;width:0%;transition:width 0.3s}
-        .footer{font-size:11px;color:#6a7a9a;margin-top:20px}
-        .footer i{color:#4ade80;margin-right:4px}
-        .product-info{font-size:12px;color:#6a7a9a;margin-top:6px}
-        .product-info span{color:#8892b0}
-        .status-extra{font-size:12px;color:#6a7a9a;margin-top:4px;padding:4px 8px;background:rgba(255,255,255,0.03);border-radius:8px;display:none}
+        .order-detail{font-size:12px;color:#8892b0;margin-top:10px;word-break:break-all}
+        .order-detail span{color:#e6f1ff;font-weight:600}
+        .product-info{font-size:11px;color:#6a7a9a;margin-top:8px;word-break:break-all}
+        .product-info span{color:#8892b0;font-weight:600}
+        .status-extra{font-size:12px;color:#6a7a9a;margin-top:8px;padding:8px 14px;background:rgba(255,255,255,0.03);border-radius:10px;display:none;font-weight:500}
         .status-extra.show{display:block}
-        .error-boundary{background:#f8717115;border:2px solid #f8717130;border-radius:16px;padding:20px;margin-bottom:20px;text-align:center;display:none}
-        .error-boundary .error-icon{font-size:48px;color:#f87171;margin-bottom:12px}
-        .error-boundary .error-title{font-size:18px;font-weight:700;color:#f87171;margin-bottom:8px}
-        .error-boundary .error-desc{font-size:14px;color:#8892b0;margin-bottom:16px}
-        .error-boundary .retry-btn{padding:10px 32px;background:#f87171;color:white;border:none;border-radius:40px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s}
-        .error-boundary .retry-btn:hover{background:#dc2626;transform:translateY(-2px);box-shadow:0 4px 12px rgba(220,38,38,0.3)}
-        @media(max-width:480px){.container{padding:24px 20px}}
+        .btn-group{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap;justify-content:center}
+        .btn{display:inline-flex;align-items:center;gap:8px;padding:13px 30px;border:none;border-radius:44px;font-size:14px;font-weight:800;cursor:pointer;transition:all 0.25s;text-decoration:none;letter-spacing:0.3px}
+        .btn-primary{background:linear-gradient(135deg,#7c8cff,#a78bfa);color:#fff;box-shadow:0 8px 24px rgba(124,140,255,0.3)}
+        .btn-primary:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(124,140,255,0.45)}
+        .btn-success{background:linear-gradient(135deg,#4ade80,#22d3ee);color:#0a0d1a;box-shadow:0 8px 24px rgba(74,222,128,0.3)}
+        .btn-success:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(74,222,128,0.45)}
+        .btn-warning{background:linear-gradient(135deg,#f7c948,#f39c12);color:#0a0d1a;box-shadow:0 8px 24px rgba(247,201,72,0.3)}
+        .btn-warning:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(247,201,72,0.45)}
+        .btn-outline{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);color:#8892b0}
+        .btn-outline:hover{background:rgba(255,255,255,0.08);color:#f0f3ff}
+        .btn-danger{background:linear-gradient(135deg,#f87171,#e74c3c);color:#fff;box-shadow:0 8px 24px rgba(248,113,113,0.3)}
+        .btn-danger:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(248,113,113,0.45)}
+        .btn:disabled{opacity:0.5;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+        .progress-bar{width:100%;height:4px;background:rgba(255,255,255,0.05);border-radius:4px;margin-top:26px;overflow:hidden}
+        .progress-bar .progress-fill{height:100%;background:linear-gradient(90deg,#7c8cff,#a78bfa,#22d3ee);border-radius:4px;width:0%;transition:width 0.4s cubic-bezier(0.16,1,0.3,1);box-shadow:0 0 12px rgba(124,140,255,0.5)}
+        .footer{font-size:11px;color:#6a7a9a;margin-top:22px;font-weight:500;letter-spacing:0.3px}
+        .footer i{color:#4ade80;margin-right:4px}
+        .error-boundary{background:rgba(248,113,113,0.08);border:2px solid rgba(248,113,113,0.2);border-radius:20px;padding:22px;margin-bottom:20px;text-align:center;display:none}
+        .error-boundary .error-icon{font-size:48px;color:#f87171;margin-bottom:14px}
+        .error-boundary .error-title{font-size:18px;font-weight:800;color:#f87171;margin-bottom:8px}
+        .error-boundary .error-desc{font-size:13px;color:#8892b0;margin-bottom:18px;line-height:1.6}
+        .error-boundary .retry-btn{padding:12px 36px;background:linear-gradient(135deg,#f87171,#e74c3c);color:white;border:none;border-radius:40px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.3s}
+        .error-boundary .retry-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(248,113,113,0.3)}
+        @media(max-width:480px){.container{padding:32px 22px;border-radius:28px}.icon-container .spinner,.icon-container .success-icon,.icon-container .error-icon,.icon-container .warning-icon,.icon-container .info-icon,.icon-container .frozen-icon{font-size:56px}.icon-container .spinner{width:56px;height:56px}.title{font-size:19px}.btn{padding:12px 24px;font-size:13px}}
     </style>
 </head>
 <body>
@@ -269,7 +268,7 @@
             if (gotoMall) gotoMall.style.display = 'none';
             if (gotoHome) gotoHome.style.display = 'none';
             if (retry) retry.style.display = 'none';
-            if (home) home.style.display = 'inline-block';
+            if (home) home.style.display = 'inline-flex';
             updateProgress(30);
         }
 
@@ -334,14 +333,14 @@
             if (gotoMall) gotoMall.style.display = 'none';
             if (gotoHome) gotoHome.style.display = 'none';
             if (retry) retry.style.display = 'none';
-            if (home) home.style.display = 'inline-block';
+            if (home) home.style.display = 'inline-flex';
             if (status === 'pending') {
                 if (gotoPay) {
-                    gotoPay.style.display = 'inline-block';
+                    gotoPay.style.display = 'inline-flex';
                     gotoPay.setAttribute('data-url', redirectUrl || '');
-                    gotoPay.textContent = '💳 前往支付';
+                    gotoPay.innerHTML = '<i class="fas fa-credit-card"></i> 前往支付';
                 }
-                if (home) home.style.display = 'inline-block';
+                if (home) home.style.display = 'inline-flex';
                 updateProgress(100);
                 if (autoRedirectTimer) clearTimeout(autoRedirectTimer);
                 autoRedirectTimer = setTimeout(function() {
@@ -349,32 +348,32 @@
                 }, 2000);
             } else if (status === 'paid') {
                 if (gotoPay) {
-                    gotoPay.style.display = 'inline-block';
+                    gotoPay.style.display = 'inline-flex';
                     gotoPay.setAttribute('data-url', redirectUrl || '');
-                    gotoPay.textContent = '📄 查看订单';
+                    gotoPay.innerHTML = '<i class="fas fa-file-alt"></i> 查看订单';
                 }
-                if (home) home.style.display = 'inline-block';
+                if (home) home.style.display = 'inline-flex';
                 updateProgress(100);
             } else if (status === 'cancelled' || status === 'expired') {
                 if (gotoMall) {
-                    gotoMall.style.display = 'inline-block';
-                    gotoMall.textContent = '🛒 重新下单';
+                    gotoMall.style.display = 'inline-flex';
+                    gotoMall.innerHTML = '<i class="fas fa-shopping-cart"></i> 重新下单';
                 }
-                if (home) home.style.display = 'inline-block';
+                if (home) home.style.display = 'inline-flex';
                 updateProgress(100);
             } else if (status === 'refunded') {
                 if (gotoMall) {
-                    gotoMall.style.display = 'inline-block';
-                    gotoMall.textContent = '🏠 返回商城';
+                    gotoMall.style.display = 'inline-flex';
+                    gotoMall.innerHTML = '<i class="fas fa-store"></i> 返回商城';
                 }
-                if (home) home.style.display = 'inline-block';
+                if (home) home.style.display = 'inline-flex';
                 updateProgress(100);
             } else if (status === 'frozen') {
                 if (gotoHome) {
-                    gotoHome.style.display = 'inline-block';
-                    gotoHome.textContent = '🏠 返回首页';
+                    gotoHome.style.display = 'inline-flex';
+                    gotoHome.innerHTML = '<i class="fas fa-home"></i> 返回首页';
                 }
-                if (home) home.style.display = 'inline-block';
+                if (home) home.style.display = 'inline-flex';
                 updateProgress(100);
             }
         }
@@ -404,11 +403,11 @@
             if (productNameEl) productNameEl.textContent = '-';
             if (gotoPay) gotoPay.style.display = 'none';
             if (gotoMall) {
-                gotoMall.style.display = 'inline-block';
-                gotoMall.textContent = '🏠 返回商城';
+                gotoMall.style.display = 'inline-flex';
+                gotoMall.innerHTML = '<i class="fas fa-store"></i> 返回商城';
             }
             if (retry) retry.style.display = 'none';
-            if (home) home.style.display = 'inline-block';
+            if (home) home.style.display = 'inline-flex';
             updateProgress(100);
         }
 
@@ -429,11 +428,11 @@
             }
             if (gotoPay) gotoPay.style.display = 'none';
             if (gotoMall) {
-                gotoMall.style.display = 'inline-block';
-                gotoMall.textContent = '🏠 返回商城';
+                gotoMall.style.display = 'inline-flex';
+                gotoMall.innerHTML = '<i class="fas fa-store"></i> 返回商城';
             }
-            if (retry) retry.style.display = 'inline-block';
-            if (home) home.style.display = 'inline-block';
+            if (retry) retry.style.display = 'inline-flex';
+            if (home) home.style.display = 'inline-flex';
             updateProgress(100);
         }
 
@@ -454,11 +453,11 @@
             }
             if (gotoPay) gotoPay.style.display = 'none';
             if (gotoMall) {
-                gotoMall.style.display = 'inline-block';
-                gotoMall.textContent = '🏠 返回商城';
+                gotoMall.style.display = 'inline-flex';
+                gotoMall.innerHTML = '<i class="fas fa-store"></i> 返回商城';
             }
-            if (retry) retry.style.display = 'inline-block';
-            if (home) home.style.display = 'inline-block';
+            if (retry) retry.style.display = 'inline-flex';
+            if (home) home.style.display = 'inline-flex';
             updateProgress(100);
         }
 

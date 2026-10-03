@@ -19,7 +19,15 @@
         .status-bar .value.green{color:#34d399}
         .status-bar .value.purple{color:#a78bfa}
         .status-bar .value.pink{color:#ec4899}
+        .status-bar .value.red{color:#f87171}
         .status-bar .item{display:flex;flex-direction:column;gap:2px}
+        .expiry-banner{background:linear-gradient(135deg,rgba(248,113,113,0.15),rgba(220,38,38,0.05));border:1px solid rgba(248,113,113,0.3);border-radius:16px;padding:16px 24px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;animation:pulseBorder 2s infinite}
+        @keyframes pulseBorder{0%,100%{border-color:rgba(248,113,113,0.3)}50%{border-color:rgba(248,113,113,0.6)}}
+        .expiry-banner .expiry-info{display:flex;align-items:center;gap:12px;font-size:14px;color:#fca5a5;flex:1;min-width:200px}
+        .expiry-banner .expiry-icon{font-size:32px}
+        .expiry-banner .expiry-text strong{color:#f87171;font-size:16px}
+        .expiry-banner .renew-btn{padding:10px 24px;background:linear-gradient(135deg,#f87171,#dc2626);border:none;border-radius:40px;color:#fff;font-weight:600;font-size:14px;cursor:pointer;transition:all 0.3s;min-height:44px}
+        .expiry-banner .renew-btn:hover{transform:scale(1.05);box-shadow:0 8px 25px rgba(248,113,113,0.4)}
         .message{position:fixed;bottom:24px;right:24px;padding:14px 24px;border-radius:16px;z-index:9999;animation:slideUp 0.35s ease;max-width:420px;box-shadow:0 12px 40px rgba(0,0,0,0.5);font-size:14px;display:flex;align-items:center;gap:10px}
         .message-success{background:#065f46;color:#a7f3d0;border:1px solid rgba(52,211,153,0.2)}
         .message-error{background:#7f1d1d;color:#fca5a5;border:1px solid rgba(239,68,68,0.2)}
@@ -32,6 +40,15 @@
         .skeleton-line{background:rgba(255,255,255,0.06);border-radius:8px;height:20px;margin-bottom:16px}
         .skeleton-line.short{width:60%}
         .skeleton-line.circle{width:64px;height:64px;border-radius:50%;margin:0 auto 16px}
+        .coupon-section{background:linear-gradient(145deg,rgba(251,191,36,0.08),rgba(245,158,11,0.02));border-radius:20px;padding:20px 24px;border:1px solid rgba(251,191,36,0.2);margin-bottom:24px}
+        .coupon-section .coupon-title{font-size:16px;font-weight:700;color:#fbbf24;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+        .coupon-list{display:flex;gap:12px;flex-wrap:wrap}
+        .coupon-card{background:rgba(255,255,255,0.06);border:2px dashed rgba(251,191,36,0.4);border-radius:14px;padding:14px 20px;min-width:200px;flex:1;display:flex;justify-content:space-between;align-items:center;gap:12px;transition:all 0.3s}
+        .coupon-card:hover{background:rgba(251,191,36,0.1);border-color:rgba(251,191,36,0.7)}
+        .coupon-card .coupon-info .coupon-discount{font-size:22px;font-weight:800;color:#fbbf24}
+        .coupon-card .coupon-info .coupon-desc{font-size:12px;color:rgba(255,255,255,0.6);margin-top:2px}
+        .coupon-card .coupon-info .coupon-expire{font-size:11px;color:rgba(255,255,255,0.4);margin-top:4px}
+        .coupon-empty{text-align:center;padding:20px;color:rgba(255,255,255,0.4);font-size:14px}
         .bonus-info-box{background:rgba(251,191,36,0.08);border-radius:16px;padding:16px 20px;border:1px solid rgba(251,191,36,0.15);margin-bottom:24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
         .bonus-info-box .bonus-icon{font-size:28px}
         .bonus-info-box .bonus-text{font-size:14px;color:rgba(255,255,255,0.7);line-height:1.6}
@@ -43,6 +60,7 @@
         .tier-card.gold{border-color:rgba(245,158,11,0.3);background:linear-gradient(145deg,rgba(245,158,11,0.08),rgba(217,119,6,0.01))}
         .tier-card.diamond{border-color:rgba(167,139,250,0.3);background:linear-gradient(145deg,rgba(167,139,250,0.08),rgba(124,58,237,0.01))}
         .tier-card.supreme{border-color:rgba(236,72,153,0.4);background:linear-gradient(145deg,rgba(236,72,153,0.1),rgba(190,24,93,0.02))}
+        .tier-card.lifetime{border-color:rgba(52,211,153,0.4);background:linear-gradient(145deg,rgba(52,211,153,0.08),rgba(5,150,105,0.01))}
         .tier-card.current{border-color:rgba(52,211,153,0.4);background:linear-gradient(145deg,rgba(52,211,153,0.08),rgba(5,150,105,0.01))}
         .tier-card .crown{font-size:56px;display:block;margin-bottom:12px}
         .tier-card .tier-name{font-size:22px;font-weight:700;margin-bottom:4px}
@@ -50,10 +68,12 @@
         .tier-card.gold .tier-name{color:#f59e0b}
         .tier-card.diamond .tier-name{color:#a78bfa}
         .tier-card.supreme .tier-name{color:#ec4899}
+        .tier-card.lifetime .tier-name{color:#34d399}
         .tier-card.current .tier-name{color:#34d399}
         .tier-card .tier-subtitle{font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:16px}
         .tier-card .tier-price{font-size:32px;font-weight:700;color:#fff;margin:12px 0}
         .tier-card .tier-price small{font-size:16px;color:rgba(255,255,255,0.4);font-weight:400}
+        .tier-card .tier-duration{font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:12px}
         .tier-card .tier-perks{text-align:left;margin:16px 0;display:grid;gap:10px;flex:1}
         .tier-card .tier-perk{font-size:13px;color:rgba(255,255,255,0.75);display:flex;align-items:flex-start;gap:8px;line-height:1.5}
         .tier-card .tier-perk .icon{flex-shrink:0;font-size:14px}
@@ -63,6 +83,7 @@
         .tier-card .tier-btn.buy-gold{background:linear-gradient(135deg,#f59e0b,#b45309);color:#fff}
         .tier-card .tier-btn.buy-diamond{background:linear-gradient(135deg,#a78bfa,#7c3aed);color:#fff}
         .tier-card .tier-btn.buy-supreme{background:linear-gradient(135deg,#ec4899,#be185d);color:#fff}
+        .tier-card .tier-btn.buy-lifetime{background:linear-gradient(135deg,#34d399,#059669);color:#fff}
         .tier-card .tier-btn.upgrade{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
         .tier-card .tier-btn:hover{transform:scale(1.02);box-shadow:0 8px 25px rgba(0,0,0,0.3)}
         .tier-card .tier-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none;box-shadow:none}
@@ -70,6 +91,7 @@
         .tier-card .current-badge{position:absolute;top:16px;right:16px;font-size:11px;background:linear-gradient(135deg,#34d399,#059669);color:#1a1a2e;padding:4px 12px;border-radius:10px;font-weight:700}
         .tier-card .popular-badge{position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:11px;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;padding:4px 16px;border-radius:10px;font-weight:700;white-space:nowrap}
         .tier-card .supreme-badge{position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:11px;background:linear-gradient(135deg,#ec4899,#be185d);color:#fff;padding:4px 16px;border-radius:10px;font-weight:700;white-space:nowrap}
+        .tier-card .lifetime-badge{position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:11px;background:linear-gradient(135deg,#34d399,#059669);color:#fff;padding:4px 16px;border-radius:10px;font-weight:700;white-space:nowrap}
         .req-box{margin-top:12px;padding:12px;background:rgba(255,255,255,0.04);border-radius:12px;text-align:left}
         .req-box .req-title{font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:8px}
         .req-box .req-item{font-size:12px;display:flex;justify-content:space-between;margin-bottom:4px}
@@ -77,17 +99,46 @@
         .req-box .req-item.not-met{color:#f87171}
         .active-card{background:linear-gradient(145deg,rgba(52,211,153,0.1),rgba(5,150,105,0.02));border-radius:24px;padding:32px;border:1px solid rgba(52,211,153,0.2);text-align:center;margin-bottom:24px}
         .active-card.supreme-active{background:linear-gradient(145deg,rgba(236,72,153,0.12),rgba(190,24,93,0.02));border-color:rgba(236,72,153,0.3)}
+        .active-card.lifetime-active{background:linear-gradient(145deg,rgba(52,211,153,0.15),rgba(5,150,105,0.05));border-color:rgba(52,211,153,0.4)}
         .active-card .crown-active{font-size:64px;display:block;margin-bottom:12px}
         .active-card .title-active{font-size:28px;font-weight:700;color:#34d399;margin-bottom:8px}
         .active-card.supreme-active .title-active{color:#ec4899}
+        .active-card.lifetime-active .title-active{color:#34d399}
         .active-card .subtitle-active{font-size:15px;color:rgba(255,255,255,0.5);margin-bottom:20px}
+        .active-card .expire-display{font-size:16px;color:#fbbf24;font-weight:600;margin:12px 0;padding:12px;background:rgba(251,191,36,0.08);border-radius:12px;display:inline-block}
         .active-card .perks-active{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:20px 0;text-align:left}
         .active-card .perks-active .perk-active{background:rgba(52,211,153,0.08);padding:12px 16px;border-radius:12px;display:flex;align-items:center;gap:10px;font-size:14px;color:rgba(255,255,255,0.8)}
         .active-card.supreme-active .perks-active .perk-active{background:rgba(236,72,153,0.08)}
         .active-card .active-badge{display:inline-block;padding:8px 28px;background:linear-gradient(135deg,#34d399,#059669);color:#1a1a2e;border-radius:40px;font-size:16px;font-weight:700;margin-top:8px}
         .active-card.supreme-active .active-badge{background:linear-gradient(135deg,#ec4899,#be185d);color:#fff}
+        .renew-bar{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:20px}
+        .renew-bar button{padding:12px 32px;border:none;border-radius:40px;font-size:15px;font-weight:600;cursor:pointer;transition:all 0.3s;min-height:48px}
+        .renew-bar .renew-main{background:linear-gradient(135deg,#fbbf24,#d97706);color:#1a1a2e}
+        .renew-bar .renew-main:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(251,191,36,0.4)}
         .upgrade-section{margin-top:24px}
         .upgrade-section h3{font-size:18px;color:#fff;margin-bottom:16px;text-align:center}
+        .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center;z-index:10000;padding:20px}
+        .modal-overlay.active{display:flex}
+        .modal-box{background:linear-gradient(145deg,#1a1a3e,#0d0d2b);border-radius:20px;padding:28px;border:1px solid rgba(255,255,255,0.1);max-width:480px;width:100%;text-align:center;animation:modalIn 0.3s ease}
+        @keyframes modalIn{from{transform:scale(0.9);opacity:0}to{transform:scale(1);opacity:1}}
+        .modal-box .modal-icon{font-size:48px;margin-bottom:12px;display:block}
+        .modal-box .modal-title{font-size:20px;color:#fff;font-weight:700;margin-bottom:12px}
+        .modal-box .modal-desc{font-size:14px;color:rgba(255,255,255,0.7);margin-bottom:20px;line-height:1.6}
+        .modal-box .coupon-options{display:grid;gap:8px;margin-bottom:16px;max-height:240px;overflow-y:auto}
+        .modal-box .coupon-option{padding:12px 16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;cursor:pointer;transition:all 0.2s;display:flex;justify-content:space-between;align-items:center;text-align:left}
+        .modal-box .coupon-option:hover{background:rgba(255,255,255,0.08)}
+        .modal-box .coupon-option.selected{border-color:#fbbf24;background:rgba(251,191,36,0.1)}
+        .modal-box .coupon-option .co-left{display:flex;flex-direction:column;gap:2px}
+        .modal-box .coupon-option .co-discount{font-size:18px;font-weight:700;color:#fbbf24}
+        .modal-box .coupon-option .co-desc{font-size:12px;color:rgba(255,255,255,0.6)}
+        .modal-box .coupon-option .co-check{font-size:20px}
+        .modal-box .price-summary{padding:16px;background:rgba(255,255,255,0.04);border-radius:12px;margin-bottom:16px;text-align:left}
+        .modal-box .price-summary .ps-row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:14px;color:rgba(255,255,255,0.7)}
+        .modal-box .price-summary .ps-row.final{font-size:18px;font-weight:700;color:#fbbf24;border-top:1px solid rgba(255,255,255,0.1);padding-top:8px;margin-top:8px}
+        .modal-box .modal-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+        .modal-box .modal-actions button{padding:10px 28px;border:none;border-radius:40px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s;min-height:44px}
+        .modal-box .modal-actions .btn-cancel{background:rgba(255,255,255,0.08);color:#d1d5db}
+        .modal-box .modal-actions .btn-confirm{background:linear-gradient(135deg,#fbbf24,#d97706);color:#1a1a2e}
         @media(max-width:768px){
             body{padding:12px}
             .header{padding:12px 16px}
@@ -108,6 +159,8 @@
         <h1>👑 游戏会员中心</h1>
         <a href="/GAME/" class="back-btn">← 返回游戏大厅</a>
     </div>
+
+    <div id="expiryBanner" style="display:none;"></div>
 
     <div id="loadingState">
         <div class="skeleton">
@@ -137,11 +190,16 @@
             </div>
         </div>
 
+        <div id="couponSection" class="coupon-section" style="display:none;">
+            <div class="coupon-title">🎟️ 我的会员优惠券</div>
+            <div class="coupon-list" id="couponList"></div>
+        </div>
+
         <div id="notMemberSection">
             <div class="bonus-info-box">
                 <span class="bonus-icon">💡</span>
                 <div class="bonus-text">
-                    开通会员后享受更多游戏次数和积分加成，<strong>一次购买永久有效</strong>。
+                    开通会员后享受更多游戏次数和积分加成。<strong>月卡30天，永久卡一次购买长期有效</strong>。连续续费享折扣（9折/8.5折/8折）。
                 </div>
             </div>
 
@@ -153,14 +211,32 @@
                 <span class="crown-active" id="activeCrown">👑</span>
                 <div class="title-active" id="activeTitle">会员已激活</div>
                 <div class="subtitle-active" id="activeSubtitle">您已享受全部会员权益</div>
+                <div id="expireDisplay"></div>
                 <div class="perks-active" id="activePerks"></div>
                 <div class="active-badge" id="activeBadge">✅ 会员已激活</div>
+                <div class="renew-bar" id="renewBar" style="display:none;">
+                    <button class="renew-main" id="renewBtn" onclick="renewMembership()">🔄 立即续费</button>
+                </div>
             </div>
 
             <div class="upgrade-section" id="upgradeSection" style="display:none;">
                 <h3>⬆️ 升级会员等级</h3>
                 <div class="tier-grid" id="upgradeGrid"></div>
             </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="couponModal">
+    <div class="modal-box">
+        <span class="modal-icon">🎟️</span>
+        <div class="modal-title" id="couponModalTitle">选择优惠券</div>
+        <div class="modal-desc" id="couponModalDesc"></div>
+        <div class="coupon-options" id="couponOptions"></div>
+        <div class="price-summary" id="priceSummary"></div>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeCouponModal()">取消</button>
+            <button class="btn-confirm" id="couponConfirmBtn" onclick="confirmPurchase()">确认购买</button>
         </div>
     </div>
 </div>
@@ -173,6 +249,51 @@
     var currentTier = 'none';
     var allTiers = [];
     var supremeReq = null;
+    var availableCoupons = [];
+    var selectedCouponId = '';
+    var pendingPurchase = null;
+
+    var GAME_NAME_MAP = {
+        'dice': '骰子大战',
+        'blackjack': '二十一点',
+        'guess_number': '猜数字',
+        'rock_paper_scissors': '石头剪刀布',
+        'roulette': '轮盘赌',
+        'whack_mole': '打地鼠',
+        'lucky_wheel': '幸运转盘',
+        'memory_cards': '记忆翻牌',
+        'dice_royale': '骰子王者',
+        'blackjack_tournament': '21点锦标赛',
+        'treasure_hunt': '寻宝迷宫',
+        'boss_battle': '挑战BOSS'
+    };
+
+    function getGameName(gameId) {
+        if (!gameId) return '';
+        return GAME_NAME_MAP[gameId] || gameId;
+    }
+
+    function getExclusiveGameNames(tier) {
+        var names = [];
+        if (tier.exclusive_games_detail && tier.exclusive_games_detail.length > 0) {
+            tier.exclusive_games_detail.forEach(function(g) {
+                names.push(g.name || getGameName(g.id));
+            });
+        } else {
+            (tier.exclusive_games || []).forEach(function(gid) {
+                names.push(getGameName(gid));
+            });
+        }
+        return names;
+    }
+
+    function getCurrentUser() {
+        try {
+            return window.currentUser || null;
+        } catch (e) {
+            return null;
+        }
+    }
 
     function getCsrfTokenFromCookie() {
         try {
@@ -269,10 +390,23 @@
         return d.innerHTML;
     }
 
-    var tierIcons = { 'normal': '👑', 'gold': '🥇', 'diamond': '💎', 'supreme': '👑' };
-    var tierClasses = { 'normal': 'normal', 'gold': 'gold', 'diamond': 'diamond', 'supreme': 'supreme' };
-    var tierBtnClasses = { 'normal': 'buy-normal', 'gold': 'buy-gold', 'diamond': 'buy-diamond', 'supreme': 'buy-supreme' };
-    var tierOrder = { 'none': 0, 'normal': 1, 'gold': 2, 'diamond': 3, 'supreme': 4 };
+    function formatDate(ts) {
+        if (!ts) return '';
+        var d = new Date(ts);
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
+    var tierIcons = { 'normal': '👑', 'gold': '🥇', 'diamond': '💎', 'supreme': '👑', 'normal_lifetime': '👑', 'gold_lifetime': '🥇', 'diamond_lifetime': '💎' };
+    var tierClasses = { 'normal': 'normal', 'gold': 'gold', 'diamond': 'diamond', 'supreme': 'supreme', 'normal_lifetime': 'lifetime', 'gold_lifetime': 'lifetime', 'diamond_lifetime': 'lifetime' };
+    var tierBtnClasses = { 'normal': 'buy-normal', 'gold': 'buy-gold', 'diamond': 'buy-diamond', 'supreme': 'buy-supreme', 'normal_lifetime': 'buy-lifetime', 'gold_lifetime': 'buy-lifetime', 'diamond_lifetime': 'buy-lifetime' };
+    var tierOrder = { 'none': 0, 'normal': 1, 'gold': 2, 'diamond': 3, 'supreme': 4, 'normal_lifetime': 1, 'gold_lifetime': 2, 'diamond_lifetime': 3 };
+
+    function getBaseTier(tier) {
+        if (tier && tier.indexOf('_lifetime') !== -1) {
+            return tier.replace('_lifetime', '');
+        }
+        return tier;
+    }
 
     async function loadTiers() {
         try {
@@ -291,29 +425,85 @@
         }
     }
 
+    async function loadCoupons() {
+        try {
+            var data = await apiRequest('/api/membership/coupons');
+            availableCoupons = data.coupons || [];
+            renderCoupons();
+        } catch (e) {
+            console.error('Load coupons error:', e);
+        }
+    }
+
+    function renderCoupons() {
+        var section = document.getElementById('couponSection');
+        var list = document.getElementById('couponList');
+        if (!availableCoupons || availableCoupons.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+        section.style.display = 'block';
+        var html = '';
+        availableCoupons.forEach(function(c) {
+            html += '<div class="coupon-card">';
+            html += '<div class="coupon-info">';
+            html += '<div class="coupon-discount">-' + c.discount + ' 积分</div>';
+            html += '<div class="coupon-desc">' + escapeHtml(c.description) + '</div>';
+            html += '<div class="coupon-expire">有效期至 ' + formatDate(c.expire_at) + '</div>';
+            html += '</div>';
+            html += '</div>';
+        });
+        list.innerHTML = html;
+    }
+
+    function renderExpiryBanner(info) {
+        var banner = document.getElementById('expiryBanner');
+        if (!info || !info.is_member || !info.is_expiring || info.is_lifetime) {
+            banner.style.display = 'none';
+            return;
+        }
+        banner.style.display = 'block';
+        var days = info.days_left || 0;
+        var hours = info.hours_left || 0;
+        var timeText = days > 0 ? (days + ' 天 ' + hours + ' 小时') : (hours + ' 小时');
+        banner.innerHTML = '<div class="expiry-banner">' +
+            '<div class="expiry-info">' +
+            '<span class="expiry-icon">⚠️</span>' +
+            '<div class="expiry-text">您的会员将在 <strong>' + timeText + '</strong> 后到期，续费可享折扣优惠</div>' +
+            '</div>' +
+            '<button class="renew-btn" onclick="renewMembership()">🔄 立即续费</button>' +
+            '</div>';
+    }
+
     function renderTierCard(tier, isCurrent, isUpgrade) {
+        var baseTier = getBaseTier(tier.id);
         var icon = tierIcons[tier.id] || '👑';
         var cls = tierClasses[tier.id] || 'normal';
         var btnCls = tierBtnClasses[tier.id] || 'buy-normal';
-        var exclusiveNames = [];
-        var gameNames = { 'lucky_wheel': '幸运转盘', 'memory_cards': '记忆翻牌' };
-        (tier.exclusive_games || []).forEach(function(g) {
-            exclusiveNames.push(gameNames[g] || g);
-        });
+        var exclusiveNames = getExclusiveGameNames(tier);
         var cardCls = 'tier-card ' + cls;
         if (isCurrent) cardCls += ' current';
         var html = '<div class="' + cardCls + '">';
         if (isCurrent) html += '<div class="current-badge">当前等级</div>';
         if (tier.id === 'gold' && !isCurrent) html += '<div class="popular-badge">🔥 最受欢迎</div>';
         if (tier.id === 'supreme' && !isCurrent) html += '<div class="supreme-badge">👑 至尊荣耀</div>';
+        if (tier.is_lifetime && !isCurrent) html += '<div class="lifetime-badge">♾️ 永久有效</div>';
         html += '<span class="crown">' + icon + '</span>';
         html += '<div class="tier-name">' + escapeHtml(tier.name) + '</div>';
-        html += '<div class="tier-subtitle">' + (tier.id === 'normal' ? '入门首选' : tier.id === 'gold' ? '进阶玩家必备' : tier.id === 'diamond' ? '顶级尊享体验' : '至高无上荣耀') + '</div>';
+        var subtitle = tier.id === 'normal' ? '入门首选' : tier.id === 'gold' ? '进阶玩家必备' : tier.id === 'diamond' ? '顶级尊享体验' : tier.id === 'supreme' ? '至高无上荣耀' : (tier.is_lifetime ? '一次购买长期有效' : '超值选择');
+        html += '<div class="tier-subtitle">' + subtitle + '</div>';
         html += '<div class="tier-price">' + tier.price + ' <small>积分</small></div>';
+        if (tier.is_lifetime) {
+            html += '<div class="tier-duration">♾️ 永久有效</div>';
+        } else {
+            html += '<div class="tier-duration">📅 有效期 ' + (tier.duration_days || 30) + ' 天</div>';
+        }
         html += '<div class="tier-perks">';
         html += '<div class="tier-perk"><span class="icon">🎯</span> 每日游戏次数 <strong>' + tier.max_plays + '次</strong></div>';
         html += '<div class="tier-perk highlight"><span class="icon">⭐</span> 获胜积分 <strong>+' + tier.bonus_rate + '%</strong> 加成</div>';
-        html += '<div class="tier-perk"><span class="icon">♾️</span> 永久有效，无需续费</div>';
+        if (tier.drop_multiplier > 1.0) {
+            html += '<div class="tier-perk highlight"><span class="icon">🎁</span> 掉落概率 <strong>×' + tier.drop_multiplier + '</strong> 加成</div>';
+        }
         if (tier.daily_task_bonus > 0) {
             html += '<div class="tier-perk highlight"><span class="icon">📋</span> 每日任务额外 <strong>+' + tier.daily_task_bonus + '积分</strong></div>';
         }
@@ -322,7 +512,7 @@
         }
         html += '<div class="tier-perk"><span class="icon">🏆</span> 专属' + tier.name + '标识</div>';
         html += '</div>';
-        if (tier.id === 'supreme' && supremeReq) {
+        if (baseTier === 'supreme' && supremeReq) {
             html += '<div class="req-box">';
             html += '<div class="req-title">📋 购买条件</div>';
             html += '<div class="req-item ' + (supremeReq.plays_met ? 'met' : 'not-met') + '">';
@@ -337,14 +527,15 @@
             html += '<button class="tier-btn current-btn" disabled>✅ 当前等级</button>';
         } else if (isUpgrade) {
             var diff = tier.price - getTierPrice(currentTier);
-            html += '<button class="tier-btn upgrade" onclick="upgradeTo(\'' + tier.id + '\', ' + diff + ')">⬆️ 升级 (补' + diff.toFixed(2) + '积分)</button>';
+            if (diff < 0) diff = 0;
+            html += '<button class="tier-btn upgrade" onclick="openPurchaseModal(\'' + tier.id + '\', ' + diff + ', \'upgrade\')">⬆️ 升级 (补' + diff.toFixed(2) + '积分)</button>';
         } else {
             var canBuy = true;
-            if (tier.id === 'supreme' && supremeReq && !supremeReq.meets_requirements) {
+            if (baseTier === 'supreme' && supremeReq && !supremeReq.meets_requirements) {
                 canBuy = false;
             }
             if (canBuy) {
-                html += '<button class="tier-btn ' + btnCls + '" onclick="buyTier(\'' + tier.id + '\', ' + tier.price + ')">👑 立即开通</button>';
+                html += '<button class="tier-btn ' + btnCls + '" onclick="openPurchaseModal(\'' + tier.id + '\', ' + tier.price + ', \'buy\')">👑 立即开通</button>';
             } else {
                 html += '<button class="tier-btn ' + btnCls + '" disabled>❌ 未满足条件</button>';
             }
@@ -370,12 +561,15 @@
             document.getElementById('loadingState').style.display = 'none';
             document.getElementById('mainContent').style.display = 'block';
 
+            renderExpiryBanner(data.expire_info);
+
             var statusEl = document.getElementById('membershipStatus');
             if (isMember) {
                 statusEl.textContent = '✅ ' + data.tier_name;
                 statusEl.className = 'value gold';
-                if (currentTier === 'supreme') statusEl.className = 'value pink';
-                else if (currentTier === 'diamond') statusEl.className = 'value purple';
+                var baseTier = getBaseTier(currentTier);
+                if (baseTier === 'supreme') statusEl.className = 'value pink';
+                else if (baseTier === 'diamond') statusEl.className = 'value purple';
             } else {
                 statusEl.textContent = '❌ 未开通';
                 statusEl.className = 'value';
@@ -396,9 +590,10 @@
 
             var tierEl = document.getElementById('tierName');
             tierEl.textContent = data.tier_name || '普通用户';
-            if (currentTier === 'supreme') tierEl.className = 'value pink';
-            else if (currentTier === 'diamond') tierEl.className = 'value purple';
-            else if (currentTier === 'gold' || currentTier === 'normal') tierEl.className = 'value gold';
+            var baseTier2 = getBaseTier(currentTier);
+            if (baseTier2 === 'supreme') tierEl.className = 'value pink';
+            else if (baseTier2 === 'diamond') tierEl.className = 'value purple';
+            else if (baseTier2 === 'gold' || baseTier2 === 'normal') tierEl.className = 'value gold';
             else tierEl.className = 'value';
 
             if (isMember) {
@@ -428,35 +623,72 @@
     }
 
     function renderActiveCard(data) {
+        var baseTier = getBaseTier(currentTier);
         var icon = tierIcons[currentTier] || '👑';
         document.getElementById('activeCrown').textContent = icon;
         document.getElementById('activeTitle').textContent = data.tier_name + '已激活';
-        document.getElementById('activeSubtitle').textContent = '您已享受全部会员权益';
         var activeCard = document.getElementById('activeCard');
-        if (currentTier === 'supreme') {
+        if (baseTier === 'supreme') {
             activeCard.className = 'active-card supreme-active';
+        } else if (data.lifetime) {
+            activeCard.className = 'active-card lifetime-active';
         } else {
             activeCard.className = 'active-card';
         }
+        var expireDisplay = document.getElementById('expireDisplay');
+        if (data.lifetime) {
+            expireDisplay.innerHTML = '<div class="expire-display">♾️ 永久有效</div>';
+            document.getElementById('activeSubtitle').textContent = '您已享受永久会员权益';
+        } else if (data.expire_info && data.expire_info.is_member) {
+            var exp = data.expire_info;
+            var timeText = '';
+            if (exp.days_left > 0) {
+                timeText = '剩余 ' + exp.days_left + ' 天 ' + exp.hours_left + ' 小时';
+            } else {
+                timeText = '剩余 ' + exp.hours_left + ' 小时';
+            }
+            var expireDate = formatDate(exp.expires_at);
+            expireDisplay.innerHTML = '<div class="expire-display">📅 到期时间: ' + expireDate + ' （' + timeText + '）</div>';
+            document.getElementById('activeSubtitle').textContent = '您已享受全部会员权益';
+        } else {
+            expireDisplay.innerHTML = '';
+            document.getElementById('activeSubtitle').textContent = '您已享受全部会员权益';
+        }
         var perks = '<div class="perk-active"><span class="icon">🎯</span> 每日游戏次数 <strong>' + data.max_plays + '次</strong>（已生效）</div>';
         perks += '<div class="perk-active"><span class="icon">⭐</span> 获胜积分 <strong>+' + data.bonus_rate + '%</strong> 加成（已生效）</div>';
-        perks += '<div class="perk-active"><span class="icon">♾️</span> 永久有效，无需续费</div>';
+        if (data.drop_multiplier > 1.0) {
+            perks += '<div class="perk-active"><span class="icon">🎁</span> 掉落概率 <strong>×' + data.drop_multiplier + '</strong> 加成（已生效）</div>';
+        }
         if (data.daily_task_bonus > 0) {
             perks += '<div class="perk-active"><span class="icon">📋</span> 每日任务额外 <strong>+' + data.daily_task_bonus + '积分</strong>（已生效）</div>';
         }
-        if (data.exclusive_games && data.exclusive_games.length > 0) {
-            var gameNames = { 'lucky_wheel': '幸运转盘', 'memory_cards': '记忆翻牌' };
-            var names = data.exclusive_games.map(function(g) { return gameNames[g] || g; });
-            perks += '<div class="perk-active"><span class="icon">🎮</span> 专属游戏: <strong>' + names.join('、') + '</strong>（已解锁）</div>';
+        var exclusiveNames = getExclusiveGameNames(data);
+        if (exclusiveNames.length > 0) {
+            perks += '<div class="perk-active"><span class="icon">🎮</span> 专属游戏: <strong>' + exclusiveNames.join('、') + '</strong>（已解锁）</div>';
         }
         perks += '<div class="perk-active"><span class="icon">🏆</span> 专属' + data.tier_name + '标识（已激活）</div>';
         document.getElementById('activePerks').innerHTML = perks;
         document.getElementById('activeBadge').textContent = '✅ ' + data.tier_name + '已激活';
+        var renewBar = document.getElementById('renewBar');
+        if (!data.lifetime && isMember) {
+            renewBar.style.display = 'flex';
+            var renewBtn = document.getElementById('renewBtn');
+            var renewCount = data.renew_count || 0;
+            var discountText = '';
+            if (renewCount >= 3) discountText = ' (8折)';
+            else if (renewCount >= 2) discountText = ' (8.5折)';
+            else if (renewCount >= 1) discountText = ' (9折)';
+            renewBtn.textContent = '🔄 立即续费' + discountText;
+        } else {
+            renewBar.style.display = 'none';
+        }
     }
 
     function renderUpgradeSection() {
+        var currentBase = getBaseTier(currentTier);
         var higherTiers = allTiers.filter(function(t) {
-            return tierOrder[t.id] > tierOrder[currentTier];
+            var tBase = getBaseTier(t.id);
+            return tierOrder[tBase] > tierOrder[currentBase];
         });
         if (higherTiers.length === 0) {
             document.getElementById('upgradeSection').style.display = 'none';
@@ -471,58 +703,148 @@
         grid.innerHTML = html;
     }
 
-    async function buyTier(tierId, price) {
-        if (!confirm('确定要花费 ' + price + ' 积分开通此会员吗？')) return;
-        var btns = document.querySelectorAll('.tier-btn');
-        btns.forEach(function(b) { b.disabled = true; });
+    async function openPurchaseModal(tierId, price, action) {
+        pendingPurchase = { tier: tierId, price: price, action: action };
+        selectedCouponId = '';
         try {
-            var data = await apiRequest('/api/membership/buy', {
-                method: 'POST',
-                body: JSON.stringify({ tier: tierId })
+            var data = await apiRequest('/api/membership/coupon-check?tier=' + tierId);
+            var coupons = data.all_coupons || [];
+            var bestCoupon = data.best_coupon;
+            var modalTitle = action === 'buy' ? '开通会员' : '升级会员';
+            document.getElementById('couponModalTitle').textContent = modalTitle;
+            var tierInfo = allTiers.filter(function(t) { return t.id === tierId; })[0];
+            var tierName = tierInfo ? tierInfo.name : tierId;
+            document.getElementById('couponModalDesc').textContent = '即将' + (action === 'buy' ? '开通' : '升级到') + ' ' + tierName;
+            var optionsHtml = '';
+            optionsHtml += '<div class="coupon-option' + (!bestCoupon ? ' selected' : '') + '" onclick="selectCoupon(\'\', this)">';
+            optionsHtml += '<div class="co-left">';
+            optionsHtml += '<div class="co-discount">不使用优惠券</div>';
+            optionsHtml += '<div class="co-desc">按原价支付</div>';
+            optionsHtml += '</div>';
+            optionsHtml += '<span class="co-check">' + (!bestCoupon ? '✅' : '') + '</span>';
+            optionsHtml += '</div>';
+            coupons.forEach(function(c) {
+                if (c.discount > price) return;
+                var isSelected = bestCoupon && bestCoupon.id === c.id;
+                optionsHtml += '<div class="coupon-option' + (isSelected ? ' selected' : '') + '" onclick="selectCoupon(\'' + c.id + '\', this)">';
+                optionsHtml += '<div class="co-left">';
+                optionsHtml += '<div class="co-discount">-' + c.discount + ' 积分</div>';
+                optionsHtml += '<div class="co-desc">' + escapeHtml(c.description) + '</div>';
+                optionsHtml += '</div>';
+                optionsHtml += '<span class="co-check">' + (isSelected ? '✅' : '') + '</span>';
+                optionsHtml += '</div>';
             });
-            if (data.success) {
-                showMessage('🎉 ' + data.message, 'success');
-                isMember = true;
-                currentTier = tierId;
-                await loadSupremeRequirements();
-                await loadMembershipStatus();
-            } else {
-                showMessage(data.error || '购买失败', 'error');
+            document.getElementById('couponOptions').innerHTML = optionsHtml;
+            if (bestCoupon) {
+                selectedCouponId = bestCoupon.id;
             }
+            updatePriceSummary();
+            document.getElementById('couponModal').classList.add('active');
         } catch (e) {
-            showMessage(e.message || '购买失败', 'error');
-        } finally {
-            btns.forEach(function(b) { b.disabled = false; });
+            showMessage('加载优惠券失败: ' + e.message, 'error');
         }
     }
 
-    async function upgradeTo(tierId, diff) {
-        if (!confirm('确定要花费 ' + diff.toFixed(2) + ' 积分升级到此等级吗？')) return;
-        var btns = document.querySelectorAll('.tier-btn');
-        btns.forEach(function(b) { b.disabled = true; });
+    function selectCoupon(couponId, el) {
+        selectedCouponId = couponId;
+        var options = document.querySelectorAll('.coupon-option');
+        options.forEach(function(o) { o.classList.remove('selected'); });
+        el.classList.add('selected');
+        var checks = document.querySelectorAll('.co-check');
+        checks.forEach(function(c) { c.textContent = ''; });
+        el.querySelector('.co-check').textContent = '✅';
+        updatePriceSummary();
+    }
+
+    function updatePriceSummary() {
+        if (!pendingPurchase) return;
+        var originalPrice = pendingPurchase.price;
+        var discount = 0;
+        if (selectedCouponId) {
+            for (var i = 0; i < availableCoupons.length; i++) {
+                if (availableCoupons[i].id === selectedCouponId) {
+                    discount = availableCoupons[i].discount;
+                    break;
+                }
+            }
+        }
+        var finalPrice = Math.max(0, originalPrice - discount);
+        var html = '';
+        html += '<div class="ps-row"><span>原价</span><span>' + originalPrice.toFixed(2) + ' 积分</span></div>';
+        if (discount > 0) {
+            html += '<div class="ps-row"><span>优惠券抵扣</span><span style="color:#34d399;">-' + discount.toFixed(2) + ' 积分</span></div>';
+        }
+        html += '<div class="ps-row final"><span>实付</span><span>' + finalPrice.toFixed(2) + ' 积分</span></div>';
+        document.getElementById('priceSummary').innerHTML = html;
+    }
+
+    function closeCouponModal() {
+        document.getElementById('couponModal').classList.remove('active');
+        pendingPurchase = null;
+        selectedCouponId = '';
+    }
+
+    async function confirmPurchase() {
+        if (!pendingPurchase) return;
+        var btn = document.getElementById('couponConfirmBtn');
+        btn.disabled = true;
+        btn.textContent = '处理中...';
+        var url = pendingPurchase.action === 'buy' ? '/api/membership/buy' : '/api/membership/upgrade';
         try {
-            var data = await apiRequest('/api/membership/upgrade', {
+            var data = await apiRequest(url, {
                 method: 'POST',
-                body: JSON.stringify({ tier: tierId })
+                body: JSON.stringify({
+                    tier: pendingPurchase.tier,
+                    coupon_id: selectedCouponId
+                })
             });
             if (data.success) {
                 showMessage('🎉 ' + data.message, 'success');
-                currentTier = tierId;
+                closeCouponModal();
+                isMember = true;
+                currentTier = pendingPurchase.tier;
                 await loadSupremeRequirements();
+                await loadCoupons();
                 await loadMembershipStatus();
             } else {
-                showMessage(data.error || '升级失败', 'error');
+                showMessage(data.error || '操作失败', 'error');
             }
         } catch (e) {
-            showMessage(e.message || '升级失败', 'error');
+            showMessage(e.message || '操作失败', 'error');
         } finally {
-            btns.forEach(function(b) { b.disabled = false; });
+            btn.disabled = false;
+            btn.textContent = '确认购买';
         }
     }
+
+    async function renewMembership() {
+        if (!confirm('确定要续费当前会员吗？连续续费可享折扣优惠。')) return;
+        try {
+            var data = await apiRequest('/api/membership/renew', {
+                method: 'POST',
+                body: JSON.stringify({})
+            });
+            if (data.success) {
+                showMessage('🎉 ' + data.message, 'success');
+                await loadMembershipStatus();
+            } else {
+                showMessage(data.error || '续费失败', 'error');
+            }
+        } catch (e) {
+            showMessage(e.message || '续费失败', 'error');
+        }
+    }
+
+    document.getElementById('couponModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeCouponModal();
+        }
+    });
 
     document.addEventListener('DOMContentLoaded', async function() {
         await loadTiers();
         await loadSupremeRequirements();
+        await loadCoupons();
         await loadMembershipStatus();
     });
 </script>

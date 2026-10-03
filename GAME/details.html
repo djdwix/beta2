@@ -14,11 +14,13 @@
         .header .back-btn:hover{background:rgba(255,255,255,0.15)}
         .detail-hero{text-align:center;padding:40px 20px;background:rgba(255,255,255,0.04);border-radius:24px;border:1px solid rgba(255,255,255,0.06);margin-bottom:20px;position:relative;overflow:hidden}
         .detail-hero::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#667eea,#764ba2,#fbbf24)}
+        .detail-hero.legendary-hero::before{background:linear-gradient(90deg,#fbbf24,#ec4899,#a78bfa)}
         .detail-hero .hero-emoji{font-size:80px;display:block;margin-bottom:12px;animation:heroFloat 3s infinite ease-in-out}
         @keyframes heroFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
         .detail-hero .hero-name{font-size:32px;font-weight:700;color:#fff;margin-bottom:8px}
         .detail-hero .hero-desc{font-size:15px;color:rgba(255,255,255,0.6);max-width:600px;margin:0 auto;line-height:1.6}
         .detail-hero .exclusive-badge{display:inline-block;margin-top:12px;padding:6px 20px;background:linear-gradient(135deg,#fbbf24,#d97706);color:#1a1a2e;border-radius:20px;font-size:13px;font-weight:700}
+        .detail-hero .legendary-badge{display:inline-block;margin-top:12px;padding:6px 20px;background:linear-gradient(135deg,#ec4899,#be185d);color:#fff;border-radius:20px;font-size:13px;font-weight:700}
         .info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
         .info-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:20px;text-align:center}
         .info-card .info-icon{font-size:28px;margin-bottom:8px;display:block}
@@ -188,12 +190,13 @@
             name: '骰子大战',
             desc: '你和AI各掷3个骰子，点数大者获胜',
             exclusive: false,
+            legendary: false,
             min_points: 5,
-            max_points: 40,
+            max_points: 80,
             rules: [
                 '你和AI各掷3个骰子，比较总点数大小',
                 '可选择"比大"、"比小"、"超过7点"、"低于7点"等玩法',
-                '点数差距越小，奖励越高（差1点最高可获得20~40积分）',
+                '点数差距越小，奖励越高（差1点最高可获得20~40G币）',
                 '连赢3局额外+20%，连赢5局额外+50%',
                 '会员额外享受加成：普通+30% / 黄金+50% / 钻石+100% / 至尊+300%'
             ]
@@ -203,14 +206,15 @@
             name: '二十一点',
             desc: '与庄家比21点，点数大者获胜（超过21点爆牌）',
             exclusive: false,
+            legendary: false,
             min_points: 10,
-            max_points: 55,
+            max_points: 110,
             rules: [
                 '系统发牌，你和庄家各得2张牌',
                 '目标是让手牌点数接近21点但不超过21点',
                 '庄家点数小于17时必须继续抽牌',
                 'A可算1点或11点，以最接近21点为准',
-                '玩家21点且庄家非21点时，奖励最高（30~55积分）'
+                '玩家21点且庄家非21点时，奖励最高（30~55G币）'
             ]
         },
         'guess_number': {
@@ -218,13 +222,14 @@
             name: '猜数字',
             desc: '1-100之间猜数字，7次机会',
             exclusive: false,
+            legendary: false,
             min_points: 8,
-            max_points: 45,
+            max_points: 60,
             rules: [
                 '系统随机生成 1-100 之间的整数',
                 '每次猜测后会提示"太大了"或"太小了"',
                 '总共 7 次机会，猜中即获胜',
-                '使用次数越少，奖励越高（3次内猜中最高25~45积分）',
+                '使用次数越少，奖励越高（3次内猜中最高25~45G币）',
                 '游戏进度实时保存，刷新页面可继续'
             ]
         },
@@ -233,6 +238,7 @@
             name: '石头剪刀布',
             desc: '三局两胜，与AI对战',
             exclusive: false,
+            legendary: false,
             min_points: 3,
             max_points: 25,
             rules: [
@@ -248,14 +254,16 @@
             name: '轮盘赌',
             desc: '猜数字/颜色/奇偶/大小',
             exclusive: false,
+            legendary: false,
             min_points: 8,
             max_points: 100,
             rules: [
                 '轮盘共 37 个数字：0-36',
                 '0 为绿色，其他数字分红黑两色',
                 '可下注：数字、红色/黑色、偶数/奇数、大(19-36)/小(1-18)',
-                '猜中数字（0-36）赔率最高，奖励60~100积分',
-                '颜色/奇偶/大小命中奖励中等（8~20积分）'
+                '猜中数字（0-36）赔率最高，奖励60~100G币',
+                '颜色/奇偶/大小命中奖励中等（8~20G币）',
+                '支持组合下注：红+大、黑+小等，赔率 ×4'
             ]
         },
         'whack_mole': {
@@ -263,14 +271,15 @@
             name: '打地鼠',
             desc: '30秒限时点击地鼠，避开炸弹',
             exclusive: false,
+            legendary: false,
             min_points: 8,
-            max_points: 35,
+            max_points: 50,
             rules: [
                 '9宫格随机出现地鼠，30秒内点击得分',
                 '点击地鼠 +1 分，点击炸弹 -2 分',
                 '使用瞄准镜道具可延长 10 秒',
-                '得分越高奖励越多，满分30分可获得最高35积分',
-                '得分归零时不获得积分'
+                '得分越高奖励越多，满分30分可获得最高35G币',
+                '得分归零时不获得G币'
             ]
         },
         'lucky_wheel': {
@@ -278,6 +287,7 @@
             name: '幸运转盘',
             desc: '转盘抽奖，最高 x20 倍率',
             exclusive: true,
+            legendary: false,
             min_points: 5,
             max_points: 80,
             rules: [
@@ -285,7 +295,7 @@
                 '转盘共 8 个扇区：谢谢参与、x1、x2、x3、x5、x8、x10、x20',
                 '点击"转动转盘"，轮盘旋转4秒后停止',
                 '指针指向的扇区即为本次结果',
-                'x10 及以上倍率奖励丰厚，x20 最高可获得50~80积分'
+                'x10 及以上倍率奖励丰厚，x20 最高可获得50~80G币'
             ]
         },
         'memory_cards': {
@@ -293,14 +303,85 @@
             name: '记忆翻牌',
             desc: '翻牌配对，步数越少分越高',
             exclusive: true,
+            legendary: false,
             min_points: 8,
-            max_points: 60,
+            max_points: 108,
             rules: [
                 '钻石会员专属游戏',
                 '4x4 网格共 16 张卡片，8 对相同图案',
                 '每次翻开 2 张牌，配对成功则保留',
                 '全部配对完成即可获得奖励',
-                '步数越少奖励越高：12步内40~60积分，24步以上8~15积分'
+                '步数越少奖励越高：12步内40~60G币，24步以上8~15G币',
+                '支持困难模式：6x4 网格 24 张卡片，奖励 ×1.8'
+            ]
+        },
+        'dice_royale': {
+            emoji: '👑',
+            name: '骰子王者',
+            desc: '5颗骰子比大小，皇家骰翻倍奖励',
+            exclusive: true,
+            legendary: true,
+            min_points: 30,
+            max_points: 240,
+            rules: [
+                '黄金会员及以上专属游戏',
+                '你和AI各掷5颗骰子，比较总点数',
+                '每颗骰子按点数计分（1=10分，6=60分），最高300分',
+                '三颗以上相同点数触发"皇家骰"，奖励翻倍',
+                'G币奖励30~240，比普通骰子大战丰厚数倍',
+                '连赢加成与会员加成同样适用'
+            ]
+        },
+        'blackjack_tournament': {
+            emoji: '🏆',
+            name: '21点锦标赛',
+            desc: '连续3局21点对决，全胜翻倍',
+            exclusive: true,
+            legendary: true,
+            min_points: 50,
+            max_points: 400,
+            rules: [
+                '钻石会员及以上专属游戏',
+                '连续进行3局21点对决',
+                '赢2局以上获胜，3局全胜奖励翻倍',
+                '每局独立发牌，庄家规则同普通21点',
+                '连续3局全胜可获得最高400G币',
+                '会员加成、连赢加成、道具加成均适用'
+            ]
+        },
+        'treasure_hunt': {
+            emoji: '💎',
+            name: '寻宝迷宫',
+            desc: '9宫格翻牌找宝藏，避开炸弹',
+            exclusive: true,
+            legendary: true,
+            min_points: 40,
+            max_points: 360,
+            rules: [
+                '至尊会员专属游戏',
+                '9宫格中随机分布宝藏和炸弹',
+                '找到3个以上宝藏即可获胜',
+                '找到5个宝藏可获得最高360G币',
+                '宝藏越多奖励越高',
+                '炸弹不会扣G币，但会占用格子'
+            ]
+        },
+        'boss_battle': {
+            emoji: '⚔️',
+            name: '挑战BOSS',
+            desc: '回合制对战BOSS，高难度高回报',
+            exclusive: true,
+            legendary: true,
+            min_points: 60,
+            max_points: 600,
+            rules: [
+                '至尊会员专属游戏',
+                '与150HP的BOSS进行回合制对战',
+                '每回合攻击10-30伤害，20%概率暴击1.5倍',
+                'BOSS每回合反击8-22伤害',
+                '20回合内击败BOSS即可获胜',
+                '造成伤害越高奖励越多，最高600G币',
+                '全服最高单局收益的游戏'
             ]
         }
     };
@@ -337,12 +418,15 @@
         var totalPlays = gameStats ? gameStats.plays : 0;
         var totalWins = gameStats ? gameStats.wins : 0;
         var winRate = gameStats ? gameStats.win_rate : 0;
+        var heroClass = info.legendary ? 'detail-hero legendary-hero' : 'detail-hero';
         var html = '';
-        html += '<div class="detail-hero">';
+        html += '<div class="' + heroClass + '">';
         html += '<span class="hero-emoji">' + info.emoji + '</span>';
         html += '<div class="hero-name">' + escapeHtml(info.name) + '</div>';
         html += '<div class="hero-desc">' + escapeHtml(info.desc) + '</div>';
-        if (info.exclusive) {
+        if (info.exclusive && info.legendary) {
+            html += '<div class="legendary-badge">👑 传奇专属游戏</div>';
+        } else if (info.exclusive) {
             html += '<div class="exclusive-badge">👑 会员专属游戏</div>';
         }
         html += '</div>';
