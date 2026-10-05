@@ -12,6 +12,7 @@ import time
 import random
 import hashlib
 import requests
+import requests as http_requests
 import re
 import base64
 import ssl
@@ -1490,7 +1491,7 @@ def auto_settle_auctions():
             now_ms = int(time.time() * 1000)
             for auction in all_auctions:
                 if auction.get('end_at', 0) <= now_ms:
-                    game.settle_auction(users, save_users, auction['id'])
+                    game.settle_auction(users, save_users, auction['id'], email_notifier=email_service.send_email)
         except Exception as e:
             log.error(f"Auto settle auctions error: {e}")
 
@@ -1510,6 +1511,29 @@ def feedback_cleanup_loop():
         except Exception as e:
             log.error(f"清理过期反馈异常: {e}")
         time.sleep(120)
+
+def auto_auction_loop():
+    time.sleep(60)
+    try:
+        if not game.has_active_auction(analytics_cache):
+            game.server_generate_random_auction(analytics_cache, save_analytics_cache)
+    except Exception as e:
+        log.error(f"Initial auto auction error: {e}")
+    while True:
+        time.sleep(600)
+        try:
+            game.auto_settle_server_auctions(
+                users, save_users, analytics_cache, save_analytics_cache,
+                mail_attachments, save_mail_attachments,
+                email_service.send_email
+            )
+            if not game.has_active_auction(analytics_cache):
+                game.server_generate_random_auction(analytics_cache, save_analytics_cache)
+        except Exception as e:
+            log.error(f"Auto auction loop error: {e}")
+
+auto_auction_thread = threading.Thread(target=auto_auction_loop, daemon=True)
+auto_auction_thread.start()
 
 auction_settle_thread = threading.Thread(target=auto_settle_auctions, daemon=True)
 auction_settle_thread.start()
@@ -2714,7 +2738,7 @@ def cleanup_inactive_users():
             try:
                 last_login_dt = datetime.strptime(last_login, '%Y-%m-%d')
                 days_inactive = (current_time - last_login_dt).days
-                if days_inactive >= 14:
+                if days_inactive >= 60:
                     users_to_delete.append(username)
             except:
                 pass
@@ -13508,19 +13532,18 @@ def get_news():
 @limiter.limit('5 per day')
 def get_ip_signature():
     try:
-        import requests
         from io import BytesIO
         import base64
 
+        target_url = 'https://api.szfx.top/info-card/'
+
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept': 'image/*,*/*;q=0.8',
-            'Referer': 'https://api.aa1.cn/'
+            'Referer': 'https://api.szfx.top/'
         }
 
-        url = 'https://zj.v.api.aa1.cn/api/ip-qmd'
-
-        resp = requests.get(url, headers=headers, timeout=8, allow_redirects=True, stream=True)
+        resp = requests.get(target_url, headers=headers, timeout=10, allow_redirects=True, stream=True)
 
         if resp.status_code != 200:
             return jsonify({
@@ -13562,7 +13585,7 @@ def get_ip_signature():
             'type': 'image',
             'data': img_base64,
             'format': fmt,
-            'source': 'IP签名档v3'
+            'source': 'szfx.top IP签名档'
         })
 
     except requests.exceptions.Timeout:
@@ -13676,6 +13699,98 @@ def get_earthquake_info():
             'success': False,
             'error': '地震信息服务暂时不可用'
         }), 200
+
+@app.route('/api/music/search', methods=['GET'])
+@login_required
+def proxy_music_search():
+    q = request.args.get('q', '').strip()
+    if not q:
+        return jsonify({'error': '缺少搜索关键词'}), 400
+    try:
+        resp = requests.get(
+            'http://localhost:8080/api/v1/music/search',
+            params={'q': q, 'type': 'song', 'sources': 'netease'},
+            timeout=15
+        )
+        return jsonify(resp.json()), resp.status_code
+    except Exception as e:
+        log.error(f'Music proxy error: {e}')
+        return jsonify({'error': '音乐服务暂不可用'}), 502
+
+@app.route('/api/music/url', methods=['GET'])
+@login_required
+def proxy_music_url():
+    song_id = request.args.get('id', '')
+    if not song_id:
+        return jsonify({'error': '缺少歌曲ID'}), 400
+    try:
+        resp = requests.get(
+            'http://localhost:8080/api/v1/music/url',
+            params={'source': 'netease', 'id': song_id},
+            timeout=8
+        )
+        return jsonify(resp.json()), resp.status_code
+    except Exception as e:
+        log.error(f'Music url proxy error: {e}')
+        return jsonify({'error': '音乐服务暂不可用'}), 502
+
+@app.route('/api/music/playlist/recommend', methods=['GET'])
+@login_required
+def proxy_music_playlist_recommend():
+    source = request.args.get('source', 'kuwo')
+    page = request.args.get('page', 1, type=int)
+    limit = request.args.get('limit', 12, type=int)
+    if limit < 1:
+        limit = 1
+    if limit > 30:
+        limit = 30
+    try:
+        resp = requests.get(
+            'http://localhost:8080/api/v1/playlist/recommend',
+            params={'source': source, 'page': page, 'limit': limit},
+            timeout=15
+        )
+        return jsonify(resp.json()), resp.status_code
+    except Exception as e:
+        log.error(f'Music playlist recommend proxy error: {e}')
+        return jsonify({'error': '歌单服务暂不可用'}), 502
+
+
+@app.route('/api/music/playlist/detail', methods=['GET'])
+@login_required
+def proxy_music_playlist_detail():
+    source = request.args.get('source', 'kuwo')
+    playlist_id = request.args.get('id', '').strip()
+    if not playlist_id:
+        return jsonify({'error': '缺少歌单ID'}), 400
+    try:
+        resp = requests.get(
+            'http://localhost:8080/api/v1/playlist/detail',
+            params={'source': source, 'id': playlist_id},
+            timeout=15
+        )
+        return jsonify(resp.json()), resp.status_code
+    except Exception as e:
+        log.error(f'Music playlist detail proxy error: {e}')
+        return jsonify({'error': '歌单服务暂不可用'}), 502
+
+@app.route('/api/music/lyric', methods=['GET'])
+@login_required
+def proxy_music_lyric():
+    source = request.args.get('source', 'netease')
+    song_id = request.args.get('id', '').strip()
+    if not song_id:
+        return jsonify({'error': '缺少歌曲ID'}), 400
+    try:
+        resp = requests.get(
+            'http://localhost:8080/api/v1/music/lyric',
+            params={'source': source, 'id': song_id},
+            timeout=8
+        )
+        return jsonify(resp.json()), resp.status_code
+    except Exception as e:
+        log.error(f'Music lyric proxy error: {e}')
+        return jsonify({'error': '歌词服务暂不可用'}), 502
 
 @app.route('/api/customer-service/search-web', methods=['POST'])
 @login_required
@@ -14830,22 +14945,10 @@ def admin_generate_auction():
 def admin_settle_all_auctions():
     count = game.auto_settle_server_auctions(
         users, save_users, analytics_cache, save_analytics_cache,
-        mail_attachments, save_mail_attachments
+        mail_attachments, save_mail_attachments,
+        email_service.send_email
     )
     return jsonify({'success': True, 'message': f'已结算 {count} 场拍卖'})
-
-def auto_auction_loop():
-    while True:
-        time.sleep(600)
-        try:
-            game.auto_settle_server_auctions(
-                users, save_users, analytics_cache, save_analytics_cache,
-                mail_attachments, save_mail_attachments
-            )
-            if game.should_create_new_auction(analytics_cache, save_analytics_cache):
-                game.server_generate_random_auction(analytics_cache, save_analytics_cache)
-        except Exception as e:
-            log.error(f"Auto auction loop error: {e}")
 
 @app.route('/api/admin/membership/expiring-list', methods=['GET'])
 @admin_login_required
@@ -14971,7 +15074,7 @@ def settle_auction_api():
     auction_id = data.get('auction_id', '').strip()
     if not auction_id:
         return jsonify({'error': '缺少拍卖ID'}), 400
-    success, message, final_price = game.settle_auction(users, save_users, auction_id)
+    success, message, final_price = game.settle_auction(users, save_users, auction_id, email_notifier=email_service.send_email)
     if not success:
         return jsonify({'error': message}), 400
     reload_if_changed()
@@ -15937,6 +16040,112 @@ def open_chest():
         })
     return jsonify({'error': message}), 400
 
+@app.route('/api/game/season/status', methods=['GET'])
+@login_required
+def get_season_status_api():
+    username = session['user']['username']
+    if is_login_restricted(username):
+        return jsonify({'error': '账号已被限制'}), 403
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    status = gm.get_season_status(username)
+    if not status:
+        return jsonify({'error': '获取失败'}), 400
+    return jsonify(status)
+
+
+@app.route('/api/game/season/milestone/claim', methods=['POST'])
+@csrf_protect
+@login_required
+def claim_season_milestone_api():
+    username = session['user']['username']
+    data = request.get_json() or {}
+    rank_id = data.get('rank_id', '').strip()
+    if not rank_id:
+        return jsonify({'error': '缺少段位ID'}), 400
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    success, message, reward = gm.claim_season_milestone_reward(username, rank_id)
+    if success:
+        reload_if_changed()
+        return jsonify({
+            'success': True,
+            'message': message,
+            'reward': reward
+        })
+    return jsonify({'error': message}), 400
+
+
+@app.route('/api/game/season/tasks', methods=['GET'])
+@login_required
+def get_season_tasks_api():
+    username = session['user']['username']
+    if is_login_restricted(username):
+        return jsonify({'error': '账号已被限制'}), 403
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    return jsonify(gm.get_daily_season_tasks(username))
+
+
+@app.route('/api/game/season/tasks/claim', methods=['POST'])
+@csrf_protect
+@login_required
+def claim_season_task_api():
+    username = session['user']['username']
+    data = request.get_json() or {}
+    task_id = data.get('task_id', '').strip()
+    if not task_id:
+        return jsonify({'error': '缺少任务ID'}), 400
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    success, message, score_reward, rank_changed, new_rank = gm.claim_season_task_reward(username, task_id)
+    if success:
+        reload_if_changed()
+        result = {
+            'success': True,
+            'message': message,
+            'score_reward': score_reward,
+            'rank_changed': rank_changed
+        }
+        if rank_changed and new_rank:
+            result['new_rank'] = new_rank
+        return jsonify(result)
+    return jsonify({'error': message}), 400
+
+
+@app.route('/api/game/season/tasks/claim-all', methods=['POST'])
+@csrf_protect
+@login_required
+def claim_all_season_tasks_api():
+    username = session['user']['username']
+    gm = game.get_game_manager()
+    if not gm:
+        return jsonify({'error': '游戏服务未初始化'}), 500
+    success, message, total_score, rank_changed, new_rank = gm.claim_all_season_tasks_rewards(username)
+    if success:
+        reload_if_changed()
+        result = {
+            'success': True,
+            'message': message,
+            'total_score': total_score,
+            'rank_changed': rank_changed
+        }
+        if rank_changed and new_rank:
+            result['new_rank'] = new_rank
+        return jsonify(result)
+    return jsonify({'error': message}), 400
+
+
+@app.route('/api/game/season/ranks', methods=['GET'])
+def get_season_ranks_api():
+    return jsonify({
+        'ranks': game.SEASON_RANKS,
+        'config': game.SEASON_CONFIG
+    })
 
 @app.route('/api/game/daily-bonus/status', methods=['GET'])
 @login_required

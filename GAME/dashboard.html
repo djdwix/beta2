@@ -16,19 +16,38 @@
         .section-title{font-size:20px;font-weight:700;color:#fff;margin-bottom:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
         .section-title .badge{font-size:12px;padding:3px 12px;border-radius:12px;background:rgba(251,191,36,0.15);color:#fbbf24;border:1px solid rgba(251,191,36,0.2);font-weight:500}
         .section-subtitle{font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:16px;line-height:1.6}
-        .checkin-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:16px}
-        .checkin-day{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:12px 6px;text-align:center;transition:all 0.3s;position:relative}
-        .checkin-day.claimed{background:rgba(52,211,153,0.1);border-color:rgba(52,211,153,0.4)}
-        .checkin-day.current{background:rgba(251,191,36,0.15);border-color:rgba(251,191,36,0.5);box-shadow:0 0 20px rgba(251,191,36,0.2)}
-        .checkin-day .day-num{font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:6px}
-        .checkin-day.claimed .day-num,.checkin-day.current .day-num{color:inherit}
-        .checkin-day .day-icon{font-size:24px;margin-bottom:6px;display:block}
-        .checkin-day .day-desc{font-size:11px;color:rgba(255,255,255,0.6);line-height:1.3}
-        .checkin-day .claimed-mark{position:absolute;top:4px;right:4px;font-size:12px}
-        .checkin-day .lock-icon{position:absolute;top:4px;right:4px;font-size:10px;opacity:0.4}
-        .checkin-info{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px}
-        .checkin-info .info{font-size:14px;color:rgba(255,255,255,0.6)}
-        .checkin-info .info strong{color:#fbbf24;font-size:16px}
+        .season-rank-display{display:flex;align-items:center;justify-content:center;gap:24px;padding:24px;background:linear-gradient(145deg,rgba(251,191,36,0.1),rgba(245,158,11,0.03));border-radius:20px;border:1px solid rgba(251,191,36,0.25);margin-bottom:20px;flex-wrap:wrap;position:relative;overflow:hidden}
+        .season-rank-display::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#fbbf24,#ec4899,#a78bfa)}
+        .season-rank-display .srd-icon{font-size:72px;filter:drop-shadow(0 0 20px rgba(251,191,36,0.5))}
+        .season-rank-display .srd-info{text-align:left}
+        .season-rank-display .srd-name{font-size:28px;font-weight:800;margin-bottom:4px}
+        .season-rank-display .srd-score{font-size:14px;color:rgba(255,255,255,0.6)}
+        .season-rank-display .srd-score strong{color:#fbbf24;font-size:22px}
+        .season-progress{margin-top:16px;width:100%}
+        .season-progress-label{display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:6px}
+        .season-progress-bar{height:12px;background:rgba(255,255,255,0.08);border-radius:6px;overflow:hidden}
+        .season-progress-fill{height:100%;background:linear-gradient(90deg,#667eea,#764ba2,#fbbf24);border-radius:6px;transition:width 0.6s ease}
+        .season-dates{font-size:12px;color:rgba(255,255,255,0.4);text-align:center;margin-top:12px}
+        .milestone-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:16px}
+        .milestone-card{background:rgba(255,255,255,0.04);border:2px solid rgba(255,255,255,0.08);border-radius:14px;padding:14px;text-align:center;transition:all 0.3s;position:relative}
+        .milestone-card.claimable{border-color:rgba(251,191,36,0.5);background:rgba(251,191,36,0.08);animation:milestonePulse 2s infinite}
+        .milestone-card.claimed{border-color:rgba(52,211,153,0.3);background:rgba(52,211,153,0.05);opacity:0.7}
+        .milestone-card.locked{opacity:0.4}
+        @keyframes milestonePulse{0%,100%{box-shadow:0 0 0 rgba(251,191,36,0.4)}50%{box-shadow:0 0 25px rgba(251,191,36,0.4)}}
+        .milestone-card .ms-icon{font-size:36px;display:block;margin-bottom:6px}
+        .milestone-card .ms-name{font-size:13px;font-weight:700;color:#fff;margin-bottom:4px}
+        .milestone-card .ms-reward{font-size:12px;color:#fbbf24;margin-bottom:2px;font-weight:600}
+        .milestone-card .ms-reward-points{font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:8px}
+        .milestone-card .ms-btn{width:100%;padding:6px;border:none;border-radius:30px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.3s;min-height:32px}
+        .milestone-card .ms-btn.claim{background:linear-gradient(135deg,#fbbf24,#d97706);color:#1a1a2e}
+        .milestone-card .ms-btn.claim:hover{transform:scale(1.05)}
+        .milestone-card .ms-btn.claimed{background:rgba(52,211,153,0.15);color:#34d399;cursor:not-allowed}
+        .milestone-card .ms-btn.locked{background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.4);cursor:not-allowed}
+        .first-win-card{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;background:linear-gradient(135deg,rgba(251,191,36,0.08),rgba(245,158,11,0.02));border:1px solid rgba(251,191,36,0.2);border-radius:16px;padding:20px}
+        .first-win-left{display:flex;align-items:center;gap:16px;flex:1;min-width:200px}
+        .first-win-icon{font-size:48px}
+        .first-win-info .first-win-title{font-size:17px;font-weight:600;color:#fbbf24;margin-bottom:4px}
+        .first-win-info .first-win-desc{font-size:13px;color:rgba(255,255,255,0.6);line-height:1.5}
         .btn{display:inline-block;padding:10px 28px;border:none;border-radius:40px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s;min-height:44px}
         .btn-primary{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
         .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(102,126,234,0.3)}
@@ -56,11 +75,6 @@
         .chest-btn.open:hover{transform:scale(1.03);box-shadow:0 8px 25px rgba(251,191,36,0.4)}
         .chest-btn.opened{background:rgba(52,211,153,0.15);color:#34d399;cursor:not-allowed}
         .chest-btn.locked{background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.4);cursor:not-allowed}
-        .first-win-card{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;background:linear-gradient(135deg,rgba(251,191,36,0.08),rgba(245,158,11,0.02));border:1px solid rgba(251,191,36,0.2);border-radius:16px;padding:20px}
-        .first-win-left{display:flex;align-items:center;gap:16px;flex:1;min-width:200px}
-        .first-win-icon{font-size:48px}
-        .first-win-info .first-win-title{font-size:17px;font-weight:600;color:#fbbf24;margin-bottom:4px}
-        .first-win-info .first-win-desc{font-size:13px;color:rgba(255,255,255,0.6);line-height:1.5}
         .wheel-container{position:relative;width:280px;height:280px;margin:20px auto}
         .wheel{width:100%;height:100%;border-radius:50%;position:relative;transition:transform 4s cubic-bezier(0.17,0.67,0.12,0.99);border:8px solid rgba(255,255,255,0.1);box-shadow:0 0 40px rgba(102,126,234,0.3);overflow:hidden;background:conic-gradient(#4b5563 0deg 60deg,#6b7280 60deg 120deg,#10b981 120deg 180deg,#f59e0b 180deg 240deg,#ef4444 240deg 300deg,#ec4899 300deg 360deg)}
         .wheel-pointer{position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:32px;z-index:10;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5))}
@@ -85,13 +99,13 @@
             .header{padding:12px 16px}
             .header h1{font-size:20px}
             .section{padding:16px}
-            .checkin-grid{grid-template-columns:repeat(4,1fr);gap:6px}
-            .checkin-day{padding:10px 4px}
-            .checkin-day .day-icon{font-size:20px}
-            .checkin-day .day-desc{font-size:10px}
             .chest-grid{grid-template-columns:repeat(2,1fr);gap:10px}
             .wheel-container{width:240px;height:240px}
             .wheel-label{font-size:11px;width:44px;margin-left:-22px}
+            .milestone-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+            .season-rank-display{padding:16px;gap:16px}
+            .season-rank-display .srd-icon{font-size:56px}
+            .season-rank-display .srd-name{font-size:22px}
         }
     </style>
 </head>
@@ -104,12 +118,25 @@
 
     <div class="section">
         <div class="section-title">
-            📅 七日签到
-            <span class="badge" id="checkinStreakBadge">连续 0 天</span>
+            🏆 赛季里程碑
+            <span class="badge" id="seasonBadge">第 1 赛季</span>
         </div>
-        <div class="section-subtitle">连续签到 7 天，奖励层层升级；断签则从头开始</div>
-        <div class="checkin-grid" id="checkinGrid">
-            <div class="skeleton"><div class="skeleton-line short"></div></div>
+        <div class="section-subtitle">达到指定段位即可领取里程碑奖励，段位越高奖励越丰厚（最高价值2000积分）</div>
+        <div class="season-rank-display" id="seasonRankDisplay">
+            <div class="srd-icon" id="srdIcon">🥉</div>
+            <div class="srd-info">
+                <div class="srd-name" id="srdName">青铜</div>
+                <div class="srd-score" id="srdScore">赛季分数: <strong>0</strong></div>
+            </div>
+            <div class="season-progress">
+                <div class="season-progress-label">
+                    <span id="srdCurrentLabel">青铜</span>
+                    <span id="srdNextLabel">白银 (600)</span>
+                </div>
+                <div class="season-progress-bar"><div class="season-progress-fill" id="srdProgressFill" style="width:0%"></div></div>
+            </div>
+        </div>
+        <div class="milestone-grid" id="milestoneGrid">
             <div class="skeleton"><div class="skeleton-line short"></div></div>
             <div class="skeleton"><div class="skeleton-line short"></div></div>
             <div class="skeleton"><div class="skeleton-line short"></div></div>
@@ -117,10 +144,7 @@
             <div class="skeleton"><div class="skeleton-line short"></div></div>
             <div class="skeleton"><div class="skeleton-line short"></div></div>
         </div>
-        <div class="checkin-info">
-            <div class="info">累计签到 <strong id="checkinTotal">0</strong> 天 · 连续签到 <strong id="checkinConsec">0</strong> 天</div>
-            <button class="btn btn-warning" id="checkinBtn" onclick="claimCheckin()">立即签到</button>
-        </div>
+        <div class="season-dates" id="seasonDates"></div>
     </div>
 
     <div class="section">
@@ -171,7 +195,7 @@
 
     <div class="section">
         <div class="section-title">🎁 每日免费抽奖</div>
-        <div class="section-subtitle">每天 1 次免费抽奖，必得小额奖励</div>
+        <div class="section-subtitle" id="spinSubtitle">每天 1 次免费抽奖，必得小额奖励（钻石/至尊会员每日可抽2次）</div>
         <div class="wheel-container">
             <div class="wheel-pointer">▼</div>
             <div class="wheel" id="dailyWheel"></div>
@@ -279,6 +303,24 @@
         setTimeout(function() { d.remove(); }, 3500);
     }
 
+    function showGcoinPopup(amount) {
+        var d = document.createElement('div');
+        d.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-size:42px;font-weight:900;color:#fbbf24;text-shadow:0 0 30px rgba(251,191,36,0.8);z-index:10000;pointer-events:none;animation:pointsFloat 1.5s ease-out forwards';
+        d.textContent = '+' + amount.toLocaleString() + ' G币';
+        document.body.appendChild(d);
+        setTimeout(function() { d.remove(); }, 1500);
+    }
+
+    function showRankUpPopup(rank) {
+        var d = document.createElement('div');
+        d.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:linear-gradient(135deg,rgba(251,191,36,0.98),rgba(217,119,6,0.98));color:#1a1a2e;padding:32px 48px;border-radius:24px;box-shadow:0 20px 60px rgba(251,191,36,0.6);z-index:10002;text-align:center;animation:rankUpAnim 0.6s ease-out;border:3px solid rgba(255,255,255,0.5)';
+        d.innerHTML = '<div style="font-size:64px;margin-bottom:12px;color:' + rank.color + '">' + rank.icon + '</div>' +
+            '<div style="font-size:14px;font-weight:600;opacity:0.8;margin-bottom:8px;">🎉 恭喜升段</div>' +
+            '<div style="font-size:32px;font-weight:900;color:' + rank.color + '">' + rank.name + '</div>';
+        document.body.appendChild(d);
+        setTimeout(function() { d.remove(); }, 3000);
+    }
+
     function escapeHtml(t) {
         if (!t) return '';
         var d = document.createElement('div');
@@ -286,64 +328,109 @@
         return d.innerHTML;
     }
 
-    async function loadCheckin() {
+    async function loadSeasonMilestones() {
         try {
-            var data = await apiRequest('/api/game/checkin/status');
-            currentCheckinData = data;
-            document.getElementById('checkinStreakBadge').textContent = '连续 ' + data.consecutive_days + ' 天';
-            document.getElementById('checkinTotal').textContent = data.total_days;
-            document.getElementById('checkinConsec').textContent = data.consecutive_days;
-            var grid = document.getElementById('checkinGrid');
-            var html = '';
-            data.rewards.forEach(function(r) {
-                var cls = 'checkin-day';
-                var mark = '';
-                if (r.status === 'claimed') {
-                    cls += ' claimed';
-                    mark = '<span class="claimed-mark">✅</span>';
-                } else if (r.status === 'current') {
-                    cls += ' current';
-                } else {
-                    mark = '<span class="lock-icon">🔒</span>';
-                }
-                html += '<div class="' + cls + '">' + mark;
-                html += '<div class="day-num">第' + r.day + '天</div>';
-                html += '<span class="day-icon">' + r.icon + '</span>';
-                html += '<div class="day-desc">' + escapeHtml(r.desc) + '</div>';
-                html += '</div>';
-            });
-            grid.innerHTML = html;
-            var btn = document.getElementById('checkinBtn');
-            if (data.claimed_today) {
-                btn.textContent = '今日已签到';
-                btn.disabled = true;
-                btn.className = 'btn btn-outline';
-            } else {
-                btn.textContent = '立即签到';
-                btn.disabled = false;
-                btn.className = 'btn btn-warning';
+            var seasonData = await apiRequest('/api/game/season/status');
+            var srdIcon = document.getElementById('srdIcon');
+            var srdName = document.getElementById('srdName');
+            var srdScore = document.getElementById('srdScore');
+            var srdCurrentLabel = document.getElementById('srdCurrentLabel');
+            var srdNextLabel = document.getElementById('srdNextLabel');
+            var srdProgressFill = document.getElementById('srdProgressFill');
+            var seasonBadge = document.getElementById('seasonBadge');
+            var seasonDates = document.getElementById('seasonDates');
+            if (srdIcon) {
+                srdIcon.textContent = seasonData.current_rank.icon;
+                srdIcon.style.color = seasonData.current_rank.color;
+                srdIcon.style.filter = 'drop-shadow(0 0 20px ' + seasonData.current_rank.color + '80)';
             }
+            if (srdName) {
+                srdName.textContent = seasonData.current_rank.name;
+                srdName.style.color = seasonData.current_rank.color;
+            }
+            if (srdScore) {
+                srdScore.innerHTML = '赛季分数: <strong>' + seasonData.score + '</strong>';
+            }
+            if (srdCurrentLabel) srdCurrentLabel.textContent = seasonData.current_rank.name;
+            if (srdNextLabel) {
+                if (seasonData.next_rank) {
+                    srdNextLabel.textContent = seasonData.next_rank.name + ' (' + seasonData.next_rank.min_score + ')';
+                } else {
+                    srdNextLabel.textContent = '已满级';
+                }
+            }
+            if (srdProgressFill) srdProgressFill.style.width = seasonData.progress + '%';
+            if (seasonBadge) seasonBadge.textContent = '第 ' + seasonData.season_number + ' 赛季';
+            if (seasonDates) {
+                seasonDates.textContent = '📅 ' + seasonData.start_date + ' ~ ' + seasonData.end_date + ' · 剩余 ' + calcDaysLeft(seasonData.end_date) + ' 天';
+            }
+            renderMilestones(seasonData);
         } catch (e) {
-            showMessage('加载签到失败: ' + e.message, 'error');
+            console.error('Load season milestones error:', e);
+            document.getElementById('milestoneGrid').innerHTML = '<div class="loading">加载失败: ' + escapeHtml(e.message) + '</div>';
         }
     }
 
-    async function claimCheckin() {
-        var btn = document.getElementById('checkinBtn');
-        if (!btn || btn.disabled) return;
-        btn.disabled = true;
-        btn.textContent = '签到中...';
+    function calcDaysLeft(endDateStr) {
         try {
-            var data = await apiRequest('/api/game/checkin/claim', {
+            var endDate = new Date(endDateStr);
+            var now = new Date();
+            var days = Math.max(0, Math.ceil((endDate - now) / (1000 * 60 * 60 * 24)));
+            return days;
+        } catch (e) {
+            return 0;
+        }
+    }
+
+    function renderMilestones(seasonData) {
+        var grid = document.getElementById('milestoneGrid');
+        var html = '';
+        var claimedIds = seasonData.milestones_claimed || [];
+        var availableMilestones = seasonData.available_milestones || [];
+        var availableIds = availableMilestones.map(function(m) { return m.rank_id; });
+        var ranks = seasonData.all_ranks || [];
+        ranks.forEach(function(r) {
+            var isClaimed = claimedIds.indexOf(r.id) !== -1;
+            var isAvailable = availableIds.indexOf(r.id) !== -1;
+            var isReached = seasonData.score >= r.min_score;
+            var cls = 'milestone-card';
+            if (isClaimed) cls += ' claimed';
+            else if (isAvailable || isReached) cls += ' claimable';
+            else cls += ' locked';
+            var gcoinMin = r.milestone_gcoin_min;
+            var gcoinMax = r.milestone_gcoin_max;
+            var pointsMin = Math.round(gcoinMin / 100);
+            var pointsMax = Math.round(gcoinMax / 100);
+            html += '<div class="' + cls + '">';
+            html += '<span class="ms-icon" style="color:' + r.color + '">' + r.icon + '</span>';
+            html += '<div class="ms-name">' + r.name + '</div>';
+            html += '<div class="ms-reward">🪙 ' + gcoinMin.toLocaleString() + '~' + gcoinMax.toLocaleString() + ' G币</div>';
+            html += '<div class="ms-reward-points">≈ ' + pointsMin + '~' + pointsMax + ' 积分</div>';
+            if (isClaimed) {
+                html += '<button class="ms-btn claimed" disabled>✅ 已领</button>';
+            } else if (isAvailable || isReached) {
+                html += '<button class="ms-btn claim" onclick="claimMilestone(\'' + r.id + '\')">🎁 领取</button>';
+            } else {
+                html += '<button class="ms-btn locked" disabled>🔒 ' + r.min_score + '分</button>';
+            }
+            html += '</div>';
+        });
+        grid.innerHTML = html;
+    }
+
+    async function claimMilestone(rankId) {
+        try {
+            var data = await apiRequest('/api/game/season/milestone/claim', {
                 method: 'POST',
-                body: JSON.stringify({})
+                body: JSON.stringify({ rank_id: rankId })
             });
             showMessage(data.message, 'success');
-            await loadCheckin();
+            if (data.reward && data.reward.gcoin) {
+                showGcoinPopup(data.reward.gcoin);
+            }
+            loadSeasonMilestones();
         } catch (e) {
-            showMessage(e.message || '签到失败', 'error');
-            btn.disabled = false;
-            btn.textContent = '立即签到';
+            showMessage(e.message, 'error');
         }
     }
 
@@ -480,17 +567,32 @@
             var data = await apiRequest('/api/game/daily-bonus/status');
             var btn = document.getElementById('spinBtn');
             var result = document.getElementById('wheelResult');
-            if (data.used_free) {
+            var subtitle = document.getElementById('spinSubtitle');
+            if (data.max_spins && data.max_spins > 1) {
+                subtitle.textContent = '钻石/至尊会员每日可抽' + data.max_spins + '次，必得小额奖励';
+            } else {
+                subtitle.textContent = '每天 1 次免费抽奖，必得小额奖励（钻石/至尊会员每日可抽2次）';
+            }
+            if (!data.can_spin) {
                 btn.textContent = '今日已抽奖';
                 btn.disabled = true;
                 btn.className = 'btn btn-outline';
                 result.textContent = '明天再来吧！';
                 result.className = 'wheel-result';
             } else {
-                btn.textContent = '🎁 免费抽奖';
+                var remaining = data.remaining_spins || 0;
+                if (remaining > 1) {
+                    btn.textContent = '🎁 免费抽奖 (剩余' + remaining + '次)';
+                } else {
+                    btn.textContent = '🎁 免费抽奖';
+                }
                 btn.disabled = false;
                 btn.className = 'btn btn-warning';
-                result.textContent = '点击按钮开始抽奖';
+                if (remaining > 1) {
+                    result.textContent = '钻石/至尊会员每日可抽' + data.max_spins + '次，剩余' + remaining + '次';
+                } else {
+                    result.textContent = '点击按钮开始抽奖';
+                }
                 result.className = 'wheel-result';
             }
         } catch (e) {
@@ -532,12 +634,17 @@
             btn.disabled = false;
             btn.textContent = '🎁 免费抽奖';
             isAnimating = false;
+            loadDailyBonus();
         }
     }
 
     document.addEventListener('DOMContentLoaded', function() {
+        var style = document.createElement('style');
+        style.textContent = '@keyframes pointsFloat{0%{transform:translate(-50%,-50%) scale(0.5);opacity:0}30%{transform:translate(-50%,-70%) scale(1.3);opacity:1}100%{transform:translate(-50%,-120%) scale(1);opacity:0}}' +
+            '@keyframes rankUpAnim{0%{transform:translate(-50%,-50%) scale(0.3);opacity:0}50%{transform:translate(-50%,-50%) scale(1.1)}100%{transform:translate(-50%,-50%) scale(1);opacity:1}}';
+        document.head.appendChild(style);
         renderDailyWheel();
-        loadCheckin();
+        loadSeasonMilestones();
         loadFirstWin();
         loadChests();
         loadDailyBonus();

@@ -117,6 +117,7 @@
         .member-badge{font-size:12px;background:rgba(251,191,36,0.15);color:#fbbf24;padding:2px 12px;border-radius:12px;border:1px solid rgba(251,191,36,0.2);display:inline-block}
         .bonus-indicator{font-size:12px;color:#34d399;margin-left:4px}
         .streak-badge{font-size:12px;background:rgba(239,68,68,0.15);color:#f87171;padding:2px 10px;border-radius:12px;border:1px solid rgba(239,68,68,0.2);margin-left:8px}
+        .season-badge{font-size:12px;background:rgba(251,191,36,0.15);color:#fbbf24;padding:2px 10px;border-radius:12px;border:1px solid rgba(251,191,36,0.2);margin-left:8px}
         .task-list{display:grid;gap:12px;margin-top:16px}
         .task-item{background:rgba(255,255,255,0.04);border-radius:14px;padding:16px;border:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
         .task-item.completed{border-color:rgba(52,211,153,0.3);background:rgba(52,211,153,0.06)}
@@ -136,6 +137,13 @@
         .task-header h3{font-size:18px;color:#fff}
         .task-summary{font-size:14px;color:rgba(255,255,255,0.6)}
         .task-summary strong{color:#fbbf24}
+        .season-rank-bar{display:flex;align-items:center;gap:12px;padding:12px 16px;background:linear-gradient(135deg,rgba(251,191,36,0.08),rgba(245,158,11,0.02));border-radius:14px;border:1px solid rgba(251,191,36,0.2);margin-bottom:16px;flex-wrap:wrap}
+        .season-rank-bar .sr-icon{font-size:36px}
+        .season-rank-bar .sr-info{flex:1;min-width:150px}
+        .season-rank-bar .sr-name{font-size:18px;font-weight:700;color:#fbbf24;margin-bottom:2px}
+        .season-rank-bar .sr-score{font-size:13px;color:rgba(255,255,255,0.6)}
+        .season-rank-bar .sr-progress{width:100%;height:8px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;margin-top:6px}
+        .season-rank-bar .sr-fill{height:100%;background:linear-gradient(90deg,#667eea,#764ba2,#fbbf24);border-radius:4px;transition:width 0.5s}
         .history-list{display:grid;gap:8px;margin-top:16px}
         .history-record{background:rgba(255,255,255,0.04);border-radius:12px;padding:14px 18px;border:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;transition:all 0.3s}
         .history-record:hover{background:rgba(255,255,255,0.06)}
@@ -207,6 +215,13 @@
         @keyframes pointsDrop{0%{transform:translate(-50%,50px);opacity:0}10%{transform:translate(-50%,0);opacity:1}85%{transform:translate(-50%,0);opacity:1}100%{transform:translate(-50%,-30px);opacity:0}}
         .gcoin-drop-toast{position:fixed;bottom:420px;left:50%;transform:translateX(-50%);padding:14px 24px;border-radius:16px;background:linear-gradient(135deg,rgba(251,191,36,0.95),rgba(217,119,6,0.95));color:#1a1a2e;font-size:14px;font-weight:800;z-index:9998;box-shadow:0 12px 40px rgba(251,191,36,0.7);animation:gcoinDrop 3.2s ease-out forwards;display:flex;align-items:center;gap:12px;border:2px solid rgba(255,255,255,0.4);max-width:90%}
         @keyframes gcoinDrop{0%{transform:translate(-50%,50px);opacity:0}10%{transform:translate(-50%,0);opacity:1}85%{transform:translate(-50%,0);opacity:1}100%{transform:translate(-50%,-30px);opacity:0}}
+        .season-score-toast{position:fixed;bottom:500px;left:50%;transform:translateX(-50%);padding:14px 24px;border-radius:16px;background:linear-gradient(135deg,rgba(236,72,153,0.95),rgba(190,24,93,0.95));color:#fff;font-size:14px;font-weight:800;z-index:9998;box-shadow:0 12px 40px rgba(236,72,153,0.7);animation:seasonDrop 3.5s ease-out forwards;display:flex;align-items:center;gap:12px;border:2px solid rgba(255,255,255,0.3);max-width:90%}
+        @keyframes seasonDrop{0%{transform:translate(-50%,50px);opacity:0}10%{transform:translate(-50%,0);opacity:1}85%{transform:translate(-50%,0);opacity:1}100%{transform:translate(-50%,-30px);opacity:0}}
+        .rank-up-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:linear-gradient(135deg,rgba(251,191,36,0.98),rgba(217,119,6,0.98));color:#1a1a2e;padding:32px 48px;border-radius:24px;box-shadow:0 20px 60px rgba(251,191,36,0.6);z-index:10002;text-align:center;animation:rankUpAnim 0.6s ease-out;border:3px solid rgba(255,255,255,0.5)}
+        @keyframes rankUpAnim{0%{transform:translate(-50%,-50%) scale(0.3);opacity:0}50%{transform:translate(-50%,-50%) scale(1.1)}100%{transform:translate(-50%,-50%) scale(1);opacity:1}}
+        .rank-up-popup .ru-icon{font-size:64px;display:block;margin-bottom:12px}
+        .rank-up-popup .ru-title{font-size:14px;font-weight:600;opacity:0.8;margin-bottom:8px}
+        .rank-up-popup .ru-rank{font-size:32px;font-weight:900}
         .diff-selector{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
         .diff-btn{padding:8px 20px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:20px;color:rgba(255,255,255,0.6);cursor:pointer;transition:all 0.2s;font-size:13px;min-height:40px}
         .diff-btn:hover{background:rgba(255,255,255,0.12)}
@@ -265,6 +280,9 @@
             .whack-hole{font-size:36px}
             .treasure-grid{gap:8px;max-width:300px}
             .treasure-cell{font-size:36px}
+            .season-rank-bar{padding:10px 12px}
+            .season-rank-bar .sr-icon{font-size:28px}
+            .season-rank-bar .sr-name{font-size:16px}
         }
     </style>
 </head>
@@ -280,16 +298,17 @@
             <span id="gcoinDisplay" style="color:#fbbf24;font-weight:600;">🪙 0 G币</span>
             <span id="levelDisplay" style="color:#34d399;font-weight:600;">🌱 新手</span>
             <span id="titleDisplay" style="color:#a78bfa;font-weight:600;display:none;">🐣 初出茅庐</span>
+            <span id="seasonDisplay" style="color:#fbbf24;font-weight:600;">🏆 青铜 (0分)</span>
             <span id="memberStatus" style="color:rgba(255,255,255,0.4);font-weight:600;">👑 普通</span>
             <span id="bonusDisplay" style="color:rgba(255,255,255,0.3);font-size:12px;">加成: +0%</span>
             <span id="dropDisplay" style="color:rgba(255,255,255,0.3);font-size:12px;display:none;">掉落: x1.0</span>
             <span id="streakDisplay" style="color:rgba(255,255,255,0.3);font-size:12px;display:none;">🔥 连赢: 0</span>
         </div>
         <div class="right-group">
+            <a href="/GAME/dashboard.html" class="membership-btn" style="background:linear-gradient(135deg,#fbbf24,#d97706);">🏆 赛季中心</a>
             <a href="/GAME/collection.html" class="membership-btn" style="background:linear-gradient(135deg,#a78bfa,#7c3aed);color:#fff;">📖 卡牌收集</a>
             <a href="/GAME/market.html" class="membership-btn" style="background:linear-gradient(135deg,#60a5fa,#2563eb);color:#fff;">📈 交易市场</a>
             <a href="/GAME/auction.html" class="membership-btn" style="background:linear-gradient(135deg,#f87171,#dc2626);color:#fff;">🔨 拍卖行</a>
-            <a href="/GAME/dashboard.html" class="membership-btn" style="background:linear-gradient(135deg,#34d399,#059669);">🎁 每日福利</a>
             <a href="/GAME/membership.html" class="membership-btn">👑 会员中心</a>
             <a href="/" class="back-btn">← 返回主控台</a>
         </div>
@@ -299,7 +318,7 @@
 
     <div class="tabs">
         <div class="tab active" onclick="switchTab('games', event)">🎮 游戏</div>
-        <div class="tab" onclick="switchTab('tasks', event)">📋 每日任务</div>
+        <div class="tab" onclick="switchTab('tasks', event)">🏆 赛季任务</div>
         <div class="tab" onclick="switchTab('history', event)">📜 游戏记录</div>
         <div class="tab" onclick="switchTab('achievements', event)">🎖️ 成就</div>
         <div class="tab" onclick="switchTab('titles', event)">🏅 称号</div>
@@ -320,8 +339,16 @@
 
     <div class="tab-content" id="tab-tasks">
         <div class="task-header">
-            <h3>📋 每日任务</h3>
+            <h3>🏆 每日赛季任务</h3>
             <div class="task-summary">进度: <strong id="taskProgress">0/0</strong></div>
+        </div>
+        <div class="season-rank-bar" id="seasonRankBar">
+            <div class="sr-icon" id="srIcon">🥉</div>
+            <div class="sr-info">
+                <div class="sr-name" id="srName">青铜</div>
+                <div class="sr-score" id="srScore">赛季分数: 0</div>
+                <div class="sr-progress"><div class="sr-fill" id="srFill" style="width:0%"></div></div>
+            </div>
         </div>
         <div class="task-list" id="taskList">
             <div class="skeleton"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
@@ -417,6 +444,7 @@
             <span id="gameMemberBadge" class="member-badge" style="display:none;">👑 会员</span>
             <span id="gameBonusBadge" class="bonus-indicator" style="display:none;">+30% 加成</span>
             <span id="gameDropBadge" class="bonus-indicator" style="display:none;color:#a78bfa;">掉落 x1.5</span>
+            <span id="gameSeasonBadge" class="season-badge" style="display:none;">🏆 青铜</span>
             <span id="gameStreakBadge" class="streak-badge" style="display:none;">🔥 连赢 0</span>
             <button class="back" onclick="backToGames()">← 返回</button>
         </div>
@@ -448,6 +476,7 @@
     var lastPointsPopupTime = 0;
     var currentPoints = 0;
     var currentGcoins = 0;
+    var currentSeasonRank = null;
 
     function getCsrfTokenFromCookie() {
         try {
@@ -628,6 +657,34 @@
         setTimeout(function() { d.remove(); }, 3200);
     }
 
+    function showSeasonScoreToast(seasonResult) {
+        if (!seasonResult || !seasonResult.score_added) return;
+        var d = document.createElement('div');
+        d.className = 'season-score-toast';
+        d.innerHTML = '<span style="font-size:32px;">🏆</span>' +
+            '<div>' +
+            '<div style="font-size:12px;opacity:0.8;">赛季分数</div>' +
+            '<div style="font-size:16px;font-weight:800;">+' + seasonResult.score_added + ' 分</div>' +
+            '</div>';
+        document.body.appendChild(d);
+        setTimeout(function() { d.remove(); }, 3500);
+        if (seasonResult.rank_changed && seasonResult.new_rank) {
+            setTimeout(function() {
+                showRankUpPopup(seasonResult.new_rank);
+            }, 500);
+        }
+    }
+
+    function showRankUpPopup(rank) {
+        var d = document.createElement('div');
+        d.className = 'rank-up-popup';
+        d.innerHTML = '<span class="ru-icon" style="color:' + rank.color + '">' + rank.icon + '</span>' +
+            '<div class="ru-title">🎉 恭喜升段</div>' +
+            '<div class="ru-rank" style="color:' + rank.color + '">' + rank.name + '</div>';
+        document.body.appendChild(d);
+        setTimeout(function() { d.remove(); }, 3000);
+    }
+
     function renderAllDrops(drops) {
         if (!drops || drops.length === 0) return;
         var cardDrops = drops.filter(function(d) { return d.type === 'card'; });
@@ -703,7 +760,7 @@
         }
         var content = document.getElementById('tab-' + tab);
         if (content) content.classList.add('active');
-        if (tab === 'tasks') loadTasks();
+        if (tab === 'tasks') loadSeasonTasks();
         if (tab === 'history') loadHistory();
         if (tab === 'achievements') loadAchievements();
         if (tab === 'titles') loadTitles();
@@ -798,6 +855,28 @@
         }
     }
 
+    async function loadSeasonDisplay() {
+        try {
+            var data = await apiRequest('/api/game/season/status');
+            currentSeasonRank = data.current_rank;
+            var el = document.getElementById('seasonDisplay');
+            if (el) {
+                el.textContent = '🏆 ' + data.current_rank.icon + ' ' + data.current_rank.name + ' (' + data.score + '分)';
+                el.style.color = data.current_rank.color;
+            }
+            var badge = document.getElementById('gameSeasonBadge');
+            if (badge) {
+                badge.style.display = 'inline-block';
+                badge.textContent = '🏆 ' + data.current_rank.icon + ' ' + data.current_rank.name;
+                badge.style.color = data.current_rank.color;
+                badge.style.background = 'rgba(251,191,36,0.15)';
+                badge.style.borderColor = 'rgba(251,191,36,0.3)';
+            }
+        } catch (e) {
+            console.error('Load season display error:', e);
+        }
+    }
+
     async function loadStats() {
         try {
             var data = await apiRequest('/api/game/stats');
@@ -847,6 +926,14 @@
                     titleEl.style.display = 'none';
                 }
             }
+            if (data.season) {
+                currentSeasonRank = data.season.current_rank;
+                var seasonEl = document.getElementById('seasonDisplay');
+                if (seasonEl) {
+                    seasonEl.textContent = '🏆 ' + data.season.current_rank.icon + ' ' + data.season.current_rank.name + ' (' + data.season.score + '分)';
+                    seasonEl.style.color = data.season.current_rank.color;
+                }
+            }
             await updatePointsDisplay();
         } catch (e) {
             console.error('Stats error:', e);
@@ -894,15 +981,36 @@
             await loadMemberStatus();
             await loadLevelStatus();
             await loadTitleDisplay();
+            await loadSeasonDisplay();
         } catch (e) {
             console.error('Load games error:', e);
             document.getElementById('gameGrid').innerHTML = '<div class="loading">加载失败: ' + escapeHtml(e.message) + '</div>';
         }
     }
 
-    async function loadTasks() {
+    async function loadSeasonTasks() {
         try {
-            var data = await apiRequest('/api/game/tasks');
+            var seasonData = await apiRequest('/api/game/season/status');
+            var srIcon = document.getElementById('srIcon');
+            var srName = document.getElementById('srName');
+            var srScore = document.getElementById('srScore');
+            var srFill = document.getElementById('srFill');
+            if (srIcon) {
+                srIcon.textContent = seasonData.current_rank.icon;
+                srIcon.style.color = seasonData.current_rank.color;
+            }
+            if (srName) {
+                srName.textContent = seasonData.current_rank.name;
+                srName.style.color = seasonData.current_rank.color;
+            }
+            if (srScore) {
+                var nextText = seasonData.next_rank ? (' / 下一段位: ' + seasonData.next_rank.name + ' (' + seasonData.next_rank.min_score + ')') : ' (已满级)';
+                srScore.textContent = '赛季分数: ' + seasonData.score + nextText;
+            }
+            if (srFill) {
+                srFill.style.width = seasonData.progress + '%';
+            }
+            var data = await apiRequest('/api/game/season/tasks');
             var list = document.getElementById('taskList');
             var progress = document.getElementById('taskProgress');
             progress.textContent = data.completed_count + '/' + data.total_count;
@@ -922,8 +1030,8 @@
                 html += '<div class="task-progress-bar"><div class="task-progress-fill" style="width:' + pct + '%"></div></div>';
                 html += '</div>';
                 html += '<div style="display:flex;align-items:center;gap:12px;">';
-                html += '<div class="task-reward">+' + t.reward + '积分</div>';
-                html += '<button class="task-btn ' + btnClass + '" ' + btnDisabled + ' onclick="claimTask(\'' + t.id + '\')">' + btnText + '</button>';
+                html += '<div class="task-reward">+' + t.score_reward + '分</div>';
+                html += '<button class="task-btn ' + btnClass + '" ' + btnDisabled + ' onclick="claimSeasonTask(\'' + t.id + '\')">' + btnText + '</button>';
                 html += '</div>';
                 html += '</div>';
             });
@@ -937,20 +1045,24 @@
                 claimAllBtn.style.display = 'none';
             }
         } catch (e) {
-            console.error('Load tasks error:', e);
+            console.error('Load season tasks error:', e);
             document.getElementById('taskList').innerHTML = '<div class="loading">加载失败: ' + escapeHtml(e.message) + '</div>';
         }
     }
 
-    async function claimTask(taskId) {
+    async function claimSeasonTask(taskId) {
         try {
-            var data = await apiRequest('/api/game/tasks/claim', {
+            var data = await apiRequest('/api/game/season/tasks/claim', {
                 method: 'POST',
                 body: JSON.stringify({ task_id: taskId })
             });
             showMessage(data.message, 'success');
-            showPointsPopup(data.reward || 0);
-            loadTasks();
+            if (data.rank_changed && data.new_rank) {
+                setTimeout(function() {
+                    showRankUpPopup(data.new_rank);
+                }, 500);
+            }
+            loadSeasonTasks();
             loadStats();
         } catch (e) {
             showMessage(e.message, 'error');
@@ -959,13 +1071,17 @@
 
     async function claimAllTasks() {
         try {
-            var data = await apiRequest('/api/game/tasks/claim-all', {
+            var data = await apiRequest('/api/game/season/tasks/claim-all', {
                 method: 'POST',
                 body: JSON.stringify({})
             });
             showMessage(data.message, 'success');
-            if (data.total_reward) showPointsPopup(data.total_reward);
-            loadTasks();
+            if (data.rank_changed && data.new_rank) {
+                setTimeout(function() {
+                    showRankUpPopup(data.new_rank);
+                }, 500);
+            }
+            loadSeasonTasks();
             loadStats();
         } catch (e) {
             showMessage(e.message, 'error');
@@ -1336,6 +1452,13 @@
             var data = await apiRequest('/api/game/personal-stats');
             var html = '';
             html += '<div class="stats-grid">';
+            if (data.season) {
+                html += '<div class="stat-card" style="border-color:' + data.season.current_rank.color + '40;">';
+                html += '<div class="stat-label">🏆 赛季段位</div>';
+                html += '<div class="stat-value" style="color:' + data.season.current_rank.color + ';">' + data.season.current_rank.icon + ' ' + data.season.current_rank.name + '</div>';
+                html += '</div>';
+                html += '<div class="stat-card"><div class="stat-label">🏆 赛季分数</div><div class="stat-value gold">' + data.season.score + '</div></div>';
+            }
             if (data.level_info) {
                 html += '<div class="stat-card"><div class="stat-label">' + data.level_info.icon + ' 等级</div><div class="stat-value green">Lv.' + data.level_info.level + ' ' + escapeHtml(data.level_info.name) + '</div></div>';
             }
@@ -1425,6 +1548,7 @@
         tournamentState = { active: false };
         loadStats();
         loadGames();
+        loadSeasonDisplay();
     }
 
     function updateStreakBadge(streak, loseStreak) {
@@ -1452,6 +1576,35 @@
     function renderBonusMessage(bonusMessage) {
         if (!bonusMessage) return '';
         return '<div style="margin-top:8px;padding:8px 12px;background:rgba(251,191,36,0.1);border-radius:10px;font-size:13px;color:#fbbf24;border:1px solid rgba(251,191,36,0.2);">' + escapeHtml(bonusMessage) + '</div>';
+    }
+
+    function renderSeasonScore(seasonResult) {
+        if (!seasonResult || !seasonResult.score_added) return '';
+        var html = '<div style="margin-top:8px;padding:8px 12px;background:rgba(236,72,153,0.1);border-radius:10px;font-size:13px;color:#ec4899;border:1px solid rgba(236,72,153,0.2);">';
+        html += '🏆 赛季分数 +' + seasonResult.score_added + '（当前 ' + seasonResult.total_score + ' 分）';
+        if (seasonResult.rank_changed && seasonResult.new_rank) {
+            html += ' <span style="color:' + seasonResult.new_rank.color + ';font-weight:700;">🎉 升段至 ' + seasonResult.new_rank.name + '</span>';
+        }
+        html += '</div>';
+        return html;
+    }
+
+    function processGameResult(data, onReplay) {
+        if (data.season_result) {
+            showSeasonScoreToast(data.season_result);
+        }
+        if (data.won) {
+            showMessage('🎉 赢了！+' + data.points_earned + ' G币', 'success');
+            showPointsPopup(data.points_earned);
+        } else if (data.is_consolation) {
+            showMessage('💪 连败安慰奖励 +' + data.points_earned + ' G币', 'warning');
+        } else {
+            showMessage('😔 输了，再试一次！', 'warning');
+        }
+        renderAllDrops(data.drops);
+        updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
+        loadStats();
+        checkNewAchievements();
     }
 
     function renderDice(el) {
@@ -1527,20 +1680,14 @@
                 (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' G币</div>' : '') +
                 bonusInfo +
                 renderBonusMessage(data.bonus_message) +
+                renderSeasonScore(data.season_result) +
                 '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
                 '<div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">' +
                 '<button class="btn btn-warning" onclick="playDice()">🔄 再来一局</button>' +
                 '<button class="btn btn-outline" onclick="backToGames()">← 返回大厅</button>' +
                 '</div>' +
                 '</div>';
-            if (data.won) {
-                showMessage('🎉 赢了！+' + data.points_earned + ' G币', 'success');
-                showPointsPopup(data.points_earned);
-            } else showMessage('😔 输了，再试一次！', 'warning');
-            renderAllDrops(data.drops);
-            updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
-            loadStats();
-            checkNewAchievements();
+            processGameResult(data);
         } catch (e) {
             showMessage(e.message || '游戏失败', 'error');
         } finally {
@@ -1630,20 +1777,14 @@
                 (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' G币</div>' : '') +
                 bonusInfo +
                 renderBonusMessage(data.bonus_message) +
+                renderSeasonScore(data.season_result) +
                 '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
                 '<div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">' +
                 '<button class="btn btn-warning" onclick="playBlackjack()">🔄 再来一局</button>' +
                 '<button class="btn btn-outline" onclick="backToGames()">← 返回大厅</button>' +
                 '</div>' +
                 '</div>';
-            if (data.won) {
-                showMessage('🎉 赢了！+' + data.points_earned + ' G币', 'success');
-                showPointsPopup(data.points_earned);
-            } else showMessage('😔 输了，再试一次！', 'warning');
-            renderAllDrops(data.drops);
-            updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
-            loadStats();
-            checkNewAchievements();
+            processGameResult(data);
         } catch (e) {
             showMessage(e.message || '游戏失败', 'error');
         } finally {
@@ -1757,6 +1898,7 @@
                     (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' G币</div>' : '') +
                     bonusInfo +
                     renderBonusMessage(data.bonus_message) +
+                    renderSeasonScore(data.season_result) +
                     '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
                     '<div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">' +
                     '<button class="btn btn-warning" onclick="startGuessGame()">🔄 再来一局</button>' +
@@ -1772,6 +1914,7 @@
                     showPointsPopup(data.points_earned);
                     loadStats();
                     checkNewAchievements();
+                    if (data.season_result) showSeasonScoreToast(data.season_result);
                 }
                 renderAllDrops(data.drops);
             } else if (data.hint) {
@@ -1894,6 +2037,7 @@
                     (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' G币</div>' : '') +
                     bonusInfo +
                     renderBonusMessage(data.bonus_message) +
+                    renderSeasonScore(data.season_result) +
                     '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
                     '<div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">' +
                     '<button class="btn btn-warning" onclick="startRPSGame()">🔄 再来一局</button>' +
@@ -1908,6 +2052,7 @@
                     showPointsPopup(data.points_earned);
                     loadStats();
                     checkNewAchievements();
+                    if (data.season_result) showSeasonScoreToast(data.season_result);
                 }
                 renderAllDrops(data.drops);
             } else {
@@ -2061,20 +2206,14 @@
                 (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' G币</div>' : '') +
                 bonusInfo +
                 renderBonusMessage(data.bonus_message) +
+                renderSeasonScore(data.season_result) +
                 '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
                 '<div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">' +
                 '<button class="btn btn-warning" onclick="playRoulette()">🔄 再来一局</button>' +
                 '<button class="btn btn-outline" onclick="backToGames()">← 返回大厅</button>' +
                 '</div>' +
                 '</div>';
-            if (data.won) {
-                showMessage('🎉 赢了！+' + data.points_earned + ' G币', 'success');
-                showPointsPopup(data.points_earned);
-            } else showMessage('😔 输了，再试一次！', 'warning');
-            renderAllDrops(data.drops);
-            updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
-            loadStats();
-            checkNewAchievements();
+            processGameResult(data);
         } catch (e) {
             showMessage(e.message || '游戏失败', 'error');
         } finally {
@@ -2181,20 +2320,14 @@
                     (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' G币</div>' : '') +
                     bonusInfo +
                     renderBonusMessage(data.bonus_message) +
+                    renderSeasonScore(data.season_result) +
                     '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
                     '<div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">' +
                     '<button class="btn btn-warning" onclick="playLuckyWheel()">🔄 再来一局</button>' +
                     '<button class="btn btn-outline" onclick="backToGames()">← 返回大厅</button>' +
                     '</div>' +
                     '</div>';
-                if (data.won) {
-                    showMessage('🎉 赢了！+' + data.points_earned + ' G币', 'success');
-                    showPointsPopup(data.points_earned);
-                } else showMessage('😔 谢谢参与！', 'warning');
-                renderAllDrops(data.drops);
-                updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
-                loadStats();
-                checkNewAchievements();
+                processGameResult(data);
                 btn.disabled = false;
                 btn.textContent = '🎰 转动转盘';
                 isAnimating = false;
@@ -2307,6 +2440,7 @@
                 document.getElementById('memoryResult').innerHTML = '<div class="result-box"><div class="big ' + winClass + '">' + data.message + '</div>' +
                     (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' G币</div>' : '') +
                     renderBonusMessage(data.bonus_message) +
+                    renderSeasonScore(data.season_result) +
                     '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
                     '<div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">' +
                     '<button class="btn btn-warning" onclick="startMemoryGame()">🔄 再来一局</button>' +
@@ -2318,6 +2452,7 @@
                 renderAllDrops(data.drops);
                 loadStats();
                 checkNewAchievements();
+                if (data.season_result) showSeasonScoreToast(data.season_result);
                 return;
             }
             memoryState.moves = data.moves;
@@ -2540,20 +2675,14 @@
                 (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' G币</div>' : '') +
                 bonusInfo +
                 renderBonusMessage(data.bonus_message) +
+                renderSeasonScore(data.season_result) +
                 '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
                 '<div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">' +
                 '<button class="btn btn-warning" onclick="startWhackGame()">🔄 再来一局</button>' +
                 '<button class="btn btn-outline" onclick="backToGames()">← 返回大厅</button>' +
                 '</div>' +
                 '</div>';
-            if (data.won) {
-                showMessage('🎉 得分 ' + data.score + '！+' + data.points_earned + ' G币', 'success');
-                showPointsPopup(data.points_earned);
-            } else showMessage('😔 得分 ' + data.score + '，未获得G币', 'warning');
-            renderAllDrops(data.drops);
-            updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
-            loadStats();
-            checkNewAchievements();
+            processGameResult(data);
         } catch (e) {
             showMessage(e.message || '结算失败', 'error');
         }
@@ -2601,20 +2730,14 @@
                 (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' G币</div>' : '') +
                 bonusInfo +
                 renderBonusMessage(data.bonus_message) +
+                renderSeasonScore(data.season_result) +
                 '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
                 '<div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">' +
                 '<button class="btn btn-warning" onclick="playDiceRoyale()">🔄 再来一局</button>' +
                 '<button class="btn btn-outline" onclick="backToGames()">← 返回大厅</button>' +
                 '</div>' +
                 '</div>';
-            if (data.won) {
-                showMessage('🎉 赢了！+' + data.points_earned + ' G币', 'success');
-                showPointsPopup(data.points_earned);
-            } else showMessage('😔 输了，再试一次！', 'warning');
-            renderAllDrops(data.drops);
-            updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
-            loadStats();
-            checkNewAchievements();
+            processGameResult(data);
         } catch (e) {
             showMessage(e.message || '游戏失败', 'error');
         } finally {
@@ -2668,20 +2791,14 @@
                 (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' G币</div>' : '') +
                 bonusInfo +
                 renderBonusMessage(data.bonus_message) +
+                renderSeasonScore(data.season_result) +
                 '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
                 '<div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">' +
                 '<button class="btn btn-warning" onclick="playBlackjackTournament()">🔄 再来一局</button>' +
                 '<button class="btn btn-outline" onclick="backToGames()">← 返回大厅</button>' +
                 '</div>' +
                 '</div>';
-            if (data.won) {
-                showMessage('🎉 锦标赛胜利！+' + data.points_earned + ' G币', 'success');
-                showPointsPopup(data.points_earned);
-            } else showMessage('😔 锦标赛失败！', 'warning');
-            renderAllDrops(data.drops);
-            updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
-            loadStats();
-            checkNewAchievements();
+            processGameResult(data);
         } catch (e) {
             showMessage(e.message || '游戏失败', 'error');
         } finally {
@@ -2741,20 +2858,14 @@
                 (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' G币</div>' : '') +
                 bonusInfo +
                 renderBonusMessage(data.bonus_message) +
+                renderSeasonScore(data.season_result) +
                 '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
                 '<div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">' +
                 '<button class="btn btn-warning" onclick="playTreasureHunt()">🔄 再来一局</button>' +
                 '<button class="btn btn-outline" onclick="backToGames()">← 返回大厅</button>' +
                 '</div>' +
                 '</div>';
-            if (data.won) {
-                showMessage('🎉 找到 ' + data.treasures + ' 个宝藏！+' + data.points_earned + ' G币', 'success');
-                showPointsPopup(data.points_earned);
-            } else showMessage('😔 只找到 ' + data.treasures + ' 个宝藏', 'warning');
-            renderAllDrops(data.drops);
-            updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
-            loadStats();
-            checkNewAchievements();
+            processGameResult(data);
         } catch (e) {
             showMessage(e.message || '游戏失败', 'error');
         } finally {
@@ -2815,20 +2926,14 @@
                 (data.won && data.points_earned > 0 ? '<div style="color:#fbbf24;">⭐ +' + data.points_earned + ' G币</div>' : '') +
                 bonusInfo +
                 renderBonusMessage(data.bonus_message) +
+                renderSeasonScore(data.season_result) +
                 '<div style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:8px;">剩余游戏次数: ' + data.remaining_plays + ' / ' + data.max_plays + '</div>' +
                 '<div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">' +
                 '<button class="btn btn-warning" onclick="playBossBattle()">🔄 再来一局</button>' +
                 '<button class="btn btn-outline" onclick="backToGames()">← 返回大厅</button>' +
                 '</div>' +
                 '</div>';
-            if (data.won) {
-                showMessage('🎉 击败BOSS！+' + data.points_earned + ' G币', 'success');
-                showPointsPopup(data.points_earned);
-            } else showMessage('😔 BOSS存活，挑战失败', 'warning');
-            renderAllDrops(data.drops);
-            updateStreakBadge(data.win_streak || 0, data.lose_streak || 0);
-            loadStats();
-            checkNewAchievements();
+            processGameResult(data);
         } catch (e) {
             showMessage(e.message || '游戏失败', 'error');
         } finally {
@@ -2861,6 +2966,7 @@
         var bonusBadge = document.getElementById('gameBonusBadge');
         var dropBadge = document.getElementById('gameDropBadge');
         var streakBadge = document.getElementById('gameStreakBadge');
+        var seasonBadge = document.getElementById('gameSeasonBadge');
         var baseTier = currentTier.indexOf('_lifetime') !== -1 ? currentTier.replace('_lifetime', '') : currentTier;
         var tierNames = {'normal': '👑 普通会员', 'gold': '🥇 黄金会员', 'diamond': '💎 钻石会员', 'supreme': '👑 至尊会员'};
         if (isMember) {
@@ -2878,6 +2984,13 @@
             memberBadge.style.display = 'none';
             bonusBadge.style.display = 'none';
             dropBadge.style.display = 'none';
+        }
+        if (currentSeasonRank) {
+            seasonBadge.style.display = 'inline-block';
+            seasonBadge.textContent = '🏆 ' + currentSeasonRank.icon + ' ' + currentSeasonRank.name;
+            seasonBadge.style.color = currentSeasonRank.color;
+        } else {
+            seasonBadge.style.display = 'none';
         }
         if (currentWinStreak > 0) {
             streakBadge.style.display = 'inline-block';

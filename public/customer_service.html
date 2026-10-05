@@ -88,6 +88,25 @@
         .message.bot .content .music-card{background:linear-gradient(135deg,#667eea15,#764ba215);border-radius:16px;padding:16px 20px;margin-top:6px;border:1px solid rgba(102,126,234,0.2)}
         .message.bot .content .music-card .music-header{font-size:15px;font-weight:700;color:#333;margin-bottom:12px;display:flex;align-items:center;gap:8px}
         .message.bot .content .music-card .music-hint{font-size:12px;color:#999;margin-top:8px}
+        .message.bot .content .playlist-list{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+        .message.bot .content .playlist-list .playlist-item{background:#fff;border-radius:12px;overflow:hidden;cursor:pointer;transition:all 0.25s;border:1px solid #eee;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+        .message.bot .content .playlist-list .playlist-item:hover{transform:translateY(-3px);box-shadow:0 6px 16px rgba(102,126,234,0.18);border-color:#667eea}
+        .message.bot .content .playlist-list .playlist-item .pl-cover{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#f0f0f0}
+        .message.bot .content .playlist-list .playlist-item .pl-info{padding:8px 10px}
+        .message.bot .content .playlist-list .playlist-item .pl-name{font-size:13px;font-weight:600;color:#333;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:36px}
+        .message.bot .content .playlist-list .playlist-item .pl-meta{font-size:11px;color:#999;margin-top:4px;display:flex;justify-content:space-between}
+        .message.bot .content .playlist-detail{background:#f8f9fa;border-radius:12px;padding:12px 14px;margin-top:6px;border-left:4px solid #667eea}
+        .message.bot .content .playlist-detail .pd-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px}
+        .message.bot .content .playlist-detail .pd-title{font-size:14px;font-weight:700;color:#333}
+        .message.bot .content .playlist-detail .pd-back{font-size:12px;color:#667eea;cursor:pointer;font-weight:600;padding:4px 10px;border-radius:12px;background:#e8f0fe;transition:all 0.2s}
+        .message.bot .content .playlist-detail .pd-back:hover{background:#667eea;color:#fff}
+        .message.bot .content .playlist-detail .pd-song{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:8px;cursor:pointer;transition:all 0.2s;font-size:13px;margin-bottom:4px;background:#fff}
+        .message.bot .content .playlist-detail .pd-song:hover{background:#e8f0fe}
+        .message.bot .content .playlist-detail .pd-song .pd-song-left{flex:1;min-width:0;overflow:hidden}
+        .message.bot .content .playlist-detail .pd-song .pd-song-name{font-weight:600;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .message.bot .content .playlist-detail .pd-song .pd-song-artist{font-size:11px;color:#999;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+        .message.bot .content .playlist-detail .pd-song .pd-song-play{font-size:16px;color:#667eea;flex-shrink:0;margin-left:8px}
+        .message.bot .content .playlist-detail .pd-loading{text-align:center;color:#999;font-size:12px;padding:20px 0}
         .message.bot .matched-tag{display:inline-block;font-size:10px;background:#e8f0fe;color:#667eea;padding:2px 10px;border-radius:12px;margin-top:6px}
         .message.bot .suggestions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
         .message.bot .suggestions .sug{background:#f0f0f0;padding:4px 14px;border-radius:20px;font-size:12px;cursor:pointer;transition:all 0.2s;color:#666}
@@ -125,7 +144,15 @@
         .knowledge-divider{margin:12px 0 8px 0;border-top:1px dashed #e0e0e0}
         .search-tag{display:inline-block;font-size:10px;background:#e8f0fe;color:#667eea;padding:2px 10px;border-radius:12px;margin-top:6px}
         .aplayer{border-radius:12px;margin-top:4px}
-        @media(max-width:600px){.container{height:100vh;border-radius:0;max-width:100%}.header{padding:16px 20px}.chat-area{padding:16px}.input-area{padding:12px 16px}.quick-questions{padding:8px 16px 12px}.message{max-width:92%}.message.bot .content .weather-card .weather-details{grid-template-columns:1fr 1fr}.message.bot .content .time-card .time-details{grid-template-columns:1fr 1fr}.message.bot .content .time-card .time-main{flex-direction:column;text-align:center;gap:8px}}
+        .aplayer .aplayer-lrc{text-align:center}
+        .aplayer .aplayer-lrc p{font-size:14px;color:#888}
+        .aplayer .aplayer-lrc p.aplayer-lrc-current{font-size:16px;color:#667eea;font-weight:700}
+        .aplayer .aplayer-lrc:before,
+        .aplayer .aplayer-lrc:after{background:none !important}
+        .aplayer .aplayer-lrc-contents p{transition:all 0.3s ease}
+        .aplayer .aplayer-lrc-contents p.aplayer-lrc-current{font-size:16px;color:#667eea;font-weight:700;opacity:1}
+        .aplayer .aplayer-lrc-contents p:not(.aplayer-lrc-current){opacity:0.5}
+        @media(max-width:600px){.container{height:100vh;border-radius:0;max-width:100%}.header{padding:16px 20px}.chat-area{padding:16px}.input-area{padding:12px 16px}.quick-questions{padding:8px 16px 12px}.message{max-width:92%}.message.bot .content .weather-card .weather-details{grid-template-columns:1fr 1fr}.message.bot .content .time-card .time-details{grid-template-columns:1fr 1fr}.message.bot .content .time-card .time-main{flex-direction:column;text-align:center;gap:8px}.message.bot .content .playlist-list{grid-template-columns:1fr 1fr}}
     </style>
 </head>
 <body>
@@ -142,7 +169,7 @@
                 输入「搜索+内容」自动获取搜索结果<br>
                 <span class="highlight">试试输入：今日签到、积分余额、搜索天气、美国时间</span>
                 <br><span class="highlight">输入「我的反馈」查看反馈进度和回复</span>
-                <br><span class="highlight">输入「点歌 歌名」即可听歌</span>
+                <br><span class="highlight">输入「点歌 歌名」即可听歌，输入「推荐歌单」发现好音乐</span>
                 <div class="examples">
                     <span class="ex" onclick="sendQuick('今日签到')">📅 今日签到</span>
                     <span class="ex" onclick="sendQuick('积分余额')">⭐ 积分余额</span>
@@ -152,6 +179,7 @@
                     <span class="ex" onclick="sendQuick('我的反馈')">📋 我的反馈</span>
                     <span class="ex" onclick="sendQuick('我的IP签名档')">🌐 IP签名档</span>
                     <span class="ex" onclick="sendQuick('最近地震')">🌍 近期地震</span>
+                    <span class="ex" onclick="sendQuick('推荐歌单')">🎧 推荐歌单</span>
                     <span class="ex" onclick="sendQuick('点歌 晴天')">🎵 点歌台</span>
                     <span class="ex" onclick="sendQuick('新闻')">📰 今日新闻</span>
                     <span class="ex" onclick="sendQuick('北京天气')">🌤️ 搜索天气</span>
@@ -168,6 +196,7 @@
             <span class="quick-btn" onclick="sendQuick('我的反馈')">📋 我的反馈</span>
             <span class="quick-btn" onclick="sendQuick('我的IP签名档')">🌐 IP签名档</span>
             <span class="quick-btn" onclick="sendQuick('最近地震')">🌍 近期地震</span>
+            <span class="quick-btn" onclick="sendQuick('推荐歌单')">🎧 推荐歌单</span>
             <span class="quick-btn" onclick="sendQuick('点歌 晴天')">🎵 点歌台</span>
             <span class="quick-btn" onclick="sendQuick('新闻')">📰 今日新闻</span>
             <span class="quick-btn" onclick="sendQuick('北京天气')">🌤️ 天气</span>
@@ -185,8 +214,46 @@
         var csrfTokenLastFetch = 0;
         var currentUser = null;
         var pendingExtraResults = null;
+        var MUSIC_API_TIMEOUT = 8000;
+        var currentAPlayer = null;
+        var currentPlaylistCache = {};
+
+        function destroyAPlayer() {
+            if (currentAPlayer) {
+                try { currentAPlayer.destroy(); } catch (e) {}
+                currentAPlayer = null;
+            }
+        }
+
+        function forceShowLrc(player) {
+            if (!player) return;
+            setTimeout(function () {
+                try {
+                    if (player.lrc && typeof player.lrc.show === 'function') {
+                        player.lrc.show();
+                    }
+                } catch (e) {}
+            }, 300);
+            setTimeout(function () {
+                try {
+                    if (player.lrc && typeof player.lrc.show === 'function') {
+                        player.lrc.show();
+                    }
+                } catch (e) {}
+            }, 800);
+        }
+
+        function fetchWithTimeout(url, options, timeout) {
+            if (!options) options = {};
+            if (!timeout) timeout = MUSIC_API_TIMEOUT;
+            var controller = new AbortController();
+            var timer = setTimeout(function () { controller.abort(); }, timeout);
+            options.signal = controller.signal;
+            return fetch(url, options).finally(function () { clearTimeout(timer); });
+        }
 
         function goHome() {
+            destroyAPlayer();
             window.location.href = '/';
         }
 
@@ -554,6 +621,175 @@
             return html;
         }
 
+        function buildMetingMusicCard(data) {
+            if (!data || !data.songName) {
+                return '<div style="color:#e74c3c;padding:10px;text-align:center;">未找到该歌曲</div>';
+            }
+            var html = '<div class="music-card">';
+            html += '<div class="music-header">🎵 点歌台 · ' + escapeHtml(data.songName) + '</div>';
+            html += '<meting-js server="netease" type="search" id="' + escapeHtml(data.songName) + '" autoplay="false" fixed="false" mini="false" theme="#667eea"></meting-js>';
+            html += '<div class="music-hint">💡 降级音源：MetingJS · 点击播放按钮开始播放，VIP歌曲将跳过</div>';
+            html += '</div>';
+            return html;
+        }
+
+        async function searchMusicByProxy(songName) {
+            try {
+                var url = '/api/music/search?q=' + encodeURIComponent(songName);
+                var res = await fetchWithTimeout(url, {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: { 'Accept': 'application/json' }
+                });
+                if (!res.ok) return [];
+                var data = await res.json();
+                var list = [];
+                if (Array.isArray(data)) {
+                    list = data;
+                } else if (data && data.data) {
+                    if (Array.isArray(data.data.songs)) list = data.data.songs;
+                    else if (Array.isArray(data.data.list)) list = data.data.list;
+                    else if (Array.isArray(data.data)) list = data.data;
+                } else if (data && Array.isArray(data.songs)) {
+                    list = data.songs;
+                } else if (data && Array.isArray(data.list)) {
+                    list = data.list;
+                }
+                return list;
+            } catch (e) {
+                return [];
+            }
+        }
+
+        async function getMusicUrlByProxy(song) {
+            try {
+                var source = song.source || song.platform || 'netease';
+                var id = song.id || song.song_id || song.songId;
+                if (!id) return null;
+                var url = '/api/music/url?source=' + encodeURIComponent(source) + '&id=' + encodeURIComponent(id);
+                var res = await fetchWithTimeout(url, {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: { 'Accept': 'application/json' }
+                });
+                if (!res.ok) return null;
+                var data = await res.json();
+                var playUrl = null;
+                if (data && data.data && data.data.url) playUrl = data.data.url;
+                else if (data && data.url) playUrl = data.url;
+                else if (typeof data === 'string') playUrl = data;
+                return playUrl;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function cleanLrc(raw) {
+            if (!raw || typeof raw !== 'string') return '';
+            var lines = raw.split(/\r?\n/);
+            var out = [];
+            var timeRe = /^\[\d{1,2}:\d{1,2}(?:[.:]\d{1,3})?\]/;
+            for (var i = 0; i < lines.length; i++) {
+                var line = lines[i].trim();
+                if (!line) continue;
+                if (!timeRe.test(line)) continue;
+                out.push(line);
+            }
+            if (out.length === 0) return '';
+            return out.join('\n');
+        }
+
+        async function getLyricByProxy(song) {
+            try {
+                var source = song.source || song.platform || 'netease';
+                var id = song.id || song.song_id || song.songId;
+                if (!id) return '';
+                var url = '/api/music/lyric?source=' + encodeURIComponent(source) + '&id=' + encodeURIComponent(id);
+                var res = await fetchWithTimeout(url, {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: { 'Accept': 'application/json' }
+                }, 8000);
+                if (!res.ok) return '';
+                var data = await res.json();
+                var lyric = '';
+                if (typeof data === 'string') lyric = data;
+                else if (data && data.data) {
+                    if (typeof data.data === 'string') lyric = data.data;
+                    else if (data.data.lyric) lyric = data.data.lyric;
+                    else if (data.data.lrc) lyric = data.data.lrc;
+                } else if (data && data.lyric) lyric = data.lyric;
+                else if (data && data.lrc) lyric = data.lrc;
+                if (typeof lyric !== 'string') return '';
+                return cleanLrc(lyric);
+            } catch (e) {
+                return '';
+            }
+        }
+
+        async function buildProxyMusicCard(songName) {
+            var songs = await searchMusicByProxy(songName);
+            if (!songs || songs.length === 0) {
+                return null;
+            }
+
+            var maxTry = Math.min(songs.length, 8);
+            var candidates = songs.slice(0, maxTry);
+
+            var results = await Promise.all(candidates.map(async function(s) {
+                var u = await getMusicUrlByProxy(s);
+                if (!u) return null;
+                var lrc = await getLyricByProxy(s);
+                var singer = s.singer || s.artist || s.artists || '未知歌手';
+                var songTitle = s.name || s.title || songName;
+                var cover = s.pic || s.cover || s.album_pic || '';
+                var item = {
+                    name: songTitle,
+                    artist: singer,
+                    url: u,
+                    cover: cover || ''
+                };
+                if (lrc && lrc.length > 0) {
+                    item.lrc = lrc;
+                }
+                return item;
+            }));
+
+            var audioList = results.filter(function(x) { return x !== null; });
+
+            if (audioList.length === 0) {
+                return null;
+            }
+
+            var containerId = 'aplayer_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+
+            var html = '<div class="music-card">';
+            html += '<div class="music-header">🎵 点歌台 · ' + escapeHtml(songName) + '（共 ' + audioList.length + ' 首）</div>';
+            html += '<div id="' + containerId + '" class="aplayer"></div>';
+            html += '<div class="music-hint">💡 音源来源：go-music-api（酷我）· 歌词已自动展开</div>';
+            html += '</div>';
+
+            setTimeout(function () {
+                destroyAPlayer();
+                try {
+                    currentAPlayer = new APlayer({
+                        container: document.getElementById(containerId),
+                        autoplay: false,
+                        theme: '#667eea',
+                        loop: 'all',
+                        order: 'list',
+                        preload: 'none',
+                        listFolded: false,
+                        listMaxHeight: 240,
+                        audio: audioList
+                    });
+                    forceShowLrc(currentAPlayer);
+                } catch (e) {}
+            }, 50);
+
+            return html;
+        }
+
         function buildMusicCard(data) {
             if (!data || !data.songName) {
                 return '<div style="color:#e74c3c;padding:10px;text-align:center;">未找到该歌曲</div>';
@@ -564,6 +800,236 @@
             html += '<div class="music-hint">💡 提示：点击播放按钮开始播放，点击列表切换歌曲，VIP歌曲无法播放，将直接跳过</div>';
             html += '</div>';
             return html;
+        }
+
+        async function fetchRecommendPlaylists() {
+            try {
+                var url = '/api/music/playlist/recommend?source=kuwo&page=1&limit=12';
+                var res = await fetchWithTimeout(url, {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: { 'Accept': 'application/json' }
+                }, 15000);
+                if (!res.ok) return null;
+                var data = await res.json();
+                var list = [];
+                if (Array.isArray(data)) {
+                    list = data;
+                } else if (data && data.data) {
+                    if (Array.isArray(data.data.playlists)) list = data.data.playlists;
+                    else if (Array.isArray(data.data.list)) list = data.data.list;
+                    else if (Array.isArray(data.data)) list = data.data;
+                } else if (data && Array.isArray(data.playlists)) {
+                    list = data.playlists;
+                } else if (data && Array.isArray(data.list)) {
+                    list = data.list;
+                }
+                return list;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        async function fetchPlaylistDetail(playlistId, source) {
+            try {
+                if (!source) source = 'kuwo';
+                var url = '/api/music/playlist/detail?source=' + encodeURIComponent(source) + '&id=' + encodeURIComponent(playlistId);
+                var res = await fetchWithTimeout(url, {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: { 'Accept': 'application/json' }
+                }, 15000);
+                if (!res.ok) return null;
+                var data = await res.json();
+                var detail = {};
+                if (data && data.data) {
+                    detail = data.data;
+                } else if (data) {
+                    detail = data;
+                }
+                if (!detail.songs && Array.isArray(detail)) {
+                    detail = { songs: detail };
+                }
+                return detail;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function buildPlaylistListCard(playlists) {
+            if (!playlists || playlists.length === 0) {
+                return '<div style="color:#999;font-size:14px;padding:10px 0;text-align:center;">🎧 暂无推荐歌单</div>';
+            }
+            var html = '<div class="playlist-list">';
+            playlists.forEach(function(pl, idx) {
+                var cover = pl.pic || pl.cover || pl.coverImg || pl.imgurl || '';
+                var name = pl.name || pl.title || '未知歌单';
+                var playCount = pl.play_count || pl.playCount || pl.listen_num || '';
+                var songCount = pl.song_count || pl.songCount || pl.track_count || pl.total || '';
+                var plId = pl.id || pl.playlist_id || pl.list_id || '';
+                var plSource = pl.source || pl.platform || 'kuwo';
+                var metaRight = '';
+                if (playCount) {
+                    var pc = parseInt(playCount, 10);
+                    if (pc >= 100000000) metaRight = (pc / 100000000).toFixed(1) + '亿';
+                    else if (pc >= 10000) metaRight = (pc / 10000).toFixed(1) + '万';
+                    else metaRight = String(pc);
+                } else if (songCount) {
+                    metaRight = songCount + '首';
+                }
+                html += '<div class="playlist-item" data-id="' + escapeHtml(String(plId)) + '" data-source="' + escapeHtml(plSource) + '" data-name="' + escapeHtml(name) + '">';
+                if (cover) {
+                    html += '<img class="pl-cover" src="' + escapeHtml(cover) + '" alt="' + escapeHtml(name) + '" onerror="this.style.display=\'none\'">';
+                } else {
+                    html += '<div class="pl-cover" style="display:flex;align-items:center;justify-content:center;color:#ccc;font-size:32px;">🎵</div>';
+                }
+                html += '<div class="pl-info">';
+                html += '<div class="pl-name">' + escapeHtml(name) + '</div>';
+                html += '<div class="pl-meta"><span>🎧 歌单</span><span>' + escapeHtml(metaRight) + '</span></div>';
+                html += '</div>';
+                html += '</div>';
+            });
+            html += '</div>';
+            return html;
+        }
+
+        function buildPlaylistSongsHtml(playlistName, songs) {
+            if (!songs || songs.length === 0) {
+                return '<div class="playlist-detail"><div class="pd-header"><div class="pd-title">📀 ' + escapeHtml(playlistName) + '</div><span class="pd-back" onclick="showBackToPlaylists()">← 返回歌单</span></div><div class="pd-loading">该歌单暂无歌曲</div></div>';
+            }
+            var html = '<div class="playlist-detail">';
+            html += '<div class="pd-header"><div class="pd-title">📀 ' + escapeHtml(playlistName) + '（' + songs.length + '首）</div><span class="pd-back" onclick="showBackToPlaylists()">← 返回歌单</span></div>';
+            songs.forEach(function(s, idx) {
+                var singer = s.singer || s.artist || s.artists || '未知歌手';
+                var songName = s.name || s.title || '未知歌曲';
+                var sid = s.id || s.song_id || s.songId || '';
+                var ssource = s.source || s.platform || 'kuwo';
+                html += '<div class="pd-song" data-id="' + escapeHtml(String(sid)) + '" data-source="' + escapeHtml(ssource) + '" data-name="' + escapeHtml(songName) + '" data-singer="' + escapeHtml(singer) + '" data-index="' + idx + '">';
+                html += '<div class="pd-song-left">';
+                html += '<div class="pd-song-name">' + (idx + 1) + '. ' + escapeHtml(songName) + '</div>';
+                html += '<div class="pd-song-artist">' + escapeHtml(singer) + '</div>';
+                html += '</div>';
+                html += '<span class="pd-song-play">▶</span>';
+                html += '</div>';
+            });
+            html += '</div>';
+            return html;
+        }
+
+        function showBackToPlaylists() {
+            var cached = currentPlaylistCache.lastList;
+            if (!cached) return;
+            var lastDetail = document.querySelector('.playlist-detail');
+            if (lastDetail) {
+                var container = lastDetail.parentNode;
+                container.innerHTML = buildPlaylistListCard(cached);
+                bindPlaylistItems(container);
+            }
+        }
+
+        function bindPlaylistItems(container) {
+            var items = container.querySelectorAll('.playlist-item');
+            items.forEach(function(item) {
+                item.addEventListener('click', function() {
+                    var plId = item.getAttribute('data-id');
+                    var plSource = item.getAttribute('data-source');
+                    var plName = item.getAttribute('data-name');
+                    loadAndShowPlaylistSongs(plId, plSource, plName, container);
+                });
+            });
+        }
+
+        async function loadAndShowPlaylistSongs(plId, plSource, plName, container) {
+            container.innerHTML = '<div class="playlist-detail"><div class="pd-header"><div class="pd-title">📀 ' + escapeHtml(plName) + '</div><span class="pd-back" onclick="showBackToPlaylists()">← 返回歌单</span></div><div class="pd-loading">⏳ 正在加载歌曲列表...</div></div>';
+            var detail = await fetchPlaylistDetail(plId, plSource);
+            if (!detail || !detail.songs) {
+                container.innerHTML = '<div class="playlist-detail"><div class="pd-header"><div class="pd-title">📀 ' + escapeHtml(plName) + '</div><span class="pd-back" onclick="showBackToPlaylists()">← 返回歌单</span></div><div class="pd-loading" style="color:#e74c3c;">加载失败，请稍后重试</div></div>';
+                return;
+            }
+            container.innerHTML = buildPlaylistSongsHtml(plName, detail.songs);
+            var songItems = container.querySelectorAll('.pd-song');
+            songItems.forEach(function(si) {
+                si.addEventListener('click', function() {
+                    var sid = si.getAttribute('data-id');
+                    var ssource = si.getAttribute('data-source');
+                    var sname = si.getAttribute('data-name');
+                    var ssinger = si.getAttribute('data-singer');
+                    playSongFromPlaylist(sid, ssource, sname, ssinger);
+                });
+            });
+        }
+
+        async function playSongFromPlaylist(sid, ssource, sname, ssinger) {
+            if (!sid) return;
+            var typing = addTypingIndicator();
+            var songObj = { id: sid, source: ssource, name: sname, singer: ssinger };
+            var u = await getMusicUrlByProxy(songObj);
+            var lrc = await getLyricByProxy(songObj);
+            removeTypingIndicator();
+            if (!u) {
+                addMessage('bot', '该歌曲暂无可播放地址，已为你切换到搜索模式', { title: '😅 播放失败' });
+                var html = await buildProxyMusicCard(sname);
+                if (html) {
+                    addMessage('bot', '', {
+                        title: '🎵 点歌台',
+                        music_data: { songName: sname, useProxy: true },
+                        prebuilt_html: html,
+                        matched_keywords: ['点歌']
+                    });
+                } else {
+                    addMessage('bot', '', {
+                        title: '🎵 点歌台',
+                        music_data: { songName: sname, useProxy: false },
+                        matched_keywords: ['点歌']
+                    });
+                }
+                return;
+            }
+            var containerId = 'aplayer_single_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+            var html = '<div class="music-card">';
+            html += '<div class="music-header">🎵 正在播放 · ' + escapeHtml(sname) + '</div>';
+            html += '<div id="' + containerId + '" class="aplayer"></div>';
+            html += '<div class="music-hint">💡 音源来源：go-music-api（酷我）· 歌词已自动展开</div>';
+            html += '</div>';
+            addMessage('bot', '', {
+                title: '🎧 歌单播放',
+                prebuilt_html: html,
+                matched_keywords: ['歌单']
+            });
+            setTimeout(function () {
+                destroyAPlayer();
+                try {
+                    var audioItem = {
+                        name: sname,
+                        artist: ssinger,
+                        url: u,
+                        cover: ''
+                    };
+                    if (lrc && lrc.length > 0) {
+                        audioItem.lrc = lrc;
+                    }
+                    currentAPlayer = new APlayer({
+                        container: document.getElementById(containerId),
+                        autoplay: true,
+                        theme: '#667eea',
+                        loop: 'all',
+                        order: 'list',
+                        preload: 'auto',
+                        listFolded: true,
+                        audio: [audioItem]
+                    });
+                    forceShowLrc(currentAPlayer);
+                } catch (e) {}
+            }, 50);
+        }
+
+        async function buildRecommendPlaylistsCard() {
+            var playlists = await fetchRecommendPlaylists();
+            if (!playlists) {
+                return null;
+            }
+            currentPlaylistCache.lastList = playlists;
+            return buildPlaylistListCard(playlists);
         }
 
         function buildSearchResult(data) {
@@ -641,6 +1107,11 @@
                     contentDiv.innerHTML = buildCancellationCard(extra.cancellation_data);
                 } else if (extra && extra.cdk_data) {
                     contentDiv.innerHTML = buildCdkCard(extra.cdk_data);
+                } else if (extra && extra.prebuilt_html) {
+                    contentDiv.innerHTML = extra.prebuilt_html;
+                    if (extra.is_playlist_card) {
+                        bindPlaylistItems(contentDiv);
+                    }
                 } else if (extra && extra.music_data) {
                     contentDiv.innerHTML = buildMusicCard(extra.music_data);
                 } else if (extra && extra.feedback_data) {
@@ -681,7 +1152,7 @@
                 }
                 div.appendChild(contentDiv);
                 
-                if (extra && extra.matched_keywords && extra.matched_keywords.length > 0 && !extra.is_personal_query && !extra.search_data && !extra.weather_data && !extra.time_data && !extra.cancellation_data && !extra.cdk_data && !extra.music_data && !extra.feedback_data && !extra.ip_signature_data && !extra.earthquake_data) {
+                if (extra && extra.matched_keywords && extra.matched_keywords.length > 0 && !extra.is_personal_query && !extra.search_data && !extra.weather_data && !extra.time_data && !extra.cancellation_data && !extra.cdk_data && !extra.music_data && !extra.prebuilt_html && !extra.feedback_data && !extra.ip_signature_data && !extra.earthquake_data) {
                     var tag = document.createElement('div');
                     tag.className = 'matched-tag';
                     tag.textContent = '🔍 匹配: ' + extra.matched_keywords.join('、');
@@ -1038,6 +1509,32 @@
                 return;
             }
             
+            var isPlaylistQuery = query.includes('推荐歌单') || query === '歌单' || query.includes('热门歌单');
+            if (isPlaylistQuery) {
+                var typing = addTypingIndicator();
+                var plHtml = null;
+                try {
+                    plHtml = await buildRecommendPlaylistsCard();
+                } catch (e) {}
+                removeTypingIndicator();
+                if (plHtml) {
+                    addMessage('bot', '', {
+                        title: '🎧 推荐歌单（点击查看歌曲）',
+                        prebuilt_html: plHtml,
+                        is_playlist_card: true,
+                        matched_keywords: ['推荐歌单']
+                    });
+                } else {
+                    addMessage('bot', '歌单服务暂不可用，请稍后重试，或者直接「点歌 歌名」', {
+                        title: '❌ 歌单加载失败',
+                        suggestions: ['点歌 晴天', '点歌 孤勇者', '点歌 小幸运']
+                    });
+                }
+                sendBtn.disabled = false;
+                msgInput.focus();
+                return;
+            }
+            
             var isMusicQuery = query.startsWith('点歌') || query.startsWith('听歌') || query.startsWith('来一首');
             if (isMusicQuery) {
                 var songName = query.replace(/^(点歌|听歌|来一首)\s*/, '').trim();
@@ -1050,11 +1547,26 @@
                     msgInput.focus();
                     return;
                 }
-                addMessage('bot', '', {
-                    title: '🎵 点歌台',
-                    music_data: { songName: songName },
-                    matched_keywords: ['点歌']
-                });
+                var typing = addTypingIndicator();
+                var proxyHtml = null;
+                try {
+                    proxyHtml = await buildProxyMusicCard(songName);
+                } catch (e) {}
+                removeTypingIndicator();
+                if (proxyHtml) {
+                    addMessage('bot', '', {
+                        title: '🎵 点歌台',
+                        music_data: { songName: songName, useProxy: true },
+                        prebuilt_html: proxyHtml,
+                        matched_keywords: ['点歌']
+                    });
+                } else {
+                    addMessage('bot', '', {
+                        title: '🎵 点歌台',
+                        music_data: { songName: songName, useProxy: false },
+                        matched_keywords: ['点歌']
+                    });
+                }
                 sendBtn.disabled = false;
                 msgInput.focus();
                 return;
@@ -1135,7 +1647,7 @@
                 } else {
                     addMessage('bot', '没有找到相关内容，试试输入「搜索+内容」进行网页搜索', {
                         title: '😅 未找到匹配结果',
-                        suggestions: ['今日签到', '积分余额', 'PL余额', '新闻', '搜索天气', '美国时间', '查询CDK', '注销卡密', '我的反馈', '我的IP签名档', '最近地震', '点歌 晴天']
+                        suggestions: ['今日签到', '积分余额', 'PL余额', '新闻', '搜索天气', '美国时间', '查询CDK', '注销卡密', '我的反馈', '我的IP签名档', '最近地震', '推荐歌单', '点歌 晴天']
                     });
                 }
             } catch (error) {

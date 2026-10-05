@@ -47,6 +47,68 @@ LEVEL_SYSTEM = {
     ]
 }
 
+SEASON_RANKS = [
+    {'id': 'bronze', 'name': '青铜', 'icon': '🥉', 'min_score': 0, 'color': '#cd7f32', 'milestone_gcoin_min': 10000, 'milestone_gcoin_max': 20000},
+    {'id': 'silver', 'name': '白银', 'icon': '🥈', 'min_score': 600, 'color': '#c0c0c0', 'milestone_gcoin_min': 20000, 'milestone_gcoin_max': 40000},
+    {'id': 'gold', 'name': '黄金', 'icon': '🥇', 'min_score': 1500, 'color': '#ffd700', 'milestone_gcoin_min': 40000, 'milestone_gcoin_max': 70000},
+    {'id': 'platinum', 'name': '铂金', 'icon': '💠', 'min_score': 4000, 'color': '#e5e4e2', 'milestone_gcoin_min': 70000, 'milestone_gcoin_max': 110000},
+    {'id': 'diamond', 'name': '钻石', 'icon': '💎', 'min_score': 8000, 'color': '#b9f2ff', 'milestone_gcoin_min': 110000, 'milestone_gcoin_max': 160000},
+    {'id': 'king', 'name': '王者', 'icon': '👑', 'min_score': 15000, 'color': '#ff6b6b', 'milestone_gcoin_min': 160000, 'milestone_gcoin_max': 200000}
+]
+
+SEASON_CONFIG = {
+    'base_season_number': 1,
+    'base_start_date': '2026-10-05',
+    'duration_days': 30,
+    'score_rate': 0.10
+}
+
+SEASON_DURATION_MS = 30 * 24 * 3600 * 1000
+
+SEASON_TASK_POOL = [
+    {'id': 'season_play_5', 'name': '完成5局游戏', 'target': 5, 'score_reward': 3, 'type': 'play_count'},
+    {'id': 'season_play_10', 'name': '完成10局游戏', 'target': 10, 'score_reward': 6, 'type': 'play_count'},
+    {'id': 'season_play_20', 'name': '完成20局游戏', 'target': 20, 'score_reward': 12, 'type': 'play_count'},
+    {'id': 'season_win_3', 'name': '赢得3局游戏', 'target': 3, 'score_reward': 9, 'type': 'win_count'},
+    {'id': 'season_win_5', 'name': '赢得5局游戏', 'target': 5, 'score_reward': 15, 'type': 'win_count'},
+    {'id': 'season_win_10', 'name': '赢得10局游戏', 'target': 10, 'score_reward': 25, 'type': 'win_count'},
+    {'id': 'season_dice_3', 'name': '玩3局骰子大战', 'target': 3, 'score_reward': 8, 'type': 'game_specific', 'game': 'dice'},
+    {'id': 'season_dice_5', 'name': '玩5局骰子大战', 'target': 5, 'score_reward': 12, 'type': 'game_specific', 'game': 'dice'},
+    {'id': 'season_blackjack_3', 'name': '玩3局二十一点', 'target': 3, 'score_reward': 6, 'type': 'game_specific', 'game': 'blackjack'},
+    {'id': 'season_blackjack_5', 'name': '玩5局二十一点', 'target': 5, 'score_reward': 10, 'type': 'game_specific', 'game': 'blackjack'},
+    {'id': 'season_guess_3', 'name': '玩3局猜数字', 'target': 3, 'score_reward': 15, 'type': 'game_specific', 'game': 'guess_number'},
+    {'id': 'season_guess_5', 'name': '玩5局猜数字', 'target': 5, 'score_reward': 30, 'type': 'game_specific', 'game': 'guess_number'},
+    {'id': 'season_rps_3', 'name': '玩3局石头剪刀布', 'target': 3, 'score_reward': 10, 'type': 'game_specific', 'game': 'rock_paper_scissors'},
+    {'id': 'season_rps_5', 'name': '玩5局石头剪刀布', 'target': 5, 'score_reward': 35, 'type': 'game_specific', 'game': 'rock_paper_scissors'},
+    {'id': 'season_roulette_3', 'name': '玩3局轮盘赌', 'target': 3, 'score_reward': 9, 'type': 'game_specific', 'game': 'roulette'},
+    {'id': 'season_roulette_5', 'name': '玩5局轮盘赌', 'target': 5, 'score_reward': 45, 'type': 'game_specific', 'game': 'roulette'},
+    {'id': 'season_whack_3', 'name': '玩3局打地鼠', 'target': 3, 'score_reward': 12, 'type': 'game_specific', 'game': 'whack_mole'},
+    {'id': 'season_whack_5', 'name': '玩5局打地鼠', 'target': 5, 'score_reward': 30, 'type': 'game_specific', 'game': 'whack_mole'},
+    {'id': 'season_wheel_2', 'name': '玩2局幸运转盘', 'target': 2, 'score_reward': 20, 'type': 'game_specific', 'game': 'lucky_wheel'},
+    {'id': 'season_wheel_3', 'name': '玩3局幸运转盘', 'target': 3, 'score_reward': 30, 'type': 'game_specific', 'game': 'lucky_wheel'},
+    {'id': 'season_memory_2', 'name': '玩2局记忆翻牌', 'target': 2, 'score_reward': 35, 'type': 'game_specific', 'game': 'memory_cards'},
+    {'id': 'season_memory_3', 'name': '玩3局记忆翻牌', 'target': 3, 'score_reward': 55, 'type': 'game_specific', 'game': 'memory_cards'},
+    {'id': 'season_royale_2', 'name': '玩2局骰子王者', 'target': 2, 'score_reward': 26, 'type': 'game_specific', 'game': 'dice_royale'},
+    {'id': 'season_royale_3', 'name': '玩3局骰子王者', 'target': 3, 'score_reward': 38, 'type': 'game_specific', 'game': 'dice_royale'},
+    {'id': 'season_tournament_2', 'name': '玩2局21点锦标赛', 'target': 2, 'score_reward': 16, 'type': 'game_specific', 'game': 'blackjack_tournament'},
+    {'id': 'season_tournament_3', 'name': '玩3局21点锦标赛', 'target': 3, 'score_reward': 28, 'type': 'game_specific', 'game': 'blackjack_tournament'},
+    {'id': 'season_streak_3', 'name': '达成3连胜', 'target': 3, 'score_reward': 10, 'type': 'win_streak'},
+    {'id': 'season_streak_5', 'name': '达成5连胜', 'target': 5, 'score_reward': 50, 'type': 'win_streak'},
+    {'id': 'season_streak_8', 'name': '达成8连胜', 'target': 8, 'score_reward': 80, 'type': 'win_streak'},
+    {'id': 'season_win_streak_game_3', 'name': '单游戏3连胜', 'target': 3, 'score_reward': 20, 'type': 'game_win_streak'},
+    {'id': 'season_win_streak_game_5', 'name': '单游戏5连胜', 'target': 5, 'score_reward': 70, 'type': 'game_win_streak'},
+    {'id': 'season_win_streak_game_8', 'name': '单游戏8连胜', 'target': 8, 'score_reward': 106, 'type': 'game_win_streak'},
+    {'id': 'season_roulette_win_3', 'name': '轮盘赌赢3次', 'target': 3, 'score_reward': 20, 'type': 'game_wins_specific', 'game': 'roulette'},
+    {'id': 'season_dice_win_3', 'name': '骰子大战赢3次', 'target': 3, 'score_reward': 25, 'type': 'game_wins_specific', 'game': 'dice'},
+    {'id': 'season_blackjack_win_3', 'name': '二十一点赢3次', 'target': 3, 'score_reward': 35, 'type': 'game_wins_specific', 'game': 'blackjack'},
+    {'id': 'season_high_score_100', 'name': '单局获得100+G币', 'target': 1, 'score_reward': 3, 'type': 'high_gcoin_single'},
+    {'id': 'season_high_score_200', 'name': '单局获得200+G币', 'target': 1, 'score_reward': 16, 'type': 'high_gcoin_single'},
+    {'id': 'season_high_score_300', 'name': '单局获得300+G币', 'target': 1, 'score_reward': 25, 'type': 'high_gcoin_single'},
+    {'id': 'season_total_gcoin_500', 'name': '累计获得500 G币', 'target': 500, 'score_reward': 40, 'type': 'total_gcoin'},
+    {'id': 'season_total_gcoin_1000', 'name': '累计获得1000 G币', 'target': 1000, 'score_reward': 60, 'type': 'total_gcoin'},
+    {'id': 'season_total_gcoin_2000', 'name': '累计获得2000 G币', 'target': 2000, 'score_reward': 80, 'type': 'total_gcoin'},
+]
+
 TITLE_SYSTEM = {
     'titles': [
         {'id': 'novice', 'name': '初出茅庐', 'icon': '🐣', 'condition_type': 'total_plays', 'condition_value': 1},
@@ -76,27 +138,17 @@ TITLE_SYSTEM = {
         {'id': 'lucky_star', 'name': '天选之子', 'icon': '🌟', 'condition_type': 'lucky_x20', 'condition_value': 1},
         {'id': 'gcoin_collector', 'name': 'G币收藏家', 'icon': '🪙', 'condition_type': 'gcoins_total', 'condition_value': 10000},
         {'id': 'market_trader', 'name': '交易达人', 'icon': '📈', 'condition_type': 'market_trades', 'condition_value': 10},
-        {'id': 'auction_winner', 'name': '拍卖赢家', 'icon': '🔨', 'condition_type': 'auction_wins', 'condition_value': 5}
+        {'id': 'auction_winner', 'name': '拍卖赢家', 'icon': '🔨', 'condition_type': 'auction_wins', 'condition_value': 5},
+        {'id': 'season_bronze', 'name': '青铜战士', 'icon': '🥉', 'condition_type': 'season_rank', 'condition_value': 'bronze'},
+        {'id': 'season_silver', 'name': '白银斗士', 'icon': '🥈', 'condition_type': 'season_rank', 'condition_value': 'silver'},
+        {'id': 'season_gold', 'name': '黄金勇士', 'icon': '🥇', 'condition_type': 'season_rank', 'condition_value': 'gold'},
+        {'id': 'season_platinum', 'name': '铂金精英', 'icon': '💠', 'condition_type': 'season_rank', 'condition_value': 'platinum'},
+        {'id': 'season_diamond', 'name': '钻石王者', 'icon': '💎', 'condition_type': 'season_rank', 'condition_value': 'diamond'},
+        {'id': 'season_king', 'name': '赛季王者', 'icon': '👑', 'condition_type': 'season_rank', 'condition_value': 'king'}
     ]
 }
 
-DAILY_TASK_POOL = [
-    {'id': 'play_3', 'name': '玩3局任意游戏', 'target': 3, 'reward': 5, 'type': 'play_count'},
-    {'id': 'win_2', 'name': '赢得2局游戏', 'target': 2, 'reward': 6, 'type': 'win_count'},
-    {'id': 'play_dice', 'name': '玩1局骰子大战', 'target': 1, 'reward': 4, 'type': 'game_specific', 'game': 'dice'},
-    {'id': 'play_blackjack', 'name': '玩1局二十一点', 'target': 1, 'reward': 4, 'type': 'game_specific', 'game': 'blackjack'},
-    {'id': 'play_guess', 'name': '玩1局猜数字', 'target': 1, 'reward': 4, 'type': 'game_specific', 'game': 'guess_number'},
-    {'id': 'play_rps', 'name': '玩1局石头剪刀布', 'target': 1, 'reward': 4, 'type': 'game_specific', 'game': 'rock_paper_scissors'},
-    {'id': 'play_roulette', 'name': '玩1局轮盘赌', 'target': 1, 'reward': 5, 'type': 'game_specific', 'game': 'roulette'},
-    {'id': 'play_whack', 'name': '玩1局打地鼠', 'target': 1, 'reward': 4, 'type': 'game_specific', 'game': 'whack_mole'},
-    {'id': 'win_streak_2', 'name': '连赢2局', 'target': 2, 'reward': 8, 'type': 'win_streak'},
-    {'id': 'guess_win_fast', 'name': '猜数字5次内猜中', 'target': 1, 'reward': 8, 'type': 'guess_fast'},
-    {'id': 'roulette_win', 'name': '轮盘赌赢一次', 'target': 1, 'reward': 6, 'type': 'roulette_win'},
-    {'id': 'play_dice_royale', 'name': '玩1局骰子王者', 'target': 1, 'reward': 8, 'type': 'game_specific', 'game': 'dice_royale'},
-    {'id': 'play_tournament', 'name': '玩1局21点锦标赛', 'target': 1, 'reward': 8, 'type': 'game_specific', 'game': 'blackjack_tournament'},
-    {'id': 'play_treasure', 'name': '玩1局寻宝迷宫', 'target': 1, 'reward': 10, 'type': 'game_specific', 'game': 'treasure_hunt'},
-    {'id': 'play_boss', 'name': '挑战1次BOSS', 'target': 1, 'reward': 12, 'type': 'game_specific', 'game': 'boss_battle'}
-]
+DAILY_TASK_POOL = []
 
 ACHIEVEMENTS = [
     {'id': 'first_game', 'name': '初出茅庐', 'desc': '玩第一局游戏', 'icon': '🎖️', 'reward': 2, 'type': 'total_plays', 'target': 1},
@@ -120,7 +172,7 @@ ACHIEVEMENTS = [
     {'id': 'roulette_god', 'name': '赌神', 'desc': '轮盘赌猜中数字10次', 'icon': '🎰', 'reward': 100, 'type': 'roulette_number_hits', 'target': 10},
     {'id': 'memory_king', 'name': '记忆之王', 'desc': '记忆翻牌15步内完成3次', 'icon': '🧠', 'reward': 80, 'type': 'memory_perfect', 'target': 3},
     {'id': 'points_1000', 'name': '千金散尽', 'desc': '累计赚取1000积分', 'icon': '💰', 'reward': 30, 'type': 'total_points_earned', 'target': 1000},
-    {'id': 'points_10000', 'name': '万贯家财', 'desc': '累计赚取10000积分', 'icon': '💎', 'reward': 100, 'type': 'total_points_earned', 'target': 10000},
+    {'id': 'points_10000', 'name': '万贯家财', 'desc': '累计赚取10000积分', 'icon': '💎', 'reward': 100, 'type': 'total_points_earned', 'target': 10000, 'gcoin_reward': 500},
     {'id': 'member_bronze', 'name': '会员之路', 'desc': '开通任意会员', 'icon': '👑', 'reward': 10, 'type': 'is_member', 'target': 1},
     {'id': 'member_diamond', 'name': '钻石尊享', 'desc': '成为钻石会员', 'icon': '💎', 'reward': 50, 'type': 'is_diamond', 'target': 1},
     {'id': 'member_gold', 'name': '黄金尊享', 'desc': '成为黄金会员', 'icon': '🥇', 'reward': 30, 'type': 'is_gold', 'target': 1},
@@ -157,7 +209,15 @@ ACHIEVEMENTS = [
     {'id': 'market_50_trades', 'name': '交易大师', 'desc': '完成50笔卡牌交易', 'icon': '🏦', 'reward': 200, 'type': 'market_trades', 'target': 50},
     {'id': 'auction_first_win', 'name': '初次竞拍', 'desc': '赢得第一次拍卖', 'icon': '🔨', 'reward': 20, 'type': 'auction_wins', 'target': 1},
     {'id': 'auction_5_wins', 'name': '拍卖行家', 'desc': '赢得5次拍卖', 'icon': '⚖️', 'reward': 80, 'type': 'auction_wins', 'target': 5},
-    {'id': 'auction_20_wins', 'name': '拍卖之王', 'desc': '赢得20次拍卖', 'icon': '👑', 'reward': 300, 'type': 'auction_wins', 'target': 20}
+    {'id': 'auction_20_wins', 'name': '拍卖之王', 'desc': '赢得20次拍卖', 'icon': '👑', 'reward': 300, 'type': 'auction_wins', 'target': 20},
+    {'id': 'season_first', 'name': '赛季启航', 'desc': '参与第一赛季', 'icon': '🏁', 'reward': 10, 'type': 'season_participate', 'target': 1},
+    {'id': 'season_silver', 'name': '白银晋级', 'desc': '达到白银段位', 'icon': '🥈', 'reward': 30, 'type': 'season_rank', 'target': 'silver'},
+    {'id': 'season_gold', 'name': '黄金晋级', 'desc': '达到黄金段位', 'icon': '🥇', 'reward': 60, 'type': 'season_rank', 'target': 'gold'},
+    {'id': 'season_platinum', 'name': '铂金晋级', 'desc': '达到铂金段位', 'icon': '💠', 'reward': 100, 'type': 'season_rank', 'target': 'platinum'},
+    {'id': 'season_diamond', 'name': '钻石晋级', 'desc': '达到钻石段位', 'icon': '💎', 'reward': 200, 'type': 'season_rank', 'target': 'diamond'},
+    {'id': 'season_king', 'name': '王者登顶', 'desc': '达到王者段位', 'icon': '👑', 'reward': 500, 'type': 'season_rank', 'target': 'king'},
+    {'id': 'season_score_5000', 'name': '赛季精英', 'desc': '赛季分数达到5000', 'icon': '🌟', 'reward': 150, 'type': 'season_score', 'target': 5000},
+    {'id': 'season_score_10000', 'name': '赛季传说', 'desc': '赛季分数达到10000', 'icon': '💫', 'reward': 300, 'type': 'season_score', 'target': 10000}
 ]
 
 ITEM_SHOP = {
@@ -175,15 +235,7 @@ ITEM_SHOP = {
     'member_double_coupon': {'id': 'member_double_coupon', 'name': '优惠券双倍掉落', 'icon': '🎟️', 'desc': '本局会员优惠券掉落概率翻倍（会员专属）', 'price': 20, 'duration': 300, 'games': [], 'member_only': True, 'min_tier': 'gold'},
 }
 
-CHECKIN_REWARDS = [
-    {'day': 1, 'reward_type': 'points', 'value': 3.0, 'icon': '💧', 'desc': '3积分'},
-    {'day': 2, 'reward_type': 'points', 'value': 8.0, 'icon': '💧', 'desc': '8积分'},
-    {'day': 3, 'reward_type': 'point_code', 'value': 1, 'icon': '🎫', 'desc': '普通积分卡密 x1'},
-    {'day': 4, 'reward_type': 'points', 'value': 6.0, 'icon': '💧', 'desc': '6积分'},
-    {'day': 5, 'reward_type': 'boost_code', 'value': 1, 'icon': '⚡', 'desc': '积分加成卡 x1'},
-    {'day': 6, 'reward_type': 'points', 'value': 9.0, 'icon': '💰', 'desc': '9积分'},
-    {'day': 7, 'reward_type': 'premium_point_code', 'value': 1, 'icon': '💎', 'desc': '高级积分卡密 x1'}
-]
+CHECKIN_REWARDS = []
 
 CHEST_REWARDS = [
     {'plays': 1, 'name': '青铜宝箱', 'icon': '🥉', 'points_min': 1, 'points_max': 3, 'item_chance': 0, 'gcoin_min': 0, 'gcoin_max': 0},
@@ -200,7 +252,8 @@ CARD_COLLECTIONS = {
         {'id': 'd3', 'name': '三点', 'emoji': '⚂', 'rarity': 'common'},
         {'id': 'd4', 'name': '四点', 'emoji': '⚃', 'rarity': 'rare'},
         {'id': 'd5', 'name': '五点', 'emoji': '⚄', 'rarity': 'rare'},
-        {'id': 'd6', 'name': '六点', 'emoji': '⚅', 'rarity': 'epic'}
+        {'id': 'd6', 'name': '六点', 'emoji': '⚅', 'rarity': 'epic'},
+        {'id': 'd7', 'name': '豹子', 'emoji': '🎲', 'rarity': 'legendary'}
     ]},
     'blackjack': {'name': '二十一点', 'icon': '🃏', 'cards': [
         {'id': 'bj_A', 'name': 'A', 'emoji': '🅰️', 'rarity': 'epic'},
@@ -232,7 +285,11 @@ CARD_COLLECTIONS = {
     'rock_paper_scissors': {'name': '石头剪刀布', 'icon': '🤖', 'cards': [
         {'id': 'rps_rock', 'name': '石头', 'emoji': '🪨', 'rarity': 'common'},
         {'id': 'rps_paper', 'name': '布', 'emoji': '📄', 'rarity': 'common'},
-        {'id': 'rps_scissors', 'name': '剪刀', 'emoji': '✂️', 'rarity': 'rare'}
+        {'id': 'rps_scissors', 'name': '剪刀', 'emoji': '✂️', 'rarity': 'rare'},
+        {'id': 'rps_fist', 'name': '拳头', 'emoji': '✊', 'rarity': 'common'},
+        {'id': 'rps_hand', 'name': '手掌', 'emoji': '✋', 'rarity': 'rare'},
+        {'id': 'rps_victory', 'name': '胜利', 'emoji': '✌️', 'rarity': 'epic'},
+        {'id': 'rps_champion', 'name': '冠军', 'emoji': '🏆', 'rarity': 'legendary'}
     ]},
     'roulette': {'name': '轮盘赌', 'icon': '🎡', 'cards': [
         {'id': 'r_red', 'name': '红色', 'emoji': '🔴', 'rarity': 'common'},
@@ -266,6 +323,11 @@ CARD_COLLECTIONS = {
     ]},
     'whack_mole': {'name': '打地鼠', 'icon': '🔨', 'cards': [
         {'id': 'wm_mole', 'name': '地鼠', 'emoji': '🐹', 'rarity': 'common'},
+        {'id': 'wm_mole_gold', 'name': '黄金地鼠', 'emoji': '🐭', 'rarity': 'rare'},
+        {'id': 'wm_hammer', 'name': '锤子', 'emoji': '🔨', 'rarity': 'common'},
+        {'id': 'wm_star', 'name': '星星', 'emoji': '⭐', 'rarity': 'rare'},
+        {'id': 'wm_lightning', 'name': '闪电', 'emoji': '⚡', 'rarity': 'epic'},
+        {'id': 'wm_crown', 'name': '王冠', 'emoji': '👑', 'rarity': 'epic'},
         {'id': 'wm_bomb', 'name': '炸弹', 'emoji': '💣', 'rarity': 'legendary'}
     ]},
     'dice_royale': {'name': '骰子王者', 'icon': '👑', 'cards': [
@@ -273,25 +335,35 @@ CARD_COLLECTIONS = {
         {'id': 'dr_silver', 'name': '白银骰', 'emoji': '🥈', 'rarity': 'rare'},
         {'id': 'dr_gold', 'name': '黄金骰', 'emoji': '🥇', 'rarity': 'epic'},
         {'id': 'dr_diamond', 'name': '钻石骰', 'emoji': '💎', 'rarity': 'legendary'},
-        {'id': 'dr_crown', 'name': '王者骰', 'emoji': '👑', 'rarity': 'legendary'}
+        {'id': 'dr_crown', 'name': '王者骰', 'emoji': '👑', 'rarity': 'legendary'},
+        {'id': 'dr_fire', 'name': '烈焰骰', 'emoji': '🔥', 'rarity': 'epic'},
+        {'id': 'dr_star', 'name': '星辰骰', 'emoji': '🌟', 'rarity': 'rare'}
     ]},
     'blackjack_tournament': {'name': '21点锦标赛', 'icon': '🏆', 'cards': [
         {'id': 'bt_bronze', 'name': '青铜奖杯', 'emoji': '🥉', 'rarity': 'common'},
         {'id': 'bt_silver', 'name': '白银奖杯', 'emoji': '🥈', 'rarity': 'rare'},
         {'id': 'bt_gold', 'name': '黄金奖杯', 'emoji': '🥇', 'rarity': 'epic'},
-        {'id': 'bt_crown', 'name': '王者奖杯', 'emoji': '👑', 'rarity': 'legendary'}
+        {'id': 'bt_crown', 'name': '王者奖杯', 'emoji': '👑', 'rarity': 'legendary'},
+        {'id': 'bt_medal', 'name': '奖牌', 'emoji': '🏅', 'rarity': 'rare'},
+        {'id': 'bt_star', 'name': '明星', 'emoji': '⭐', 'rarity': 'epic'}
     ]},
     'treasure_hunt': {'name': '寻宝迷宫', 'icon': '💎', 'cards': [
         {'id': 'th_coin', 'name': '金币', 'emoji': '🪙', 'rarity': 'common'},
         {'id': 'th_gem', 'name': '宝石', 'emoji': '💎', 'rarity': 'rare'},
         {'id': 'th_crown', 'name': '王冠', 'emoji': '👑', 'rarity': 'epic'},
-        {'id': 'th_relic', 'name': '远古遗物', 'emoji': '🏺', 'rarity': 'legendary'}
+        {'id': 'th_relic', 'name': '远古遗物', 'emoji': '🏺', 'rarity': 'legendary'},
+        {'id': 'th_map', 'name': '藏宝图', 'emoji': '🗺️', 'rarity': 'rare'},
+        {'id': 'th_key', 'name': '钥匙', 'emoji': '🔑', 'rarity': 'epic'},
+        {'id': 'th_chest', 'name': '宝箱', 'emoji': '🧰', 'rarity': 'common'}
     ]},
     'boss_battle': {'name': '挑战BOSS', 'icon': '⚔️', 'cards': [
         {'id': 'bb_slime', 'name': '史莱姆', 'emoji': '🟢', 'rarity': 'common'},
         {'id': 'bb_wolf', 'name': '狼王', 'emoji': '🐺', 'rarity': 'rare'},
         {'id': 'bb_dragon', 'name': '巨龙', 'emoji': '🐲', 'rarity': 'epic'},
-        {'id': 'bb_demon', 'name': '魔王', 'emoji': '👹', 'rarity': 'legendary'}
+        {'id': 'bb_demon', 'name': '魔王', 'emoji': '👹', 'rarity': 'legendary'},
+        {'id': 'bb_skeleton', 'name': '骷髅兵', 'emoji': '💀', 'rarity': 'common'},
+        {'id': 'bb_wizard', 'name': '巫师', 'emoji': '🧙', 'rarity': 'epic'},
+        {'id': 'bb_knight', 'name': '暗黑骑士', 'emoji': '🖤', 'rarity': 'rare'}
     ]}
 }
 
@@ -333,6 +405,339 @@ GCOIN_SPEND_TABLE = {
     'ladder_entry': 50,
     'guild_donate': 200,
 }
+
+
+def get_current_season_info():
+    base_start = datetime.strptime(SEASON_CONFIG['base_start_date'], '%Y-%m-%d')
+    now = datetime.now()
+    base_start_ms = int(base_start.timestamp() * 1000)
+    now_ms = int(now.timestamp() * 1000)
+    if now_ms < base_start_ms:
+        season_offset = 0
+        season_start_ms = base_start_ms
+    else:
+        elapsed_ms = now_ms - base_start_ms
+        season_offset = elapsed_ms // SEASON_DURATION_MS
+        season_start_ms = base_start_ms + season_offset * SEASON_DURATION_MS
+    season_number = SEASON_CONFIG['base_season_number'] + season_offset
+    season_start_dt = datetime.fromtimestamp(season_start_ms / 1000)
+    season_end_dt = datetime.fromtimestamp((season_start_ms + SEASON_DURATION_MS) / 1000)
+    return {
+        'season_number': season_number,
+        'start_date': season_start_dt.strftime('%Y-%m-%d'),
+        'end_date': season_end_dt.strftime('%Y-%m-%d'),
+        'duration_days': SEASON_CONFIG['duration_days'],
+        'start_ms': season_start_ms,
+        'end_ms': season_start_ms + SEASON_DURATION_MS
+    }
+
+
+def get_season_info():
+    return get_current_season_info()
+
+
+def get_current_season_number():
+    return get_current_season_info()['season_number']
+
+
+def get_current_season_score(user_data):
+    season_data = user_data.get('season', {})
+    current_season = get_current_season_number()
+    if season_data.get('current_season') != current_season:
+        return 0
+    return season_data.get('score', 0)
+
+
+def get_season_rank(score):
+    current_rank = SEASON_RANKS[0]
+    for rank in SEASON_RANKS:
+        if score >= rank['min_score']:
+            current_rank = rank
+    return current_rank
+
+
+def get_next_season_rank(score):
+    for rank in SEASON_RANKS:
+        if score < rank['min_score']:
+            return rank
+    return None
+
+
+def check_and_reset_season(user_data):
+    if 'season' not in user_data:
+        return False
+    season_data = user_data['season']
+    current_season = get_current_season_number()
+    stored_season = season_data.get('current_season', 0)
+    if stored_season == current_season:
+        return False
+    old_season = stored_season
+    old_score = season_data.get('score', 0)
+    old_rank = season_data.get('rank', 'bronze')
+    season_data['current_season'] = current_season
+    season_data['score'] = 0
+    season_data['rank'] = 'bronze'
+    season_data['milestones_claimed'] = []
+    season_data['season_tasks'] = {}
+    season_data['task_date'] = ''
+    if 'season_history' not in user_data:
+        user_data['season_history'] = []
+    if old_season > 0:
+        user_data['season_history'].insert(0, {
+            'season_number': old_season,
+            'final_score': old_score,
+            'final_rank': old_rank,
+            'reset_at': int(time.time() * 1000)
+        })
+        if len(user_data['season_history']) > 10:
+            user_data['season_history'] = user_data['season_history'][:10]
+    return True
+
+
+def add_season_score(user_data, score):
+    current_season = get_current_season_number()
+    if 'season' not in user_data:
+        user_data['season'] = {
+            'current_season': current_season,
+            'score': 0,
+            'rank': 'bronze',
+            'milestones_claimed': [],
+            'season_tasks': {},
+            'task_date': ''
+        }
+    season_data = user_data['season']
+    if season_data.get('current_season') != current_season:
+        check_and_reset_season(user_data)
+    old_rank = get_season_rank(season_data.get('score', 0))
+    season_data['score'] = round(season_data.get('score', 0) + score, 2)
+    new_rank = get_season_rank(season_data['score'])
+    season_data['rank'] = new_rank['id']
+    return {
+        'old_rank': old_rank,
+        'new_rank': new_rank,
+        'rank_changed': old_rank['id'] != new_rank['id'],
+        'score_added': score,
+        'total_score': season_data['score']
+    }
+
+
+def get_season_milestone_reward(rank_id):
+    for rank in SEASON_RANKS:
+        if rank['id'] == rank_id:
+            gcoin_min = rank['milestone_gcoin_min']
+            gcoin_max = rank['milestone_gcoin_max']
+            gcoin = random.randint(gcoin_min, gcoin_max)
+            return {
+                'rank_id': rank_id,
+                'rank_name': rank['name'],
+                'rank_icon': rank['icon'],
+                'gcoin': gcoin
+            }
+    return None
+
+
+def claim_season_milestone(user_data, rank_id):
+    if 'season' not in user_data:
+        return False, '赛季数据不存在', None
+    current_season = get_current_season_number()
+    season_data = user_data['season']
+    if season_data.get('current_season') != current_season:
+        check_and_reset_season(user_data)
+    claimed = season_data.get('milestones_claimed', [])
+    if rank_id in claimed:
+        return False, '该段位里程碑已领取', None
+    current_rank = get_season_rank(season_data.get('score', 0))
+    rank_order = [r['id'] for r in SEASON_RANKS]
+    current_index = rank_order.index(current_rank['id'])
+    target_index = rank_order.index(rank_id)
+    if target_index > current_index:
+        return False, '尚未达到该段位', None
+    reward = get_season_milestone_reward(rank_id)
+    if not reward:
+        return False, '无效的段位', None
+    claimed.append(rank_id)
+    season_data['milestones_claimed'] = claimed
+    return True, f'成功领取{reward["rank_name"]}里程碑奖励', reward
+
+
+def get_season_tasks(user_data):
+    today = datetime.now().strftime('%Y-%m-%d')
+    current_season = get_current_season_number()
+    if 'season' not in user_data:
+        user_data['season'] = {
+            'current_season': current_season,
+            'score': 0,
+            'rank': 'bronze',
+            'milestones_claimed': [],
+            'season_tasks': {},
+            'task_date': ''
+        }
+    season_data = user_data['season']
+    if season_data.get('current_season') != current_season:
+        check_and_reset_season(user_data)
+    if season_data.get('task_date') != today:
+        selected_tasks = random.sample(SEASON_TASK_POOL, min(5, len(SEASON_TASK_POOL)))
+        season_data['season_tasks'] = {
+            'date': today,
+            'tasks': [
+                {
+                    'id': t['id'],
+                    'name': t['name'],
+                    'type': t['type'],
+                    'target': t['target'],
+                    'score_reward': t['score_reward'],
+                    'game': t.get('game', ''),
+                    'progress': 0,
+                    'claimed': False
+                }
+                for t in selected_tasks
+            ],
+            'bonus_claimed': False
+        }
+        season_data['task_date'] = today
+    tasks_data = season_data.get('season_tasks', {})
+    tasks = tasks_data.get('tasks', [])
+    completed_count = sum(1 for t in tasks if t['progress'] >= t['target'])
+    return {
+        'tasks': tasks,
+        'completed_count': completed_count,
+        'total_count': len(tasks),
+        'all_completed': completed_count >= len(tasks) and len(tasks) > 0,
+        'bonus_claimed': tasks_data.get('bonus_claimed', False),
+        'season_score': season_data.get('score', 0),
+        'season_rank': get_season_rank(season_data.get('score', 0))
+    }
+
+
+def update_season_tasks(user_data, game_id, won, gcoin_earned=0, win_streak=0):
+    if 'season' not in user_data:
+        return
+    current_season = get_current_season_number()
+    season_data = user_data['season']
+    if season_data.get('current_season') != current_season:
+        check_and_reset_season(user_data)
+    tasks_data = season_data.get('season_tasks', {})
+    tasks = tasks_data.get('tasks', [])
+    if not tasks:
+        return
+    for task in tasks:
+        if task['progress'] >= task['target']:
+            continue
+        ttype = task['type']
+        if ttype == 'play_count':
+            task['progress'] = min(task['target'], task['progress'] + 1)
+        elif ttype == 'win_count':
+            if won:
+                task['progress'] = min(task['target'], task['progress'] + 1)
+        elif ttype == 'game_specific':
+            if task.get('game') == game_id:
+                task['progress'] = min(task['target'], task['progress'] + 1)
+        elif ttype == 'win_streak':
+            if won:
+                if win_streak >= task['target']:
+                    task['progress'] = task['target']
+                else:
+                    task['progress'] = max(task['progress'], win_streak)
+        elif ttype == 'game_win_streak':
+            if won and task.get('game') == game_id:
+                if win_streak >= task['target']:
+                    task['progress'] = task['target']
+                else:
+                    task['progress'] = max(task['progress'], win_streak)
+        elif ttype == 'game_wins_specific':
+            if won and task.get('game') == game_id:
+                task['progress'] = min(task['target'], task['progress'] + 1)
+        elif ttype == 'high_gcoin_single':
+            if gcoin_earned >= 100:
+                task['progress'] = task['target']
+        elif ttype == 'total_gcoin':
+            task['progress'] = min(task['target'], task['progress'] + gcoin_earned)
+
+
+def claim_season_task(user_data, task_id):
+    if 'season' not in user_data:
+        return False, '赛季数据不存在', 0
+    current_season = get_current_season_number()
+    season_data = user_data['season']
+    if season_data.get('current_season') != current_season:
+        check_and_reset_season(user_data)
+    tasks_data = season_data.get('season_tasks', {})
+    tasks = tasks_data.get('tasks', [])
+    for task in tasks:
+        if task['id'] == task_id:
+            if task['progress'] < task['target']:
+                return False, '任务未完成', 0
+            if task['claimed']:
+                return False, '任务已领取', 0
+            task['claimed'] = True
+            score_reward = task['score_reward']
+            return True, f'领取成功！获得{score_reward}赛季分数', score_reward
+    return False, '任务不存在', 0
+
+
+def claim_all_season_tasks(user_data):
+    if 'season' not in user_data:
+        return False, '赛季数据不存在', 0
+    current_season = get_current_season_number()
+    season_data = user_data['season']
+    if season_data.get('current_season') != current_season:
+        check_and_reset_season(user_data)
+    tasks_data = season_data.get('season_tasks', {})
+    tasks = tasks_data.get('tasks', [])
+    total_score = 0
+    claimed_count = 0
+    all_claimed_before = all(t['claimed'] for t in tasks) if tasks else False
+    for task in tasks:
+        if task['progress'] >= task['target'] and not task['claimed']:
+            task['claimed'] = True
+            total_score += task['score_reward']
+            claimed_count += 1
+    if claimed_count == 0:
+        return False, '没有可领取的任务', 0
+    just_completed_all = all(t['claimed'] for t in tasks) and not all_claimed_before
+    if just_completed_all and not tasks_data.get('bonus_claimed', False):
+        bonus_score = 50
+        total_score += bonus_score
+        tasks_data['bonus_claimed'] = True
+    return True, f'领取成功！共获得{total_score}赛季分数', total_score
+
+
+def migrate_season_data(user_data):
+    modified = False
+    current_season = get_current_season_number()
+    if 'season' not in user_data:
+        user_data['season'] = {
+            'current_season': current_season,
+            'score': 0,
+            'rank': 'bronze',
+            'milestones_claimed': [],
+            'season_tasks': {},
+            'task_date': ''
+        }
+        modified = True
+    else:
+        season_data = user_data['season']
+        if 'current_season' not in season_data:
+            season_data['current_season'] = current_season
+            modified = True
+        if 'score' not in season_data:
+            season_data['score'] = 0
+            modified = True
+        if 'rank' not in season_data:
+            season_data['rank'] = 'bronze'
+            modified = True
+        if 'milestones_claimed' not in season_data:
+            season_data['milestones_claimed'] = []
+            modified = True
+        if 'season_tasks' not in season_data:
+            season_data['season_tasks'] = {}
+            modified = True
+        if 'task_date' not in season_data:
+            season_data['task_date'] = ''
+            modified = True
+        if check_and_reset_season(user_data):
+            modified = True
+    return modified
 
 
 def get_membership_data(users, username):
@@ -732,6 +1137,8 @@ def migrate_game_membership_data(users, save_users_func):
             if 'renew_count' not in membership:
                 membership['renew_count'] = 0
                 modified = True
+        if migrate_season_data(user_data):
+            modified = True
     if modified:
         save_users_func()
     return modified
@@ -1163,7 +1570,7 @@ def place_bid(users, save_users_func, bidder, auction_id, bid_amount):
     return True, f'出价成功！当前最高价 {bid_amount} G币'
 
 
-def settle_auction(users, save_users_func, auction_id):
+def settle_auction(users, save_users_func, auction_id, email_notifier=None):
     target_seller = None
     target_auction = None
     for username, user_data in users.items():
@@ -1192,6 +1599,28 @@ def settle_auction(users, save_users_func, auction_id):
         target_auction['status'] = 'unsold'
         target_auction['settled_at'] = now_ms
         save_users_func()
+        if email_notifier:
+            try:
+                seller_email = seller_data.get('email', '')
+                if seller_email:
+                    card_name = target_auction.get('card_name', '')
+                    card_emoji = target_auction.get('card_emoji', '')
+                    subject = f'【拍卖流拍通知】您的{card_emoji} {card_name}未成交'
+                    body = f"""尊敬的 {target_seller}：
+
+您上架的传说卡拍卖已结束，无人出价。
+
+拍品：{card_emoji} {card_name}
+起拍价：{target_auction.get("start_price", 0)} G币
+结束时间：{datetime.fromtimestamp(now_ms / 1000).strftime("%Y-%m-%d %H:%M:%S")}
+
+卡牌已自动返还至您的卡牌库，请前往游戏中心查看。
+
+感谢您的使用！
+"""
+                    email_notifier(seller_email, subject, body)
+            except Exception:
+                pass
         return True, '拍卖无人出价，卡牌已返还', 0
     if winner not in users:
         target_auction['status'] = 'failed'
@@ -1223,6 +1652,54 @@ def settle_auction(users, save_users_func, auction_id):
     target_auction['seller_receive'] = seller_receive
     target_auction['system_fee'] = system_fee
     save_users_func()
+    if email_notifier:
+        card_name = target_auction.get('card_name', '')
+        card_emoji = target_auction.get('card_emoji', '')
+        rarity = target_auction.get('rarity', 'legendary')
+        settled_time_str = datetime.fromtimestamp(now_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
+        winner_email = winner_data.get('email', '')
+        if winner_email:
+            try:
+                subject = f'【拍卖成交通知】恭喜您拍得 {card_emoji} {card_name}'
+                body = f"""尊敬的 {winner}：
+
+恭喜您成功拍得传说卡！
+
+拍品：{card_emoji} {card_name}
+稀有度：{rarity}
+成交价：{final_price} G币
+成交时间：{settled_time_str}
+卖家：{target_seller}
+
+卡牌已自动存入您的卡牌库，请前往游戏中心【卡牌收集】页面查看。
+
+感谢您的参与！
+"""
+                email_notifier(winner_email, subject, body)
+            except Exception:
+                pass
+        seller_email = seller_data.get('email', '')
+        if seller_email:
+            try:
+                subject = f'【拍卖成交通知】您的{card_emoji} {card_name}已售出'
+                body = f"""尊敬的 {target_seller}：
+
+您上架的传说卡拍卖已成交。
+
+拍品：{card_emoji} {card_name}
+成交价：{final_price} G币
+成交时间：{settled_time_str}
+买家：{winner}
+平台服务费（5%）：{system_fee} G币
+实际到账：{seller_receive} G币
+
+G币已自动存入您的账户余额。
+
+感谢您的使用！
+"""
+                email_notifier(seller_email, subject, body)
+            except Exception:
+                pass
     return True, f'拍卖成交！{winner} 以 {final_price} G币赢得 {target_auction.get("card_name", "")}', final_price
 
 
@@ -1391,7 +1868,7 @@ def place_bid_server_auction(users, save_users_func, bidder, auction_id, bid_amo
     return True, f'出价成功！当前最高价 {bid_amount} G币'
 
 
-def settle_server_auction(users, save_users_func, auction_id, analytics_cache_ref, save_analytics_func, mail_attachments_ref=None, save_mail_func=None):
+def settle_server_auction(users, save_users_func, auction_id, analytics_cache_ref, save_analytics_func, mail_attachments_ref=None, save_mail_func=None, email_notifier=None):
     if not analytics_cache_ref or 'server_auctions' not in analytics_cache_ref:
         return False, '拍卖不存在', 0
     target_auction = analytics_cache_ref['server_auctions'].get(auction_id)
@@ -1460,6 +1937,33 @@ def settle_server_auction(users, save_users_func, auction_id, analytics_cache_re
     save_users_func()
     if save_analytics_func:
         save_analytics_func()
+    if email_notifier:
+        winner_email = winner_data.get('email', '')
+        if winner_email:
+            try:
+                card_name = target_auction.get('card_name', '')
+                card_emoji = target_auction.get('card_emoji', '')
+                rarity = target_auction.get('rarity', 'legendary')
+                game_name = GAME_NAME_MAP.get(game_id, game_id)
+                settled_time_str = datetime.fromtimestamp(now_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
+                subject = f'【拍卖成交通知】恭喜您拍得 {card_emoji} {card_name}'
+                body = f"""尊敬的 {winner}：
+
+恭喜您成功拍得传说卡！
+
+拍品：{card_emoji} {card_name}
+所属游戏：{game_name}
+稀有度：传说
+成交价：{final_price} G币
+成交时间：{settled_time_str}
+
+卡牌已自动存入您的卡牌库，请前往游戏中心【卡牌收集】页面查看。
+
+感谢您的参与！
+"""
+                email_notifier(winner_email, subject, body)
+            except Exception:
+                pass
     return True, f'拍卖成交！{winner} 以 {final_price} G币赢得 {target_auction.get("card_name", "")}', final_price
 
 
@@ -1482,7 +1986,7 @@ def server_generate_random_auction(analytics_cache_ref, save_analytics_func):
     return server_create_auction(selected['game_id'], selected['card_id'], base_price, duration_hours, analytics_cache_ref, save_analytics_func)
 
 
-def auto_settle_server_auctions(users, save_users_func, analytics_cache_ref, save_analytics_func, mail_attachments_ref=None, save_mail_func=None):
+def auto_settle_server_auctions(users, save_users_func, analytics_cache_ref, save_analytics_func, mail_attachments_ref=None, save_mail_func=None, email_notifier=None):
     if not analytics_cache_ref or 'server_auctions' not in analytics_cache_ref:
         return 0
     now_ms = int(time.time() * 1000)
@@ -1492,7 +1996,7 @@ def auto_settle_server_auctions(users, save_users_func, analytics_cache_ref, sav
         if auc.get('status') != 'active':
             continue
         if auc.get('end_at', 0) <= now_ms:
-            success, message, final_price = settle_server_auction(users, save_users_func, auc_id, analytics_cache_ref, save_analytics_func, mail_attachments_ref, save_mail_func)
+            success, message, final_price = settle_server_auction(users, save_users_func, auc_id, analytics_cache_ref, save_analytics_func, mail_attachments_ref, save_mail_func, email_notifier)
             if success:
                 settled_count += 1
     return settled_count
@@ -1511,6 +2015,16 @@ def should_create_new_auction(analytics_cache_ref, save_analytics_func, interval
         if save_analytics_func:
             save_analytics_func()
         return True
+    return False
+
+
+def has_active_auction(analytics_cache_ref):
+    if not analytics_cache_ref or 'server_auctions' not in analytics_cache_ref:
+        return False
+    now_ms = int(time.time() * 1000)
+    for auc in analytics_cache_ref['server_auctions'].values():
+        if auc.get('status') == 'active' and auc.get('end_at', 0) > now_ms:
+            return True
     return False
 
 
@@ -1556,6 +2070,13 @@ class GameManager:
 
     def get_today(self):
         return datetime.now().strftime('%Y-%m-%d')
+
+    def _can_user_play_game(self, username, game_id):
+        base_games = ['dice', 'blackjack', 'guess_number', 'rock_paper_scissors', 'roulette', 'whack_mole']
+        if game_id in base_games:
+            return True
+        exclusive_games = get_member_exclusive_games(self.users, username)
+        return game_id in exclusive_games
 
     def get_user_game_stats(self, username):
         if username not in self.users:
@@ -1705,122 +2226,144 @@ class GameManager:
             'bonus_message': bonus_message
         }
 
-    def get_daily_tasks(self, username):
+    def get_season_status(self, username):
+        if username not in self.users:
+            return None
+        user_data = self.users[username]
+        migrate_season_data(user_data)
+        check_and_reset_season(user_data)
+        season_data = user_data.get('season', {})
+        score = season_data.get('score', 0)
+        current_rank = get_season_rank(score)
+        next_rank = get_next_season_rank(score)
+        milestones_claimed = season_data.get('milestones_claimed', [])
+        available_milestones = []
+        rank_order = [r['id'] for r in SEASON_RANKS]
+        current_index = rank_order.index(current_rank['id'])
+        for i, rank in enumerate(SEASON_RANKS):
+            if i <= current_index and rank['id'] not in milestones_claimed:
+                available_milestones.append({
+                    'rank_id': rank['id'],
+                    'rank_name': rank['name'],
+                    'rank_icon': rank['icon'],
+                    'gcoin_min': rank['milestone_gcoin_min'],
+                    'gcoin_max': rank['milestone_gcoin_max'],
+                    'claimable': True
+                })
+        progress = 0
+        if next_rank:
+            current_min = current_rank['min_score']
+            next_min = next_rank['min_score']
+            progress = round((score - current_min) / max(1, next_min - current_min) * 100, 1)
+        else:
+            progress = 100
+        season_info = get_season_info()
+        season_history = user_data.get('season_history', [])
+        return {
+            'season_number': season_info['season_number'],
+            'start_date': season_info['start_date'],
+            'end_date': season_info['end_date'],
+            'duration_days': season_info['duration_days'],
+            'score': score,
+            'current_rank': current_rank,
+            'next_rank': next_rank,
+            'progress': progress,
+            'milestones_claimed': milestones_claimed,
+            'available_milestones': available_milestones,
+            'all_ranks': SEASON_RANKS,
+            'season_history': season_history[:5]
+        }
+
+    def claim_season_milestone_reward(self, username, rank_id):
+        if username not in self.users:
+            return False, '用户不存在', None
+        user_data = self.users[username]
+        migrate_season_data(user_data)
+        check_and_reset_season(user_data)
+        success, message, reward = claim_season_milestone(user_data, rank_id)
+        if success:
+            add_gcoins(self.users, username, reward['gcoin'], 'season_milestone')
+            self.save_users()
+        return success, message, reward
+
+    def get_daily_season_tasks(self, username):
         if username not in self.users:
             return {'tasks': [], 'completed_count': 0, 'total_count': 0, 'all_completed': False, 'bonus_claimed': False}
         user_data = self.users[username]
-        today = self.get_today()
-        if 'daily_tasks' not in user_data or user_data['daily_tasks'].get('date') != today:
-            selected = random.sample(DAILY_TASK_POOL, min(3, len(DAILY_TASK_POOL)))
-            user_data['daily_tasks'] = {
-                'date': today,
-                'tasks': [
-                    {'id': t['id'], 'name': t['name'], 'type': t['type'], 'target': t['target'],
-                     'reward': t['reward'], 'game': t.get('game', ''), 'progress': 0, 'claimed': False}
-                    for t in selected
-                ],
-                'bonus_claimed': False
-            }
-            self.save_users()
-        tasks = user_data['daily_tasks']['tasks']
-        completed_count = sum(1 for t in tasks if t['progress'] >= t['target'])
-        return {
-            'tasks': tasks,
-            'completed_count': completed_count,
-            'total_count': len(tasks),
-            'all_completed': completed_count >= len(tasks),
-            'bonus_claimed': user_data['daily_tasks'].get('bonus_claimed', False)
-        }
+        migrate_season_data(user_data)
+        check_and_reset_season(user_data)
+        return get_season_tasks(user_data)
 
-    def update_daily_tasks(self, username, game_id, won, extra=None):
+    def update_season_tasks_progress(self, username, game_id, won, gcoin_earned=0):
         if username not in self.users:
             return
         user_data = self.users[username]
-        today = self.get_today()
-        if 'daily_tasks' not in user_data or user_data['daily_tasks'].get('date') != today:
-            self.get_daily_tasks(username)
-        tasks = user_data['daily_tasks']['tasks']
-        extra = extra or {}
+        migrate_season_data(user_data)
+        check_and_reset_season(user_data)
         ws = self.get_win_streak(username)
-        for task in tasks:
-            if task['progress'] >= task['target']:
-                continue
-            ttype = task['type']
-            if ttype == 'play_count':
-                task['progress'] = min(task['target'], task['progress'] + 1)
-            elif ttype == 'win_count':
-                if won:
-                    task['progress'] = min(task['target'], task['progress'] + 1)
-            elif ttype == 'game_specific':
-                if task.get('game') == game_id:
-                    task['progress'] = min(task['target'], task['progress'] + 1)
-            elif ttype == 'win_streak':
-                if won:
-                    current_streak = ws.get('current_win', 0)
-                    if current_streak >= task['target']:
-                        task['progress'] = task['target']
-                    else:
-                        task['progress'] = current_streak
-                else:
-                    if task['progress'] < task['target']:
-                        task['progress'] = 0
-            elif ttype == 'guess_fast':
-                if game_id == 'guess_number' and extra.get('attempts', 999) <= 5 and won:
-                    task['progress'] = task['target']
-            elif ttype == 'roulette_win':
-                if game_id == 'roulette' and won:
-                    task['progress'] = min(task['target'], task['progress'] + 1)
+        current_win_streak = ws.get('current_win', 0)
+        update_season_tasks(user_data, game_id, won, gcoin_earned, current_win_streak)
         self.save_users()
+
+    def claim_season_task_reward(self, username, task_id):
+        if username not in self.users:
+            return False, '用户不存在', 0, False, None
+        user_data = self.users[username]
+        migrate_season_data(user_data)
+        check_and_reset_season(user_data)
+        success, message, score_reward = claim_season_task(user_data, task_id)
+        if success:
+            season_data = user_data.get('season', {})
+            old_score = season_data.get('score', 0)
+            old_rank = get_season_rank(old_score)
+            season_data['score'] = round(old_score + score_reward, 2)
+            new_rank = get_season_rank(season_data['score'])
+            season_data['rank'] = new_rank['id']
+            add_season_score(user_data, 0)
+            self.save_users()
+            rank_changed = old_rank['id'] != new_rank['id']
+            return True, message, score_reward, rank_changed, new_rank
+        return False, message, 0, False, None
+
+    def claim_all_season_tasks_rewards(self, username):
+        if username not in self.users:
+            return False, '用户不存在', 0, False, None
+        user_data = self.users[username]
+        migrate_season_data(user_data)
+        check_and_reset_season(user_data)
+        success, message, total_score = claim_all_season_tasks(user_data)
+        if success:
+            season_data = user_data.get('season', {})
+            old_score = season_data.get('score', 0)
+            old_rank = get_season_rank(old_score)
+            season_data['score'] = round(old_score + total_score, 2)
+            new_rank = get_season_rank(season_data['score'])
+            season_data['rank'] = new_rank['id']
+            self.save_users()
+            rank_changed = old_rank['id'] != new_rank['id']
+            return True, message, total_score, rank_changed, new_rank
+        return False, message, 0, False, None
+
+    def get_daily_tasks(self, username):
+        return self.get_daily_season_tasks(username)
+
+    def update_daily_tasks(self, username, game_id, won, extra=None):
+        gcoin_earned = 0
+        if extra and isinstance(extra, dict):
+            gcoin_earned = extra.get('gcoin_earned', 0)
+        self.update_season_tasks_progress(username, game_id, won, gcoin_earned)
 
     def claim_daily_task(self, username, task_id):
-        if username not in self.users:
-            return False, '用户不存在'
-        user_data = self.users[username]
-        today = self.get_today()
-        if 'daily_tasks' not in user_data or user_data['daily_tasks'].get('date') != today:
-            return False, '今日任务未生成'
-        for task in user_data['daily_tasks']['tasks']:
-            if task['id'] == task_id:
-                if task['progress'] < task['target']:
-                    return False, '任务未完成'
-                if task['claimed']:
-                    return False, '任务已领取'
-                task['claimed'] = True
-                reward = task['reward']
-                self.add_points(username, reward)
-                add_gcoins(self.users, username, reward * 5, 'daily_task')
-                self.save_users()
-                return True, f'领取成功！获得{reward}积分 + {reward*5}G币'
-        return False, '任务不存在'
+        result = self.claim_season_task_reward(username, task_id)
+        if result[0]:
+            return True, result[1]
+        return False, result[1]
 
     def claim_all_daily_tasks(self, username):
-        if username not in self.users:
-            return False, '用户不存在', 0
-        user_data = self.users[username]
-        today = self.get_today()
-        if 'daily_tasks' not in user_data or user_data['daily_tasks'].get('date') != today:
-            return False, '今日任务未生成', 0
-        all_tasks = user_data['daily_tasks']['tasks']
-        already_claimed_all_before = all(t['claimed'] for t in all_tasks)
-        total_reward = 0
-        claimed_count = 0
-        for task in all_tasks:
-            if task['progress'] >= task['target'] and not task['claimed']:
-                task['claimed'] = True
-                total_reward += task['reward']
-                claimed_count += 1
-        if claimed_count == 0:
-            return False, '没有可领取的任务', 0
-        just_completed_all = all(t['claimed'] for t in all_tasks) and not already_claimed_all_before
-        if just_completed_all and not user_data['daily_tasks'].get('bonus_claimed', False):
-            tier_bonus = get_member_daily_task_bonus(self.users, username)
-            extra_bonus = 15 + tier_bonus
-            total_reward += extra_bonus
-            user_data['daily_tasks']['bonus_claimed'] = True
-        self.add_points(username, total_reward)
-        add_gcoins(self.users, username, total_reward * 5, 'daily_task_all')
-        self.save_users()
-        return True, f'领取成功！共获得{total_reward}积分', total_reward
+        result = self.claim_all_season_tasks_rewards(username)
+        if result[0]:
+            return True, result[1], result[2]
+        return False, result[1], 0
 
     def get_user_cards(self, username):
         if username not in self.users:
@@ -2193,9 +2736,9 @@ class GameManager:
         elif ach['type'] == 'lucky_x20':
             progress = stats.get('lucky_x20', 0)
         elif ach['type'] == 'checkin_streak':
-            progress = checkin.get('consecutive_days', 0)
+            progress = checkin.get('consecutive_days', 0) if checkin else 0
         elif ach['type'] == 'checkin_total':
-            progress = checkin.get('total_days', 0)
+            progress = checkin.get('total_days', 0) if checkin else 0
         elif ach['type'] == 'chest_full':
             progress = 1 if chest.get('all_opened', False) else 0
         elif ach['type'] == 'daily_first_win':
@@ -2218,6 +2761,22 @@ class GameManager:
             progress = stats.get('market_trades', 0)
         elif ach['type'] == 'auction_wins':
             progress = stats.get('auction_wins', 0)
+        elif ach['type'] == 'season_participate':
+            user_data = self.users.get(username, {})
+            season_data = user_data.get('season', {})
+            progress = 1 if season_data.get('current_season') == get_current_season_number() else 0
+        elif ach['type'] == 'season_rank':
+            user_data = self.users.get(username, {})
+            season_data = user_data.get('season', {})
+            current_rank_id = season_data.get('rank', 'bronze')
+            rank_order = [r['id'] for r in SEASON_RANKS]
+            current_index = rank_order.index(current_rank_id) if current_rank_id in rank_order else 0
+            target_index = rank_order.index(ach['target']) if ach['target'] in rank_order else 0
+            progress = 1 if current_index >= target_index else 0
+        elif ach['type'] == 'season_score':
+            user_data = self.users.get(username, {})
+            season_data = user_data.get('season', {})
+            progress = int(season_data.get('score', 0))
         return progress
 
     def _check_and_unlock_achievements(self, username):
@@ -2232,9 +2791,9 @@ class GameManager:
             return
         win_streak = self.get_win_streak(username)
         tier = get_member_tier(self.users, username)
-        checkin = self.get_checkin_status(username)
-        chest = self.get_chest_status(username)
-        daily_first = self.get_daily_first_win_status(username)
+        checkin = {}
+        chest = {}
+        daily_first = {}
         cards = self.get_user_cards(username)
         total_cards = 0
         sets_complete = {}
@@ -2249,9 +2808,13 @@ class GameManager:
             if ach['id'] in unlocked:
                 continue
             progress = self._compute_achievement_progress(ach, stats, win_streak, tier, checkin, chest, daily_first, total_cards, sets_complete, username)
-            if progress >= ach['target']:
+            target = ach['target']
+            if isinstance(target, str):
+                target = 1
+            if progress >= target:
                 unlocked[ach['id']] = {'unlocked_at': int(time.time() * 1000), 'reward_claimed': False}
-                add_gcoins(self.users, username, GCOIN_EARN_TABLE['achievement_unlock'], 'achievement_unlock')
+                gcoin_reward = ach.get('gcoin_reward', GCOIN_EARN_TABLE['achievement_unlock'])
+                add_gcoins(self.users, username, gcoin_reward, 'achievement_unlock')
                 changed = True
         if changed:
             self.save_users()
@@ -2268,9 +2831,9 @@ class GameManager:
         stats = self.get_user_game_stats(username)
         win_streak = self.get_win_streak(username)
         tier = get_member_tier(self.users, username)
-        checkin = self.get_checkin_status(username)
-        chest = self.get_chest_status(username)
-        daily_first = self.get_daily_first_win_status(username)
+        checkin = {}
+        chest = {}
+        daily_first = {}
         cards = self.get_user_cards(username)
         total_cards = 0
         sets_complete = {}
@@ -2284,14 +2847,18 @@ class GameManager:
         for ach in ACHIEVEMENTS:
             progress = self._compute_achievement_progress(ach, stats, win_streak, tier, checkin, chest, daily_first, total_cards, sets_complete, username)
             unlocked_status = ach['id'] in unlocked
+            target = ach['target']
+            if isinstance(target, str):
+                target = 1
             result.append({
                 'id': ach['id'],
                 'name': ach['name'],
                 'desc': ach['desc'],
                 'icon': ach['icon'],
                 'reward': ach['reward'],
-                'progress': min(progress, ach['target']),
-                'target': ach['target'],
+                'gcoin_reward': ach.get('gcoin_reward', GCOIN_EARN_TABLE['achievement_unlock']),
+                'progress': min(progress, target),
+                'target': target,
                 'unlocked': unlocked_status,
                 'reward_claimed': unlocked.get(ach['id'], {}).get('reward_claimed', False) if unlocked_status else False,
                 'unlocked_at': unlocked.get(ach['id'], {}).get('unlocked_at', 0) if unlocked_status else 0
@@ -2319,10 +2886,11 @@ class GameManager:
             return False, '成就不存在'
         ach_data['reward_claimed'] = True
         reward = ach_info['reward']
+        gcoin_reward = ach_info.get('gcoin_reward', reward * 10)
         self.add_points(username, reward)
-        add_gcoins(self.users, username, reward * 10, 'achievement_reward')
+        add_gcoins(self.users, username, gcoin_reward, 'achievement_reward')
         self.save_users()
-        return True, f'领取成功！获得{reward}积分 + {reward*10}G币'
+        return True, f'领取成功！获得{reward}积分 + {gcoin_reward}G币'
 
     def claim_all_achievement_rewards(self, username):
         if username not in self.users:
@@ -2331,6 +2899,7 @@ class GameManager:
         if 'achievements' not in user_data:
             return False, '暂无可领取', 0
         total_reward = 0
+        total_gcoins = 0
         count = 0
         for ach_id, ach_data in user_data['achievements'].items():
             if not ach_data.get('reward_claimed', False):
@@ -2342,13 +2911,14 @@ class GameManager:
                 if ach_info:
                     ach_data['reward_claimed'] = True
                     total_reward += ach_info['reward']
+                    total_gcoins += ach_info.get('gcoin_reward', ach_info['reward'] * 10)
                     count += 1
         if count == 0:
             return False, '没有可领取的成就奖励', 0
         self.add_points(username, total_reward)
-        add_gcoins(self.users, username, total_reward * 10, 'achievement_reward_all')
+        add_gcoins(self.users, username, total_gcoins, 'achievement_reward_all')
         self.save_users()
-        return True, f'领取成功！共获得{total_reward}积分 + {total_reward*10}G币', total_reward
+        return True, f'领取成功！共获得{total_reward}积分 + {total_gcoins}G币', total_reward
 
     def get_user_items(self, username):
         if username not in self.users:
@@ -2530,6 +3100,7 @@ class GameManager:
         level_info = self.get_user_level(username)
         title_info = self.get_user_title(username)
         gcoin_data = get_gcoin_data(self.users, username)
+        season_status = self.get_season_status(username)
         return {
             'total_plays': total_plays,
             'total_wins': total_wins,
@@ -2543,7 +3114,8 @@ class GameManager:
             'game_stats': game_stats,
             'level_info': level_info,
             'title_info': title_info,
-            'gcoins': gcoin_data
+            'gcoins': gcoin_data,
+            'season': season_status
         }
 
     def get_checkin_status(self, username):
@@ -2561,22 +3133,10 @@ class GameManager:
                 if checkin.get('consecutive_days', 0) > 0:
                     checkin['consecutive_days'] = 0
             checkin['claimed_today'] = False
-        day_index = checkin.get('consecutive_days', 0)
-        next_day = day_index + 1 if day_index < 7 else 1
-        rewards = []
-        for i, r in enumerate(CHECKIN_REWARDS):
-            day_num = i + 1
-            if checkin.get('claimed_today', False):
-                status = 'claimed' if day_num <= day_index else 'pending'
-            else:
-                status = 'claimed' if day_num < day_index else ('current' if day_num == day_index + 1 else 'pending')
-            rewards.append({'day': day_num, 'reward_type': r['reward_type'], 'value': r['value'], 'icon': r['icon'], 'desc': r['desc'], 'status': status})
         return {
             'consecutive_days': checkin.get('consecutive_days', 0),
             'total_days': checkin.get('total_days', 0),
             'claimed_today': checkin.get('claimed_today', False),
-            'next_day': next_day,
-            'rewards': rewards,
             'last_date': checkin.get('last_date', '')
         }
 
@@ -2595,23 +3155,12 @@ class GameManager:
             checkin['consecutive_days'] = checkin.get('consecutive_days', 0) + 1
         else:
             checkin['consecutive_days'] = 1
-        if checkin['consecutive_days'] > 7:
-            checkin['consecutive_days'] = 1
-        day_index = checkin['consecutive_days']
-        reward = CHECKIN_REWARDS[day_index - 1]
         checkin['last_date'] = today
         checkin['claimed_today'] = True
         checkin['total_days'] = checkin.get('total_days', 0) + 1
-        if 'history' not in checkin:
-            checkin['history'] = []
-        checkin['history'].append({'date': today, 'day': day_index, 'reward': reward['desc']})
-        if len(checkin['history']) > 90:
-            checkin['history'] = checkin['history'][-90:]
-        reward_msg = reward['desc']
         add_gcoins(self.users, username, 10, 'checkin')
         self.save_users()
-        self._check_and_unlock_achievements(username)
-        return True, f'签到成功！获得 {reward_msg}', reward
+        return True, '签到成功！获得10 G币', None
 
     def get_daily_first_win_status(self, username):
         if username not in self.users:
@@ -2647,7 +3196,6 @@ class GameManager:
         self.add_points(username, 5)
         add_gcoins(self.users, username, GCOIN_EARN_TABLE['daily_first_win'], 'daily_first_win')
         self.save_users()
-        self._check_and_unlock_achievements(username)
         return True, f'领取成功！获得 5 积分 + {GCOIN_EARN_TABLE["daily_first_win"]} G币'
 
     def get_chest_status(self, username):
@@ -2747,7 +3295,6 @@ class GameManager:
                 user_data['items'][item_info['id']]['count'] = user_data['items'][item_info['id']].get('count', 0) + 1
                 item_reward = item_info['name']
         self.save_users()
-        self._check_and_unlock_achievements(username)
         msg_parts = [f'获得 {points} 积分']
         if gcoins > 0:
             msg_parts.append(f'{gcoins} G币')
@@ -2769,7 +3316,18 @@ class GameManager:
             db['used_free'] = False
             db['spins'] = 0
             self.save_users()
-        return {'used_free': db.get('used_free', False), 'can_spin': not db.get('used_free', False), 'spins': db.get('spins', 0)}
+        tier = get_member_tier(self.users, username)
+        base_tier = _get_base_tier(tier)
+        max_spins = 1
+        if base_tier in ['diamond', 'supreme']:
+            max_spins = 2
+        return {
+            'used_free': db.get('used_free', False),
+            'can_spin': db.get('spins', 0) < max_spins,
+            'spins': db.get('spins', 0),
+            'max_spins': max_spins,
+            'remaining_spins': max(0, max_spins - db.get('spins', 0))
+        }
 
     def spin_daily_bonus(self, username):
         if username not in self.users:
@@ -2783,8 +3341,13 @@ class GameManager:
             db['last_date'] = today
             db['used_free'] = False
             db['spins'] = 0
-        if db.get('used_free', False):
-            return False, '今日免费抽奖已用完', None
+        tier = get_member_tier(self.users, username)
+        base_tier = _get_base_tier(tier)
+        max_spins = 1
+        if base_tier in ['diamond', 'supreme']:
+            max_spins = 2
+        if db.get('spins', 0) >= max_spins:
+            return False, f'今日抽奖次数已用完（{max_spins}次）', None
         rewards = [
             {'icon': '💧', 'name': '1积分', 'points': 1, 'gcoins': 10, 'weight': 30},
             {'icon': '💧', 'name': '2积分', 'points': 2, 'gcoins': 20, 'weight': 25},
@@ -2802,12 +3365,13 @@ class GameManager:
             if rand <= cumulative:
                 selected = r
                 break
-        db['used_free'] = True
         db['spins'] = db.get('spins', 0) + 1
+        db['used_free'] = True
         self.add_points(username, selected['points'])
         add_gcoins(self.users, username, selected.get('gcoins', 0), 'daily_bonus')
         self.save_users()
-        return True, f'恭喜获得 {selected["name"]} + {selected.get("gcoins", 0)} G币', selected
+        remaining = max_spins - db['spins']
+        return True, f'恭喜获得 {selected["name"]} + {selected.get("gcoins", 0)} G币（剩余{remaining}次）', selected
 
     def can_play(self, username):
         stats = self.get_user_game_stats(username)
@@ -2827,7 +3391,7 @@ class GameManager:
         max_plays = get_member_max_plays(self.users, username) + bonus_plays
         return max(0, max_plays - stats.get('today_plays', 0))
 
-    def record_play(self, username, won, points_earned, game_id='', check_achievements=True, gcoins_earned=0):
+    def record_play(self, username, won, points_earned, game_id='', check_achievements=True, gcoins_earned=0, is_consolation=False, is_drop=False):
         stats = self.get_user_game_stats(username)
         if not stats:
             return None
@@ -2980,6 +3544,7 @@ class GameManager:
         streak = self.update_win_streak(username, won)
         final_points = points
         bonus_message = ''
+        is_consolation = False
         if won and streak.get('bonus_rate', 0) > 0:
             bonus_points = int(round(points * streak['bonus_rate']))
             final_points = points + bonus_points
@@ -2987,9 +3552,9 @@ class GameManager:
         if not won and streak.get('current_lose', 0) >= 3:
             consolation = 2
             final_points = consolation
+            is_consolation = True
             bonus_message = f'💪 连败{streak["current_lose"]}局，获得安慰奖励+{consolation} G币'
-            won = True
-        return final_points, bonus_message, streak
+        return final_points, bonus_message, streak, is_consolation
 
     def apply_active_items(self, username, won, points, game_id):
         effects = self.get_active_effects(username)
@@ -3031,6 +3596,22 @@ class GameManager:
     def consume_reroll(self, username):
         self.consume_effects(username, 'reroll', persist=False)
 
+    def add_season_score_from_win(self, username, gcoin_earned, is_drop=False, is_consolation=False):
+        if is_drop or is_consolation:
+            return None
+        if gcoin_earned <= 0:
+            return None
+        user_data = self.users.get(username)
+        if not user_data:
+            return None
+        check_and_reset_season(user_data)
+        score_to_add = round(gcoin_earned * SEASON_CONFIG['score_rate'], 2)
+        if score_to_add <= 0:
+            return None
+        result = add_season_score(user_data, score_to_add)
+        self.save_users()
+        return result
+
     def play_dice(self, username, bet_type='high', bet_value=7, reroll=False):
         if not self.can_play(username):
             return {'success': False, 'error': '今日游戏次数已达上限', 'remaining': 0}
@@ -3065,14 +3646,15 @@ class GameManager:
         points = self.calculate_points(won, 'dice', extra_data)
         if won and is_triple:
             points = int(points * 2)
-        final_points, bonus_message, streak = self.apply_streak_and_consolation(username, won, points, 'dice', extra_data)
-        if bonus_message and not won:
+        final_points, bonus_message, streak, is_consolation = self.apply_streak_and_consolation(username, won, points, 'dice', extra_data)
+        if is_consolation:
             won = True
         final_points, item_message = self.apply_active_items(username, won, final_points, 'dice')
         amulet_used = self.check_amulet(username, won)
         self.record_play(username, won, 0, 'dice', check_achievements=False, gcoins_earned=final_points)
         self.add_game_history(username, 'dice', won, final_points, f'你{player_total} vs AI{ai_total}' + (' [豹子]' if is_triple else ''))
-        self.update_daily_tasks(username, 'dice', won)
+        self.update_season_tasks_progress(username, 'dice', won, final_points if not is_consolation else 0)
+        season_result = self.add_season_score_from_win(username, final_points, is_drop=False, is_consolation=is_consolation)
         drops = self.roll_all_drops(username, 'dice', won)
         remaining = self.get_remaining_plays(username)
         if amulet_used:
@@ -3099,7 +3681,9 @@ class GameManager:
             'lose_streak': streak.get('current_lose', 0),
             'bonus_message': (bonus_message + ' ' if bonus_message else '') + item_message,
             'card_drop': next((d for d in drops if d.get('type') == 'card'), None),
-            'drops': drops
+            'drops': drops,
+            'season_result': season_result,
+            'is_consolation': is_consolation
         }
 
     def play_blackjack(self, username, double=False, insurance=False):
@@ -3153,14 +3737,15 @@ class GameManager:
         points = self.calculate_points(won, 'blackjack', {'player_total': player_total, 'dealer_total': dealer_total, 'username': username})
         if won and is_double:
             points = points * 2
-        final_points, bonus_message, streak = self.apply_streak_and_consolation(username, won, points, 'blackjack', {'player_total': player_total, 'dealer_total': dealer_total})
-        if bonus_message and not won:
+        final_points, bonus_message, streak, is_consolation = self.apply_streak_and_consolation(username, won, points, 'blackjack', {'player_total': player_total, 'dealer_total': dealer_total})
+        if is_consolation:
             won = True
         final_points, item_message = self.apply_active_items(username, won, final_points, 'blackjack')
         amulet_used = self.check_amulet(username, won)
         self.record_play(username, won, 0, 'blackjack', check_achievements=False, gcoins_earned=final_points)
         self.add_game_history(username, 'blackjack', won, final_points, f'你{player_total} vs 庄家{dealer_total}' + (' [双倍]' if is_double else '') + (' [保险]' if insurance_won else ''))
-        self.update_daily_tasks(username, 'blackjack', won)
+        self.update_season_tasks_progress(username, 'blackjack', won, final_points if not is_consolation else 0)
+        season_result = self.add_season_score_from_win(username, final_points, is_drop=False, is_consolation=is_consolation)
         drops = self.roll_all_drops(username, 'blackjack', won)
         remaining = self.get_remaining_plays(username)
         if amulet_used:
@@ -3189,7 +3774,9 @@ class GameManager:
             'lose_streak': streak.get('current_lose', 0),
             'bonus_message': (bonus_message + ' ' if bonus_message else '') + item_message,
             'card_drop': next((d for d in drops if d.get('type') == 'card'), None),
-            'drops': drops
+            'drops': drops,
+            'season_result': season_result,
+            'is_consolation': is_consolation
         }
 
     def start_guess_game(self, username, difficulty='normal'):
@@ -3249,11 +3836,12 @@ class GameManager:
             points = self.calculate_points(True, 'guess_number', {'attempts': state['attempts'], 'username': username})
             if state.get('difficulty') == 'hard':
                 points = int(points * 1.5)
-            final_points, bonus_message, streak = self.apply_streak_and_consolation(username, True, points, 'guess_number', {'attempts': state['attempts']})
+            final_points, bonus_message, streak, is_consolation = self.apply_streak_and_consolation(username, True, points, 'guess_number', {'attempts': state['attempts']})
             final_points, item_message = self.apply_active_items(username, True, final_points, 'guess_number')
             self.record_play(username, True, 0, 'guess_number', check_achievements=False, gcoins_earned=final_points)
             self.add_game_history(username, 'guess_number', True, final_points, f'{state["attempts"]}次猜中' + (' [困难]' if state.get('difficulty') == 'hard' else ''))
-            self.update_daily_tasks(username, 'guess_number', True, {'attempts': state['attempts']})
+            self.update_season_tasks_progress(username, 'guess_number', True, final_points)
+            season_result = self.add_season_score_from_win(username, final_points)
             drops = self.roll_all_drops(username, 'guess_number', True)
             remaining = self.get_remaining_plays(username)
             user_data = self.users.get(username, {})
@@ -3279,7 +3867,8 @@ class GameManager:
                 'lose_streak': streak.get('current_lose', 0),
                 'bonus_message': (bonus_message + ' ' if bonus_message else '') + item_message,
                 'card_drop': next((d for d in drops if d.get('type') == 'card'), None),
-                'drops': drops
+                'drops': drops,
+                'season_result': season_result
             }
         elif guess < secret:
             state['hints'].append(str(guess) + ' 太小了')
@@ -3290,11 +3879,11 @@ class GameManager:
         remaining_attempts = state['max_attempts'] - state['attempts']
         if remaining_attempts <= 0:
             state['active'] = False
-            final_points, bonus_message, streak = self.apply_streak_and_consolation(username, False, 0, 'guess_number', {})
+            final_points, bonus_message, streak, is_consolation = self.apply_streak_and_consolation(username, False, 0, 'guess_number', {})
             amulet_used = self.check_amulet(username, False)
             self.record_play(username, False, 0, 'guess_number', check_achievements=False, gcoins_earned=final_points)
             self.add_game_history(username, 'guess_number', False, final_points, f'未猜中，答案{secret}')
-            self.update_daily_tasks(username, 'guess_number', False)
+            self.update_season_tasks_progress(username, 'guess_number', False, 0)
             remaining = self.get_remaining_plays(username)
             if amulet_used:
                 remaining = remaining + 1
@@ -3319,7 +3908,8 @@ class GameManager:
                 'message': '😔 你输了！数字是 ' + str(secret) + '，已用尽所有机会',
                 'bonus_message': bonus_message,
                 'card_drop': None,
-                'drops': []
+                'drops': [],
+                'season_result': None
             }
         if username in self.users:
             self.users[username]['guess_state'] = state
@@ -3417,14 +4007,15 @@ class GameManager:
         if state['player_wins'] >= state['best_of'] or state['ai_wins'] >= state['best_of']:
             won = state['player_wins'] > state['ai_wins']
             points = self.calculate_points(won, 'rock_paper_scissors', {'rounds': state['rounds_played'], 'username': username})
-            final_points, bonus_message, streak = self.apply_streak_and_consolation(username, won, points, 'rock_paper_scissors', {'rounds': state['rounds_played']})
-            if bonus_message and not won:
+            final_points, bonus_message, streak, is_consolation = self.apply_streak_and_consolation(username, won, points, 'rock_paper_scissors', {'rounds': state['rounds_played']})
+            if is_consolation:
                 won = True
             final_points, item_message = self.apply_active_items(username, won, final_points, 'rock_paper_scissors')
             amulet_used = self.check_amulet(username, won)
             self.record_play(username, won, 0, 'rock_paper_scissors', check_achievements=False, gcoins_earned=final_points)
             self.add_game_history(username, 'rock_paper_scissors', won, final_points, f'比分 {state["player_wins"]}:{state["ai_wins"]}')
-            self.update_daily_tasks(username, 'rock_paper_scissors', won)
+            self.update_season_tasks_progress(username, 'rock_paper_scissors', won, final_points if not is_consolation else 0)
+            season_result = self.add_season_score_from_win(username, final_points, is_drop=False, is_consolation=is_consolation)
             drops = self.roll_all_drops(username, 'rock_paper_scissors', won)
             remaining = self.get_remaining_plays(username)
             if amulet_used:
@@ -3455,7 +4046,9 @@ class GameManager:
                 'lose_streak': streak.get('current_lose', 0),
                 'bonus_message': (bonus_message + ' ' if bonus_message else '') + item_message,
                 'card_drop': next((d for d in drops if d.get('type') == 'card'), None),
-                'drops': drops
+                'drops': drops,
+                'season_result': season_result,
+                'is_consolation': is_consolation
             }
         if username in self.users:
             self.users[username]['rps_state'] = state
@@ -3554,7 +4147,6 @@ class GameManager:
         elif bet_type == 'combo' and bet_combo:
             is_combo = True
             combo_type = bet_combo.get('type', '')
-            combo_value = bet_combo.get('value', '')
             combo_matched = False
             if combo_type == 'red_high':
                 combo_matched = (result in red_numbers) and (19 <= result <= 36)
@@ -3596,14 +4188,15 @@ class GameManager:
         else:
             color = '⚫ 黑色'
         points = self.calculate_points(won, 'roulette', {'multiplier': multiplier, 'username': username})
-        final_points, bonus_message, streak = self.apply_streak_and_consolation(username, won, points, 'roulette', {'multiplier': multiplier})
-        if bonus_message and not won:
+        final_points, bonus_message, streak, is_consolation = self.apply_streak_and_consolation(username, won, points, 'roulette', {'multiplier': multiplier})
+        if is_consolation:
             won = True
         final_points, item_message = self.apply_active_items(username, won, final_points, 'roulette')
         amulet_used = self.check_amulet(username, won)
         self.record_play(username, won, 0, 'roulette', check_achievements=False, gcoins_earned=final_points)
         self.add_game_history(username, 'roulette', won, final_points, f'结果{result} {color} 下注{bet_type}')
-        self.update_daily_tasks(username, 'roulette', won)
+        self.update_season_tasks_progress(username, 'roulette', won, final_points if not is_consolation else 0)
+        season_result = self.add_season_score_from_win(username, final_points, is_drop=False, is_consolation=is_consolation)
         drops = self.roll_all_drops(username, 'roulette', won)
         remaining = self.get_remaining_plays(username)
         if amulet_used:
@@ -3632,7 +4225,9 @@ class GameManager:
             'lose_streak': streak.get('current_lose', 0),
             'bonus_message': (bonus_message + ' ' if bonus_message else '') + item_message,
             'card_drop': next((d for d in drops if d.get('type') == 'card'), None),
-            'drops': drops
+            'drops': drops,
+            'season_result': season_result,
+            'is_consolation': is_consolation
         }
 
     def get_lucky_wheel_segments(self):
@@ -3673,14 +4268,15 @@ class GameManager:
             stats = self.get_user_game_stats(username)
             stats['lucky_x20'] = stats.get('lucky_x20', 0) + 1
             self.save_users()
-        final_points, bonus_message, streak = self.apply_streak_and_consolation(username, won, points, 'lucky_wheel', {'multiplier': selected['multiplier']})
-        if bonus_message and not won:
+        final_points, bonus_message, streak, is_consolation = self.apply_streak_and_consolation(username, won, points, 'lucky_wheel', {'multiplier': selected['multiplier']})
+        if is_consolation:
             won = True
         final_points, item_message = self.apply_active_items(username, won, final_points, 'lucky_wheel')
         amulet_used = self.check_amulet(username, won)
         self.record_play(username, won, 0, 'lucky_wheel', check_achievements=False, gcoins_earned=final_points)
         self.add_game_history(username, 'lucky_wheel', won, final_points, f'转盘结果 {selected["label"]}')
-        self.update_daily_tasks(username, 'lucky_wheel', won)
+        self.update_season_tasks_progress(username, 'lucky_wheel', won, final_points if not is_consolation else 0)
+        season_result = self.add_season_score_from_win(username, final_points, is_drop=False, is_consolation=is_consolation)
         drops = self.roll_all_drops(username, 'lucky_wheel', won)
         remaining = self.get_remaining_plays(username)
         if amulet_used:
@@ -3705,7 +4301,9 @@ class GameManager:
             'lose_streak': streak.get('current_lose', 0),
             'bonus_message': (bonus_message + ' ' if bonus_message else '') + item_message,
             'card_drop': next((d for d in drops if d.get('type') == 'card'), None),
-            'drops': drops
+            'drops': drops,
+            'season_result': season_result,
+            'is_consolation': is_consolation
         }
 
     def start_memory_game(self, username, difficulty='normal'):
@@ -3772,6 +4370,7 @@ class GameManager:
         bonus_message = ''
         streak = {'current_win': 0, 'current_lose': 0}
         drops = []
+        season_result = None
         if len(state['flipped']) == 2:
             state['moves'] += 1
             i1, i2 = state['flipped']
@@ -3789,13 +4388,14 @@ class GameManager:
                         stats = self.get_user_game_stats(username)
                         stats['memory_perfect'] = stats.get('memory_perfect', 0) + 1
                         self.save_users()
-                    final_points, bonus_message, streak = self.apply_streak_and_consolation(username, True, points, 'memory_cards', {'moves': state['moves']})
+                    final_points, bonus_message, streak, is_consolation = self.apply_streak_and_consolation(username, True, points, 'memory_cards', {'moves': state['moves']})
                     final_points, item_message = self.apply_active_items(username, True, final_points, 'memory_cards')
                     if item_message:
                         bonus_message = (bonus_message + ' ' if bonus_message else '') + item_message
                     self.record_play(username, True, 0, 'memory_cards', check_achievements=False, gcoins_earned=final_points)
                     self.add_game_history(username, 'memory_cards', True, final_points, f'{state["moves"]}步完成' + (' [困难]' if state.get('difficulty') == 'hard' else ''))
-                    self.update_daily_tasks(username, 'memory_cards', True)
+                    self.update_season_tasks_progress(username, 'memory_cards', True, final_points)
+                    season_result = self.add_season_score_from_win(username, final_points)
                     drops = self.roll_all_drops(username, 'memory_cards', True)
         if username in self.users:
             self.users[username]['memory_state'] = state
@@ -3822,7 +4422,8 @@ class GameManager:
                 'lose_streak': streak.get('current_lose', 0),
                 'bonus_message': bonus_message,
                 'card_drop': next((d for d in drops if d.get('type') == 'card'), None),
-                'drops': drops
+                'drops': drops,
+                'season_result': season_result
             }
         return {
             'success': True,
@@ -3943,14 +4544,15 @@ class GameManager:
             stats = self.get_user_game_stats(username)
             stats['whack_score_30'] = stats.get('whack_score_30', 0) + 1
             self.save_users()
-        final_points, bonus_message, streak = self.apply_streak_and_consolation(username, won, points, 'whack_mole', {'score': final_score})
-        if bonus_message and not won:
+        final_points, bonus_message, streak, is_consolation = self.apply_streak_and_consolation(username, won, points, 'whack_mole', {'score': final_score})
+        if is_consolation:
             won = True
         final_points, item_message = self.apply_active_items(username, won, final_points, 'whack_mole')
         amulet_used = self.check_amulet(username, won)
         self.record_play(username, won, 0, 'whack_mole', check_achievements=False, gcoins_earned=final_points)
         self.add_game_history(username, 'whack_mole', won, final_points, f'得分{final_score} 打中{hits} 炸弹{bombs}' + (' [困难]' if state.get('difficulty') == 'hard' else ''))
-        self.update_daily_tasks(username, 'whack_mole', won)
+        self.update_season_tasks_progress(username, 'whack_mole', won, final_points if not is_consolation else 0)
+        season_result = self.add_season_score_from_win(username, final_points, is_drop=False, is_consolation=is_consolation)
         drops = self.roll_all_drops(username, 'whack_mole', won)
         remaining = self.get_remaining_plays(username)
         if amulet_used:
@@ -3976,7 +4578,9 @@ class GameManager:
             'lose_streak': streak.get('current_lose', 0),
             'bonus_message': (bonus_message + ' ' if bonus_message else '') + item_message,
             'card_drop': next((d for d in drops if d.get('type') == 'card'), None),
-            'drops': drops
+            'drops': drops,
+            'season_result': season_result,
+            'is_consolation': is_consolation
         }
 
     def play_whack_mole(self, username, action=None, score=0, hits=0, bombs=0, difficulty='normal'):
@@ -4007,14 +4611,15 @@ class GameManager:
         points = self.calculate_points(won, 'dice_royale', {'score': player_score, 'username': username})
         if won and is_royal:
             points = int(points * 2)
-        final_points, bonus_message, streak = self.apply_streak_and_consolation(username, won, points, 'dice_royale', {'score': player_score})
-        if bonus_message and not won:
+        final_points, bonus_message, streak, is_consolation = self.apply_streak_and_consolation(username, won, points, 'dice_royale', {'score': player_score})
+        if is_consolation:
             won = True
         final_points, item_message = self.apply_active_items(username, won, final_points, 'dice_royale')
         amulet_used = self.check_amulet(username, won)
         self.record_play(username, won, 0, 'dice_royale', check_achievements=False, gcoins_earned=final_points)
         self.add_game_history(username, 'dice_royale', won, final_points, f'你{player_score}分 vs AI{ai_score}分' + (' [皇家骰]' if is_royal else ''))
-        self.update_daily_tasks(username, 'dice_royale', won)
+        self.update_season_tasks_progress(username, 'dice_royale', won, final_points if not is_consolation else 0)
+        season_result = self.add_season_score_from_win(username, final_points, is_drop=False, is_consolation=is_consolation)
         drops = self.roll_all_drops(username, 'dice_royale', won)
         remaining = self.get_remaining_plays(username)
         if amulet_used:
@@ -4040,7 +4645,9 @@ class GameManager:
             'lose_streak': streak.get('current_lose', 0),
             'bonus_message': (bonus_message + ' ' if bonus_message else '') + item_message,
             'card_drop': next((d for d in drops if d.get('type') == 'card'), None),
-            'drops': drops
+            'drops': drops,
+            'season_result': season_result,
+            'is_consolation': is_consolation
         }
 
     def play_blackjack_tournament(self, username):
@@ -4088,14 +4695,15 @@ class GameManager:
         points = self.calculate_points(won, 'blackjack_tournament', {'wins': wins, 'username': username})
         if won_all:
             points = int(points * 2)
-        final_points, bonus_message, streak = self.apply_streak_and_consolation(username, won, points, 'blackjack_tournament', {'wins': wins})
-        if bonus_message and not won:
+        final_points, bonus_message, streak, is_consolation = self.apply_streak_and_consolation(username, won, points, 'blackjack_tournament', {'wins': wins})
+        if is_consolation:
             won = True
         final_points, item_message = self.apply_active_items(username, won, final_points, 'blackjack_tournament')
         amulet_used = self.check_amulet(username, won)
         self.record_play(username, won, 0, 'blackjack_tournament', check_achievements=False, gcoins_earned=final_points)
         self.add_game_history(username, 'blackjack_tournament', won, final_points, f'胜{wins}/3局' + (' [全胜]' if won_all else ''))
-        self.update_daily_tasks(username, 'blackjack_tournament', won)
+        self.update_season_tasks_progress(username, 'blackjack_tournament', won, final_points if not is_consolation else 0)
+        season_result = self.add_season_score_from_win(username, final_points, is_drop=False, is_consolation=is_consolation)
         drops = self.roll_all_drops(username, 'blackjack_tournament', won)
         remaining = self.get_remaining_plays(username)
         if amulet_used:
@@ -4119,7 +4727,9 @@ class GameManager:
             'lose_streak': streak.get('current_lose', 0),
             'bonus_message': (bonus_message + ' ' if bonus_message else '') + item_message,
             'card_drop': next((d for d in drops if d.get('type') == 'card'), None),
-            'drops': drops
+            'drops': drops,
+            'season_result': season_result,
+            'is_consolation': is_consolation
         }
 
     def play_treasure_hunt(self, username):
@@ -4147,14 +4757,15 @@ class GameManager:
             treasures = 1
         won = treasures >= 3
         points = self.calculate_points(won, 'treasure_hunt', {'treasures': treasures, 'username': username})
-        final_points, bonus_message, streak = self.apply_streak_and_consolation(username, won, points, 'treasure_hunt', {'treasures': treasures})
-        if bonus_message and not won:
+        final_points, bonus_message, streak, is_consolation = self.apply_streak_and_consolation(username, won, points, 'treasure_hunt', {'treasures': treasures})
+        if is_consolation:
             won = True
         final_points, item_message = self.apply_active_items(username, won, final_points, 'treasure_hunt')
         amulet_used = self.check_amulet(username, won)
         self.record_play(username, won, 0, 'treasure_hunt', check_achievements=False, gcoins_earned=final_points)
         self.add_game_history(username, 'treasure_hunt', won, final_points, f'找到{treasures}个宝藏 {bombs}个炸弹')
-        self.update_daily_tasks(username, 'treasure_hunt', won)
+        self.update_season_tasks_progress(username, 'treasure_hunt', won, final_points if not is_consolation else 0)
+        season_result = self.add_season_score_from_win(username, final_points, is_drop=False, is_consolation=is_consolation)
         drops = self.roll_all_drops(username, 'treasure_hunt', won)
         remaining = self.get_remaining_plays(username)
         if amulet_used:
@@ -4178,7 +4789,9 @@ class GameManager:
             'lose_streak': streak.get('current_lose', 0),
             'bonus_message': (bonus_message + ' ' if bonus_message else '') + item_message,
             'card_drop': next((d for d in drops if d.get('type') == 'card'), None),
-            'drops': drops
+            'drops': drops,
+            'season_result': season_result,
+            'is_consolation': is_consolation
         }
 
     def play_boss_battle(self, username):
@@ -4209,14 +4822,15 @@ class GameManager:
             combat_log.append(f'回合{turn}: BOSS对你造成 {boss_damage} 伤害')
         won = boss_hp <= 0
         points = self.calculate_points(won, 'boss_battle', {'damage': damage_dealt, 'username': username})
-        final_points, bonus_message, streak = self.apply_streak_and_consolation(username, won, points, 'boss_battle', {'damage': damage_dealt})
-        if bonus_message and not won:
+        final_points, bonus_message, streak, is_consolation = self.apply_streak_and_consolation(username, won, points, 'boss_battle', {'damage': damage_dealt})
+        if is_consolation:
             won = True
         final_points, item_message = self.apply_active_items(username, won, final_points, 'boss_battle')
         amulet_used = self.check_amulet(username, won)
         self.record_play(username, won, 0, 'boss_battle', check_achievements=False, gcoins_earned=final_points)
         self.add_game_history(username, 'boss_battle', won, final_points, f'造成{damage_dealt}伤害 剩余HP{max(0, boss_hp)}')
-        self.update_daily_tasks(username, 'boss_battle', won)
+        self.update_season_tasks_progress(username, 'boss_battle', won, final_points if not is_consolation else 0)
+        season_result = self.add_season_score_from_win(username, final_points, is_drop=False, is_consolation=is_consolation)
         drops = self.roll_all_drops(username, 'boss_battle', won)
         remaining = self.get_remaining_plays(username)
         if amulet_used:
@@ -4242,7 +4856,9 @@ class GameManager:
             'lose_streak': streak.get('current_lose', 0),
             'bonus_message': (bonus_message + ' ' if bonus_message else '') + item_message,
             'card_drop': next((d for d in drops if d.get('type') == 'card'), None),
-            'drops': drops
+            'drops': drops,
+            'season_result': season_result,
+            'is_consolation': is_consolation
         }
 
     def get_stats(self, username):
@@ -4256,6 +4872,7 @@ class GameManager:
         title_info = self.get_user_title(username)
         expire_info = get_member_expire_info(self.users, username)
         gcoin_data = get_gcoin_data(self.users, username)
+        season_status = self.get_season_status(username)
         if not stats:
             return {
                 'today_plays': 0, 'max_plays': max_plays, 'remaining_plays': max_plays,
@@ -4268,7 +4885,8 @@ class GameManager:
                 'win_streak': win_streak, 'bonus_plays': bonus_plays,
                 'level_info': level_info, 'title_info': title_info,
                 'member_expire': expire_info,
-                'gcoins': gcoin_data
+                'gcoins': gcoin_data,
+                'season': season_status
             }
         return {
             'today_plays': stats.get('today_plays', 0),
@@ -4285,7 +4903,8 @@ class GameManager:
             'win_streak': win_streak, 'bonus_plays': bonus_plays,
             'level_info': level_info, 'title_info': title_info,
             'member_expire': expire_info,
-            'gcoins': gcoin_data
+            'gcoins': gcoin_data,
+            'season': season_status
         }
 
     def get_game_list(self, username=None):
@@ -4345,49 +4964,61 @@ class GameManager:
         if username not in self.users:
             return False
         user_data = self.users[username]
-        if 'game_stats' not in user_data:
-            return False
-        stats = user_data['game_stats']
         modified = False
-        if 'today_wins' not in stats:
-            stats['today_wins'] = 0
+        if 'game_stats' not in user_data:
+            user_data['game_stats'] = {
+                'today_plays': 0, 'today_date': '', 'today_wins': 0, 'today_points': 0,
+                'total_wins': 0, 'total_plays': 0, 'total_points_earned': 0,
+                'game_wins': {}, 'game_plays': {},
+                'roulette_number_hits': 0, 'memory_perfect': 0,
+                'lucky_x20': 0, 'whack_score_30': 0,
+                'membership_coupon_count': 0, 'membership_coupon_used': 0,
+                'market_trades': 0, 'auction_wins': 0
+            }
             modified = True
-        if 'today_points' not in stats:
-            stats['today_points'] = 0
-            modified = True
-        if 'game_plays' not in stats:
-            stats['game_plays'] = {}
-            modified = True
-        if 'membership_coupon_count' not in stats:
-            stats['membership_coupon_count'] = 0
-            modified = True
-        if 'membership_coupon_used' not in stats:
-            stats['membership_coupon_used'] = 0
-            modified = True
-        if 'market_trades' not in stats:
-            stats['market_trades'] = 0
-            modified = True
-        if 'auction_wins' not in stats:
-            stats['auction_wins'] = 0
-            modified = True
+        else:
+            stats = user_data['game_stats']
+            if 'today_wins' not in stats:
+                stats['today_wins'] = 0
+                modified = True
+            if 'today_points' not in stats:
+                stats['today_points'] = 0
+                modified = True
+            if 'game_plays' not in stats:
+                stats['game_plays'] = {}
+                modified = True
+            if 'membership_coupon_count' not in stats:
+                stats['membership_coupon_count'] = 0
+                modified = True
+            if 'membership_coupon_used' not in stats:
+                stats['membership_coupon_used'] = 0
+                modified = True
+            if 'market_trades' not in stats:
+                stats['market_trades'] = 0
+                modified = True
+            if 'auction_wins' not in stats:
+                stats['auction_wins'] = 0
+                modified = True
         if 'gcoins' not in user_data:
             user_data['gcoins'] = {'balance': 0, 'total_earned': 0, 'total_spent': 0}
             modified = True
-        if 'game_plays' in stats and not stats['game_plays']:
+        if 'game_plays' in user_data.get('game_stats', {}) and not user_data['game_stats']['game_plays']:
             game_plays = {}
             history = user_data.get('game_history', [])
             for record in history:
                 gid = record.get('game_id', '')
                 if gid:
                     game_plays[gid] = game_plays.get(gid, 0) + 1
-            for gid, gs in stats.get('game_wins', {}).items():
+            for gid, gs in user_data['game_stats'].get('game_wins', {}).items():
                 if gid not in game_plays:
                     game_plays[gid] = gs
                 elif game_plays[gid] < gs:
                     game_plays[gid] = gs
             if game_plays:
-                stats['game_plays'] = game_plays
+                user_data['game_stats']['game_plays'] = game_plays
                 modified = True
+        if migrate_season_data(user_data):
+            modified = True
         return modified
 
     def get_user_level(self, username):
@@ -4443,6 +5074,10 @@ class GameManager:
             total_cards += len(owned)
         gcoin_data = get_gcoin_data(self.users, username)
         gcoins_total = gcoin_data.get('total_earned', 0) if gcoin_data else 0
+        user_data = self.users.get(username, {})
+        season_data = user_data.get('season', {})
+        season_rank = season_data.get('rank', 'bronze')
+        rank_order = [r['id'] for r in SEASON_RANKS]
         unlocked = []
         for title in TITLE_SYSTEM['titles']:
             cond_type = title['condition_type']
@@ -4474,6 +5109,10 @@ class GameManager:
                 matched = stats.get('market_trades', 0) >= cond_val
             elif cond_type == 'auction_wins':
                 matched = stats.get('auction_wins', 0) >= cond_val
+            elif cond_type == 'season_rank':
+                current_index = rank_order.index(season_rank) if season_rank in rank_order else 0
+                target_index = rank_order.index(cond_val) if cond_val in rank_order else 0
+                matched = current_index >= target_index
             if matched:
                 unlocked.append(title)
         return unlocked
