@@ -66,6 +66,8 @@
         .toast.error{background:linear-gradient(135deg,#ef4444,#dc2626)}
         .toast.warning{background:linear-gradient(135deg,#f59e0b,#d97706)}
         .toast.info{background:linear-gradient(135deg,#38bdf8,#0284c7)}
+        .footer-note .inline-link {color: #F4057F;text-decoration: underline;font-weight: 700;transition: color 0.3s;display:inline;padding: 0;background: none;border: none;border-radius: 0;}
+        .footer-note .inline-link:hover {color: #EF289D;text-decoration: underline;}
         @keyframes fadeInOut{0%{opacity:0;transform:translateX(-50%) translateY(10px)}15%{opacity:1;transform:translateX(-50%) translateY(0)}85%{opacity:1;transform:translateX(-50%) translateY(0)}100%{opacity:0;transform:translateX(-50%) translateY(-10px)}}
         .footer-note{text-align:center;font-size:11px;color:#6ee7b7;margin-top:18px;line-height:1.7;font-weight:500}
         .footer-note i{color:#34d399;margin-right:4px}
@@ -132,7 +134,8 @@
 
             <div class="footer-note">
                 <i class="fas fa-lock"></i> 您的密码仅用于本次身份验证，不会被存储<br>
-                <i class="fas fa-clock"></i> 如非本人操作，请忽略此页面并尽快修改密码
+                <i class="fas fa-clock"></i> 如非本人操作，请忽略此页面并尽快修改密码<br>
+                <i class="fas fa-exclamation-triangle" style="color:#fbbf24;"></i> 如该验证页面的用户名不是申请人本人，请退出并刷新退款页面重新发送验证邮件；如若无效请在<a href="/feedback.html" class="inline-link" target="_blank" rel="noopener">反馈页面</a>进行提交。
             </div>
         </div>
     </div>

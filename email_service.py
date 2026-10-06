@@ -1023,13 +1023,6 @@ def send_refund_verification_email(username, to_email, order, refund_points, tok
           </a>
         </div>
 
-        <p style="font-size:12px;color:#9ca3af;line-height:1.7;margin:0 0 12px;text-align:center;">
-          按钮无法点击？请复制以下链接到浏览器打开：
-        </p>
-        <p style="font-size:12px;color:#059669;word-break:break-all;line-height:1.6;margin:0 0 24px;text-align:center;background:#f0fdf4;padding:12px 14px;border-radius:10px;border:1px solid #d1fae5;">
-          {verify_url}
-        </p>
-
         <div style="background:#fffbeb;border-left:4px solid #fbbf24;border-radius:8px;padding:12px 16px;font-size:12px;color:#92400e;line-height:1.7;">
           ⚠️ 链接 <b>30 分钟内有效</b>，打开后需输入您的登录密码完成验证。<br>
           验证成功后，系统将在风控审查完成后自动执行退款。

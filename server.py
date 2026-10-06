@@ -3603,7 +3603,7 @@ def cleanup_all_expired_data():
             if current_time - created_at > 300000:
                 orders_to_remove.append(order_id)
         else:
-            if current_time - created_at > 43200000:
+            if current_time - created_at > 21600000:
                 orders_to_remove.append(order_id)
 
     for order_id in orders_to_remove:
@@ -5439,6 +5439,9 @@ def perform_refund_risk_check(username, refund_points):
     if restrictions.get('generate_phone', False):
         risk_score += 15
         risk_details.append({'text': '账号已被限制生成手机号', 'score': 15})
+    if restrictions.get('feedback', False):
+        risk_score += 15
+        risk_details.append({'text': '账号已被限制反馈功能', 'score': 15})
 
     if not check_identity_verified(username):
         risk_score += 25
@@ -5497,8 +5500,8 @@ def perform_refund_risk_check(username, refund_points):
 
     gamblers_purchase_count = user_data.get('gamblers_code_purchase_count', 0)
     if gamblers_purchase_count >= 3:
-        risk_score += 3
-        risk_details.append({'text': '当日赌神卡购买已达上限', 'score': 3})
+        risk_score += 5
+        risk_details.append({'text': '当日赌神卡购买已达上限', 'score': 5})
 
     now = datetime.now()
     current_hour = now.hour
@@ -5514,16 +5517,16 @@ def perform_refund_risk_check(username, refund_points):
         if order.get('username') == username and order.get('status') == 'paid' and not order.get('refunded', False):
             user_orders.append(order)
     if len(user_orders) < 3:
-        risk_score += 8
-        risk_details.append({'text': '历史订单数不足3笔', 'score': 8})
+        risk_score += 6
+        risk_details.append({'text': '历史订单数不足3笔', 'score': 6})
 
     refund_history_count = 0
     for oid, order in orders.items():
         if order.get('username') == username and order.get('refunded', False):
             refund_history_count += 1
     if refund_history_count > 3:
-        risk_score += 20
-        risk_details.append({'text': '历史退款次数超过3次', 'score': 20})
+        risk_score += 25
+        risk_details.append({'text': '历史退款次数超过3次', 'score': 25})
     elif refund_history_count > 1:
         risk_score += 5
         risk_details.append({'text': '历史有退款记录', 'score': 5})
@@ -5559,13 +5562,13 @@ def perform_refund_risk_check(username, refund_points):
         if record.get('username') == username and record.get('type') == 'deposit':
             fund_deposit_count += 1
     if fund_deposit_count == 0:
-        risk_score += 5
-        risk_details.append({'text': '从未使用过理财存入功能', 'score': 5})
+        risk_score += 2
+        risk_details.append({'text': '从未使用过理财存入功能', 'score': 2})
 
     has_pay_pwd = has_pay_password(username)
     if not has_pay_pwd:
-        risk_score += 10
-        risk_details.append({'text': '未设置支付密码', 'score': 10})
+        risk_score += 8
+        risk_details.append({'text': '未设置支付密码', 'score': 8})
 
     if not user_data.get('cancellationCodePurchased', False):
         risk_score += 3
@@ -12511,8 +12514,14 @@ def refund_init(order_id):
         return jsonify({'error': '退款金额为0，无法退款'}), 400
 
     risk_passed, risk_msg, risk_score, risk_details = perform_refund_risk_check(username, refund_points)
+
     if not risk_passed:
-        return jsonify({'error': risk_msg, 'risk_score': risk_score}), 403
+        return jsonify({
+            'error': risk_msg,
+            'risk_score': risk_score,
+            'risk_details': risk_details,
+            'risk_check_failed': True
+        }), 403
 
     if refund_points < REFUND_EMAIL_THRESHOLD:
         try:
@@ -12525,6 +12534,9 @@ def refund_init(order_id):
             'auto_refunded': True,
             'need_email_verify': False,
             'risk_score': risk_score,
+            'risk_details': risk_details,
+            'risk_check_passed': True,
+            'risk_message': risk_msg or '风控审查通过',
             **result
         })
 
@@ -12545,6 +12557,7 @@ def refund_init(order_id):
         'refund_amount': refund_amount,
         'reason': reason,
         'risk_score': risk_score,
+        'risk_details': risk_details,
         'risk_passed': risk_passed,
         'created_at': int(time.time()),
         'email_verified': False,
@@ -12577,6 +12590,9 @@ def refund_init(order_id):
         'refund_points': refund_points,
         'refund_amount': refund_amount,
         'risk_score': risk_score,
+        'risk_details': risk_details,
+        'risk_check_passed': True,
+        'risk_message': risk_msg or '风控审查通过',
         'message': '验证邮件已发送，请前往邮箱完成验证'
     })
 
@@ -12599,7 +12615,6 @@ def refund_check(order_id):
     if order.get('is_daifu', False):
         return jsonify({'can_refund': False, 'reason': '代付订单禁止退款'}), 200
 
-    # 邮箱领取检查
     delivered_codes = order.get('delivered_codes', [])
     unclaimed = 0
     for aid, attachment in mail_attachments.items():
@@ -12623,19 +12638,10 @@ def refund_check(order_id):
     if refund_points <= 0:
         return jsonify({'can_refund': False, 'reason': '退款金额为0，无法退款'}), 200
 
-    risk_passed, risk_msg, risk_score, _ = perform_refund_risk_check(username, refund_points)
-    if not risk_passed:
-        return jsonify({
-            'can_refund': False,
-            'reason': risk_msg,
-            'risk_check_failed': True,
-            'risk_score': risk_score,
-            'refund_amount': refund_amount,
-            'refund_points': refund_points,
-        }), 200
+    risk_passed, risk_msg, risk_score, risk_details = perform_refund_risk_check(username, refund_points)
 
     return jsonify({
-        'can_refund': True,
+        'can_refund': risk_passed,
         'refund_amount': refund_amount,
         'refund_points': refund_points,
         'reason': reason,
@@ -12645,6 +12651,9 @@ def refund_check(order_id):
         'rate_used': get_current_pl_rate() if order.get('payment_method') == 'pl' else None,
         'need_email_verify': refund_points >= REFUND_EMAIL_THRESHOLD,
         'risk_score': risk_score,
+        'risk_details': risk_details,
+        'risk_check_passed': risk_passed,
+        'risk_message': risk_msg or ('风控审查通过' if risk_passed else '风控审查未通过')
     })
 
 @app.route('/api/refund/verify-info', methods=['GET'])
@@ -12676,7 +12685,9 @@ def refund_verify_info():
         'refund_amount': ticket['refund_amount'],
         'reason': ticket['reason'],
         'already_verified': ticket['email_verified'],
-        'expires_in': max(0, REFUND_TICKET_TTL - (int(time.time()) - ts))
+        'expires_in': max(0, REFUND_TICKET_TTL - (int(time.time()) - ts)),
+        'risk_score': ticket.get('risk_score', 0),
+        'risk_details': ticket.get('risk_details', [])
     })
 
 
@@ -12767,6 +12778,8 @@ def refund_status(order_id):
                 'cooldown_remaining': 0,
                 'can_refund': False,
                 'refunded': False,
+                'risk_score': ticket.get('risk_score', 0),
+                'risk_details': ticket.get('risk_details', []),
                 'error': f'退款执行失败: {str(e)}'
             }), 500
 
@@ -12776,7 +12789,9 @@ def refund_status(order_id):
         'cooldown_remaining': max(0, REFUND_COOLDOWN_SECONDS - elapsed),
         'can_refund': cooldown_ok and email_ok and risk_ok,
         'refunded': ticket.get('used', False),
-        'refund_result': ticket.get('refund_result')
+        'refund_result': ticket.get('refund_result'),
+        'risk_score': ticket.get('risk_score', 0),
+        'risk_details': ticket.get('risk_details', [])
     })
 
 @app.route('/api/order/<order_id>/refund-self', methods=['POST'])
