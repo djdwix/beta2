@@ -958,6 +958,99 @@ body {{ font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','M
 
     return send_email(user_email, subject, body, html_body)
 
+SERVER_BASE_URL = 'https://localhost:3000'
+
+def send_refund_verification_email(username, to_email, order, refund_points, token):
+    base_url = SERVER_BASE_URL
+    verify_url = f"{base_url.rstrip('/')}/refund/verify?token={token}"
+
+    subject = '【退款验证】请确认您的大额退款申请'
+
+    text_body = f"""尊敬的用户 {username}：
+
+您正在发起一笔大额退款申请，请点击下方链接完成邮箱验证：
+
+{verify_url}
+
+订单号：{order.get('order_id', '')}
+商品：{order.get('product_name', '')}
+退款金额：{refund_points:.2f} 积分
+
+链接 30 分钟内有效。打开链接后需输入您的登录密码完成验证。
+验证成功后，系统将在风控审查完成后自动执行退款。
+
+如非本人操作，请忽略本邮件并尽快修改密码。
+"""
+
+    html_body = f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+</head>
+<body style="margin:0;padding:0;background:#f4f6f8;font-family:'Segoe UI','PingFang SC',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <div style="max-width:560px;margin:0 auto;padding:32px 20px;">
+    <div style="background:#ffffff;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.06);overflow:hidden;">
+      <div style="background:linear-gradient(135deg,#10b981,#059669);padding:28px 30px;text-align:center;">
+        <div style="font-size:40px;line-height:1;margin-bottom:8px;">🔐</div>
+        <div style="color:#ffffff;font-size:20px;font-weight:800;letter-spacing:0.5px;">退款安全验证</div>
+        <div style="color:#d1fae5;font-size:13px;margin-top:6px;">请确认您的身份以完成大额退款</div>
+      </div>
+      <div style="padding:30px;">
+        <p style="font-size:15px;color:#111827;margin:0 0 16px;font-weight:600;">尊敬的用户 {username}：</p>
+        <p style="font-size:14px;color:#4b5563;line-height:1.8;margin:0 0 22px;">
+          您正在发起一笔大额退款申请。请点击下方按钮，打开验证页面并输入您的登录密码完成身份验证。
+        </p>
+
+        <div style="background:#f9fafb;border-radius:12px;padding:18px 20px;margin-bottom:26px;border:1px solid #e5e7eb;">
+          <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;color:#4b5563;">
+            <span style="color:#6b7280;">订单号</span>
+            <span style="color:#111827;font-weight:700;">{order.get('order_id', '')}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;color:#4b5563;border-top:1px solid #eef0f2;">
+            <span style="color:#6b7280;">商品</span>
+            <span style="color:#111827;font-weight:700;">{order.get('product_name', '')}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;color:#4b5563;border-top:1px solid #eef0f2;">
+            <span style="color:#6b7280;">退款金额</span>
+            <span style="color:#059669;font-weight:800;font-size:15px;">{refund_points:.2f} 积分</span>
+          </div>
+        </div>
+
+        <div style="text-align:center;margin:30px 0;">
+          <a href="{verify_url}"
+             style="display:inline-block;background:linear-gradient(135deg,#10b981,#059669);color:#ffffff;text-decoration:none;font-size:16px;font-weight:800;padding:16px 48px;border-radius:40px;box-shadow:0 10px 24px rgba(16,185,129,0.35);letter-spacing:0.5px;">
+            ✅ 确认验证
+          </a>
+        </div>
+
+        <p style="font-size:12px;color:#9ca3af;line-height:1.7;margin:0 0 12px;text-align:center;">
+          按钮无法点击？请复制以下链接到浏览器打开：
+        </p>
+        <p style="font-size:12px;color:#059669;word-break:break-all;line-height:1.6;margin:0 0 24px;text-align:center;background:#f0fdf4;padding:12px 14px;border-radius:10px;border:1px solid #d1fae5;">
+          {verify_url}
+        </p>
+
+        <div style="background:#fffbeb;border-left:4px solid #fbbf24;border-radius:8px;padding:12px 16px;font-size:12px;color:#92400e;line-height:1.7;">
+          ⚠️ 链接 <b>30 分钟内有效</b>，打开后需输入您的登录密码完成验证。<br>
+          验证成功后，系统将在风控审查完成后自动执行退款。
+        </div>
+      </div>
+      <div style="padding:20px 30px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;">
+        <p style="font-size:11px;color:#9ca3af;line-height:1.7;margin:0;">
+          如非本人操作，请忽略本邮件并尽快修改密码。<br>
+          您的密码仅用于本次身份验证，不会被存储。
+        </p>
+      </div>
+    </div>
+    <p style="font-size:11px;color:#9ca3af;text-align:center;margin-top:20px;">
+      此邮件由系统自动发送，请勿直接回复。
+    </p>
+  </div>
+</body>
+</html>
+"""
+    return send_email(to_email, subject, text_body, html_body=html_body)
+
 def cleanup_verification_codes_loop():
     while True:
         time.sleep(60)

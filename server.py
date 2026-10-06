@@ -14,6 +14,8 @@ import hashlib
 import requests
 import requests as http_requests
 import re
+import socket
+from decimal import Decimal, ROUND_HALF_UP
 import base64
 import ssl
 import signal
@@ -53,6 +55,42 @@ for handler in logging.root.handlers:
     handler.addFilter(IgnoreBrokenPipe())
 
 load_dotenv()
+
+def detect_server_base_url():
+    env_url = os.getenv('SITE_BASE_URL', '').strip()
+    if env_url:
+        return env_url.rstrip('/')
+
+    port = os.getenv('SITE_PORT', '3000')
+    scheme = os.getenv('SITE_SCHEME', 'https')
+
+    host = None
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(2)
+        s.connect(('8.8.8.8', 80))
+        host = s.getsockname()[0]
+        s.close()
+    except Exception:
+        pass
+
+    if not host or host.startswith('127.'):
+        try:
+            host = socket.gethostbyname(socket.gethostname())
+        except Exception:
+            pass
+
+    if not host or host.startswith('127.'):
+        host = 'localhost'
+
+    return f'{scheme}://{host}:{port}'
+
+
+SERVER_BASE_URL = detect_server_base_url()
+log.info(f"Server base URL: {SERVER_BASE_URL}")
+
+email_service.SERVER_BASE_URL = SERVER_BASE_URL
+
 app = Flask(__name__, static_folder='public')
 app.config['START_TIME'] = time.time()
 
@@ -83,6 +121,8 @@ RATE_LIMITS = {
 }
 
 LOCK_TIMEOUT = 15
+
+LRC_TS = re.compile(r"\[(\d{1,2}):(\d{1,2})(?:\.(\d+))?\]")
 
 QR_SECRET = os.getenv('QR_SECRET')
 if not QR_SECRET:
@@ -1169,6 +1209,11 @@ CHECKIN_BONUS_MAX = 1800
 NEW_USER_PROTECT_DAYS = 14
 NEW_USER_BONUS_RATIO = 0.15
 SYSTEM_POINTS_BURN_THRESHOLD = 85000
+
+refund_tickets = {}
+REFUND_TICKET_TTL = 1800
+REFUND_COOLDOWN_SECONDS = 30
+REFUND_EMAIL_THRESHOLD = 100
 
 def get_gateway_stock_today():
     today = datetime.now().strftime('%Y-%m-%d')
@@ -3739,6 +3784,20 @@ def get_id_cards_stats():
         'available': unique_total - used_count
     }
 
+def normalize_lrc(text):
+    def _normalize(m):
+        mm, ss, frac = m.group(1), m.group(2), m.group(3)
+        total = int(mm) * 60 + int(ss)
+        if frac is None:
+            return f"[{total // 60:02d}:{total % 60:02d}]"
+        if len(frac) in (2, 3):
+            return f"[{total // 60:02d}:{total % 60:02d}.{frac}]"
+        ms = int(frac) * 100 if len(frac) == 1 else int((Decimal(f"0.{frac}") * 1000).quantize(Decimal("1"), ROUND_HALF_UP))
+        if ms >= 1000:
+            total, ms = total + 1, 0
+        return f"[{total // 60:02d}:{total % 60:02d}.{ms:03d}]"
+    return "\n".join(LRC_TS.sub(_normalize, line) for line in text.splitlines())
+
 def fetch_weather_from_openmeteo(latitude, longitude):
     try:
         import requests
@@ -4219,6 +4278,226 @@ def geocode_city_openmeteo(city_name):
     except Exception as e:
         log.error(f"Open-Meteo geocoding error: {e}")
         return None
+
+def calc_refund_amount(order, username):
+    product_type = order.get('product_type', '')
+    delivered_codes = order.get('delivered_codes', [])
+    payment_method = order.get('payment_method', 'points')
+    final_price = order.get('final_price', order.get('product_price', 0))
+    current_rate = get_current_pl_rate()
+    is_pl_payment = payment_method == 'pl'
+
+    if is_pl_payment:
+        points_price = round(final_price / current_rate, 2) if current_rate > 0 else final_price
+    else:
+        points_price = final_price
+
+    refund_amount = 0
+    refund_points = 0
+    reason = ''
+    detail = ''
+
+    if product_type in ['point', 'premium_point', 'reset', 'boost', 'special_point',
+                        'makeup', 'gamblers', 'cancellation', 'box', 'plcard', 'premium_boost']:
+        if not delivered_codes:
+            refund_amount = final_price
+            refund_points = points_price
+            reason = '未发货，全额退款'
+        else:
+            used_count = 0
+            for code in delivered_codes:
+                if get_card_usage_status(code, product_type) == 'used':
+                    used_count += 1
+            total_codes = len(delivered_codes)
+            if used_count == 0:
+                refund_amount = final_price
+                refund_points = points_price
+                reason = f'所有卡密({total_codes}张)未使用，全额退款'
+            elif used_count == total_codes:
+                refund_amount = round(final_price * 0.2, 2)
+                refund_points = round(points_price * 0.2, 2)
+                reason = f'所有卡密({total_codes}张)已使用，退款20%'
+            else:
+                unused_count = total_codes - used_count
+                per_price = final_price / total_codes
+                per_points = points_price / total_codes
+                refund_amount = round(per_price * unused_count + per_price * used_count * 0.2, 2)
+                refund_points = round(per_points * unused_count + per_points * used_count * 0.2, 2)
+                reason = f'卡密 {unused_count}张未使用全额退款，{used_count}张已使用退款20%'
+                detail = f'未使用: {unused_count}张, 已使用: {used_count}张'
+
+    elif product_type == 'gateway':
+        card = gateway_cards.get(username, {})
+        card_type = card.get('type', '')
+        card_expire = card.get('expire_at', 0)
+        current_time = int(time.time() * 1000)
+        if not card:
+            return 0, 0, '通行卡密不存在', ''
+        if card_expire > 0 and current_time > card_expire:
+            return 0, 0, '通行卡密已过期', ''
+        if card_type == 'hour':
+            refund_amount = final_price
+            refund_points = points_price
+            reason = '小时卡全额退款'
+        elif card_type == 'day':
+            if card_expire > 0:
+                total_ms = card_expire - card.get('created_at', 0)
+                remain_ms = max(0, card_expire - current_time)
+                ratio = remain_ms / total_ms if total_ms > 0 else 1
+                refund_amount = round(final_price * ratio, 2)
+                refund_points = round(points_price * ratio, 2)
+                reason = f'天卡按剩余时间退款 {refund_amount:.2f}'
+            else:
+                refund_amount = final_price
+                refund_points = points_price
+                reason = '天卡全额退款'
+        elif card_type == 'week':
+            if card_expire > 0:
+                total_ms = card_expire - card.get('created_at', 0)
+                remain_ms = max(0, card_expire - current_time)
+                ratio = remain_ms / total_ms if total_ms > 0 else 1
+                refund_amount = round(final_price * ratio, 2)
+                refund_points = round(points_price * ratio, 2)
+                reason = f'周卡按剩余时间退款 {refund_amount:.2f}'
+            else:
+                refund_amount = final_price
+                refund_points = points_price
+                reason = '周卡全额退款'
+        elif card_type == 'permanent':
+            refund_amount = round(final_price * 0.6, 2)
+            refund_points = round(points_price * 0.6, 2)
+            reason = '永久卡退款60%'
+        else:
+            refund_amount = final_price
+            refund_points = points_price
+            reason = '未知类型，全额退款'
+    else:
+        refund_amount = final_price
+        refund_points = points_price
+        reason = '普通订单全额退款'
+
+    if is_pl_payment:
+        reason += f' (PL支付，汇率 {current_rate:.4f}，折合 {refund_points:.2f} 积分)'
+
+    return round(refund_amount, 2), round(refund_points, 2), reason, detail
+
+def _do_refund(username, order_id, refund_points, refund_amount, reason):
+    lock = get_file_lock(os.path.join(DATA_DIR, f'refund_order_{order_id}'))
+    with lock.acquire(timeout=LOCK_TIMEOUT):
+        order = orders.get(order_id)
+        if not order:
+            raise ValueError('订单不存在')
+        if order.get('refunded', False):
+            raise ValueError('订单已退款')
+        if order.get('username') != username:
+            raise ValueError('订单不属于当前用户')
+
+        product_type = order.get('product_type', '')
+        delivered_codes = order.get('delivered_codes', [])
+
+        mail_to_remove = []
+        for aid, attachment in mail_attachments.items():
+            if attachment.get('username') != username:
+                continue
+            if attachment.get('order_id') == order_id:
+                mail_to_remove.append(aid)
+            elif attachment.get('source') in ('mall_purchase', 'daifu_purchase'):
+                code = attachment.get('code', '')
+                if code and code in delivered_codes:
+                    mail_to_remove.append(aid)
+        for aid in mail_to_remove:
+            if aid in mail_attachments:
+                del mail_attachments[aid]
+        if mail_to_remove:
+            save_mail_attachments()
+
+        if order.get('delivered', False):
+            code_type_map = {
+                'point': (point_codes, save_point_codes),
+                'premium_point': (premium_point_codes, save_premium_point_codes),
+                'reset': (reset_codes, save_reset_codes),
+                'boost': (boost_codes, save_boost_codes),
+                'special_point': (special_point_codes, save_special_point_codes),
+                'makeup': (makeup_codes, save_makeup_codes),
+                'gamblers': (gamblers_codes, save_gamblers_codes),
+                'cancellation': (cancellation_codes, save_cancellation_codes),
+                'box': (box_codes, save_box_codes),
+                'plcard': (plcard_codes, save_plcard_codes),
+                'premium_boost': (premium_boost_codes, save_premium_boost_codes)
+            }
+            if product_type in code_type_map:
+                codes, save_func = code_type_map[product_type]
+                for code in delivered_codes:
+                    if code in codes and not codes[code].get('used', False):
+                        del codes[code]
+                save_func()
+
+        if product_type == 'gateway' and username in gateway_cards:
+            del gateway_cards[username]
+            save_gateway_cards()
+
+        if username not in fund_data:
+            fund_data[username] = {
+                'balance': 0, 'total_interest': 0,
+                'today_interest': {}, 'last_interest_date': ''
+            }
+        old_balance = fund_data[username]['balance']
+        fund_data[username]['balance'] = round(old_balance + refund_points, 2)
+        save_fund_data()
+
+        refund_timestamp = int(time.time() * 1000)
+        fund_history_id = f"fund_refund_{refund_timestamp}_{random.randint(1000, 9999)}"
+        fund_history[fund_history_id] = {
+            'id': fund_history_id,
+            'username': username,
+            'type': 'refund',
+            'order_id': order_id,
+            'amount': round(refund_points, 2),
+            'reason': reason,
+            'timestamp': refund_timestamp
+        }
+        save_fund_history()
+
+        order['refunded'] = True
+        order['refunded_at'] = refund_timestamp
+        order['status'] = 'refunded'
+        order['refund_amount'] = refund_amount
+        order['refund_points'] = refund_points
+        order['refund_reason'] = reason
+        save_orders()
+
+        return {
+            'refund_points': refund_points,
+            'refund_amount': refund_amount,
+            'old_balance': old_balance,
+            'new_balance': fund_data[username]['balance'],
+            'reason': reason
+        }
+
+def generate_refund_token(order_id, ticket_id):
+    timestamp = int(time.time())
+    data = f"refund|{order_id}|{ticket_id}|{timestamp}"
+    signature = hmac.new(QR_SECRET, data.encode(), hashlib.sha256).hexdigest()[:16]
+    combined = f"{data}|{signature}"
+    token = base64.urlsafe_b64encode(combined.encode()).decode().replace('=', '')
+    return token, timestamp
+
+
+def decode_refund_token(token):
+    try:
+        decoded = base64.urlsafe_b64decode(token + '=' * (4 - len(token) % 4)).decode()
+        parts = decoded.split('|')
+        if len(parts) != 5 or parts[0] != 'refund':
+            return None, None, None, '格式错误'
+        _, order_id, ticket_id, timestamp_str, received_sig = parts
+        timestamp = int(timestamp_str)
+        data = f"refund|{order_id}|{ticket_id}|{timestamp_str}"
+        expected_sig = hmac.new(QR_SECRET, data.encode(), hashlib.sha256).hexdigest()[:16]
+        if not hmac.compare_digest(received_sig, expected_sig):
+            return None, None, None, '签名验证失败'
+        return order_id, ticket_id, timestamp, None
+    except Exception as e:
+        return None, None, None, str(e)
 
 def get_user_data_func(username):
     return users.get(username, {})
@@ -12194,804 +12473,320 @@ def qr_order_redirect(token):
         log.error(f"QR order redirect error: {e}")
         return jsonify({'valid': False, 'error': f'服务器错误: {str(e)}'}), 500
 
+@app.route('/api/order/<order_id>/refund-init', methods=['POST'])
+@csrf_protect
+@limiter.limit('5 per minute')
+@login_required
+@identity_required
+def refund_init(order_id):
+    username = session['user']['username']
+
+    order = orders.get(order_id)
+    if not order:
+        return jsonify({'error': '订单不存在'}), 400
+    if order.get('username') != username:
+        return jsonify({'error': '无权操作此订单'}), 403
+    if order.get('status') != 'paid':
+        return jsonify({'error': '该订单状态不支持退款'}), 400
+    if order.get('refunded', False):
+        return jsonify({'error': '该订单已退款'}), 400
+    if order.get('product_type') == 'pl_transfer':
+        return jsonify({'error': '转账订单禁止退款'}), 400
+    if order.get('is_daifu', False):
+        return jsonify({'error': '代付订单禁止退款'}), 400
+
+    delivered_codes = order.get('delivered_codes', [])
+    for aid, attachment in mail_attachments.items():
+        if attachment.get('username') != username:
+            continue
+        if attachment.get('order_id') == order_id:
+            return jsonify({'error': '该订单的卡密尚未从邮箱领取，请先领取卡密后再申请退款'}), 400
+        if attachment.get('source') in ('mall_purchase', 'daifu_purchase'):
+            code = attachment.get('code', '')
+            if code and code in delivered_codes:
+                return jsonify({'error': '该订单的卡密尚未从邮箱领取，请先领取卡密后再申请退款'}), 400
+
+    refund_amount, refund_points, reason, detail = calc_refund_amount(order, username)
+    if refund_points <= 0:
+        return jsonify({'error': '退款金额为0，无法退款'}), 400
+
+    risk_passed, risk_msg, risk_score, risk_details = perform_refund_risk_check(username, refund_points)
+    if not risk_passed:
+        return jsonify({'error': risk_msg, 'risk_score': risk_score}), 403
+
+    if refund_points < REFUND_EMAIL_THRESHOLD:
+        try:
+            result = _do_refund(username, order_id, refund_points, refund_amount, reason)
+        except Exception as e:
+            log.error(f"小额退款失败: {e}")
+            return jsonify({'error': str(e)}), 500
+        return jsonify({
+            'success': True,
+            'auto_refunded': True,
+            'need_email_verify': False,
+            'risk_score': risk_score,
+            **result
+        })
+
+    for tid, t in list(refund_tickets.items()):
+        if t['order_id'] == order_id and not t['used']:
+            if int(time.time()) - t['created_at'] < 60:
+                return jsonify({'error': '验证邮件已发送，请稍后再试'}), 429
+            del refund_tickets[tid]
+
+    ticket_id = f"rt_{int(time.time()*1000)}_{random.randint(1000, 9999)}"
+    token, ts = generate_refund_token(order_id, ticket_id)
+
+    refund_tickets[ticket_id] = {
+        'ticket_id': ticket_id,
+        'username': username,
+        'order_id': order_id,
+        'refund_points': refund_points,
+        'refund_amount': refund_amount,
+        'reason': reason,
+        'risk_score': risk_score,
+        'risk_passed': risk_passed,
+        'created_at': int(time.time()),
+        'email_verified': False,
+        'email_verified_at': 0,
+        'used': False,
+        'refund_result': None,
+        'refunded_at': 0
+    }
+
+    user_email = users.get(username, {}).get('email', '')
+    if not user_email:
+        del refund_tickets[ticket_id]
+        return jsonify({'error': '您的账号未绑定邮箱，无法进行大额退款验证'}), 400
+
+    try:
+        email_service.send_refund_verification_email(
+            username, user_email, order, refund_points, token
+        )
+    except Exception as e:
+        log.error(f"发送退款验证邮件失败: {e}")
+        del refund_tickets[ticket_id]
+        return jsonify({'error': '验证邮件发送失败，请稍后重试'}), 500
+
+    return jsonify({
+        'success': True,
+        'auto_refunded': False,
+        'need_email_verify': True,
+        'ticket_id': ticket_id,
+        'cooldown_seconds': REFUND_COOLDOWN_SECONDS,
+        'refund_points': refund_points,
+        'refund_amount': refund_amount,
+        'risk_score': risk_score,
+        'message': '验证邮件已发送，请前往邮箱完成验证'
+    })
+
 @app.route('/api/order/<order_id>/refund-check', methods=['GET'])
 @login_required
 def refund_check(order_id):
     username = session['user']['username']
-    
-    if order_id not in orders:
+    order = orders.get(order_id)
+
+    if not order:
         return jsonify({'error': '订单不存在'}), 400
-    
-    order = orders[order_id]
-    
     if order.get('username') != username:
         return jsonify({'error': '无权操作此订单'}), 403
-    
     if order.get('status') != 'paid':
         return jsonify({'can_refund': False, 'reason': '该订单状态不支持退款'}), 200
-    
     if order.get('refunded', False):
         return jsonify({'can_refund': False, 'reason': '该订单已退款'}), 200
-    
-    product_type = order.get('product_type', '')
-    
-    if product_type == 'pl_transfer':
+    if order.get('product_type') == 'pl_transfer':
         return jsonify({'can_refund': False, 'reason': '转账订单禁止退款'}), 200
-    
     if order.get('is_daifu', False):
         return jsonify({'can_refund': False, 'reason': '代付订单禁止退款'}), 200
-    
+
+    # 邮箱领取检查
     delivered_codes = order.get('delivered_codes', [])
-    payment_method = order.get('payment_method', 'points')
-    product_price = order.get('product_price', 0)
-    final_price = order.get('final_price', product_price)
-    
-    is_pl_payment = payment_method == 'pl'
-    current_rate = get_current_pl_rate()
-    
-    if is_pl_payment:
-        points_price = round(final_price / current_rate, 2) if current_rate > 0 else final_price
-    else:
-        points_price = final_price
-    
-    mail_attachments_to_remove = []
+    unclaimed = 0
     for aid, attachment in mail_attachments.items():
         if attachment.get('username') != username:
             continue
         if attachment.get('order_id') == order_id:
-            mail_attachments_to_remove.append(aid)
-        elif attachment.get('source') == 'mall_purchase' or attachment.get('source') == 'daifu_purchase':
+            unclaimed += 1
+        elif attachment.get('source') in ('mall_purchase', 'daifu_purchase'):
             code = attachment.get('code', '')
             if code and code in delivered_codes:
-                mail_attachments_to_remove.append(aid)
-    
-    if mail_attachments_to_remove:
+                unclaimed += 1
+    if unclaimed > 0:
         return jsonify({
             'can_refund': False,
             'reason': '该订单的卡密尚未从邮箱领取，请先领取卡密后再申请退款',
             'has_unclaimed': True,
-            'unclaimed_count': len(mail_attachments_to_remove)
+            'unclaimed_count': unclaimed
         }), 200
-    
-    refund_amount = 0
-    refund_points = 0
-    reason = ''
-    detail = ''
-    
-    if product_type in ['point', 'premium_point', 'reset', 'boost', 'special_point', 'makeup', 'gamblers', 'cancellation', 'box', 'plcard', 'premium_boost']:
-        if not delivered_codes:
-            refund_amount = final_price
-            refund_points = points_price
-            if is_pl_payment:
-                reason = f'未发货，全额退款 (PL支付，汇率 {current_rate:.4f}，折合 {refund_points:.2f} 积分)'
-            else:
-                reason = '未发货，全额退款'
-        else:
-            used_count = 0
-            for code in delivered_codes:
-                status = get_card_usage_status(code, product_type)
-                if status == 'used':
-                    used_count += 1
-            
-            total_codes = len(delivered_codes)
-            
-            if used_count == 0:
-                refund_amount = final_price
-                refund_points = points_price
-                if is_pl_payment:
-                    reason = f'所有卡密({total_codes}张)未使用，全额退款 (PL支付，汇率 {current_rate:.4f}，折合 {refund_points:.2f} 积分)'
-                else:
-                    reason = f'所有卡密({total_codes}张)未使用，全额退款'
-            elif used_count == total_codes:
-                refund_amount = round(final_price * 0.2, 2)
-                refund_points = round(points_price * 0.2, 2)
-                if is_pl_payment:
-                    reason = f'所有卡密({total_codes}张)已使用，退款20% (PL支付，折合 {refund_points:.2f} 积分)'
-                else:
-                    reason = f'所有卡密({total_codes}张)已使用，退款20%'
-            else:
-                unused_count = total_codes - used_count
-                per_code_price = final_price / total_codes
-                per_code_points = points_price / total_codes
-                unused_refund = per_code_price * unused_count
-                used_refund = per_code_price * used_count * 0.2
-                unused_points_refund = per_code_points * unused_count
-                used_points_refund = per_code_points * used_count * 0.2
-                refund_amount = round(unused_refund + used_refund, 2)
-                refund_points = round(unused_points_refund + used_points_refund, 2)
-                if is_pl_payment:
-                    reason = f'卡密 {unused_count}张未使用全额退款，{used_count}张已使用退款20% (PL支付，折合 {refund_points:.2f} 积分)'
-                    detail = f'未使用: {unused_count}张, 已使用: {used_count}张, 汇率: {current_rate:.4f}'
-                else:
-                    reason = f'卡密 {unused_count}张未使用全额退款，{used_count}张已使用退款20%'
-                    detail = f'未使用: {unused_count}张, 已使用: {used_count}张'
-    
-    elif product_type == 'gateway':
-        card = gateway_cards.get(username, {})
-        card_type = card.get('type', '')
-        card_expire = card.get('expire_at', 0)
-        current_time = int(time.time() * 1000)
-        
-        if not card:
-            return jsonify({'can_refund': False, 'reason': '通行卡密不存在'}), 200
-        
-        if card_expire > 0 and current_time > card_expire:
-            return jsonify({'can_refund': False, 'reason': '通行卡密已过期，无法退款'}), 200
-        
-        if card_type == 'hour':
-            refund_amount = final_price
-            refund_points = points_price
-            if is_pl_payment:
-                reason = f'小时卡全额退款 (PL支付，折合 {refund_points:.2f} 积分)'
-            else:
-                reason = '小时卡全额退款'
-        elif card_type == 'day':
-            if card_expire > 0:
-                total_ms = card_expire - card.get('created_at', 0)
-                remain_ms = max(0, card_expire - current_time)
-                if total_ms > 0:
-                    refund_amount = round(final_price * remain_ms / total_ms, 2)
-                    refund_points = round(points_price * remain_ms / total_ms, 2)
-                else:
-                    refund_amount = final_price
-                    refund_points = points_price
-                if is_pl_payment:
-                    reason = f'天卡按剩余时间退款 {refund_amount:.4f} PL (折合 {refund_points:.2f} 积分)'
-                    detail = f'剩余时间比例: {(remain_ms / total_ms * 100):.0f}%, 汇率: {current_rate:.4f}'
-                else:
-                    reason = f'天卡按剩余时间退款 {refund_amount:.2f}'
-                    detail = f'剩余时间比例: {(remain_ms / total_ms * 100):.0f}%'
-            else:
-                refund_amount = final_price
-                refund_points = points_price
-                if is_pl_payment:
-                    reason = f'天卡全额退款 (PL支付，折合 {refund_points:.2f} 积分)'
-                else:
-                    reason = '天卡全额退款'
-        elif card_type == 'week':
-            if card_expire > 0:
-                total_ms = card_expire - card.get('created_at', 0)
-                remain_ms = max(0, card_expire - current_time)
-                if total_ms > 0:
-                    refund_amount = round(final_price * remain_ms / total_ms, 2)
-                    refund_points = round(points_price * remain_ms / total_ms, 2)
-                else:
-                    refund_amount = final_price
-                    refund_points = points_price
-                if is_pl_payment:
-                    reason = f'周卡按剩余时间退款 {refund_amount:.4f} PL (折合 {refund_points:.2f} 积分)'
-                    detail = f'剩余时间比例: {(remain_ms / total_ms * 100):.0f}%, 汇率: {current_rate:.4f}'
-                else:
-                    reason = f'周卡按剩余时间退款 {refund_amount:.2f}'
-                    detail = f'剩余时间比例: {(remain_ms / total_ms * 100):.0f}%'
-            else:
-                refund_amount = final_price
-                refund_points = points_price
-                if is_pl_payment:
-                    reason = f'周卡全额退款 (PL支付，折合 {refund_points:.2f} 积分)'
-                else:
-                    reason = '周卡全额退款'
-        elif card_type == 'permanent':
-            refund_amount = round(final_price * 0.6, 2)
-            refund_points = round(points_price * 0.6, 2)
-            if is_pl_payment:
-                reason = f'永久卡退款60% (PL支付，折合 {refund_points:.2f} 积分)'
-            else:
-                reason = '永久卡退款60%'
-        else:
-            refund_amount = final_price
-            refund_points = points_price
-            if is_pl_payment:
-                reason = f'未知类型，全额退款 (PL支付，折合 {refund_points:.2f} 积分)'
-            else:
-                reason = '未知类型，全额退款'
-    
-    else:
-        refund_amount = final_price
-        refund_points = points_price
-        if is_pl_payment:
-            reason = f'普通订单全额退款 (PL支付，折合 {refund_points:.2f} 积分)'
-        else:
-            reason = '普通订单全额退款'
-    
+
+    refund_amount, refund_points, reason, detail = calc_refund_amount(order, username)
     if refund_points <= 0:
         return jsonify({'can_refund': False, 'reason': '退款金额为0，无法退款'}), 200
-    
-    risk_passed, risk_message, risk_score, risk_details = perform_refund_risk_check(username, refund_points)
+
+    risk_passed, risk_msg, risk_score, _ = perform_refund_risk_check(username, refund_points)
     if not risk_passed:
         return jsonify({
             'can_refund': False,
-            'reason': risk_message,
-            'refund_amount': round(refund_amount, 2),
-            'refund_points': round(refund_points, 2),
-            'order_status': order.get('status'),
-            'product_type': product_type,
-            'payment_method': payment_method,
-            'is_pl_payment': is_pl_payment,
-            'rate_used': current_rate if is_pl_payment else None,
-            'product_name': order.get('product_name', ''),
-            'product_price': order.get('product_price', 0),
-            'created_at': order.get('created_at', 0),
-            'paid_at': order.get('paid_at', 0),
-            'anti_fake_code': order.get('anti_fake_code', ''),
-            'is_refunded': order.get('refunded', False),
+            'reason': risk_msg,
             'risk_check_failed': True,
-            'risk_message': risk_message,
             'risk_score': risk_score,
-            'risk_details': risk_details
-        }), 200
-    
-    return jsonify({
-        'can_refund': True,
-        'refund_amount': round(refund_amount, 2),
-        'refund_points': round(refund_points, 2),
-        'reason': reason,
-        'detail': detail,
-        'order_status': order.get('status'),
-        'product_type': product_type,
-        'payment_method': payment_method,
-        'is_pl_payment': is_pl_payment,
-        'rate_used': current_rate if is_pl_payment else None,
-        'product_name': order.get('product_name', ''),
-        'product_price': order.get('product_price', 0),
-        'created_at': order.get('created_at', 0),
-        'paid_at': order.get('paid_at', 0),
-        'anti_fake_code': order.get('anti_fake_code', ''),
-        'is_refunded': order.get('refunded', False),
-        'risk_check_passed': True,
-        'risk_message': risk_message if risk_message else '风控审查通过',
-        'risk_score': risk_score,
-        'risk_details': risk_details
-    })
-
-
-@app.route('/api/order/<order_id>/refund-self', methods=['POST'])
-@csrf_protect
-@limiter.limit(RATE_LIMITS['refund'])
-@login_required
-@identity_required
-def refund_self(order_id):
-    username = session['user']['username']
-    data = request.get_json() or {}
-    is_gateway_refund = data.get('is_gateway_refund', False)
-    card_key = data.get('card_key', '')
-    
-    if is_gateway_refund and order_id.startswith('GATEWAY_'):
-        if not card_key:
-            return jsonify({'error': '请提供通行卡密'}), 400
-        
-        found_username = None
-        card_data = None
-        for u, card in gateway_cards.items():
-            if card.get('key') == card_key and not card.get('used', False):
-                found_username = u
-                card_data = card
-                break
-        
-        if not card_data:
-            return jsonify({'error': '通行卡密不存在或已失效'}), 400
-        
-        if found_username != username:
-            return jsonify({'error': '该卡密不属于当前账号'}), 403
-        
-        card_type = card_data.get('type', '')
-        card_price = card_data.get('price', 0)
-        card_expire = card_data.get('expire_at', 0)
-        created_at = card_data.get('created_at', 0)
-        current_time = int(time.time() * 1000)
-        
-        if card_expire > 0 and current_time > card_expire:
-            return jsonify({'error': '通行卡密已过期，无法退款'}), 400
-        
-        original_order_id = None
-        original_order = None
-        for oid, order in orders.items():
-            if order.get('username') == username and order.get('product_type') == 'gateway':
-                delivered_codes = order.get('delivered_codes', [])
-                if delivered_codes and card_key in delivered_codes:
-                    original_order_id = oid
-                    original_order = order
-                    break
-        
-        if original_order_id and original_order:
-            if original_order.get('refunded', False):
-                return jsonify({'error': '该卡密对应的订单已退款'}), 400
-            
-            if original_order.get('status') != 'paid':
-                return jsonify({'error': '订单状态异常，无法退款'}), 400
-            
-            refund_amount = 0
-            refund_points = 0
-            reason = ''
-            payment_method = original_order.get('payment_method', 'points')
-            is_pl_payment = payment_method == 'pl'
-            current_rate = get_current_pl_rate()
-            
-            if is_pl_payment:
-                points_price = round(card_price / current_rate, 2) if current_rate > 0 else card_price
-            else:
-                points_price = card_price
-            
-            if card_type == 'hour':
-                refund_amount = card_price
-                refund_points = points_price
-                if is_pl_payment:
-                    reason = f'小时卡全额退款 (PL支付，汇率 {current_rate:.4f}，折合 {refund_points:.2f} 积分)'
-                else:
-                    reason = '小时卡全额退款'
-            elif card_type == 'day':
-                if card_expire > 0:
-                    total_ms = card_expire - created_at
-                    remain_ms = max(0, card_expire - current_time)
-                    if total_ms > 0:
-                        refund_amount = round(card_price * remain_ms / total_ms, 2)
-                        refund_points = round(points_price * remain_ms / total_ms, 2)
-                    else:
-                        refund_amount = card_price
-                        refund_points = points_price
-                    if is_pl_payment:
-                        reason = f'天卡按剩余时间退款 {refund_amount:.4f} PL (折合 {refund_points:.2f} 积分)'
-                    else:
-                        reason = f'天卡按剩余时间退款 {refund_amount:.2f}'
-                else:
-                    refund_amount = card_price
-                    refund_points = points_price
-                    if is_pl_payment:
-                        reason = f'天卡全额退款 (PL支付，折合 {refund_points:.2f} 积分)'
-                    else:
-                        reason = '天卡全额退款'
-            elif card_type == 'week':
-                if card_expire > 0:
-                    total_ms = card_expire - created_at
-                    remain_ms = max(0, card_expire - current_time)
-                    if total_ms > 0:
-                        refund_amount = round(card_price * remain_ms / total_ms, 2)
-                        refund_points = round(points_price * remain_ms / total_ms, 2)
-                    else:
-                        refund_amount = card_price
-                        refund_points = points_price
-                    if is_pl_payment:
-                        reason = f'周卡按剩余时间退款 {refund_amount:.4f} PL (折合 {refund_points:.2f} 积分)'
-                    else:
-                        reason = f'周卡按剩余时间退款 {refund_amount:.2f}'
-                else:
-                    refund_amount = card_price
-                    refund_points = points_price
-                    if is_pl_payment:
-                        reason = f'周卡全额退款 (PL支付，折合 {refund_points:.2f} 积分)'
-                    else:
-                        reason = '周卡全额退款'
-            elif card_type == 'permanent':
-                refund_amount = round(card_price * 0.6, 2)
-                refund_points = round(points_price * 0.6, 2)
-                if is_pl_payment:
-                    reason = f'永久卡退款60% (PL支付，折合 {refund_points:.2f} 积分)'
-                else:
-                    reason = '永久卡退款60%'
-            else:
-                refund_amount = card_price
-                refund_points = points_price
-                if is_pl_payment:
-                    reason = f'未知类型，全额退款 (PL支付，折合 {refund_points:.2f} 积分)'
-                else:
-                    reason = '未知类型，全额退款'
-            
-            if refund_points <= 0:
-                return jsonify({'error': '退款金额为0，无法退款'}), 400
-
-            risk_passed, risk_message, risk_score, risk_details = perform_refund_risk_check(username, refund_points)
-            if not risk_passed:
-                return jsonify({'error': risk_message}), 403
-            
-            del gateway_cards[username]
-            save_gateway_cards()
-            
-            if username not in fund_data:
-                fund_data[username] = {'balance': 0, 'total_interest': 0, 'today_interest': {}, 'last_interest_date': ''}
-            
-            old_balance = fund_data[username]['balance']
-            fund_data[username]['balance'] = round(fund_data[username]['balance'] + refund_points, 2)
-            save_fund_data()
-            
-            refund_timestamp = int(time.time() * 1000)
-            fund_history_id = f"fund_refund_gateway_{refund_timestamp}_{random.randint(1000,9999)}"
-            fund_history[fund_history_id] = {
-                'id': fund_history_id,
-                'username': username,
-                'type': 'refund',
-                'order_id': original_order_id,
-                'amount': round(refund_points, 2),
-                'reason': reason,
-                'timestamp': refund_timestamp
-            }
-            save_fund_history()
-            
-            original_order['refunded'] = True
-            original_order['refunded_at'] = refund_timestamp
-            original_order['status'] = 'refunded'
-            original_order['refund_amount'] = refund_amount
-            original_order['refund_points'] = refund_points
-            original_order['refund_reason'] = reason
-            save_orders()
-            
-            return jsonify({
-                'success': True,
-                'message': f'退款成功！退还 {refund_points:.2f} 积分已存入理财账户',
-                'refund_amount': refund_amount,
-                'refund_points': refund_points,
-                'reason': reason,
-                'old_balance': old_balance,
-                'new_balance': fund_data[username]['balance'],
-                'order_refunded': True,
-                'order_id': original_order_id,
-                'is_pl_payment': is_pl_payment,
-                'rate_used': current_rate if is_pl_payment else None,
-                'risk_score': risk_score,
-                'risk_details': risk_details,
-                'risk_passed': risk_passed,
-                'risk_message': risk_message
-            })
-        
-        refund_amount = 0
-        refund_points = 0
-        reason = ''
-        is_pl_payment = False
-        current_rate = get_current_pl_rate()
-        points_price = card_price
-        
-        if card_type == 'hour':
-            refund_amount = card_price
-            refund_points = points_price
-            reason = '小时卡全额退款 (无对应订单)'
-        elif card_type == 'day':
-            if card_expire > 0:
-                total_ms = card_expire - created_at
-                remain_ms = max(0, card_expire - current_time)
-                if total_ms > 0:
-                    refund_amount = round(card_price * remain_ms / total_ms, 2)
-                    refund_points = round(points_price * remain_ms / total_ms, 2)
-                else:
-                    refund_amount = card_price
-                    refund_points = points_price
-                reason = f'天卡按剩余时间退款 {refund_amount:.2f} (无对应订单)'
-            else:
-                refund_amount = card_price
-                refund_points = points_price
-                reason = '天卡全额退款 (无对应订单)'
-        elif card_type == 'week':
-            if card_expire > 0:
-                total_ms = card_expire - created_at
-                remain_ms = max(0, card_expire - current_time)
-                if total_ms > 0:
-                    refund_amount = round(card_price * remain_ms / total_ms, 2)
-                    refund_points = round(points_price * remain_ms / total_ms, 2)
-                else:
-                    refund_amount = card_price
-                    refund_points = points_price
-                reason = f'周卡按剩余时间退款 {refund_amount:.2f} (无对应订单)'
-            else:
-                refund_amount = card_price
-                refund_points = points_price
-                reason = '周卡全额退款 (无对应订单)'
-        elif card_type == 'permanent':
-            refund_amount = round(card_price * 0.6, 2)
-            refund_points = round(points_price * 0.6, 2)
-            reason = '永久卡退款60% (无对应订单)'
-        else:
-            refund_amount = card_price
-            refund_points = points_price
-            reason = '未知类型，全额退款 (无对应订单)'
-        
-        if refund_points <= 0:
-            return jsonify({'error': '退款金额为0，无法退款'}), 400
-        
-        risk_passed, risk_message, risk_score, risk_details = perform_refund_risk_check(username, refund_points)
-        if not risk_passed:
-            return jsonify({'error': risk_message}), 403
-        
-        del gateway_cards[username]
-        save_gateway_cards()
-        
-        if username not in fund_data:
-            fund_data[username] = {'balance': 0, 'total_interest': 0, 'today_interest': {}, 'last_interest_date': ''}
-        
-        old_balance = fund_data[username]['balance']
-        fund_data[username]['balance'] = round(fund_data[username]['balance'] + refund_points, 2)
-        save_fund_data()
-        
-        refund_timestamp = int(time.time() * 1000)
-        fund_history_id = f"fund_refund_gateway_no_order_{refund_timestamp}_{random.randint(1000,9999)}"
-        fund_history[fund_history_id] = {
-            'id': fund_history_id,
-            'username': username,
-            'type': 'refund',
-            'order_id': card_key,
-            'amount': round(refund_points, 2),
-            'reason': reason,
-            'timestamp': refund_timestamp
-        }
-        save_fund_history()
-        
-        return jsonify({
-            'success': True,
-            'message': f'退款成功！退还 {refund_points:.2f} 积分已存入理财账户',
             'refund_amount': refund_amount,
             'refund_points': refund_points,
-            'reason': reason,
-            'old_balance': old_balance,
-            'new_balance': fund_data[username]['balance'],
-            'order_refunded': False,
-            'order_id': None,
-            'is_pl_payment': False,
-            'rate_used': None,
-            'risk_score': risk_score,
-            'risk_details': risk_details,
-            'risk_passed': risk_passed,
-            'risk_message': risk_message
-        })
-    
-    if order_id not in orders:
-        return jsonify({'error': '订单不存在'}), 400
-    
-    order = orders[order_id]
-    
-    if order.get('username') != username:
-        return jsonify({'error': '无权操作此订单'}), 403
-    
-    if order.get('status') != 'paid':
-        return jsonify({'error': '该订单状态不支持退款'}), 400
-    
-    if order.get('refunded', False):
-        return jsonify({'error': '该订单已退款'}), 400
-    
-    product_type = order.get('product_type', '')
-    
-    if product_type == 'pl_transfer':
-        return jsonify({'error': '转账订单禁止退款'}), 400
-    
-    if order.get('is_daifu', False):
-        return jsonify({'error': '代付订单禁止退款'}), 400
-    
-    delivered_codes = order.get('delivered_codes', [])
-    payment_method = order.get('payment_method', 'points')
-    product_price = order.get('product_price', 0)
-    final_price = order.get('final_price', product_price)
-    
-    is_pl_payment = payment_method == 'pl'
-    current_rate = get_current_pl_rate()
-    
-    if is_pl_payment:
-        points_price = round(final_price / current_rate, 2) if current_rate > 0 else final_price
-    else:
-        points_price = final_price
-    
-    mail_attachments_to_remove = []
-    for aid, attachment in mail_attachments.items():
-        if attachment.get('username') != username:
-            continue
-        if attachment.get('order_id') == order_id:
-            mail_attachments_to_remove.append(aid)
-        elif attachment.get('source') == 'mall_purchase' or attachment.get('source') == 'daifu_purchase':
-            code = attachment.get('code', '')
-            if code and code in delivered_codes:
-                mail_attachments_to_remove.append(aid)
-    
-    for aid in mail_attachments_to_remove:
-        if aid in mail_attachments:
-            del mail_attachments[aid]
-    if mail_attachments_to_remove:
-        save_mail_attachments()
-    
-    refund_amount = 0
-    refund_points = 0
-    reason = ''
-    
-    if product_type in ['point', 'premium_point', 'reset', 'boost', 'special_point', 'makeup', 'gamblers', 'cancellation', 'box', 'plcard', 'premium_boost']:
-        if not delivered_codes:
-            refund_amount = final_price
-            refund_points = points_price
-            if is_pl_payment:
-                reason = f'未发货，全额退款 (PL支付，汇率 {current_rate:.4f}，折合 {refund_points:.2f} 积分)'
-            else:
-                reason = '未发货，全额退款'
-        else:
-            used_count = 0
-            for code in delivered_codes:
-                status = get_card_usage_status(code, product_type)
-                if status == 'used':
-                    used_count += 1
-            
-            total_codes = len(delivered_codes)
-            
-            if used_count == 0:
-                refund_amount = final_price
-                refund_points = points_price
-                if is_pl_payment:
-                    reason = f'所有卡密({total_codes}张)未使用，全额退款 (PL支付，汇率 {current_rate:.4f}，折合 {refund_points:.2f} 积分)'
-                else:
-                    reason = f'所有卡密({total_codes}张)未使用，全额退款'
-            elif used_count == total_codes:
-                refund_amount = round(final_price * 0.2, 2)
-                refund_points = round(points_price * 0.2, 2)
-                if is_pl_payment:
-                    reason = f'所有卡密({total_codes}张)已使用，退款20% (PL支付，折合 {refund_points:.2f} 积分)'
-                else:
-                    reason = f'所有卡密({total_codes}张)已使用，退款20%'
-            else:
-                unused_count = total_codes - used_count
-                per_code_price = final_price / total_codes
-                per_code_points = points_price / total_codes
-                unused_refund = per_code_price * unused_count
-                used_refund = per_code_price * used_count * 0.2
-                unused_points_refund = per_code_points * unused_count
-                used_points_refund = per_code_points * used_count * 0.2
-                refund_amount = round(unused_refund + used_refund, 2)
-                refund_points = round(unused_points_refund + used_points_refund, 2)
-                if is_pl_payment:
-                    reason = f'卡密 {unused_count}张未使用全额退款，{used_count}张已使用退款20% (PL支付，折合 {refund_points:.2f} 积分)'
-                else:
-                    reason = f'卡密 {unused_count}张未使用全额退款，{used_count}张已使用退款20%'
-    
-    elif product_type == 'gateway':
-        card = gateway_cards.get(username, {})
-        card_type = card.get('type', '')
-        card_expire = card.get('expire_at', 0)
-        current_time = int(time.time() * 1000)
-        
-        if not card:
-            return jsonify({'error': '通行卡密不存在'}), 400
-        
-        if card_expire > 0 and current_time > card_expire:
-            return jsonify({'error': '通行卡密已过期，无法退款'}), 400
-        
-        if card_type == 'hour':
-            refund_amount = final_price
-            refund_points = points_price
-            if is_pl_payment:
-                reason = f'小时卡全额退款 (PL支付，折合 {refund_points:.2f} 积分)'
-            else:
-                reason = '小时卡全额退款'
-        elif card_type == 'day':
-            if card_expire > 0:
-                total_ms = card_expire - card.get('created_at', 0)
-                remain_ms = max(0, card_expire - current_time)
-                if total_ms > 0:
-                    refund_amount = round(final_price * remain_ms / total_ms, 2)
-                    refund_points = round(points_price * remain_ms / total_ms, 2)
-                else:
-                    refund_amount = final_price
-                    refund_points = points_price
-                if is_pl_payment:
-                    reason = f'天卡按剩余时间退款 {refund_amount:.4f} PL (折合 {refund_points:.2f} 积分)'
-                else:
-                    reason = f'天卡按剩余时间退款 {refund_amount:.2f}'
-            else:
-                refund_amount = final_price
-                refund_points = points_price
-                if is_pl_payment:
-                    reason = f'天卡全额退款 (PL支付，折合 {refund_points:.2f} 积分)'
-                else:
-                    reason = '天卡全额退款'
-        elif card_type == 'week':
-            if card_expire > 0:
-                total_ms = card_expire - card.get('created_at', 0)
-                remain_ms = max(0, card_expire - current_time)
-                if total_ms > 0:
-                    refund_amount = round(final_price * remain_ms / total_ms, 2)
-                    refund_points = round(points_price * remain_ms / total_ms, 2)
-                else:
-                    refund_amount = final_price
-                    refund_points = points_price
-                if is_pl_payment:
-                    reason = f'周卡按剩余时间退款 {refund_amount:.4f} PL (折合 {refund_points:.2f} 积分)'
-                else:
-                    reason = f'周卡按剩余时间退款 {refund_amount:.2f}'
-            else:
-                refund_amount = final_price
-                refund_points = points_price
-                if is_pl_payment:
-                    reason = f'周卡全额退款 (PL支付，折合 {refund_points:.2f} 积分)'
-                else:
-                    reason = '周卡全额退款'
-        elif card_type == 'permanent':
-            refund_amount = round(final_price * 0.6, 2)
-            refund_points = round(points_price * 0.6, 2)
-            if is_pl_payment:
-                reason = f'永久卡退款60% (PL支付，折合 {refund_points:.2f} 积分)'
-            else:
-                reason = '永久卡退款60%'
-        else:
-            refund_amount = final_price
-            refund_points = points_price
-            if is_pl_payment:
-                reason = f'未知类型，全额退款 (PL支付，折合 {refund_points:.2f} 积分)'
-            else:
-                reason = '未知类型，全额退款'
-        
-        if username in gateway_cards:
-            del gateway_cards[username]
-            save_gateway_cards()
-    
-    else:
-        refund_amount = final_price
-        refund_points = points_price
-        if is_pl_payment:
-            reason = f'普通订单全额退款 (PL支付，折合 {refund_points:.2f} 积分)'
-        else:
-            reason = '普通订单全额退款'
-    
-    if refund_points <= 0:
-        return jsonify({'error': '退款金额为0，无法退款'}), 400
+        }), 200
 
-    risk_passed, risk_message, risk_score, risk_details = perform_refund_risk_check(username, refund_points)
-    if not risk_passed:
-        return jsonify({'error': risk_message}), 403
-    
-    if order.get('delivered', False):
-        code_type_map = {
-            'point': (point_codes, save_point_codes),
-            'premium_point': (premium_point_codes, save_premium_point_codes),
-            'reset': (reset_codes, save_reset_codes),
-            'boost': (boost_codes, save_boost_codes),
-            'special_point': (special_point_codes, save_special_point_codes),
-            'makeup': (makeup_codes, save_makeup_codes),
-            'gamblers': (gamblers_codes, save_gamblers_codes),
-            'cancellation': (cancellation_codes, save_cancellation_codes),
-            'box': (box_codes, save_box_codes),
-            'plcard': (plcard_codes, save_plcard_codes),
-            'premium_boost': (premium_boost_codes, save_premium_boost_codes)
-        }
-        if product_type in code_type_map:
-            codes, save_func = code_type_map[product_type]
-            for code in delivered_codes:
-                if code in codes:
-                    if not codes[code].get('used', False):
-                        del codes[code]
-            save_func()
-    
-    if username not in fund_data:
-        fund_data[username] = {'balance': 0, 'total_interest': 0, 'today_interest': {}, 'last_interest_date': ''}
-    
-    old_balance = fund_data[username]['balance']
-    fund_data[username]['balance'] = round(fund_data[username]['balance'] + refund_points, 2)
-    save_fund_data()
-    
-    refund_timestamp = int(time.time() * 1000)
-    fund_history_id = f"fund_refund_{refund_timestamp}_{random.randint(1000,9999)}"
-    fund_history[fund_history_id] = {
-        'id': fund_history_id,
-        'username': username,
-        'type': 'refund',
-        'order_id': order_id,
-        'amount': round(refund_points, 2),
-        'reason': reason,
-        'timestamp': refund_timestamp
-    }
-    save_fund_history()
-    
-    order['refunded'] = True
-    order['refunded_at'] = refund_timestamp
-    order['status'] = 'refunded'
-    order['refund_amount'] = refund_amount
-    order['refund_points'] = refund_points
-    order['refund_reason'] = reason
-    save_orders()
-    
     return jsonify({
-        'success': True,
-        'message': f'退款成功！退还 {refund_points:.2f} 积分已存入理财账户',
+        'can_refund': True,
         'refund_amount': refund_amount,
         'refund_points': refund_points,
         'reason': reason,
-        'old_balance': old_balance,
-        'new_balance': fund_data[username]['balance'],
-        'is_pl_payment': is_pl_payment,
-        'rate_used': current_rate if is_pl_payment else None,
+        'detail': detail,
+        'payment_method': order.get('payment_method', 'points'),
+        'is_pl_payment': order.get('payment_method') == 'pl',
+        'rate_used': get_current_pl_rate() if order.get('payment_method') == 'pl' else None,
+        'need_email_verify': refund_points >= REFUND_EMAIL_THRESHOLD,
         'risk_score': risk_score,
-        'risk_details': risk_details,
-        'risk_passed': risk_passed,
-        'risk_message': risk_message
     })
+
+@app.route('/api/refund/verify-info', methods=['GET'])
+@limiter.limit('5 per minute')
+def refund_verify_info():
+    token = request.args.get('token', '').strip()
+    order_id, ticket_id, ts, err = decode_refund_token(token)
+    if err:
+        return jsonify({'error': f'链接无效: {err}'}), 400
+
+    if int(time.time()) - ts > REFUND_TICKET_TTL:
+        return jsonify({'error': '链接已过期，请回到退款页面重新发起'}), 400
+
+    ticket = refund_tickets.get(ticket_id)
+    if not ticket:
+        return jsonify({'error': '链接已失效或已被使用'}), 400
+    if ticket['order_id'] != order_id:
+        return jsonify({'error': '链接与订单不匹配'}), 400
+    if ticket['used']:
+        return jsonify({'error': '该退款已完成，无需重复验证'}), 400
+
+    order = orders.get(order_id, {})
+    return jsonify({
+        'success': True,
+        'order_id': order_id,
+        'username': ticket['username'],
+        'product_name': order.get('product_name', '未知商品'),
+        'refund_points': ticket['refund_points'],
+        'refund_amount': ticket['refund_amount'],
+        'reason': ticket['reason'],
+        'already_verified': ticket['email_verified'],
+        'expires_in': max(0, REFUND_TICKET_TTL - (int(time.time()) - ts))
+    })
+
+
+@app.route('/api/refund/verify-confirm', methods=['POST'])
+@csrf_protect
+@limiter.limit('10 per minute')
+def refund_verify_confirm():
+    data = request.get_json()
+    token = data.get('token', '').strip()
+    password = data.get('password', '')
+
+    if not token or not password:
+        return jsonify({'error': '请填写密码'}), 400
+
+    order_id, ticket_id, ts, err = decode_refund_token(token)
+    if err:
+        return jsonify({'error': f'链接无效: {err}'}), 400
+
+    if int(time.time()) - ts > REFUND_TICKET_TTL:
+        return jsonify({'error': '链接已过期，请回到退款页面重新发起'}), 400
+
+    ticket = refund_tickets.get(ticket_id)
+    if not ticket:
+        return jsonify({'error': '链接已失效或已被使用'}), 400
+    if ticket['order_id'] != order_id:
+        return jsonify({'error': '链接与订单不匹配'}), 400
+    if ticket['used']:
+        return jsonify({'error': '该退款已完成，无需重复验证'}), 400
+
+    if ticket['email_verified']:
+        return jsonify({'success': True, 'message': '已完成验证，请回到原页面等待退款'})
+
+    username = ticket['username']
+    user_data = users.get(username)
+    if not user_data:
+        return jsonify({'error': '用户不存在'}), 400
+
+    if not bcrypt.check_password_hash(user_data['password'], password):
+        return jsonify({'error': '密码错误，请重试'}), 400
+
+    ticket['email_verified'] = True
+    ticket['email_verified_at'] = int(time.time())
+
+    return jsonify({
+        'success': True,
+        'message': '验证成功！请回到原页面等待退款完成'
+    })
+
+
+@app.route('/api/order/<order_id>/refund-status', methods=['GET'])
+@login_required
+def refund_status(order_id):
+    username = session['user']['username']
+    ticket_id = request.args.get('ticket', '').strip()
+    ticket = refund_tickets.get(ticket_id)
+
+    if not ticket:
+        return jsonify({'error': 'ticket 不存在或已过期'}), 400
+    if ticket['username'] != username:
+        return jsonify({'error': '无权查看'}), 403
+    if ticket['order_id'] != order_id:
+        return jsonify({'error': 'ticket 与订单不匹配'}), 400
+
+    if int(time.time()) - ticket['created_at'] > REFUND_TICKET_TTL:
+        del refund_tickets[ticket_id]
+        return jsonify({'error': 'ticket 已过期，请重新发起退款'}), 400
+
+    elapsed = int(time.time()) - ticket['created_at']
+    cooldown_ok = elapsed >= REFUND_COOLDOWN_SECONDS
+    email_ok = ticket['email_verified']
+    risk_ok = ticket['risk_passed']
+
+    if cooldown_ok and email_ok and risk_ok and not ticket['used']:
+        ticket['used'] = True
+        try:
+            result = _do_refund(
+                username, order_id,
+                ticket['refund_points'], ticket['refund_amount'], ticket['reason']
+            )
+            ticket['refund_result'] = result
+            ticket['refunded_at'] = int(time.time())
+        except Exception as e:
+            log.error(f"自动退款失败 ticket={ticket_id}: {e}")
+            ticket['used'] = False
+            return jsonify({
+                'email_verified': email_ok,
+                'risk_passed': risk_ok,
+                'cooldown_remaining': 0,
+                'can_refund': False,
+                'refunded': False,
+                'error': f'退款执行失败: {str(e)}'
+            }), 500
+
+    return jsonify({
+        'email_verified': email_ok,
+        'risk_passed': risk_ok,
+        'cooldown_remaining': max(0, REFUND_COOLDOWN_SECONDS - elapsed),
+        'can_refund': cooldown_ok and email_ok and risk_ok,
+        'refunded': ticket.get('used', False),
+        'refund_result': ticket.get('refund_result')
+    })
+
+@app.route('/api/order/<order_id>/refund-self', methods=['POST'])
+@csrf_protect
+@login_required
+def refund_self_deprecated(order_id):
+    return jsonify({
+        'error': '该接口已停用，请使用新的退款流程',
+        'redirect': '/refund.html'
+    }), 410
 
 @app.route('/api/order/search', methods=['GET'])
 @login_required
@@ -13787,7 +13582,19 @@ def proxy_music_lyric():
             params={'source': source, 'id': song_id},
             timeout=8
         )
-        return jsonify(resp.json()), resp.status_code
+        result = resp.json()
+        if isinstance(result, dict) and result.get('lyric'):
+            result['lyric'] = normalize_lrc(result['lyric'])
+        elif isinstance(result, dict) and result.get('data'):
+            data = result['data']
+            if isinstance(data, str):
+                result['data'] = normalize_lrc(data)
+            elif isinstance(data, dict):
+                if data.get('lyric'):
+                    data['lyric'] = normalize_lrc(data['lyric'])
+                elif data.get('lrc'):
+                    data['lrc'] = normalize_lrc(data['lrc'])
+        return jsonify(result), resp.status_code
     except Exception as e:
         log.error(f'Music lyric proxy error: {e}')
         return jsonify({'error': '歌词服务暂不可用'}), 502
@@ -16503,6 +16310,10 @@ def mail_page():
 def feedback_page():
     return send_from_directory('public', 'feedback.html')
 
+@app.route('/refund/verify')
+def refund_verify_page():
+    return send_from_directory('public', 'refund_verify.html')
+
 @app.route('/pool.html')
 def pool_page():
     return send_from_directory('public', 'pool.html')
@@ -16652,9 +16463,8 @@ if gm_init:
 
     import socket
     try:
-        hostname = socket.gethostname()
-        local_ip = socket.gethostbyname(hostname)
-        print(f"Server running on https://{local_ip}:3000")
+        print(f"Server running on {SERVER_BASE_URL}")
+        print(f"Also available on https://localhost:3000")
         print(f"Also available on https://localhost:3000")
         print("按 Ctrl+C 优雅关闭服务器")
     except Exception as e:

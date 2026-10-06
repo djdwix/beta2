@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>退款验证</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI','PingFang SC',Roboto,'Helvetica Neue',sans-serif;background:linear-gradient(160deg,#022c22 0%,#064e3b 50%,#065f46 100%);min-height:100vh;padding:20px;display:flex;justify-content:center;align-items:center;position:relative;overflow-x:hidden}
+        body::before{content:'';position:fixed;top:-20%;right:-10%;width:60%;height:60%;background:radial-gradient(circle,rgba(52,211,153,0.15),transparent 70%);pointer-events:none;animation:glow 10s ease-in-out infinite}
+        body::after{content:'';position:fixed;bottom:-20%;left:-10%;width:60%;height:60%;background:radial-gradient(circle,rgba(16,185,129,0.12),transparent 70%);pointer-events:none;animation:glow 12s ease-in-out infinite reverse}
+        @keyframes glow{0%,100%{transform:scale(1);opacity:0.8}50%{transform:scale(1.1);opacity:1}}
+        .verify-container{background:rgba(6,40,32,0.82);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-radius:36px;box-shadow:0 30px 70px rgba(0,0,0,0.6),0 0 0 1px rgba(52,211,153,0.12) inset;width:100%;max-width:520px;margin:0 auto;animation:slideUp 0.6s cubic-bezier(0.16,1,0.3,1);padding:36px 30px;border:1px solid rgba(52,211,153,0.15);position:relative;z-index:1}
+        @keyframes slideUp{from{opacity:0;transform:translateY(40px) scale(0.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+        .verify-header{text-align:center;margin-bottom:28px;padding-bottom:22px;border-bottom:1px solid rgba(52,211,153,0.15)}
+        .verify-header .icon{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 12px 32px rgba(16,185,129,0.4)}
+        .verify-header .icon i{font-size:32px;color:white}
+        .verify-header h1{font-size:22px;color:#a7f3d0;font-weight:800;margin-bottom:6px}
+        .verify-header p{font-size:13px;color:#6ee7b7;font-weight:500}
+        .loading-box{text-align:center;padding:40px 20px;color:#6ee7b7}
+        .loading-box .spinner{display:inline-block;width:32px;height:32px;border:3px solid rgba(52,211,153,0.15);border-radius:50%;border-top-color:#34d399;animation:spin 0.6s linear infinite;margin-bottom:12px}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .order-summary{background:rgba(6,40,32,0.5);border-radius:16px;padding:18px 20px;margin-bottom:22px;border:1px solid rgba(52,211,153,0.15)}
+        .order-summary .summary-title{font-size:13px;font-weight:800;color:#a7f3d0;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+        .order-summary .summary-title i{color:#34d399}
+        .order-summary .summary-row{display:flex;justify-content:space-between;padding:7px 0;font-size:13px;border-bottom:1px solid rgba(52,211,153,0.08);flex-wrap:wrap;gap:4px}
+        .order-summary .summary-row:last-child{border-bottom:none}
+        .order-summary .summary-row .label{color:#6ee7b7;font-weight:600}
+        .order-summary .summary-row .value{color:#a7f3d0;font-weight:700;text-align:right;word-break:break-all}
+        .order-summary .summary-row .value.username{color:#34d399;font-weight:800;font-size:14px}
+        .order-summary .summary-row .value.amount{color:#34d399;font-weight:800;font-size:15px}
+        .verify-form{display:none}
+        .verify-form.show{display:block}
+        .form-group{margin-bottom:18px}
+        .form-group label{display:block;font-size:13px;font-weight:700;color:#a7f3d0;margin-bottom:8px}
+        .form-group label i{color:#34d399;margin-right:6px}
+        .form-group input{width:100%;padding:14px 18px;border:2px solid rgba(52,211,153,0.2);border-radius:12px;font-size:15px;outline:none;transition:all 0.3s;background:rgba(6,40,32,0.6);color:#a7f3d0;font-weight:600;font-family:'Segoe UI','PingFang SC',Roboto,sans-serif}
+        .form-group input::placeholder{color:#4d7c6a;font-weight:400}
+        .form-group input:focus{border-color:#34d399;box-shadow:0 0 0 4px rgba(52,211,153,0.15);background:rgba(6,40,32,0.8)}
+        .form-group input:disabled{opacity:0.5;cursor:not-allowed}
+        .verify-btn{width:100%;padding:16px;background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;border-radius:40px;font-size:16px;font-weight:800;cursor:pointer;transition:all 0.3s;box-shadow:0 10px 28px rgba(16,185,129,0.35);letter-spacing:0.5px;display:flex;align-items:center;justify-content:center;gap:8px}
+        .verify-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 16px 40px rgba(16,185,129,0.5)}
+        .verify-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none;box-shadow:none}
+        .verify-btn .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-radius:50%;border-top-color:white;animation:spin 0.6s linear infinite}
+        .warning-box{background:rgba(251,191,36,0.08);border-radius:14px;padding:14px 18px;margin-bottom:18px;border-left:4px solid #fbbf24;font-size:12px;color:#fcd34d;line-height:1.7;font-weight:500}
+        .warning-box i{color:#fbbf24;margin-right:6px}
+        .warning-box b{color:#fde68a;font-weight:800}
+        .error-box{background:rgba(239,68,68,0.1);border:2px solid rgba(239,68,68,0.25);border-radius:20px;padding:28px 22px;text-align:center;display:none}
+        .error-box.show{display:block;animation:slideUp 0.5s cubic-bezier(0.16,1,0.3,1)}
+        .error-box .error-icon{font-size:48px;color:#f87171;margin-bottom:14px;filter:drop-shadow(0 0 16px rgba(248,113,113,0.4))}
+        .error-box .error-title{font-size:18px;font-weight:800;color:#fca5a5;margin-bottom:10px}
+        .error-box .error-desc{font-size:13px;color:#6ee7b7;margin-bottom:20px;line-height:1.7}
+        .error-box .back-btn{display:inline-block;padding:12px 32px;background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;border-radius:40px;font-size:14px;font-weight:800;cursor:pointer;transition:all 0.3s;text-decoration:none;box-shadow:0 8px 24px rgba(16,185,129,0.35)}
+        .error-box .back-btn:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(16,185,129,0.5)}
+        .success-box{background:rgba(52,211,153,0.1);border:2px solid rgba(52,211,153,0.3);border-radius:20px;padding:32px 22px;text-align:center;display:none}
+        .success-box.show{display:block;animation:slideUp 0.5s cubic-bezier(0.16,1,0.3,1)}
+        .success-box .success-icon{font-size:56px;color:#34d399;margin-bottom:16px;filter:drop-shadow(0 0 20px rgba(52,211,153,0.5))}
+        .success-box .success-title{font-size:20px;font-weight:800;color:#a7f3d0;margin-bottom:10px}
+        .success-box .success-desc{font-size:13px;color:#6ee7b7;line-height:1.8;margin-bottom:20px;font-weight:500}
+        .success-box .success-desc b{color:#34d399}
+        .success-box .info-note{background:rgba(56,189,248,0.1);border-radius:12px;padding:12px 16px;font-size:12px;color:#7dd3fc;margin-bottom:18px;text-align:left;line-height:1.7;border-left:3px solid #38bdf8;font-weight:500}
+        .success-box .back-btn{display:inline-block;padding:12px 32px;background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;border-radius:40px;font-size:14px;font-weight:800;cursor:pointer;transition:all 0.3s;text-decoration:none;box-shadow:0 8px 24px rgba(16,185,129,0.35)}
+        .success-box .back-btn:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(16,185,129,0.5)}
+        .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#10b981,#059669);color:white;padding:14px 26px;border-radius:40px;font-size:14px;z-index:2000;animation:fadeInOut 3s;max-width:90%;text-align:center;font-weight:700;box-shadow:0 16px 40px rgba(0,0,0,0.3);backdrop-filter:blur(8px)}
+        .toast.error{background:linear-gradient(135deg,#ef4444,#dc2626)}
+        .toast.warning{background:linear-gradient(135deg,#f59e0b,#d97706)}
+        .toast.info{background:linear-gradient(135deg,#38bdf8,#0284c7)}
+        @keyframes fadeInOut{0%{opacity:0;transform:translateX(-50%) translateY(10px)}15%{opacity:1;transform:translateX(-50%) translateY(0)}85%{opacity:1;transform:translateX(-50%) translateY(0)}100%{opacity:0;transform:translateX(-50%) translateY(-10px)}}
+        .footer-note{text-align:center;font-size:11px;color:#6ee7b7;margin-top:18px;line-height:1.7;font-weight:500}
+        .footer-note i{color:#34d399;margin-right:4px}
+        @media(max-width:600px){
+            .verify-container{padding:28px 22px;border-radius:28px}
+            .verify-header .icon{width:60px;height:60px}
+            .verify-header .icon i{font-size:26px}
+            .verify-header h1{font-size:19px}
+        }
+    </style>
+</head>
+<body>
+    <div class="verify-container">
+        <div class="verify-header">
+            <div class="icon"><i class="fas fa-shield-alt"></i></div>
+            <h1>退款安全验证</h1>
+            <p>请确认您的身份以完成大额退款</p>
+        </div>
+
+        <div id="loadingBox" class="loading-box">
+            <div class="spinner"></div>
+            <div>正在加载验证信息...</div>
+        </div>
+
+        <div id="errorBox" class="error-box">
+            <div class="error-icon"><i class="fas fa-exclamation-circle"></i></div>
+            <div class="error-title" id="errorTitle">链接无效</div>
+            <div class="error-desc" id="errorDesc">该验证链接已失效或已过期</div>
+            <a href="/refund.html" class="back-btn">返回退款页面</a>
+        </div>
+
+        <div id="successBox" class="success-box">
+            <div class="success-icon"><i class="fas fa-check-circle"></i></div>
+            <div class="success-title">验证成功</div>
+            <div class="success-desc">您的身份已验证，系统将在 <b>30 秒风控审查</b> 完成后自动退款。<br>请回到原页面等待退款到账。</div>
+            <div class="info-note">
+                <i class="fas fa-info-circle"></i> 退款将存入您的理财账户，可随时提取。如未自动退款，请回到退款页面查看状态。
+            </div>
+            <a href="/refund.html" class="back-btn">返回退款页面</a>
+        </div>
+
+        <div id="verifyForm" class="verify-form">
+            <div class="order-summary" id="orderSummary">
+                <div class="summary-title"><i class="fas fa-receipt"></i> 退款信息</div>
+                <div class="summary-row"><span class="label">退款账号</span><span class="value username" id="sumUsername">-</span></div>
+                <div class="summary-row"><span class="label">订单号</span><span class="value" id="sumOrderId">-</span></div>
+                <div class="summary-row"><span class="label">商品</span><span class="value" id="sumProduct">-</span></div>
+                <div class="summary-row"><span class="label">退款原因</span><span class="value" id="sumReason">-</span></div>
+                <div class="summary-row"><span class="label">退款金额</span><span class="value amount" id="sumAmount">0.00 积分</span></div>
+            </div>
+
+            <div class="warning-box">
+                <i class="fas fa-shield-alt"></i> 您正在为账号 <b id="warningUsername">-</b> 申请退款，请输入<b>该账号的登录密码</b>完成身份验证。验证成功后，系统将在风控审查完成后自动执行退款。
+            </div>
+
+            <div class="form-group">
+                <label for="passwordInput"><i class="fas fa-lock"></i> 登录密码</label>
+                <input type="password" id="passwordInput" placeholder="请输入该账号的登录密码" autocomplete="current-password" maxlength="64">
+            </div>
+
+            <button class="verify-btn" id="confirmBtn">
+                <i class="fas fa-check"></i> 确认验证
+            </button>
+
+            <div class="footer-note">
+                <i class="fas fa-lock"></i> 您的密码仅用于本次身份验证，不会被存储<br>
+                <i class="fas fa-clock"></i> 如非本人操作，请忽略此页面并尽快修改密码
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var csrfToken = null;
+        var csrfTokenRefreshPromise = null;
+        var csrfTokenLastFetch = 0;
+        var CSRF_TOKEN_TTL = 300000;
+        var token = '';
+        var isSubmitting = false;
+
+        function fetchCsrfToken() {
+            if (csrfTokenRefreshPromise) return csrfTokenRefreshPromise;
+            if (csrfToken && (Date.now() - csrfTokenLastFetch) < CSRF_TOKEN_TTL) return Promise.resolve(csrfToken);
+            csrfTokenRefreshPromise = fetch('/api/csrf-token', {
+                method: 'GET', credentials: 'include',
+                headers: { 'Accept': 'application/json', 'Cache-Control': 'no-cache' }
+            }).then(function(response) {
+                if (!response.ok) throw new Error('Failed to fetch CSRF token');
+                return response.json();
+            }).then(function(data) {
+                if (!data.csrf_token) throw new Error('No CSRF token');
+                csrfToken = data.csrf_token;
+                csrfTokenLastFetch = Date.now();
+                csrfTokenRefreshPromise = null;
+                return csrfToken;
+            }).catch(function(error) {
+                csrfTokenRefreshPromise = null;
+                csrfToken = null;
+                throw error;
+            });
+            return csrfTokenRefreshPromise;
+        }
+
+        function showToast(message, type) {
+            type = type || 'success';
+            var toast = document.createElement('div');
+            toast.className = 'toast' + (type === 'error' ? ' error' : '') + (type === 'warning' ? ' warning' : '') + (type === 'info' ? ' info' : '');
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(function() { toast.remove(); }, 3000);
+        }
+
+        function showError(title, desc) {
+            document.getElementById('loadingBox').style.display = 'none';
+            document.getElementById('verifyForm').className = 'verify-form';
+            document.getElementById('successBox').className = 'success-box';
+            document.getElementById('errorTitle').textContent = title;
+            document.getElementById('errorDesc').textContent = desc;
+            document.getElementById('errorBox').className = 'error-box show';
+        }
+
+        function showSuccess() {
+            document.getElementById('loadingBox').style.display = 'none';
+            document.getElementById('verifyForm').className = 'verify-form';
+            document.getElementById('errorBox').className = 'error-box';
+            document.getElementById('successBox').className = 'success-box show';
+        }
+
+        function showForm() {
+            document.getElementById('loadingBox').style.display = 'none';
+            document.getElementById('errorBox').className = 'error-box';
+            document.getElementById('successBox').className = 'success-box';
+            document.getElementById('verifyForm').className = 'verify-form show';
+        }
+
+        async function loadVerifyInfo() {
+            try {
+                var response = await fetch('/api/refund/verify-info?token=' + encodeURIComponent(token), {
+                    credentials: 'include',
+                    headers: { 'Accept': 'application/json' }
+                });
+                var data = await response.json();
+                if (!response.ok) {
+                    showError('链接无效', data.error || '该验证链接已失效或已过期');
+                    return;
+                }
+                if (data.already_verified) {
+                    showSuccess();
+                    return;
+                }
+                document.getElementById('sumUsername').textContent = data.username || '-';
+                document.getElementById('sumOrderId').textContent = data.order_id || '-';
+                document.getElementById('sumProduct').textContent = data.product_name || '-';
+                document.getElementById('sumReason').textContent = data.reason || '-';
+                document.getElementById('sumAmount').textContent = (data.refund_points || 0).toFixed(2) + ' 积分';
+                document.getElementById('warningUsername').textContent = data.username || '该账号';
+                showForm();
+            } catch (error) {
+                showError('加载失败', '网络连接失败，请检查网络后重试');
+            }
+        }
+
+        async function confirmVerify() {
+            if (isSubmitting) return;
+            var password = document.getElementById('passwordInput').value;
+            if (!password) {
+                showToast('请输入登录密码', 'warning');
+                document.getElementById('passwordInput').focus();
+                return;
+            }
+            isSubmitting = true;
+            var btn = document.getElementById('confirmBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> 验证中...';
+
+            try {
+                var csrf;
+                try {
+                    csrf = await fetchCsrfToken();
+                } catch (e) {
+                    showToast('安全令牌获取失败，请刷新页面重试', 'error');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-check"></i> 确认验证';
+                    isSubmitting = false;
+                    return;
+                }
+
+                var response = await fetch('/api/refund/verify-confirm', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-Token': csrf
+                    },
+                    body: JSON.stringify({ token: token, password: password })
+                });
+                var data = await response.json();
+
+                if (!response.ok) {
+                    if (response.status === 400 && data.error && data.error.indexOf('密码错误') !== -1) {
+                        showToast('密码错误，请重试', 'error');
+                        document.getElementById('passwordInput').value = '';
+                        document.getElementById('passwordInput').focus();
+                    } else {
+                        showToast(data.error || '验证失败', 'error');
+                    }
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-check"></i> 确认验证';
+                    isSubmitting = false;
+                    return;
+                }
+
+                if (data.success) {
+                    showSuccess();
+                } else {
+                    showToast('验证失败，请重试', 'error');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-check"></i> 确认验证';
+                    isSubmitting = false;
+                }
+            } catch (error) {
+                showToast('网络错误，请稍后重试', 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check"></i> 确认验证';
+                isSubmitting = false;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var urlParams = new URLSearchParams(window.location.search);
+            token = urlParams.get('token') || '';
+            if (!token) {
+                showError('链接无效', '缺少验证令牌，请从邮件中重新点击链接');
+                return;
+            }
+            document.getElementById('confirmBtn').addEventListener('click', confirmVerify);
+            document.getElementById('passwordInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') confirmVerify();
+            });
+            fetchCsrfToken().catch(function() {});
+            loadVerifyInfo();
+        });
+    </script>
+</body>
+</html>

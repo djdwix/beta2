@@ -7,680 +7,128 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
-        body{
-            font-family:'Segoe UI','PingFang SC',Roboto,'Helvetica Neue',sans-serif;
-            background:linear-gradient(160deg,#022c22 0%,#064e3b 50%,#065f46 100%);
-            min-height:100vh;
-            padding:20px;
-            display:flex;
-            justify-content:center;
-            align-items:center;
-            position:relative;
-            overflow-x:hidden;
-        }
-        body::before{
-            content:'';
-            position:fixed;
-            top:-20%;
-            right:-10%;
-            width:60%;
-            height:60%;
-            background:radial-gradient(circle,rgba(52,211,153,0.15),transparent 70%);
-            pointer-events:none;
-            animation:glow 10s ease-in-out infinite;
-        }
-        body::after{
-            content:'';
-            position:fixed;
-            bottom:-20%;
-            left:-10%;
-            width:60%;
-            height:60%;
-            background:radial-gradient(circle,rgba(16,185,129,0.12),transparent 70%);
-            pointer-events:none;
-            animation:glow 12s ease-in-out infinite reverse;
-        }
+        body{font-family:'Segoe UI','PingFang SC',Roboto,'Helvetica Neue',sans-serif;background:linear-gradient(160deg,#022c22 0%,#064e3b 50%,#065f46 100%);min-height:100vh;padding:20px;display:flex;justify-content:center;align-items:center;position:relative;overflow-x:hidden}
+        body::before{content:'';position:fixed;top:-20%;right:-10%;width:60%;height:60%;background:radial-gradient(circle,rgba(52,211,153,0.15),transparent 70%);pointer-events:none;animation:glow 10s ease-in-out infinite}
+        body::after{content:'';position:fixed;bottom:-20%;left:-10%;width:60%;height:60%;background:radial-gradient(circle,rgba(16,185,129,0.12),transparent 70%);pointer-events:none;animation:glow 12s ease-in-out infinite reverse}
         @keyframes glow{0%,100%{transform:scale(1);opacity:0.8}50%{transform:scale(1.1);opacity:1}}
-        .refund-container{
-            background:rgba(6, 40, 32, 0.82);
-            backdrop-filter:blur(24px);
-            -webkit-backdrop-filter:blur(24px);
-            border-radius:36px;
-            box-shadow:0 30px 70px rgba(0,0,0,0.6),0 0 0 1px rgba(52,211,153,0.12) inset;
-            width:100%;
-            max-width:720px;
-            margin:0 auto;
-            animation:slideUp 0.6s cubic-bezier(0.16,1,0.3,1);
-            padding:34px 30px;
-            border:1px solid rgba(52,211,153,0.15);
-            position:relative;
-            z-index:1;
-        }
+        .refund-container{background:rgba(6,40,32,0.82);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-radius:36px;box-shadow:0 30px 70px rgba(0,0,0,0.6),0 0 0 1px rgba(52,211,153,0.12) inset;width:100%;max-width:720px;margin:0 auto;animation:slideUp 0.6s cubic-bezier(0.16,1,0.3,1);padding:34px 30px;border:1px solid rgba(52,211,153,0.15);position:relative;z-index:1}
         @keyframes slideUp{from{opacity:0;transform:translateY(40px) scale(0.96)}to{opacity:1;transform:translateY(0) scale(1)}}
-        .refund-header{
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            flex-wrap:wrap;
-            gap:16px;
-            margin-bottom:26px;
-            padding-bottom:20px;
-            border-bottom:1px solid rgba(52,211,153,0.15);
-        }
-        .refund-header h1{
-            font-size:24px;
-            color:#a7f3d0;
-            display:flex;
-            align-items:center;
-            gap:10px;
-            font-weight:800;
-            letter-spacing:-0.3px;
-        }
-        .refund-header h1 i{
-            color:#34d399;
-            filter:drop-shadow(0 0 12px rgba(52,211,153,0.5));
-        }
-        .refund-header .user-info{
-            font-size:14px;
-            color:#6ee7b7;
-            font-weight:600;
-        }
-        .refund-header .back-link{
-            color:#6ee7b7;
-            text-decoration:none;
-            font-size:14px;
-            padding:8px 18px;
-            border-radius:20px;
-            transition:all 0.3s;
-            font-weight:700;
-            background:rgba(52,211,153,0.1);
-            border:1px solid rgba(52,211,153,0.2);
-        }
-        .refund-header .back-link:hover{
-            color:#a7f3d0;
-            background:rgba(52,211,153,0.2);
-            transform:translateY(-2px);
-            box-shadow:0 8px 20px rgba(52,211,153,0.25);
-        }
-        .refund-search{
-            background:rgba(6, 40, 32, 0.5);
-            border-radius:20px;
-            padding:24px;
-            margin-bottom:24px;
-            border:1px solid rgba(52,211,153,0.15);
-        }
-        .refund-search .search-label{
-            font-size:15px;
-            font-weight:800;
-            color:#a7f3d0;
-            margin-bottom:8px;
-            display:flex;
-            align-items:center;
-            gap:8px;
-        }
+        .refund-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;margin-bottom:26px;padding-bottom:20px;border-bottom:1px solid rgba(52,211,153,0.15)}
+        .refund-header h1{font-size:24px;color:#a7f3d0;display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-0.3px}
+        .refund-header h1 i{color:#34d399;filter:drop-shadow(0 0 12px rgba(52,211,153,0.5))}
+        .refund-header .user-info{font-size:14px;color:#6ee7b7;font-weight:600}
+        .refund-header .back-link{color:#6ee7b7;text-decoration:none;font-size:14px;padding:8px 18px;border-radius:20px;transition:all 0.3s;font-weight:700;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.2)}
+        .refund-header .back-link:hover{color:#a7f3d0;background:rgba(52,211,153,0.2);transform:translateY(-2px);box-shadow:0 8px 20px rgba(52,211,153,0.25)}
+        .refund-search{background:rgba(6,40,32,0.5);border-radius:20px;padding:24px;margin-bottom:24px;border:1px solid rgba(52,211,153,0.15)}
+        .refund-search .search-label{font-size:15px;font-weight:800;color:#a7f3d0;margin-bottom:8px;display:flex;align-items:center;gap:8px}
         .refund-search .search-label i{color:#34d399}
-        .refund-search .search-desc{
-            font-size:13px;
-            color:#6ee7b7;
-            margin-bottom:18px;
-            line-height:1.6;
-            font-weight:500;
-        }
+        .refund-search .search-desc{font-size:13px;color:#6ee7b7;margin-bottom:18px;line-height:1.6;font-weight:500}
         .refund-search .search-desc b{color:#a7f3d0}
-        .refund-search .search-row{
-            display:flex;
-            gap:12px;
-            flex-wrap:wrap;
-        }
-        .refund-search .search-row input{
-            flex:1;
-            padding:14px 20px;
-            border:2px solid rgba(52,211,153,0.2);
-            border-radius:40px;
-            font-size:15px;
-            outline:none;
-            min-width:150px;
-            transition:all 0.3s;
-            font-family:'SF Mono',monospace;
-            background:rgba(6, 40, 32, 0.6);
-            color:#a7f3d0;
-            font-weight:600;
-        }
-        .refund-search .search-row input::placeholder{
-            font-family:'Segoe UI','PingFang SC',Roboto,sans-serif;
-            color:#4d7c6a;
-        }
-        .refund-search .search-row input:focus{
-            border-color:#34d399;
-            box-shadow:0 0 0 4px rgba(52,211,153,0.15);
-            background:rgba(6, 40, 32, 0.8);
-        }
-        .refund-search .search-row button{
-            padding:14px 34px;
-            background:linear-gradient(135deg,#10b981,#059669);
-            color:white;
-            border:none;
-            border-radius:40px;
-            font-size:15px;
-            font-weight:800;
-            cursor:pointer;
-            transition:all 0.3s;
-            white-space:nowrap;
-            box-shadow:0 8px 24px rgba(16,185,129,0.35);
-            letter-spacing:0.3px;
-        }
-        .refund-search .search-row button:hover:not(:disabled){
-            transform:translateY(-2px);
-            box-shadow:0 14px 34px rgba(16,185,129,0.5);
-        }
+        .refund-search .search-row{display:flex;gap:12px;flex-wrap:wrap}
+        .refund-search .search-row input{flex:1;padding:14px 20px;border:2px solid rgba(52,211,153,0.2);border-radius:40px;font-size:15px;outline:none;min-width:150px;transition:all 0.3s;font-family:'SF Mono',monospace;background:rgba(6,40,32,0.6);color:#a7f3d0;font-weight:600}
+        .refund-search .search-row input::placeholder{font-family:'Segoe UI','PingFang SC',Roboto,sans-serif;color:#4d7c6a}
+        .refund-search .search-row input:focus{border-color:#34d399;box-shadow:0 0 0 4px rgba(52,211,153,0.15);background:rgba(6,40,32,0.8)}
+        .refund-search .search-row button{padding:14px 34px;background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;border-radius:40px;font-size:15px;font-weight:800;cursor:pointer;transition:all 0.3s;white-space:nowrap;box-shadow:0 8px 24px rgba(16,185,129,0.35);letter-spacing:0.3px}
+        .refund-search .search-row button:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 14px 34px rgba(16,185,129,0.5)}
         .refund-search .search-row button:disabled{opacity:0.5;cursor:not-allowed;transform:none;box-shadow:none}
-        .refund-search .search-row .spinner{
-            display:inline-block;
-            width:16px;
-            height:16px;
-            border:2px solid rgba(255,255,255,0.3);
-            border-radius:50%;
-            border-top-color:white;
-            animation:spin 0.6s linear infinite;
-            margin-right:8px;
-        }
+        .refund-search .search-row .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-radius:50%;border-top-color:white;animation:spin 0.6s linear infinite;margin-right:8px}
         @keyframes spin{to{transform:rotate(360deg)}}
-        .refund-rules{
-            background:rgba(251,191,36,0.08);
-            border-radius:16px;
-            padding:16px 20px;
-            margin-bottom:22px;
-            border-left:4px solid #fbbf24;
-            font-size:13px;
-            color:#fcd34d;
-            line-height:1.7;
-        }
-        .refund-rules .title{
-            font-weight:800;
-            color:#fcd34d;
-            margin-bottom:8px;
-            font-size:14px;
-        }
-        .refund-rules .rule-item{
-            padding:3px 0;
-            font-size:12px;
-            font-weight:500;
-        }
+        .refund-rules{background:rgba(251,191,36,0.08);border-radius:16px;padding:16px 20px;margin-bottom:22px;border-left:4px solid #fbbf24;font-size:13px;color:#fcd34d;line-height:1.7}
+        .refund-rules .title{font-weight:800;color:#fcd34d;margin-bottom:8px;font-size:14px}
+        .refund-rules .rule-item{padding:3px 0;font-size:12px;font-weight:500}
         .refund-rules .rule-item i{margin-right:8px}
         .refund-rules .rule-item b{color:#fde68a}
-        .order-detail-card{
-            background:rgba(6, 40, 32, 0.5);
-            border-radius:20px;
-            padding:22px;
-            border:1px solid rgba(52,211,153,0.15);
-            display:none;
-            margin-bottom:22px;
-        }
-        .order-detail-card .status-badge{
-            display:inline-block;
-            padding:4px 14px;
-            border-radius:20px;
-            font-size:12px;
-            font-weight:800;
-        }
+        .order-detail-card{background:rgba(6,40,32,0.5);border-radius:20px;padding:22px;border:1px solid rgba(52,211,153,0.15);display:none;margin-bottom:22px}
+        .order-detail-card .status-badge{display:inline-block;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:800}
         .status-badge.pending{background:rgba(251,191,36,0.15);color:#fcd34d;border:1px solid rgba(251,191,36,0.25)}
         .status-badge.paid{background:rgba(52,211,153,0.15);color:#6ee7b7;border:1px solid rgba(52,211,153,0.25)}
         .status-badge.cancelled,.status-badge.expired{background:rgba(248,113,113,0.15);color:#fca5a5;border:1px solid rgba(248,113,113,0.25)}
         .status-badge.refunded{background:rgba(251,191,36,0.15);color:#fcd34d;border:1px solid rgba(251,191,36,0.25)}
-        .status-badge.frozen{background:rgba(167,139,250,0.15);color:#c4b5fd;border:1px solid rgba(167,139,250,0.25)}
-        .order-detail-card .row{
-            display:flex;
-            justify-content:space-between;
-            padding:8px 0;
-            font-size:13px;
-            border-bottom:1px solid rgba(52,211,153,0.08);
-            flex-wrap:wrap;
-            gap:4px;
-        }
+        .order-detail-card .row{display:flex;justify-content:space-between;padding:8px 0;font-size:13px;border-bottom:1px solid rgba(52,211,153,0.08);flex-wrap:wrap;gap:4px}
         .order-detail-card .row:last-child{border-bottom:none}
         .order-detail-card .label{color:#6ee7b7;font-weight:600}
         .order-detail-card .value{color:#a7f3d0;font-weight:700;text-align:right;word-break:break-all}
         .order-detail-card .value.highlight{color:#34d399;font-weight:800}
         .order-detail-card .value.success{color:#6ee7b7}
         .order-detail-card .value.danger{color:#fca5a5}
-        .order-detail-card .value.warning{color:#fcd34d}
-        .order-detail-card .refund-preview{
-            background:rgba(52,211,153,0.08);
-            border-radius:14px;
-            padding:16px 18px;
-            margin-top:14px;
-            border:1px solid rgba(52,211,153,0.2);
-        }
-        .order-detail-card .refund-preview .preview-title{
-            font-size:14px;
-            font-weight:800;
-            color:#a7f3d0;
-            margin-bottom:10px;
-            display:flex;
-            align-items:center;
-            gap:6px;
-        }
-        .order-detail-card .refund-preview .preview-row{
-            display:flex;
-            justify-content:space-between;
-            padding:6px 0;
-            font-size:13px;
-            flex-wrap:wrap;
-            gap:4px;
-            color:#6ee7b7;
-            font-weight:600;
-        }
-        .order-detail-card .refund-preview .preview-row .amount{
-            font-weight:800;
-            color:#34d399;
-            font-size:15px;
-        }
+        .order-detail-card .refund-preview{background:rgba(52,211,153,0.08);border-radius:14px;padding:16px 18px;margin-top:14px;border:1px solid rgba(52,211,153,0.2)}
+        .order-detail-card .refund-preview .preview-title{font-size:14px;font-weight:800;color:#a7f3d0;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+        .order-detail-card .refund-preview .preview-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;flex-wrap:wrap;gap:4px;color:#6ee7b7;font-weight:600}
+        .order-detail-card .refund-preview .preview-row .amount{font-weight:800;color:#34d399;font-size:15px}
         .order-detail-card .refund-preview .preview-row .reason{color:#6ee7b7;font-size:12px}
-        .gateway-card-info{
-            background:rgba(251,191,36,0.06);
-            border-radius:14px;
-            padding:14px 18px;
-            margin-top:14px;
-            border-left:4px solid #fbbf24;
-        }
-        .gateway-card-info .info-row{
-            display:flex;
-            justify-content:space-between;
-            padding:6px 0;
-            font-size:13px;
-            flex-wrap:wrap;
-            gap:4px;
-        }
+        .gateway-card-info{background:rgba(251,191,36,0.06);border-radius:14px;padding:14px 18px;margin-top:14px;border-left:4px solid #fbbf24}
+        .gateway-card-info .info-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;flex-wrap:wrap;gap:4px}
         .gateway-card-info .info-row .label{color:#fcd34d;font-weight:600}
         .gateway-card-info .info-row .value{font-weight:700;color:#fde68a}
         .gateway-card-info .info-row .value.highlight{color:#fbbf24;font-family:'SF Mono',monospace}
-        .gateway-card-info .order-ref-link{
-            background:rgba(56,189,248,0.08);
-            border-radius:10px;
-            padding:10px 14px;
-            margin-bottom:10px;
-            border-left:3px solid #38bdf8;
-            font-size:12px;
-            display:flex;
-            flex-wrap:wrap;
-            gap:8px;
-            align-items:center;
-        }
-        .gateway-card-info .order-ref-link .link-label{color:#6ee7b7}
-        .gateway-card-info .order-ref-link .link-value{color:#38bdf8;font-family:'SF Mono',monospace;font-weight:700}
-        .gateway-card-info .order-ref-link .link-status{font-size:11px;font-weight:700}
-        .gateway-card-info .order-ref-link .link-status.success{color:#34d399}
-        .gateway-card-info .order-ref-link .link-status.warning{color:#fcd34d}
-        .gateway-card-info .order-ref-link .link-status.danger{color:#fca5a5}
-        .refund-btn{
-            width:100%;
-            padding:16px;
-            background:linear-gradient(135deg,#10b981,#059669);
-            color:white;
-            border:none;
-            border-radius:40px;
-            font-size:16px;
-            font-weight:800;
-            cursor:pointer;
-            transition:all 0.3s;
-            margin-top:16px;
-            display:none;
-            box-shadow:0 10px 28px rgba(16,185,129,0.35);
-            letter-spacing:0.5px;
-        }
-        .refund-btn:hover:not(:disabled){
-            transform:translateY(-2px);
-            box-shadow:0 16px 40px rgba(16,185,129,0.5);
-        }
+        .refund-btn{width:100%;padding:16px;background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;border-radius:40px;font-size:16px;font-weight:800;cursor:pointer;transition:all 0.3s;margin-top:16px;display:none;box-shadow:0 10px 28px rgba(16,185,129,0.35);letter-spacing:0.5px}
+        .refund-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 16px 40px rgba(16,185,129,0.5)}
         .refund-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none;box-shadow:none}
-        .refund-btn .spinner{
-            display:inline-block;
-            width:16px;
-            height:16px;
-            border:2px solid rgba(255,255,255,0.3);
-            border-radius:50%;
-            border-top-color:white;
-            animation:spin 0.6s linear infinite;
-            margin-right:8px;
-        }
+        .refund-btn .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-radius:50%;border-top-color:white;animation:spin 0.6s linear infinite;margin-right:8px}
         .refund-btn.refunded{background:linear-gradient(135deg,#059669,#047857);cursor:default}
         .refund-btn.refunded:hover{transform:none;box-shadow:0 10px 28px rgba(5,150,105,0.35)}
-        .refund-btn.risk-checking{background:linear-gradient(135deg,#38bdf8,#6366f1);cursor:wait;box-shadow:0 10px 28px rgba(56,189,248,0.35)}
-        .refund-btn.risk-checking:hover{transform:none}
+        .refund-btn.waiting{background:linear-gradient(135deg,#38bdf8,#6366f1);cursor:wait;box-shadow:0 10px 28px rgba(56,189,248,0.35)}
+        .refund-btn.waiting:hover{transform:none}
         .refund-btn.risk-failed{background:linear-gradient(135deg,#f59e0b,#d97706);cursor:default}
-        .refund-btn.risk-failed:hover{transform:none;box-shadow:0 10px 28px rgba(245,158,11,0.35)}
-        .toast{
-            position:fixed;
-            bottom:80px;
-            left:50%;
-            transform:translateX(-50%);
-            background:linear-gradient(135deg,#10b981,#059669);
-            color:white;
-            padding:14px 26px;
-            border-radius:40px;
-            font-size:14px;
-            z-index:2000;
-            animation:fadeInOut 3s;
-            max-width:90%;
-            text-align:center;
-            font-weight:700;
-            box-shadow:0 16px 40px rgba(0,0,0,0.3);
-            backdrop-filter:blur(8px);
-        }
+        .refund-btn.risk-failed:hover{transform:none}
+        .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#10b981,#059669);color:white;padding:14px 26px;border-radius:40px;font-size:14px;z-index:2000;animation:fadeInOut 3s;max-width:90%;text-align:center;font-weight:700;box-shadow:0 16px 40px rgba(0,0,0,0.3);backdrop-filter:blur(8px)}
         .toast.error{background:linear-gradient(135deg,#ef4444,#dc2626)}
         .toast.warning{background:linear-gradient(135deg,#f59e0b,#d97706)}
         .toast.info{background:linear-gradient(135deg,#38bdf8,#0284c7)}
         @keyframes fadeInOut{0%{opacity:0;transform:translateX(-50%) translateY(10px)}15%{opacity:1;transform:translateX(-50%) translateY(0)}85%{opacity:1;transform:translateX(-50%) translateY(0)}100%{opacity:0;transform:translateX(-50%) translateY(-10px)}}
-        .no-result{
-            text-align:center;
-            padding:40px 20px;
-            color:#6ee7b7;
-            display:none;
-        }
+        .no-result{text-align:center;padding:40px 20px;color:#6ee7b7;display:none}
         .no-result i{font-size:52px;color:#34d399;margin-bottom:14px;opacity:0.6}
         .loading-shimmer{text-align:center;padding:30px;color:#6ee7b7;display:none}
-        .loading-shimmer .spinner{
-            display:inline-block;
-            width:28px;
-            height:28px;
-            border:3px solid rgba(52,211,153,0.15);
-            border-radius:50%;
-            border-top-color:#34d399;
-            animation:spin 0.6s linear infinite;
-            margin-bottom:10px;
-        }
-        .quick-examples{
-            display:flex;
-            gap:8px;
-            flex-wrap:wrap;
-            margin-top:14px;
-        }
-        .quick-examples .example-btn{
-            padding:6px 16px;
-            background:rgba(52,211,153,0.1);
-            border:1px solid rgba(52,211,153,0.2);
-            border-radius:20px;
-            font-size:11px;
-            color:#6ee7b7;
-            cursor:pointer;
-            transition:all 0.2s;
-            font-weight:700;
-        }
-        .quick-examples .example-btn:hover{
-            background:rgba(52,211,153,0.2);
-            border-color:#34d399;
-            color:#a7f3d0;
-        }
-        .refund-disclaimer{
-            font-size:11px;
-            color:#6ee7b7;
-            text-align:center;
-            margin-top:16px;
-            line-height:1.8;
-            font-weight:500;
-        }
+        .loading-shimmer .spinner{display:inline-block;width:28px;height:28px;border:3px solid rgba(52,211,153,0.15);border-radius:50%;border-top-color:#34d399;animation:spin 0.6s linear infinite;margin-bottom:10px}
+        .quick-examples{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+        .quick-examples .example-btn{padding:6px 16px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.2);border-radius:20px;font-size:11px;color:#6ee7b7;cursor:pointer;transition:all 0.2s;font-weight:700}
+        .quick-examples .example-btn:hover{background:rgba(52,211,153,0.2);border-color:#34d399;color:#a7f3d0}
+        .refund-disclaimer{font-size:11px;color:#6ee7b7;text-align:center;margin-top:16px;line-height:1.8;font-weight:500}
         .refund-disclaimer i{color:#34d399;margin-right:4px}
-        .fund-link-btn{
-            display:inline-block;
-            padding:6px 16px;
-            background:rgba(52,211,153,0.1);
-            border:1px solid rgba(52,211,153,0.25);
-            border-radius:20px;
-            color:#6ee7b7;
-            text-decoration:none;
-            font-size:12px;
-            transition:all 0.3s;
-            font-weight:700;
-        }
-        .fund-link-btn:hover{
-            background:rgba(52,211,153,0.2);
-            color:#a7f3d0;
-            transform:translateY(-1px);
-        }
-        .gateway-type-badge{
-            display:inline-block;
-            padding:4px 12px;
-            border-radius:12px;
-            font-size:11px;
-            font-weight:800;
-            background:rgba(251,191,36,0.15);
-            color:#fcd34d;
-            border:1px solid rgba(251,191,36,0.25);
-            margin-left:6px;
-        }
-        .error-boundary{
-            background:rgba(239,68,68,0.1);
-            border:2px solid rgba(239,68,68,0.25);
-            border-radius:20px;
-            padding:22px;
-            margin-bottom:22px;
-            text-align:center;
-            display:none;
-            backdrop-filter:blur(8px);
-        }
+        .fund-link-btn{display:inline-block;padding:6px 16px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.25);border-radius:20px;color:#6ee7b7;text-decoration:none;font-size:12px;transition:all 0.3s;font-weight:700}
+        .fund-link-btn:hover{background:rgba(52,211,153,0.2);color:#a7f3d0;transform:translateY(-1px)}
+        .gateway-type-badge{display:inline-block;padding:4px 12px;border-radius:12px;font-size:11px;font-weight:800;background:rgba(251,191,36,0.15);color:#fcd34d;border:1px solid rgba(251,191,36,0.25);margin-left:6px}
+        .error-boundary{background:rgba(239,68,68,0.1);border:2px solid rgba(239,68,68,0.25);border-radius:20px;padding:22px;margin-bottom:22px;text-align:center;display:none;backdrop-filter:blur(8px)}
         .error-boundary .error-icon{font-size:48px;color:#f87171;margin-bottom:14px;filter:drop-shadow(0 0 16px rgba(248,113,113,0.4))}
         .error-boundary .error-title{font-size:18px;font-weight:800;color:#fca5a5;margin-bottom:8px}
         .error-boundary .error-desc{font-size:13px;color:#6ee7b7;margin-bottom:18px;line-height:1.6}
-        .error-boundary .retry-btn{
-            padding:12px 36px;
-            background:linear-gradient(135deg,#ef4444,#dc2626);
-            color:white;
-            border:none;
-            border-radius:40px;
-            font-size:14px;
-            font-weight:800;
-            cursor:pointer;
-            transition:all 0.3s;
-            box-shadow:0 8px 24px rgba(239,68,68,0.35);
-        }
+        .error-boundary .retry-btn{padding:12px 36px;background:linear-gradient(135deg,#ef4444,#dc2626);color:white;border:none;border-radius:40px;font-size:14px;font-weight:800;cursor:pointer;transition:all 0.3s;box-shadow:0 8px 24px rgba(239,68,68,0.35)}
         .error-boundary .retry-btn:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(239,68,68,0.5)}
-        .risk-progress-container{
-            display:none;
-            margin-top:18px;
-            padding:24px;
-            background:linear-gradient(135deg,rgba(56,189,248,0.08),rgba(99,102,241,0.08));
-            border-radius:20px;
-            border:1px solid rgba(56,189,248,0.25);
-            box-shadow:0 4px 24px rgba(56,189,248,0.15);
-        }
+        .risk-progress-container{display:none;margin-top:18px;padding:24px;background:linear-gradient(135deg,rgba(56,189,248,0.08),rgba(99,102,241,0.08));border-radius:20px;border:1px solid rgba(56,189,248,0.25);box-shadow:0 4px 24px rgba(56,189,248,0.15)}
         .risk-progress-container.show{display:block;animation:slideUp 0.5s cubic-bezier(0.16,1,0.3,1)}
-        .risk-progress-title{
-            font-size:15px;
-            font-weight:800;
-            color:#a7f3d0;
-            margin-bottom:14px;
-            display:flex;
-            align-items:center;
-            gap:10px;
-        }
+        .risk-progress-title{font-size:15px;font-weight:800;color:#a7f3d0;margin-bottom:14px;display:flex;align-items:center;gap:10px}
         .risk-progress-title i{color:#38bdf8;font-size:18px}
-        .risk-progress-title .spinner-small{
-            display:inline-block;
-            width:18px;
-            height:18px;
-            border:2px solid rgba(56,189,248,0.15);
-            border-radius:50%;
-            border-top-color:#38bdf8;
-            animation:spin 0.8s linear infinite;
-        }
-        .risk-progress-bar{
-            width:100%;
-            height:10px;
-            background:rgba(6, 40, 32, 0.5);
-            border-radius:8px;
-            overflow:hidden;
-            position:relative;
-            box-shadow:inset 0 1px 3px rgba(0,0,0,0.2);
-        }
-        .risk-progress-bar .progress-fill{
-            height:100%;
-            background:linear-gradient(90deg,#34d399,#38bdf8,#6366f1);
-            background-size:200% 100%;
-            border-radius:8px;
-            transition:width 0.4s ease;
-            width:0%;
-            animation:shimmer 2s infinite;
-        }
+        .risk-progress-title .spinner-small{display:inline-block;width:18px;height:18px;border:2px solid rgba(56,189,248,0.15);border-radius:50%;border-top-color:#38bdf8;animation:spin 0.8s linear infinite}
+        .risk-progress-bar{width:100%;height:10px;background:rgba(6,40,32,0.5);border-radius:8px;overflow:hidden;position:relative;box-shadow:inset 0 1px 3px rgba(0,0,0,0.2)}
+        .risk-progress-bar .progress-fill{height:100%;background:linear-gradient(90deg,#34d399,#38bdf8,#6366f1);background-size:200% 100%;border-radius:8px;transition:width 0.4s ease;width:0%;animation:shimmer 2s infinite}
         @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-        .risk-progress-text{
-            font-size:13px;
-            color:#6ee7b7;
-            margin-top:12px;
-            text-align:center;
-            font-weight:700;
-            letter-spacing:0.5px;
-        }
-        .risk-progress-status{
-            font-size:13px;
-            color:#a7f3d0;
-            margin-top:14px;
-            text-align:center;
-            padding:12px 18px;
-            border-radius:12px;
-            background:rgba(6, 40, 32, 0.5);
-            border:1px solid rgba(52,211,153,0.2);
-            display:none;
-            min-height:44px;
-            align-items:center;
-            justify-content:center;
-            gap:8px;
-            font-weight:600;
-        }
-        .risk-progress-status.show{display:flex}
-        .risk-progress-status.success{background:rgba(52,211,153,0.15);border-color:rgba(52,211,153,0.3);color:#a7f3d0}
-        .risk-progress-status.success i{color:#34d399}
-        .risk-progress-status.error{background:rgba(248,113,113,0.15);border-color:rgba(248,113,113,0.3);color:#fca5a5}
-        .risk-progress-status.error i{color:#f87171}
-        .risk-progress-status.warning{background:rgba(251,191,36,0.15);border-color:rgba(251,191,36,0.3);color:#fcd34d}
-        .risk-progress-status.warning i{color:#fbbf24}
-        .risk-progress-status.info{background:rgba(56,189,248,0.15);border-color:rgba(56,189,248,0.3);color:#7dd3fc}
-        .risk-progress-status.info i{color:#38bdf8}
-        .risk-check-badge{
-            display:inline-block;
-            padding:4px 14px;
-            border-radius:12px;
-            font-size:11px;
-            font-weight:800;
-            margin-left:8px;
-        }
-        .risk-check-badge.passed{background:rgba(52,211,153,0.15);color:#6ee7b7;border:1px solid rgba(52,211,153,0.25)}
-        .risk-check-badge.failed{background:rgba(248,113,113,0.15);color:#fca5a5;border:1px solid rgba(248,113,113,0.25)}
-        .risk-check-badge.checking{background:rgba(56,189,248,0.15);color:#7dd3fc;border:1px solid rgba(56,189,248,0.25);animation:pulse 1.5s ease-in-out infinite}
-        @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
-        .risk-steps{
-            display:flex;
-            justify-content:space-between;
-            margin-top:18px;
-            padding:0 4px;
-            position:relative;
-        }
-        .risk-steps::before{
-            content:'';
-            position:absolute;
-            top:12px;
-            left:20px;
-            right:20px;
-            height:2px;
-            background:rgba(52,211,153,0.15);
-            z-index:0;
-        }
+        .risk-progress-text{font-size:13px;color:#6ee7b7;margin-top:12px;text-align:center;font-weight:700;letter-spacing:0.5px}
+        .risk-steps{display:flex;justify-content:space-between;margin-top:18px;padding:0 4px;position:relative}
+        .risk-steps::before{content:'';position:absolute;top:12px;left:20px;right:20px;height:2px;background:rgba(52,211,153,0.15);z-index:0}
         .risk-step{display:flex;flex-direction:column;align-items:center;gap:8px;z-index:1;flex:1}
-        .risk-step .step-circle{
-            width:26px;
-            height:26px;
-            border-radius:50%;
-            border:2px solid rgba(52,211,153,0.25);
-            background:rgba(6, 40, 32, 0.8);
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            font-size:11px;
-            font-weight:800;
-            color:#6ee7b7;
-            transition:all 0.5s ease;
-        }
-        .risk-step .step-circle.active{
-            border-color:#38bdf8;
-            background:linear-gradient(135deg,#38bdf8,#6366f1);
-            color:white;
-            box-shadow:0 0 0 6px rgba(56,189,248,0.2);
-        }
-        .risk-step .step-circle.done{
-            border-color:#34d399;
-            background:linear-gradient(135deg,#34d399,#10b981);
-            color:white;
-            box-shadow:0 0 0 4px rgba(52,211,153,0.2);
-        }
-        .risk-step .step-label{
-            font-size:10px;
-            color:#6ee7b7;
-            text-align:center;
-            max-width:60px;
-            line-height:1.3;
-            font-weight:600;
-        }
+        .risk-step .step-circle{width:26px;height:26px;border-radius:50%;border:2px solid rgba(52,211,153,0.25);background:rgba(6,40,32,0.8);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#6ee7b7;transition:all 0.5s ease}
+        .risk-step .step-circle.active{border-color:#38bdf8;background:linear-gradient(135deg,#38bdf8,#6366f1);color:white;box-shadow:0 0 0 6px rgba(56,189,248,0.2)}
+        .risk-step .step-circle.done{border-color:#34d399;background:linear-gradient(135deg,#34d399,#10b981);color:white;box-shadow:0 0 0 4px rgba(52,211,153,0.2)}
+        .risk-step .step-label{font-size:10px;color:#6ee7b7;text-align:center;max-width:60px;line-height:1.3;font-weight:600}
         .risk-step .step-label.active{color:#7dd3fc;font-weight:800}
         .risk-step .step-label.done{color:#a7f3d0;font-weight:700}
-        .risk-notice{
-            font-size:12px;
-            color:#fcd34d;
-            margin-top:10px;
-            display:flex;
-            align-items:center;
-            gap:6px;
-            justify-content:center;
-            font-weight:700;
-        }
-        .risk-notice i{font-size:14px;color:#fbbf24}
-        .risk-detail-list{
-            margin-top:14px;
-            padding:14px 18px;
-            background:rgba(6, 40, 32, 0.5);
-            border-radius:12px;
-            border:1px solid rgba(52,211,153,0.15);
-            display:none;
-        }
-        .risk-detail-list.show{display:block}
-        .risk-detail-list .detail-title{
-            font-size:13px;
-            font-weight:800;
-            color:#a7f3d0;
-            margin-bottom:10px;
-        }
-        .risk-detail-list .detail-item{
-            font-size:12px;
-            color:#6ee7b7;
-            padding:5px 0;
-            border-bottom:1px solid rgba(52,211,153,0.08);
-            display:flex;
-            justify-content:space-between;
-            font-weight:600;
-        }
-        .risk-detail-list .detail-item:last-child{border-bottom:none}
-        .risk-detail-list .detail-item .score{font-weight:800;color:#38bdf8}
-        .risk-detail-list .detail-item .score.high{color:#f87171}
-        .risk-detail-list .detail-item .score.medium{color:#fbbf24}
-        .risk-detail-list .detail-item .score.low{color:#34d399}
-        .risk-score-display{
-            display:flex;
-            align-items:center;
-            gap:14px;
-            margin-top:14px;
-            padding:14px 18px;
-            background:rgba(6, 40, 32, 0.5);
-            border-radius:14px;
-            border:1px solid rgba(52,211,153,0.15);
-        }
-        .risk-score-display .score-number{font-size:30px;font-weight:800;color:#38bdf8;line-height:1}
-        .risk-score-display .score-number.passed{color:#34d399}
-        .risk-score-display .score-number.failed{color:#f87171}
-        .risk-score-display .score-number.warning{color:#fbbf24}
-        .risk-score-display .score-label{font-size:12px;color:#6ee7b7;font-weight:600}
-        .risk-score-display .score-status{font-size:13px;font-weight:800}
-        .risk-score-display .score-status.passed{color:#34d399}
-        .risk-score-display .score-status.failed{color:#f87171}
-        .risk-score-display .score-status.warning{color:#fbbf24}
-        .risk-score-display .score-detail{font-size:11px;color:#6ee7b7;margin-left:auto;text-align:right;font-weight:600}
+        .risk-progress-status{font-size:13px;color:#a7f3d0;margin-top:14px;text-align:center;padding:12px 18px;border-radius:12px;background:rgba(6,40,32,0.5);border:1px solid rgba(52,211,153,0.2);display:none;min-height:44px;align-items:center;justify-content:center;gap:8px;font-weight:600}
+        .risk-progress-status.show{display:flex}
+        .risk-progress-status.success{background:rgba(52,211,153,0.15);border-color:rgba(52,211,153,0.3);color:#a7f3d0}
+        .risk-progress-status.error{background:rgba(248,113,113,0.15);border-color:rgba(248,113,113,0.3);color:#fca5a5}
+        .risk-progress-status.warning{background:rgba(251,191,36,0.15);border-color:rgba(251,191,36,0.3);color:#fcd34d}
+        .risk-progress-status.info{background:rgba(56,189,248,0.15);border-color:rgba(56,189,248,0.3);color:#7dd3fc}
+        .email-verify-box{display:none;margin-top:16px;padding:18px;background:rgba(56,189,248,0.08);border-radius:16px;border:1px solid rgba(56,189,248,0.25)}
+        .email-verify-box.show{display:block;animation:slideUp 0.5s cubic-bezier(0.16,1,0.3,1)}
+        .email-verify-box .verify-title{font-size:14px;font-weight:800;color:#7dd3fc;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+        .email-verify-box .verify-desc{font-size:12px;color:#6ee7b7;line-height:1.7;margin-bottom:12px;font-weight:500}
+        .email-verify-box .verify-checklist{display:flex;flex-direction:column;gap:8px}
+        .email-verify-box .check-item{display:flex;align-items:center;gap:10px;font-size:12px;color:#6ee7b7;font-weight:600}
+        .email-verify-box .check-item .check-icon{width:20px;height:20px;border-radius:50%;border:2px solid rgba(52,211,153,0.25);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;transition:all 0.3s}
+        .email-verify-box .check-item .check-icon.done{border-color:#34d399;background:linear-gradient(135deg,#34d399,#10b981);color:white}
+        .email-verify-box .check-item .check-icon.pending{border-color:#38bdf8;background:rgba(56,189,248,0.15);color:#7dd3fc;animation:pulse 1.5s ease-in-out infinite}
+        .email-verify-box .check-item.done{color:#a7f3d0}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
         @media(max-width:600px){
             .refund-container{padding:24px 20px;border-radius:28px}
             .refund-search .search-row{flex-direction:column}
@@ -688,13 +136,9 @@
             .refund-search .search-row button{width:100%;justify-content:center}
             .order-detail-card .row{flex-direction:column;align-items:flex-start}
             .refund-header{flex-direction:column;text-align:center}
-            .gateway-card-info .info-row{flex-direction:column;align-items:flex-start}
-            .gateway-card-info .order-ref-link{flex-direction:column;align-items:flex-start}
             .risk-steps{flex-wrap:wrap;gap:8px;justify-content:center}
             .risk-steps::before{display:none}
             .risk-step{flex:0 0 auto;min-width:60px}
-            .risk-score-display{flex-wrap:wrap}
-            .risk-score-display .score-detail{margin-left:0;text-align:left;width:100%}
         }
     </style>
 </head>
@@ -702,24 +146,24 @@
     <div class="refund-container" id="app">
         <div id="errorBoundary" class="error-boundary">
             <div class="error-icon"><i class="fas fa-exclamation-triangle"></i></div>
-            <div class="error-title">⚠️ 加载失败</div>
+            <div class="error-title">加载失败</div>
             <div class="error-desc" id="errorDesc">网络连接失败，请检查网络后重试</div>
-            <button class="retry-btn" onclick="location.reload()">🔄 重新加载</button>
+            <button class="retry-btn" onclick="location.reload()">重新加载</button>
         </div>
 
         <div class="refund-header">
             <div>
                 <h1><i class="fas fa-undo-alt"></i> 自助退款</h1>
-                <span class="user-info" id="userInfo">👤 加载中...</span>
+                <span class="user-info" id="userInfo">加载中...</span>
             </div>
             <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-                <a href="/fund.html" class="fund-link-btn">🏦 理财账户</a>
-                <a href="/" class="back-link">← 返回</a>
+                <a href="/fund.html" class="fund-link-btn">理财账户</a>
+                <a href="/" class="back-link">返回</a>
             </div>
         </div>
 
         <div class="refund-rules">
-            <div class="title">📋 退款规则简述</div>
+            <div class="title">退款规则简述</div>
             <div class="rule-item"><i class="fas fa-check-circle" style="color:#34d399;"></i> 退款金额存入 <b>理财账户</b>，可随时提取</div>
             <div class="rule-item"><i class="fas fa-check-circle" style="color:#34d399;"></i> 卡密全部未使用 → <b>100%</b> 退款</div>
             <div class="rule-item"><i class="fas fa-check-circle" style="color:#34d399;"></i> 卡密全部已使用 → <b>20%</b> 退款</div>
@@ -728,7 +172,7 @@
             <div class="rule-item"><i class="fas fa-exclamation-triangle" style="color:#f87171;"></i> 转账订单、代付订单、已过期通行卡密 <b>不可退款</b></div>
             <div class="rule-item"><i class="fas fa-exclamation-triangle" style="color:#f87171;"></i> 已退款的订单 <b>不可再次退款</b></div>
             <div class="rule-item"><i class="fas fa-info-circle" style="color:#38bdf8;"></i> PL支付订单按 <b>当前汇率</b> 换算成积分退款</div>
-            <div class="rule-item"><i class="fas fa-shield-alt" style="color:#38bdf8;"></i> 退款金额超过 <b>100积分</b> 将触发 <b>30秒风控审查</b></div>
+            <div class="rule-item"><i class="fas fa-envelope" style="color:#38bdf8;"></i> 退款金额超过 <b>100积分</b> 需 <b>邮箱验证</b> + <b>30秒风控审查</b></div>
         </div>
 
         <div class="refund-search">
@@ -737,12 +181,6 @@
             <div class="search-row">
                 <input type="text" id="searchInput" placeholder="订单号 / 防伪码 / 通行卡密 (XXXX-XXXX-XXXX-XXXX)" maxlength="50">
                 <button id="searchBtn"><i class="fas fa-search"></i> 查询</button>
-            </div>
-            <div class="quick-examples">
-                <span style="font-size:12px;color:#6ee7b7;margin-right:6px;font-weight:600;">快速输入:</span>
-                <button class="example-btn" data-type="order">示例订单号</button>
-                <button class="example-btn" data-type="fake">示例防伪码</button>
-                <button class="example-btn" data-type="gateway">示例通行卡密</button>
             </div>
         </div>
 
@@ -755,7 +193,6 @@
             <i class="fas fa-inbox"></i>
             <p style="font-size:15px;font-weight:700;color:#a7f3d0;">未找到匹配结果</p>
             <p style="font-size:13px;color:#6ee7b7;margin-top:6px;">请检查输入是否正确</p>
-            <p style="font-size:12px;color:#4d7c6a;margin-top:10px;">提示：已退款的订单可能已被系统清理</p>
         </div>
 
         <div id="orderDetail" class="order-detail-card">
@@ -763,22 +200,20 @@
                 <span style="font-weight:800;font-size:16px;color:#a7f3d0;" id="orderTitle">订单详情</span>
                 <span>
                     <span class="status-badge" id="orderStatusBadge">待支付</span>
-                    <span class="gateway-type-badge" id="gatewayBadge" style="display:none;">🎟️ 通行卡密</span>
-                    <span class="risk-check-badge" id="riskBadge" style="display:none;"></span>
+                    <span class="gateway-type-badge" id="gatewayBadge" style="display:none;">通行卡密</span>
                 </span>
             </div>
-            <div class="row"><span class="label">📦 商品</span><span class="value" id="odProduct">-</span></div>
-            <div class="row"><span class="label">📋 订单号</span><span class="value" id="odOrderId" style="font-family:'SF Mono',monospace;font-size:12px;">-</span></div>
-            <div class="row"><span class="label">🔐 防伪码</span><span class="value" id="odAntiFake" style="font-family:'SF Mono',monospace;font-weight:800;color:#34d399;">-</span></div>
-            <div class="row"><span class="label">💰 实付金额</span><span class="value highlight" id="odPrice">-</span></div>
-            <div class="row"><span class="label">💳 支付方式</span><span class="value" id="odPayment">-</span></div>
-            <div class="row"><span class="label">📅 支付时间</span><span class="value" id="odPaidAt">-</span></div>
-            <div class="row"><span class="label">📅 创建时间</span><span class="value" id="odCreatedAt">-</span></div>
-            <div class="row" id="refundStatusRow"><span class="label">💳 退款状态</span><span class="value" id="odRefundStatus">-</span></div>
-            <div class="row" id="refundReasonRow"><span class="label">📝 退款原因</span><span class="value" id="odRefundReason" style="color:#fcd34d;font-size:13px;">-</span></div>
-            <div class="row" id="refundAmountRow"><span class="label">💳 退款金额</span><span class="value success" id="odRefundAmount">-</span></div>
-            <div class="row" id="orderLockedRow" style="display:none;"><span class="label">🔒 状态</span><span class="value danger" id="odLockedReason">-</span></div>
-            <div class="row" id="riskCheckRow" style="display:none;"><span class="label">🛡️ 风控状态</span><span class="value" id="odRiskStatus">-</span></div>
+            <div class="row"><span class="label">商品</span><span class="value" id="odProduct">-</span></div>
+            <div class="row"><span class="label">订单号</span><span class="value" id="odOrderId" style="font-family:'SF Mono',monospace;font-size:12px;">-</span></div>
+            <div class="row"><span class="label">防伪码</span><span class="value" id="odAntiFake" style="font-family:'SF Mono',monospace;font-weight:800;color:#34d399;">-</span></div>
+            <div class="row"><span class="label">实付金额</span><span class="value highlight" id="odPrice">-</span></div>
+            <div class="row"><span class="label">支付方式</span><span class="value" id="odPayment">-</span></div>
+            <div class="row"><span class="label">支付时间</span><span class="value" id="odPaidAt">-</span></div>
+            <div class="row"><span class="label">创建时间</span><span class="value" id="odCreatedAt">-</span></div>
+            <div class="row" id="refundStatusRow"><span class="label">退款状态</span><span class="value" id="odRefundStatus">-</span></div>
+            <div class="row" id="refundReasonRow"><span class="label">退款原因</span><span class="value" id="odRefundReason" style="color:#fcd34d;font-size:13px;">-</span></div>
+            <div class="row" id="refundAmountRow"><span class="label">退款金额</span><span class="value success" id="odRefundAmount">-</span></div>
+            <div class="row" id="orderLockedRow" style="display:none;"><span class="label">状态</span><span class="value danger" id="odLockedReason">-</span></div>
 
             <div id="gatewayInfoContainer"></div>
 
@@ -789,7 +224,25 @@
                 <div class="preview-row"><span class="reason" id="previewReason">等待计算...</span></div>
                 <div class="preview-row" id="previewDetailRow" style="display:none;"><span class="reason" id="previewDetail" style="font-size:11px;"></span></div>
                 <div style="font-size:11px;color:#6ee7b7;margin-top:8px;font-weight:600;"><i class="fas fa-info-circle"></i> 退款将存入您的理财账户</div>
-                <div class="risk-notice" id="riskNotice" style="display:none;"><i class="fas fa-shield-alt"></i> 退款金额超过100积分，需进行30秒风控审查</div>
+            </div>
+
+            <div class="email-verify-box" id="emailVerifyBox">
+                <div class="verify-title"><i class="fas fa-envelope-open-text"></i> 邮箱验证进行中</div>
+                <div class="verify-desc">验证邮件已发送至您的绑定邮箱，请点击邮件中的链接完成验证。验证完成后系统将自动退款。</div>
+                <div class="verify-checklist">
+                    <div class="check-item" id="checkEmail">
+                        <div class="check-icon pending" id="checkEmailIcon">...</div>
+                        <span>邮箱验证（请点击邮件链接并输入密码）</span>
+                    </div>
+                    <div class="check-item" id="checkRisk">
+                        <div class="check-icon pending" id="checkRiskIcon">...</div>
+                        <span>风控审查（30秒冷静期）</span>
+                    </div>
+                    <div class="check-item" id="checkRefund">
+                        <div class="check-icon" id="checkRefundIcon"></div>
+                        <span>自动退款</span>
+                    </div>
+                </div>
             </div>
 
             <div class="risk-progress-container" id="riskProgress">
@@ -822,19 +275,6 @@
                 <div class="risk-progress-status" id="progressStatus"></div>
             </div>
 
-            <div id="riskResult" style="display:none;margin-top:14px;">
-                <div class="risk-score-display" id="riskScoreDisplay">
-                    <span class="score-number" id="scoreNumber">0</span>
-                    <span class="score-label">风控评分</span>
-                    <span class="score-status" id="scoreStatus">-</span>
-                    <span class="score-detail" id="scoreDetail"></span>
-                </div>
-                <div class="risk-detail-list" id="riskDetailList">
-                    <div class="detail-title">📋 审查明细</div>
-                    <div id="riskDetailItems"></div>
-                </div>
-            </div>
-
             <button class="refund-btn" id="refundBtn"><i class="fas fa-undo-alt"></i> 确认退款</button>
         </div>
 
@@ -850,44 +290,19 @@
         var csrfTokenLastFetch = 0;
         var CSRF_TOKEN_TTL = 300000;
 
-        function getCsrfTokenFromCookie() {
-            try {
-                var cookies = document.cookie.split(';');
-                for (var i = 0; i < cookies.length; i++) {
-                    var cookie = cookies[i].trim();
-                    if (cookie.indexOf('csrf_token=') === 0) {
-                        return cookie.substring('csrf_token='.length, cookie.length);
-                    }
-                }
-                return null;
-            } catch (e) { return null; }
-        }
-
-        function setCsrfTokenCookie(token) {
-            try {
-                var expires = new Date(Date.now() + CSRF_TOKEN_TTL).toUTCString();
-                document.cookie = 'csrf_token=' + token + '; expires=' + expires + '; path=/; SameSite=Strict; Secure';
-            } catch (e) {}
-        }
-
         function fetchCsrfToken() {
-            if (csrfTokenRefreshPromise) { return csrfTokenRefreshPromise; }
-            if (csrfToken && (Date.now() - csrfTokenLastFetch) < CSRF_TOKEN_TTL) { return Promise.resolve(csrfToken); }
-            var cookieToken = getCsrfTokenFromCookie();
-            if (cookieToken) { csrfToken = cookieToken;
-                csrfTokenLastFetch = Date.now(); return Promise.resolve(csrfToken); }
+            if (csrfTokenRefreshPromise) return csrfTokenRefreshPromise;
+            if (csrfToken && (Date.now() - csrfTokenLastFetch) < CSRF_TOKEN_TTL) return Promise.resolve(csrfToken);
             csrfTokenRefreshPromise = fetch('/api/csrf-token', {
-                method: 'GET',
-                credentials: 'include',
+                method: 'GET', credentials: 'include',
                 headers: { 'Accept': 'application/json', 'Cache-Control': 'no-cache' }
             }).then(function(response) {
-                if (!response.ok) { throw new Error('Failed to fetch CSRF token: HTTP ' + response.status); }
+                if (!response.ok) throw new Error('Failed to fetch CSRF token: HTTP ' + response.status);
                 return response.json();
             }).then(function(data) {
-                if (!data.csrf_token) { throw new Error('No CSRF token in response'); }
+                if (!data.csrf_token) throw new Error('No CSRF token in response');
                 csrfToken = data.csrf_token;
                 csrfTokenLastFetch = Date.now();
-                setCsrfTokenCookie(csrfToken);
                 csrfTokenRefreshPromise = null;
                 return csrfToken;
             }).catch(function(error) {
@@ -908,7 +323,7 @@
             if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') {
                 return fetch(url, options).then(function(response) {
                     return response.json().then(function(data) {
-                        if (!response.ok) { throw new Error(data.error || '请求失败: ' + response.status); }
+                        if (!response.ok) throw new Error(data.error || '请求失败: ' + response.status);
                         return data;
                     });
                 });
@@ -927,7 +342,7 @@
                                 return fetch(url, options);
                             }).then(function(retryResponse) {
                                 return retryResponse.json().then(function(retryData) {
-                                    if (!retryResponse.ok) { throw new Error(retryData.error || '请求失败: ' + retryResponse.status); }
+                                    if (!retryResponse.ok) throw new Error(retryData.error || '请求失败: ' + retryResponse.status);
                                     return retryData;
                                 });
                             });
@@ -946,23 +361,17 @@
         var isRefunded = false;
         var isGatewayMode = false;
         var gatewayCardData = null;
-        var currentRate = 0.07;
         var initRetryCount = 0;
         var MAX_INIT_RETRIES = 3;
         var isInitialized = false;
-        var riskCheckInProgress = false;
         var riskProgressInterval = null;
-        var riskCheckCompleted = false;
-        var riskScore = 0;
-        var riskDetails = [];
+        var refundPollTimer = null;
 
         function showErrorBoundary(message) {
             var el = document.getElementById('errorBoundary');
             var desc = document.getElementById('errorDesc');
-            if (el && desc) { desc.textContent = message || '网络连接失败，请检查网络后重试';
-                el.style.display = 'block'; }
+            if (el && desc) { desc.textContent = message || '网络连接失败'; el.style.display = 'block'; }
         }
-
         function hideErrorBoundary() { var el = document.getElementById('errorBoundary'); if (el) el.style.display = 'none'; }
 
         function showToast(message, type) {
@@ -980,7 +389,7 @@
         }
 
         function getStatusInfo(status) {
-            var map = { 'pending': { label: '待支付', className: 'pending' }, 'paid': { label: '已支付', className: 'paid' }, 'cancelled': { label: '已取消', className: 'cancelled' }, 'expired': { label: '已过期', className: 'expired' }, 'refunded': { label: '已退款', className: 'refunded' }, 'frozen': { label: '已冻结', className: 'frozen' } };
+            var map = { 'pending': { label: '待支付', className: 'pending' }, 'paid': { label: '已支付', className: 'paid' }, 'cancelled': { label: '已取消', className: 'cancelled' }, 'expired': { label: '已过期', className: 'expired' }, 'refunded': { label: '已退款', className: 'refunded' } };
             return map[status] || { label: status || '未知', className: 'pending' };
         }
 
@@ -995,7 +404,7 @@
         }
 
         function formatPrice(price, method) {
-            if (method === 'pl') { return price.toFixed(4) + ' PL'; }
+            if (method === 'pl') return price.toFixed(4) + ' PL';
             return price.toFixed(2) + ' 积分';
         }
 
@@ -1004,16 +413,16 @@
                 var data = await apiRequest('/api/check-auth');
                 if (data.authenticated) {
                     currentUser = data.username;
-                    document.getElementById('userInfo').textContent = '👤 ' + currentUser;
+                    document.getElementById('userInfo').textContent = currentUser;
                     return true;
                 } else {
-                    document.getElementById('userInfo').textContent = '👤 未登录';
+                    document.getElementById('userInfo').textContent = '未登录';
                     showToast('请先登录再申请退款', 'warning');
                     setTimeout(function() { window.location.href = '/login.html?redirect=refund.html'; }, 2000);
                     return false;
                 }
             } catch (error) {
-                document.getElementById('userInfo').textContent = '👤 未登录';
+                document.getElementById('userInfo').textContent = '未登录';
                 return false;
             }
         }
@@ -1021,10 +430,7 @@
         function displayGatewayDetail(data) {
             isGatewayMode = true;
             gatewayCardData = data;
-            riskCheckCompleted = false;
-            riskScore = 0;
-            riskDetails = [];
-            document.getElementById('orderTitle').textContent = '🎟️ 通行卡密详情';
+            document.getElementById('orderTitle').textContent = '通行卡密详情';
             document.getElementById('orderStatusBadge').textContent = data.status || '有效';
             document.getElementById('orderStatusBadge').className = 'status-badge ' + (data.status === '已过期' ? 'expired' : 'paid');
             document.getElementById('gatewayBadge').style.display = 'inline-block';
@@ -1039,20 +445,17 @@
             document.getElementById('refundReasonRow').style.display = 'none';
             document.getElementById('refundAmountRow').style.display = 'none';
             document.getElementById('orderLockedRow').style.display = 'none';
-            document.getElementById('riskCheckRow').style.display = 'none';
-            document.getElementById('riskBadge').style.display = 'none';
-            document.getElementById('riskResult').style.display = 'none';
             var gatewayContainer = document.getElementById('gatewayInfoContainer');
             gatewayContainer.innerHTML = '';
             var orderInfoHtml = '';
             if (data.is_refunded) {
-                orderInfoHtml = '<div style="background:rgba(248,113,113,0.1);border-radius:10px;padding:10px 14px;margin-bottom:10px;border-left:3px solid #f87171;"><span style="font-size:12px;color:#6ee7b7;">📋 关联订单:</span><span style="font-size:12px;color:#fca5a5;font-family:monospace;font-weight:700;">' + data.original_order_id + '</span><span class="link-status danger" style="font-size:11px;margin-left:8px;font-weight:700;">❌ 该订单已退款</span></div>';
+                orderInfoHtml = '<div style="background:rgba(248,113,113,0.1);border-radius:10px;padding:10px 14px;margin-bottom:10px;border-left:3px solid #f87171;"><span style="font-size:12px;color:#6ee7b7;">关联订单:</span><span style="font-size:12px;color:#fca5a5;font-family:monospace;font-weight:700;">' + data.original_order_id + '</span><span style="font-size:11px;margin-left:8px;font-weight:700;color:#fca5a5;">该订单已退款</span></div>';
             } else if (data.has_original_order && data.original_order_id) {
-                orderInfoHtml = '<div style="background:rgba(56,189,248,0.1);border-radius:10px;padding:10px 14px;margin-bottom:10px;border-left:3px solid #38bdf8;"><span style="font-size:12px;color:#6ee7b7;">📋 关联订单:</span><span style="font-size:12px;color:#7dd3fc;font-family:monospace;font-weight:700;">' + data.original_order_id + '</span><span class="link-status success" style="font-size:11px;margin-left:8px;font-weight:700;">✅ 将使用订单退款</span></div>';
+                orderInfoHtml = '<div style="background:rgba(56,189,248,0.1);border-radius:10px;padding:10px 14px;margin-bottom:10px;border-left:3px solid #38bdf8;"><span style="font-size:12px;color:#6ee7b7;">关联订单:</span><span style="font-size:12px;color:#7dd3fc;font-family:monospace;font-weight:700;">' + data.original_order_id + '</span></div>';
             } else {
-                orderInfoHtml = '<div style="background:rgba(251,191,36,0.08);border-radius:10px;padding:10px 14px;margin-bottom:10px;border-left:3px solid #fbbf24;"><span style="font-size:12px;color:#6ee7b7;">📋 关联订单:</span><span style="font-size:12px;color:#fcd34d;font-weight:700;">无关联订单</span><span class="link-status warning" style="font-size:11px;margin-left:8px;font-weight:700;">⚠️ 将使用无订单模式退款</span></div>';
+                orderInfoHtml = '<div style="background:rgba(251,191,36,0.08);border-radius:10px;padding:10px 14px;margin-bottom:10px;border-left:3px solid #fbbf24;"><span style="font-size:12px;color:#6ee7b7;">关联订单:</span><span style="font-size:12px;color:#fcd34d;font-weight:700;">无关联订单</span></div>';
             }
-            var gatewayHtml = '<div class="gateway-card-info">' + orderInfoHtml + '<div class="info-row"><span class="label">🔑 卡密</span><span class="value highlight">' + data.card_key + '</span></div><div class="info-row"><span class="label">📋 卡密类型</span><span class="value">' + getCardTypeLabel(data.card_type) + '</span></div><div class="info-row"><span class="label">💰 购买价格</span><span class="value">' + (data.card_price || 0).toFixed(2) + ' 积分</span></div><div class="info-row"><span class="label">📅 创建时间</span><span class="value">' + formatTime(data.created_at) + '</span></div><div class="info-row"><span class="label">📅 过期时间</span><span class="value">' + (data.expire_at ? formatTime(data.expire_at) : '永久有效') + '</span></div></div>';
+            var gatewayHtml = '<div class="gateway-card-info">' + orderInfoHtml + '<div class="info-row"><span class="label">卡密</span><span class="value highlight">' + data.card_key + '</span></div><div class="info-row"><span class="label">卡密类型</span><span class="value">' + getCardTypeLabel(data.card_type) + '</span></div><div class="info-row"><span class="label">购买价格</span><span class="value">' + (data.card_price || 0).toFixed(2) + ' 积分</span></div><div class="info-row"><span class="label">创建时间</span><span class="value">' + formatTime(data.created_at) + '</span></div><div class="info-row"><span class="label">过期时间</span><span class="value">' + (data.expire_at ? formatTime(data.expire_at) : '永久有效') + '</span></div></div>';
             gatewayContainer.innerHTML = gatewayHtml;
             if (data.can_refund && !data.is_refunded) {
                 document.getElementById('refundBtn').style.display = 'block';
@@ -1061,20 +464,7 @@
                 document.getElementById('refundBtn').className = 'refund-btn';
                 document.getElementById('previewAmount').textContent = (data.refund_points || data.refund_amount || 0).toFixed(2) + ' 积分';
                 document.getElementById('previewReason').textContent = data.refund_reason || data.reason;
-                if (data.is_pl_payment && data.rate_used) {
-                    document.getElementById('previewRateRow').style.display = 'flex';
-                    document.getElementById('previewRateInfo').textContent = '💎 ' + data.refund_amount.toFixed(4) + ' PL × 汇率 ' + data.rate_used.toFixed(4) + ' = ' + (data.refund_points || 0).toFixed(2) + ' 积分';
-                } else { document.getElementById('previewRateRow').style.display = 'none'; }
                 document.getElementById('previewDetailRow').style.display = 'none';
-                var refundPoints = data.refund_points || data.refund_amount || 0;
-                var riskNotice = document.getElementById('riskNotice');
-                if (refundPoints >= 100) {
-                    riskNotice.style.display = 'flex';
-                } else {
-                    riskNotice.style.display = 'none';
-                }
-                document.getElementById('riskBadge').style.display = 'none';
-                document.getElementById('riskResult').style.display = 'none';
             } else {
                 document.getElementById('refundBtn').style.display = 'none';
                 document.getElementById('orderLockedRow').style.display = 'flex';
@@ -1085,16 +475,13 @@
         function displayOrderDetail(order) {
             isGatewayMode = false;
             gatewayCardData = null;
-            riskCheckCompleted = false;
-            riskScore = 0;
-            riskDetails = [];
             document.getElementById('gatewayBadge').style.display = 'none';
             var statusInfo = getStatusInfo(order.status);
             var paymentMethod = order.payment_method || 'points';
             var productType = order.product_type || '';
             var productName = order.product_name || getProductTypeLabel(productType);
             var isPlPayment = paymentMethod === 'pl';
-            document.getElementById('orderTitle').textContent = '📋 订单详情 #' + (order.order_id ? order.order_id.slice(0, 20) + '...' : '');
+            document.getElementById('orderTitle').textContent = '订单详情';
             document.getElementById('orderStatusBadge').textContent = statusInfo.label;
             document.getElementById('orderStatusBadge').className = 'status-badge ' + statusInfo.className;
             document.getElementById('odProduct').textContent = productName + (order.quantity > 1 ? ' x' + order.quantity : '');
@@ -1102,10 +489,10 @@
             document.getElementById('odAntiFake').textContent = order.anti_fake_code || '-';
             if (isPlPayment) {
                 document.getElementById('odPrice').textContent = formatPrice(order.product_price || 0, 'pl');
-                document.getElementById('odPayment').textContent = '💎 PL支付';
+                document.getElementById('odPayment').textContent = 'PL支付';
             } else {
                 document.getElementById('odPrice').textContent = formatPrice(order.product_price || 0, 'points');
-                document.getElementById('odPayment').textContent = '⭐ 积分支付';
+                document.getElementById('odPayment').textContent = '积分支付';
             }
             document.getElementById('odPaidAt').textContent = formatTime(order.paid_at);
             document.getElementById('odCreatedAt').textContent = formatTime(order.created_at);
@@ -1114,7 +501,7 @@
             var refundAmountRow = document.getElementById('refundAmountRow');
             if (order.refunded) {
                 refundStatusRow.style.display = 'flex';
-                document.getElementById('odRefundStatus').textContent = '✅ 已退款';
+                document.getElementById('odRefundStatus').textContent = '已退款';
                 document.getElementById('odRefundStatus').className = 'value success';
                 if (order.refund_reason) {
                     refundReasonRow.style.display = 'flex';
@@ -1134,11 +521,7 @@
                 refundAmountRow.style.display = 'none';
             }
             document.getElementById('orderLockedRow').style.display = 'none';
-            document.getElementById('riskCheckRow').style.display = 'none';
-            document.getElementById('riskBadge').style.display = 'none';
-            document.getElementById('riskResult').style.display = 'none';
-            var gatewayContainer = document.getElementById('gatewayInfoContainer');
-            gatewayContainer.innerHTML = '';
+            document.getElementById('gatewayInfoContainer').innerHTML = '';
         }
 
         function updateRiskStep(stepIndex, status) {
@@ -1147,23 +530,16 @@
             if (!circle || !label) return;
             circle.className = 'step-circle';
             label.className = 'step-label';
-            if (status === 'active') {
-                circle.classList.add('active');
-                label.classList.add('active');
-            } else if (status === 'done') {
-                circle.classList.add('done');
-                circle.textContent = '✓';
-                label.classList.add('done');
-            }
+            if (status === 'active') { circle.classList.add('active'); label.classList.add('active'); }
+            else if (status === 'done') { circle.classList.add('done'); circle.textContent = '✓'; label.classList.add('done'); }
         }
 
         function resetRiskSteps() {
             for (var i = 0; i < 4; i++) {
                 var circle = document.getElementById('step' + i);
                 var label = document.getElementById('label' + i);
-                if (circle) { circle.className = 'step-circle';
-                    circle.textContent = i + 1; }
-                if (label) { label.className = 'step-label'; }
+                if (circle) { circle.className = 'step-circle'; circle.textContent = i + 1; }
+                if (label) label.className = 'step-label';
             }
         }
 
@@ -1180,72 +556,12 @@
             var stepIndex = Math.floor(percent / 25);
             if (stepIndex > 3) stepIndex = 3;
             for (var i = 0; i < 4; i++) {
-                if (i < stepIndex) {
-                    updateRiskStep(i, 'done');
-                } else if (i === stepIndex && percent < 100) {
-                    updateRiskStep(i, 'active');
-                } else {
-                    updateRiskStep(i, '');
-                }
+                if (i < stepIndex) updateRiskStep(i, 'done');
+                else if (i === stepIndex && percent < 100) updateRiskStep(i, 'active');
+                else updateRiskStep(i, '');
             }
             if (percent >= 100) {
-                for (var j = 0; j < 4; j++) {
-                    updateRiskStep(j, 'done');
-                }
-                riskCheckCompleted = true;
-                showRiskResult(riskScore, riskDetails);
-            }
-        }
-
-        function showRiskResult(score, details) {
-            var resultDiv = document.getElementById('riskResult');
-            resultDiv.style.display = 'block';
-            var scoreNumber = document.getElementById('scoreNumber');
-            var scoreStatus = document.getElementById('scoreStatus');
-            var scoreDetail = document.getElementById('scoreDetail');
-            var detailList = document.getElementById('riskDetailList');
-            var detailItems = document.getElementById('riskDetailItems');
-            
-            scoreNumber.textContent = score;
-            
-            if (score < 25) {
-                scoreNumber.className = 'score-number passed';
-                scoreStatus.textContent = '✅ 安全';
-                scoreStatus.className = 'score-status passed';
-                scoreDetail.textContent = '账户状态良好，无风险';
-                detailList.className = 'risk-detail-list';
-            } else if (score < 45) {
-                scoreNumber.className = 'score-number passed';
-                scoreStatus.textContent = '✅ 低风险';
-                scoreStatus.className = 'score-status passed';
-                scoreDetail.textContent = '存在少量风险项，可正常退款';
-                detailList.className = 'risk-detail-list show';
-            } else if (score < 65) {
-                scoreNumber.className = 'score-number warning';
-                scoreStatus.textContent = '⚠️ 中风险';
-                scoreStatus.className = 'score-status warning';
-                scoreDetail.textContent = '存在多项风险，请确认后操作';
-                detailList.className = 'risk-detail-list show';
-            } else {
-                scoreNumber.className = 'score-number failed';
-                scoreStatus.textContent = '❌ 高风险';
-                scoreStatus.className = 'score-status failed';
-                scoreDetail.textContent = '风险过高，禁止退款';
-                detailList.className = 'risk-detail-list show';
-            }
-            
-            if (details && details.length > 0) {
-                detailItems.innerHTML = '';
-                details.forEach(function(item) {
-                    var div = document.createElement('div');
-                    div.className = 'detail-item';
-                    var scoreClass = 'low';
-                    var scoreVal = item.score || 0;
-                    if (scoreVal >= 15) scoreClass = 'high';
-                    else if (scoreVal >= 8) scoreClass = 'medium';
-                    div.innerHTML = '<span>' + (item.text || item) + '</span><span class="score ' + scoreClass + '">+' + scoreVal + '</span>';
-                    detailItems.appendChild(div);
-                });
+                for (var j = 0; j < 4; j++) updateRiskStep(j, 'done');
             }
         }
 
@@ -1253,16 +569,13 @@
             var container = document.getElementById('riskProgress');
             container.className = 'risk-progress-container show';
             resetRiskSteps();
-            riskCheckCompleted = false;
-            document.getElementById('riskResult').style.display = 'none';
-            updateRiskProgress(0, '🔍 正在启动风控审查...', 'info');
+            updateRiskProgress(0, '正在启动风控审查...', 'info');
             var btn = document.getElementById('refundBtn');
-            btn.className = 'refund-btn risk-checking';
-            btn.innerHTML = '<span class="spinner"></span> 风控审查中 (30s)';
+            btn.className = 'refund-btn waiting';
+            btn.innerHTML = '<span class="spinner"></span> 等待验证与风控...';
             btn.disabled = true;
-            riskCheckInProgress = true;
             var progress = 0;
-            var stepTexts = ['🔍 正在验证账户身份...', '📊 正在分析交易行为...', '🛡️ 正在检查安全状态...', '⚖️ 正在评估退款合理性...'];
+            var stepTexts = ['正在验证账户身份...', '正在分析交易行为...', '正在检查安全状态...', '正在评估退款合理性...'];
             if (riskProgressInterval) clearInterval(riskProgressInterval);
             riskProgressInterval = setInterval(function() {
                 progress += 2;
@@ -1270,18 +583,11 @@
                     progress = 100;
                     clearInterval(riskProgressInterval);
                     riskProgressInterval = null;
-                    updateRiskProgress(100, '✅ 风控审查完成', 'success');
-                    var btn2 = document.getElementById('refundBtn');
-                    btn2.className = 'refund-btn';
-                    btn2.innerHTML = '<i class="fas fa-undo-alt"></i> 确认退款';
-                    btn2.disabled = false;
-                    riskCheckInProgress = false;
-                    showToast('✅ 风控审查完成，请点击确认退款', 'success');
+                    updateRiskProgress(100, '风控审查完成，等待邮箱验证...', 'info');
                 } else {
                     var stepIdx = Math.floor(progress / 25);
                     if (stepIdx > 3) stepIdx = 3;
-                    var statusText = stepTexts[stepIdx] || '审查中...';
-                    updateRiskProgress(progress, statusText, 'info');
+                    updateRiskProgress(progress, stepTexts[stepIdx] || '审查中...', 'info');
                 }
             }, 600);
         }
@@ -1289,28 +595,23 @@
         function hideRiskProgress() {
             var container = document.getElementById('riskProgress');
             container.className = 'risk-progress-container';
-            if (riskProgressInterval) {
-                clearInterval(riskProgressInterval);
-                riskProgressInterval = null;
-            }
-            riskCheckInProgress = false;
+            if (riskProgressInterval) { clearInterval(riskProgressInterval); riskProgressInterval = null; }
             resetRiskSteps();
         }
 
-        function updateRiskBadge(passed, message) {
-            var badge = document.getElementById('riskBadge');
-            badge.style.display = 'inline-block';
-            if (passed) {
-                badge.textContent = '✅ 风控通过';
-                badge.className = 'risk-check-badge passed';
-            } else {
-                badge.textContent = '❌ 风控未通过';
-                badge.className = 'risk-check-badge failed';
-            }
-            var row = document.getElementById('riskCheckRow');
-            row.style.display = 'flex';
-            document.getElementById('odRiskStatus').textContent = message || (passed ? '风控审查通过' : '风控审查未通过');
-            document.getElementById('odRiskStatus').className = 'value ' + (passed ? 'success' : 'danger');
+        function updateChecklist(emailOk, riskOk, refundOk) {
+            var emailIcon = document.getElementById('checkEmailIcon');
+            var riskIcon = document.getElementById('checkRiskIcon');
+            var refundIcon = document.getElementById('checkRefundIcon');
+            var emailItem = document.getElementById('checkEmail');
+            var riskItem = document.getElementById('checkRisk');
+            var refundItem = document.getElementById('checkRefund');
+            if (emailOk) { emailIcon.className = 'check-icon done'; emailIcon.textContent = '✓'; emailItem.classList.add('done'); }
+            else { emailIcon.className = 'check-icon pending'; emailIcon.textContent = '...'; emailItem.classList.remove('done'); }
+            if (riskOk) { riskIcon.className = 'check-icon done'; riskIcon.textContent = '✓'; riskItem.classList.add('done'); }
+            else { riskIcon.className = 'check-icon pending'; riskIcon.textContent = '...'; riskItem.classList.remove('done'); }
+            if (refundOk) { refundIcon.className = 'check-icon done'; refundIcon.textContent = '✓'; refundItem.classList.add('done'); }
+            else { refundIcon.className = 'check-icon'; refundIcon.textContent = ''; refundItem.classList.remove('done'); }
         }
 
         async function searchOrder() {
@@ -1328,16 +629,12 @@
             document.getElementById('refundBtn').style.display = 'none';
             document.getElementById('gatewayInfoContainer').innerHTML = '';
             document.getElementById('gatewayBadge').style.display = 'none';
-            document.getElementById('riskBadge').style.display = 'none';
-            document.getElementById('riskCheckRow').style.display = 'none';
-            document.getElementById('riskResult').style.display = 'none';
+            document.getElementById('emailVerifyBox').className = 'email-verify-box';
             hideRiskProgress();
-            riskCheckCompleted = false;
+            if (refundPollTimer) { clearInterval(refundPollTimer); refundPollTimer = null; }
             isRefunded = false;
             isGatewayMode = false;
             gatewayCardData = null;
-            riskScore = 0;
-            riskDetails = [];
             try {
                 var data = await apiRequest('/api/order/search?keyword=' + encodeURIComponent(keyword));
                 if (data.type === 'gateway') {
@@ -1345,7 +642,6 @@
                         loading.style.display = 'none';
                         noResult.style.display = 'block';
                         noResult.querySelector('p').textContent = '通行卡密不存在或已被使用';
-                        showToast('通行卡密不存在或已被使用', 'warning');
                         btn.disabled = false;
                         btn.innerHTML = '<i class="fas fa-search"></i> 查询';
                         return;
@@ -1354,7 +650,6 @@
                         loading.style.display = 'none';
                         noResult.style.display = 'block';
                         noResult.querySelector('p').textContent = '该卡密不属于当前账号';
-                        showToast('该卡密不属于当前账号', 'error');
                         btn.disabled = false;
                         btn.innerHTML = '<i class="fas fa-search"></i> 查询';
                         return;
@@ -1370,7 +665,6 @@
                 if (orders.length === 0) {
                     loading.style.display = 'none';
                     noResult.style.display = 'block';
-                    showToast('未找到匹配的订单，请检查输入', 'warning');
                     btn.disabled = false;
                     btn.innerHTML = '<i class="fas fa-search"></i> 查询';
                     return;
@@ -1380,7 +674,6 @@
                     loading.style.display = 'none';
                     noResult.style.display = 'block';
                     noResult.querySelector('p').textContent = '该订单不属于当前账号';
-                    showToast('该订单不属于当前账号', 'error');
                     btn.disabled = false;
                     btn.innerHTML = '<i class="fas fa-search"></i> 查询';
                     return;
@@ -1394,7 +687,7 @@
                 if (status === 'refunded') {
                     isRefunded = true;
                     var refundBtn = document.getElementById('refundBtn');
-                    refundBtn.textContent = '✅ 已退款';
+                    refundBtn.textContent = '已退款';
                     refundBtn.className = 'refund-btn refunded';
                     refundBtn.disabled = true;
                     refundBtn.style.display = 'block';
@@ -1402,30 +695,14 @@
                     btn.innerHTML = '<i class="fas fa-search"></i> 查询';
                     return;
                 }
-                if (status === 'pending') {
-                    showToast('该订单尚未支付，无需退款', 'warning');
+                if (status !== 'paid') {
+                    showToast('该订单状态不支持退款', 'warning');
                     document.getElementById('refundBtn').style.display = 'none';
                     btn.disabled = false;
                     btn.innerHTML = '<i class="fas fa-search"></i> 查询';
                     return;
                 }
-                if (status === 'cancelled' || status === 'expired') {
-                    showToast('该订单已取消或过期，无法退款', 'warning');
-                    document.getElementById('refundBtn').style.display = 'none';
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-search"></i> 查询';
-                    return;
-                }
-                if (status === 'frozen') {
-                    showToast('该订单已冻结，请联系管理员', 'warning');
-                    document.getElementById('refundBtn').style.display = 'none';
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-search"></i> 查询';
-                    return;
-                }
-                if (status === 'paid') {
-                    await checkRefundEligibility(foundOrder.order_id);
-                }
+                await checkRefundEligibility(foundOrder.order_id);
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-search"></i> 查询';
             } catch (error) {
@@ -1442,16 +719,13 @@
                 if (data.is_refunded) {
                     document.getElementById('refundBtn').style.display = 'none';
                     document.getElementById('orderLockedRow').style.display = 'flex';
-                    document.getElementById('odLockedReason').textContent = '该订单已退款，不可重复操作';
-                    showToast('该订单已退款', 'warning');
+                    document.getElementById('odLockedReason').textContent = '该订单已退款';
                     return;
                 }
                 if (data.risk_check_failed) {
                     document.getElementById('refundBtn').style.display = 'none';
                     document.getElementById('orderLockedRow').style.display = 'flex';
                     document.getElementById('odLockedReason').textContent = data.risk_message || '风控审查未通过';
-                    updateRiskBadge(false, data.risk_message || '风控审查未通过');
-                    showToast('❌ ' + (data.risk_message || '风控审查未通过'), 'error');
                     return;
                 }
                 if (data.can_refund) {
@@ -1464,218 +738,170 @@
                     document.getElementById('previewReason').textContent = data.reason;
                     if (data.is_pl_payment && data.rate_used) {
                         document.getElementById('previewRateRow').style.display = 'flex';
-                        document.getElementById('previewRateInfo').textContent = '💎 ' + data.refund_amount.toFixed(4) + ' PL × 汇率 ' + data.rate_used.toFixed(4) + ' = ' + displayPoints.toFixed(2) + ' 积分';
+                        document.getElementById('previewRateInfo').textContent = data.refund_amount.toFixed(4) + ' PL × 汇率 ' + data.rate_used.toFixed(4) + ' = ' + displayPoints.toFixed(2) + ' 积分';
                     } else { document.getElementById('previewRateRow').style.display = 'none'; }
                     if (data.detail) {
                         document.getElementById('previewDetailRow').style.display = 'block';
                         document.getElementById('previewDetail').textContent = data.detail;
                     } else { document.getElementById('previewDetailRow').style.display = 'none'; }
                     document.getElementById('orderLockedRow').style.display = 'none';
-                    var riskNotice = document.getElementById('riskNotice');
-                    if (displayPoints >= 100) {
-                        riskNotice.style.display = 'flex';
-                    } else {
-                        riskNotice.style.display = 'none';
-                    }
-                    if (data.risk_check_passed) {
-                        updateRiskBadge(true, data.risk_message || '风控审查通过');
-                        if (data.risk_score !== undefined) {
-                            riskScore = data.risk_score;
-                            riskDetails = data.risk_details || [];
-                            showRiskResult(riskScore, riskDetails);
-                        }
-                    } else {
-                        document.getElementById('riskBadge').style.display = 'none';
-                        document.getElementById('riskCheckRow').style.display = 'none';
-                        document.getElementById('riskResult').style.display = 'none';
-                    }
                 } else {
                     document.getElementById('refundBtn').style.display = 'none';
                     document.getElementById('orderLockedRow').style.display = 'flex';
                     document.getElementById('odLockedReason').textContent = data.reason || '不可退款';
-                    if (data.has_unclaimed) {
-                        showToast('⚠️ 该订单的卡密尚未从邮箱领取，请先领取后再申请退款', 'warning');
-                    } else {
-                        showToast('该订单不可退款: ' + data.reason, 'warning');
-                    }
+                    if (data.has_unclaimed) showToast('该订单的卡密尚未从邮箱领取，请先领取后再申请退款', 'warning');
+                    else showToast('该订单不可退款: ' + data.reason, 'warning');
                 }
             } catch (error) {
                 document.getElementById('refundBtn').style.display = 'none';
                 document.getElementById('orderLockedRow').style.display = 'flex';
                 document.getElementById('odLockedReason').textContent = '检查退款状态失败: ' + error.message;
-                console.error('Check refund failed:', error);
             }
         }
 
-        async function processGatewayRefund() {
-            if (isProcessing || isRefunded) return;
-            if (riskCheckInProgress) {
-                showToast('⏳ 风控审查进行中，请等待完成', 'info');
-                return;
-            }
-            var btn = document.getElementById('refundBtn');
-            if (btn.disabled) return;
-            if (!gatewayCardData || !gatewayCardData.card_key) { showToast('请先查询卡密', 'warning'); return; }
-            if (!gatewayCardData.can_refund) { showToast('该卡密不可退款', 'warning'); return; }
-            if (gatewayCardData.is_refunded) { showToast('该卡密对应的订单已退款', 'warning'); return; }
-            if (!gatewayCardData.order_id) { showToast('系统错误，无法获取退款标识', 'error'); return; }
-            var previewAmount = document.getElementById('previewAmount').textContent;
-            var previewReason = document.getElementById('previewReason').textContent;
-            var refundPoints = parseFloat(previewAmount) || 0;
-            if (refundPoints >= 100 && !riskCheckCompleted) {
-                showRiskProgress();
-                return;
-            }
-            var confirmMessage = '';
-            if (refundPoints >= 100 && riskCheckCompleted) {
-                confirmMessage = '✅ 风控审查已完成 (评分: ' + riskScore + ')\n\n';
-            }
-            confirmMessage += '卡密: ' + gatewayCardData.card_key + '\n';
-            confirmMessage += '预计退款: ' + previewAmount + '\n';
-            confirmMessage += '退款原因: ' + previewReason + '\n\n';
-            if (gatewayCardData.has_original_order) {
-                confirmMessage += '📋 关联订单: ' + gatewayCardData.original_order_id + '\n';
-                confirmMessage += '✅ 将使用订单退款方式\n\n';
-            } else {
-                confirmMessage += '⚠️ 无关联订单，将使用无订单模式退款\n\n';
-            }
-            confirmMessage += '退款将存入理财账户，确认继续？';
-            if (!confirm(confirmMessage)) return;
-            isProcessing = true;
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner"></span> 退款处理中...';
-            try {
-                var data = await apiRequest('/api/order/' + gatewayCardData.order_id + '/refund-self', {
-                    method: 'POST',
-                    body: JSON.stringify({ is_gateway_refund: true, card_key: gatewayCardData.card_key })
-                });
-                if (data.success) {
-                    var successMsg = '✅ 退款成功！' + data.message;
-                    if (data.order_refunded) { successMsg += ' (已标记订单为已退款)'; }
-                    showToast(successMsg, 'success');
-                    isRefunded = true;
-                    btn.textContent = '✅ 已退款';
-                    btn.className = 'refund-btn refunded';
-                    btn.disabled = true;
-                    document.getElementById('refundStatusRow').style.display = 'flex';
-                    document.getElementById('odRefundStatus').textContent = '✅ 已退款';
-                    document.getElementById('odRefundStatus').className = 'value success';
-                    document.getElementById('refundReasonRow').style.display = 'flex';
-                    document.getElementById('odRefundReason').textContent = data.reason;
-                    document.getElementById('refundAmountRow').style.display = 'flex';
-                    document.getElementById('odRefundAmount').textContent = (data.refund_points || 0).toFixed(2) + ' 积分';
-                    document.getElementById('previewAmount').textContent = (data.refund_points || 0).toFixed(2) + ' 积分';
-                    document.getElementById('previewReason').textContent = data.reason;
-                    if (data.is_pl_payment && data.rate_used) {
-                        document.getElementById('previewRateRow').style.display = 'flex';
-                        document.getElementById('previewRateInfo').textContent = '💎 ' + data.refund_amount.toFixed(4) + ' PL × 汇率 ' + data.rate_used.toFixed(4) + ' = ' + (data.refund_points || 0).toFixed(2) + ' 积分';
-                    }
-                    document.getElementById('refundBtn').style.display = 'none';
-                    hideRiskProgress();
-                    if (data.risk_score !== undefined) {
-                        riskScore = data.risk_score;
-                        riskDetails = data.risk_details || [];
-                        showRiskResult(riskScore, riskDetails);
-                    }
-                }
-            } catch (error) {
-                showToast('❌ 退款失败: ' + error.message, 'error');
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-undo-alt"></i> 确认退款';
-                btn.className = 'refund-btn';
-                hideRiskProgress();
-            } finally { isProcessing = false; }
-        }
+        function startRefundPolling(orderId, ticketId, cooldownSeconds) {
+            if (refundPollTimer) clearInterval(refundPollTimer);
+            var startTime = Date.now();
+            refundPollTimer = setInterval(async function() {
+                try {
+                    var st = await apiRequest('/api/order/' + orderId + '/refund-status?ticket=' + ticketId);
+                    var elapsed = Math.floor((Date.now() - startTime) / 1000);
+                    var riskDone = elapsed >= cooldownSeconds;
+                    updateChecklist(st.email_verified, riskDone, st.refunded);
 
-        async function processOrderRefund() {
-            if (isProcessing || isRefunded) return;
-            if (riskCheckInProgress) {
-                showToast('⏳ 风控审查进行中，请等待完成', 'info');
-                return;
-            }
-            var btn = document.getElementById('refundBtn');
-            if (btn.disabled) return;
-            if (!currentOrder || !currentOrderId) { showToast('请先查询订单', 'warning'); return; }
-            if (currentOrder.status !== 'paid') { showToast('该订单状态不支持退款', 'warning'); return; }
-            if (currentOrder.refunded) { showToast('该订单已退款', 'warning'); return; }
-            var previewAmount = document.getElementById('previewAmount').textContent;
-            var previewReason = document.getElementById('previewReason').textContent;
-            var refundPoints = parseFloat(previewAmount) || 0;
-            if (refundPoints >= 100 && !riskCheckCompleted) {
-                showRiskProgress();
-                return;
-            }
-            var confirmMessage = '';
-            if (refundPoints >= 100 && riskCheckCompleted) {
-                confirmMessage = '✅ 风控审查已完成 (评分: ' + riskScore + ')\n\n';
-            }
-            confirmMessage += '预计退款: ' + previewAmount + '\n';
-            confirmMessage += '退款原因: ' + previewReason + '\n\n';
-            confirmMessage += '退款将存入理财账户，确认继续？';
-            if (!confirm(confirmMessage)) return;
-            isProcessing = true;
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner"></span> 退款处理中...';
-            try {
-                var data = await apiRequest('/api/order/' + currentOrderId + '/refund-self', { method: 'POST', body: JSON.stringify({}) });
-                if (data.success) {
-                    showToast('✅ 退款成功！' + data.message, 'success');
-                    isRefunded = true;
-                    btn.textContent = '✅ 已退款';
-                    btn.className = 'refund-btn refunded';
-                    btn.disabled = true;
-                    currentOrder.refunded = true;
-                    currentOrder.refund_amount = data.refund_amount;
-                    currentOrder.refund_points = data.refund_points;
-                    currentOrder.refund_reason = data.reason;
-                    currentOrder.status = 'refunded';
-                    displayOrderDetail(currentOrder);
-                    document.getElementById('previewAmount').textContent = (data.refund_points || 0).toFixed(2) + ' 积分';
-                    document.getElementById('previewReason').textContent = data.reason;
-                    if (data.is_pl_payment && data.rate_used) {
-                        document.getElementById('previewRateRow').style.display = 'flex';
-                        document.getElementById('previewRateInfo').textContent = '💎 ' + data.refund_amount.toFixed(4) + ' PL × 汇率 ' + data.rate_used.toFixed(4) + ' = ' + (data.refund_points || 0).toFixed(2) + ' 积分';
-                    }
-                    document.getElementById('refundStatusRow').style.display = 'flex';
-                    document.getElementById('odRefundStatus').textContent = '✅ 已退款';
-                    document.getElementById('odRefundStatus').className = 'value success';
-                    document.getElementById('refundReasonRow').style.display = 'flex';
-                    document.getElementById('odRefundReason').textContent = data.reason;
-                    document.getElementById('refundAmountRow').style.display = 'flex';
-                    if (data.is_pl_payment) {
-                        document.getElementById('odRefundAmount').textContent = (data.refund_points || 0).toFixed(2) + ' 积分 (原 ' + (data.refund_amount || 0).toFixed(4) + ' PL)';
+                    if (st.refunded) {
+                        clearInterval(refundPollTimer);
+                        refundPollTimer = null;
+                        hideRiskProgress();
+                        document.getElementById('emailVerifyBox').className = 'email-verify-box';
+                        isRefunded = true;
+                        var result = st.refund_result || {};
+                        showToast('退款成功！' + (result.refund_points || 0).toFixed(2) + ' 积分已存入理财账户', 'success');
+                        var btn = document.getElementById('refundBtn');
+                        btn.textContent = '已退款';
+                        btn.className = 'refund-btn refunded';
+                        btn.disabled = true;
+                        btn.style.display = 'block';
+                        document.getElementById('refundStatusRow').style.display = 'flex';
+                        document.getElementById('odRefundStatus').textContent = '已退款';
+                        document.getElementById('odRefundStatus').className = 'value success';
+                        if (result.reason) {
+                            document.getElementById('refundReasonRow').style.display = 'flex';
+                            document.getElementById('odRefundReason').textContent = result.reason;
+                        }
+                        document.getElementById('refundAmountRow').style.display = 'flex';
+                        document.getElementById('odRefundAmount').textContent = (result.refund_points || 0).toFixed(2) + ' 积分';
+                        if (currentOrder) {
+                            currentOrder.refunded = true;
+                            currentOrder.status = 'refunded';
+                            currentOrder.refund_amount = result.refund_amount;
+                            currentOrder.refund_points = result.refund_points;
+                            currentOrder.refund_reason = result.reason;
+                        }
+                    } else if (st.error) {
+                        clearInterval(refundPollTimer);
+                        refundPollTimer = null;
+                        hideRiskProgress();
+                        document.getElementById('emailVerifyBox').className = 'email-verify-box';
+                        showToast('退款失败: ' + st.error, 'error');
+                        var btn2 = document.getElementById('refundBtn');
+                        btn2.disabled = false;
+                        btn2.innerHTML = '<i class="fas fa-undo-alt"></i> 重试退款';
+                        btn2.className = 'refund-btn';
                     } else {
-                        document.getElementById('odRefundAmount').textContent = (data.refund_points || 0).toFixed(2) + ' 积分';
+                        if (st.email_verified && !riskDone) {
+                            updateRiskProgress(Math.min(100, Math.floor(elapsed / cooldownSeconds * 100)), '邮箱已验证，风控审查中...', 'info');
+                        } else if (!st.email_verified && riskDone) {
+                            updateRiskProgress(100, '风控审查完成，等待邮箱验证...', 'warning');
+                        }
                     }
-                    hideRiskProgress();
-                    if (data.risk_score !== undefined) {
-                        riskScore = data.risk_score;
-                        riskDetails = data.risk_details || [];
-                        showRiskResult(riskScore, riskDetails);
-                    }
+                } catch (e) {
+                    console.error('Poll error:', e);
                 }
+            }, 10000);
+        }
+
+        async function startRefund() {
+            if (isProcessing || isRefunded) return;
+            var btn = document.getElementById('refundBtn');
+            if (btn.disabled) return;
+
+            var orderId;
+            var isGateway = isGatewayMode && gatewayCardData;
+            if (isGateway) {
+                if (!gatewayCardData.can_refund) { showToast('该卡密不可退款', 'warning'); return; }
+                orderId = gatewayCardData.order_id;
+                if (!orderId) { showToast('系统错误，无法获取退款标识', 'error'); return; }
+            } else {
+                if (!currentOrder || !currentOrderId) { showToast('请先查询订单', 'warning'); return; }
+                orderId = currentOrderId;
+            }
+
+            isProcessing = true;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> 发起中...';
+
+            try {
+                var initData = await apiRequest('/api/order/' + orderId + '/refund-init', {
+                    method: 'POST',
+                    body: JSON.stringify({})
+                });
+
+                if (initData.auto_refunded) {
+                    hideRiskProgress();
+                    isRefunded = true;
+                    showToast('退款成功！' + (initData.refund_points || 0).toFixed(2) + ' 积分已存入理财账户', 'success');
+                    btn.textContent = '已退款';
+                    btn.className = 'refund-btn refunded';
+                    btn.disabled = true;
+                    document.getElementById('refundStatusRow').style.display = 'flex';
+                    document.getElementById('odRefundStatus').textContent = '已退款';
+                    document.getElementById('odRefundStatus').className = 'value success';
+                    if (initData.reason) {
+                        document.getElementById('refundReasonRow').style.display = 'flex';
+                        document.getElementById('odRefundReason').textContent = initData.reason;
+                    }
+                    document.getElementById('refundAmountRow').style.display = 'flex';
+                    document.getElementById('odRefundAmount').textContent = (initData.refund_points || 0).toFixed(2) + ' 积分';
+                    if (currentOrder) {
+                        currentOrder.refunded = true;
+                        currentOrder.status = 'refunded';
+                        currentOrder.refund_amount = initData.refund_amount;
+                        currentOrder.refund_points = initData.refund_points;
+                        currentOrder.refund_reason = initData.reason;
+                    }
+                    return;
+                }
+
+                if (initData.need_email_verify) {
+                    showToast('验证邮件已发送，请前往邮箱完成验证', 'info');
+                    document.getElementById('emailVerifyBox').className = 'email-verify-box show';
+                    updateChecklist(false, false, false);
+                    showRiskProgress();
+                    startRefundPolling(orderId, initData.ticket_id, initData.cooldown_seconds || 30);
+                    btn.innerHTML = '<span class="spinner"></span> 等待邮箱验证与风控...';
+                    btn.className = 'refund-btn waiting';
+                    btn.disabled = true;
+                    return;
+                }
+
+                showToast('未知响应', 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-undo-alt"></i> 确认退款';
             } catch (error) {
-                showToast('❌ 退款失败: ' + error.message, 'error');
+                showToast('发起退款失败: ' + error.message, 'error');
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-undo-alt"></i> 确认退款';
                 btn.className = 'refund-btn';
-                hideRiskProgress();
-            } finally { isProcessing = false; }
+            } finally {
+                isProcessing = false;
+            }
         }
 
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('searchBtn').addEventListener('click', searchOrder);
             document.getElementById('searchInput').addEventListener('keypress', function(e) { if (e.key === 'Enter') searchOrder(); });
-            document.getElementById('refundBtn').addEventListener('click', function() {
-                if (isGatewayMode && gatewayCardData) { processGatewayRefund(); } else { processOrderRefund(); }
-            });
-            document.querySelectorAll('.example-btn').forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    var type = this.getAttribute('data-type');
-                    if (type === 'order') { document.getElementById('searchInput').value = 'MUP_1785906769629_H59JUL'; } else if (type === 'fake') { document.getElementById('searchInput').value = '123456'; } else if (type === 'gateway') { document.getElementById('searchInput').value = 'ABCD-EFGH-IJKL-MNOP'; }
-                    searchOrder();
-                });
-            });
+            document.getElementById('refundBtn').addEventListener('click', startRefund);
             init();
         });
 
@@ -1703,8 +929,6 @@
                 }
             }
         }
-
-        init();
     </script>
 </body>
 </html>
