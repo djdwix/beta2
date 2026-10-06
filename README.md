@@ -78,7 +78,7 @@ openssl req -x509 -newkey rsa:4096 -nodes -out ssl/cert.pem -keyout ssl/key.pem 
 
 python server.py
 
-服务器将在 https://0.0.0.0:POST 启动。
+服务器将在 https://{SERVER_IP}:POST 启动。
 
 
 ### 6.快速认证说明
@@ -105,7 +105,7 @@ python server.py
 
 ├── requirements.txt       # Python 依赖
 
-├── .env                   # 环境配置（不提交，需自行创建）
+├── .env                   # 环境配置（不提交，发行版2.1.6及以上的zip包里有模板）
 
 ├── data/                  # 数据存储（自动生成，不提交）
 
