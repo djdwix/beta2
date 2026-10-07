@@ -197,8 +197,6 @@
             <div class="rule-item"><i class="fas fa-check-circle" style="color:#34d399;"></i> 卡密部分已使用 → 未使用部分 <b>100%</b> + 已使用部分 <b>20%</b></div>
             <div class="rule-item"><i class="fas fa-check-circle" style="color:#34d399;"></i> 通行卡密：小时卡100% / 天卡和周卡按剩余时间 / 永久卡60%</div>
             <div class="rule-item"><i class="fas fa-exclamation-triangle" style="color:#f87171;"></i> 转账订单、代付订单、已过期通行卡密 <b>不可退款</b></div>
-            <div class="rule-item"><i class="fas fa-exclamation-triangle" style="color:#f87171;"></i> 风控评分≥55分时将 <b>无法退款</b></div>
-            <div class="rule-item"><i class="fas fa-exclamation-triangle" style="color:#f87171;"></i> 退款验证中时，请勿切换或退出该页面</div>
             <div class="rule-item"><i class="fas fa-exclamation-triangle" style="color:#f87171;"></i> 已退款的订单 <b>不可再次退款</b></div>
             <div class="rule-item"><i class="fas fa-info-circle" style="color:#38bdf8;"></i> PL支付订单按 <b>当前汇率</b> 换算成积分退款</div>
             <div class="rule-item"><i class="fas fa-envelope" style="color:#38bdf8;"></i> 退款金额超过 <b>100积分</b> 需 <b>邮箱验证</b> + <b>30秒风控审查</b></div>
@@ -325,8 +323,7 @@
 
         <div class="refund-disclaimer">
             <i class="fas fa-shield-alt"></i> 退款后对应卡密将被移除，已使用的卡密不会回收但会扣除相应退款<br>
-            <i class="fas fa-clock"></i> 退款通常即时到账，请前往理财账户查看<br>
-            <i class="fas fa-exclamation-triangle"></i> 大额退款邮箱验证时,请确保现在的浏览器不是默认浏览器,否则可能出现退款中断/错误等问题
+            <i class="fas fa-clock"></i> 退款通常即时到账，请前往理财账户查看
         </div>
     </div>
 
@@ -923,7 +920,7 @@
             var startTime = Date.now();
             refundPollTimer = setInterval(async function() {
                 try {
-                    var st = await apiRequest('/api/order/' + orderId + '/refund-status?ticket=' + ticketId);
+                    var st = await apiRequest('/api/order/' + encodeURIComponent(orderId) + '/refund-status?ticket=' + ticketId);
                     var elapsed = Math.floor((Date.now() - startTime) / 1000);
                     var riskDone = elapsed >= cooldownSeconds;
                     updateChecklist(st.email_verified, riskDone, st.refunded);
@@ -990,11 +987,17 @@
             if (btn.disabled) return;
 
             var orderId;
+            var requestBody = {};
             var isGateway = isGatewayMode && gatewayCardData;
+
             if (isGateway) {
                 if (!gatewayCardData.can_refund) { showToast('该卡密不可退款', 'warning'); return; }
-                orderId = gatewayCardData.order_id;
-                if (!orderId) { showToast('系统错误，无法获取退款标识', 'error'); return; }
+                orderId = gatewayCardData.card_key;
+                if (!orderId) { showToast('系统错误，无法获取卡密', 'error'); return; }
+                requestBody = {
+                    is_gateway_refund: true,
+                    card_key: gatewayCardData.card_key
+                };
             } else {
                 if (!currentOrder || !currentOrderId) { showToast('请先查询订单', 'warning'); return; }
                 orderId = currentOrderId;
@@ -1005,9 +1008,9 @@
             btn.innerHTML = '<span class="spinner"></span> 发起中...';
 
             try {
-                var initData = await apiRequest('/api/order/' + orderId + '/refund-init', {
+                var initData = await apiRequest('/api/order/' + encodeURIComponent(orderId) + '/refund-init', {
                     method: 'POST',
-                    body: JSON.stringify({})
+                    body: JSON.stringify(requestBody)
                 });
 
                 if (initData.auto_refunded) {

@@ -3414,8 +3414,6 @@ class GameManager:
         if gcoins_earned > 0:
             add_gcoins(self.users, username, gcoins_earned, f'game_win_{game_id}')
         self.save_users()
-        if points_earned > 0 and won:
-            self.add_points(username, points_earned)
         if check_achievements:
             self._check_and_unlock_achievements(username)
         return stats
