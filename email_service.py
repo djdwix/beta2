@@ -6,7 +6,7 @@ import string
 import logging
 import json
 import time
-from threading import Lock
+from threading import Lock, Thread
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
@@ -15,6 +15,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from email.utils import formataddr
 import base64
+from concurrent.futures import ThreadPoolExecutor
 
 load_dotenv()
 
@@ -64,6 +65,8 @@ kdf = PBKDF2HMAC(
 )
 fernet_key = base64.urlsafe_b64encode(kdf.derive(key_material))
 cipher = Fernet(fernet_key)
+
+_email_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix='email_sender')
 
 def encrypt_data(data):
     json_str = json.dumps(data, ensure_ascii=False, default=str)
@@ -182,7 +185,7 @@ initialize_storage()
 def generate_verification_code(length=6):
     return ''.join(random.choices(string.digits, k=length))
 
-def send_email(to_email, subject, body, html_body=None):
+def _send_email_sync(to_email, subject, body, html_body=None):
     if not SMTP_EMAIL or not SMTP_PASSWORD:
         logger.error("SMTP配置不完整，请检查 FEEDBACK_EMAIL 和 FEEDBACK_EMAIL_PASSWORD")
         return False, "邮件服务配置不完整"
@@ -224,6 +227,42 @@ def send_email(to_email, subject, body, html_body=None):
     except Exception as e:
         logger.error(f"发送邮件异常: {e}")
         return False, f"邮件发送异常: {str(e)}"
+
+def send_email(to_email, subject, body, html_body=None):
+    return _send_email_sync(to_email, subject, body, html_body)
+
+def send_email_async(to_email, subject, body, html_body=None):
+    def _task():
+        try:
+            _send_email_sync(to_email, subject, body, html_body)
+        except Exception as e:
+            logger.error(f"异步邮件发送异常: {to_email} - {e}")
+    try:
+        _email_executor.submit(_task)
+        return True, "邮件已加入异步发送队列"
+    except Exception as e:
+        logger.error(f"提交异步邮件任务失败: {e}")
+        return False, f"提交异步邮件任务失败: {str(e)}"
+
+def send_email_async_with_callback(to_email, subject, body, html_body=None, callback=None):
+    def _task():
+        result = (False, "未知错误")
+        try:
+            result = _send_email_sync(to_email, subject, body, html_body)
+        except Exception as e:
+            logger.error(f"异步邮件发送异常: {to_email} - {e}")
+            result = (False, str(e))
+        if callback:
+            try:
+                callback(to_email, subject, result)
+            except Exception as cb_err:
+                logger.error(f"异步邮件回调异常: {cb_err}")
+    try:
+        _email_executor.submit(_task)
+        return True, "邮件已加入异步发送队列"
+    except Exception as e:
+        logger.error(f"提交异步邮件任务失败: {e}")
+        return False, f"提交异步邮件任务失败: {str(e)}"
 
 def build_verification_email_html(username, code, expire_minutes, purpose="验证"):
     purpose_map = {
@@ -533,7 +572,7 @@ def send_verification_code(email, username=None, purpose="验证"):
 
     html_body = build_verification_email_html(username, code, expire_minutes, purpose)
 
-    success, message = send_email(email, subject, body, html_body)
+    success, message = _send_email_sync(email, subject, body, html_body)
 
     if success:
         codes = load_verification_codes()
@@ -843,7 +882,7 @@ def send_feedback_email(username, user_email, feedback_type, feedback_id, conten
 </body>
 </html>"""
 
-    return send_email(SMTP_EMAIL, subject, body, html_body)
+    return _send_email_sync(SMTP_EMAIL, subject, body, html_body)
 
 def send_restriction_notification_email(username, user_email, restriction_types, expires_at_ms, reason):
     if not SMTP_EMAIL or not SMTP_PASSWORD:
@@ -956,7 +995,7 @@ body {{ font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','M
 </body>
 </html>"""
 
-    return send_email(user_email, subject, body, html_body)
+    return _send_email_sync(user_email, subject, body, html_body)
 
 SERVER_BASE_URL = 'https://localhost:3000'
 
@@ -1042,7 +1081,89 @@ def send_refund_verification_email(username, to_email, order, refund_points, tok
 </body>
 </html>
 """
-    return send_email(to_email, subject, text_body, html_body=html_body)
+    return _send_email_sync(to_email, subject, text_body, html_body=html_body)
+
+def send_auction_win_email_async(username, to_email, card_name, card_emoji, rarity, game_id, final_price, settled_time_str):
+    if not SMTP_EMAIL or not SMTP_PASSWORD:
+        logger.error("SMTP配置不完整，无法发送拍卖成交通知邮件")
+        return False
+
+    subject = f'【拍卖成交通知】恭喜您拍得 {card_emoji} {card_name}'
+
+    body = f"""尊敬的 {username}：
+
+恭喜您成功拍得传说卡！
+
+拍品：{card_emoji} {card_name}
+稀有度：传说
+成交价：{final_price} G币
+成交时间：{settled_time_str}
+
+卡牌已自动存入您的卡牌库，请前往游戏中心【卡牌收集】页面查看。
+
+感谢您的参与！
+"""
+
+    html_body = f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+</head>
+<body style="margin:0;padding:0;background:#f4f6f8;font-family:'Segoe UI','PingFang SC',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <div style="max-width:560px;margin:0 auto;padding:32px 20px;">
+    <div style="background:#ffffff;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.06);overflow:hidden;">
+      <div style="background:linear-gradient(135deg,#fbbf24,#d97706);padding:28px 30px;text-align:center;">
+        <div style="font-size:40px;line-height:1;margin-bottom:8px;">🏆</div>
+        <div style="color:#1a1a2e;font-size:20px;font-weight:800;letter-spacing:0.5px;">拍卖成交</div>
+        <div style="color:#78350f;font-size:13px;margin-top:6px;">恭喜您成功拍得传说卡</div>
+      </div>
+      <div style="padding:30px;">
+        <p style="font-size:15px;color:#111827;margin:0 0 16px;font-weight:600;">尊敬的 {username}：</p>
+        <p style="font-size:14px;color:#4b5563;line-height:1.8;margin:0 0 22px;">
+          恭喜您成功拍得传说卡！卡牌已自动存入您的卡牌库。
+        </p>
+
+        <div style="background:#fffbeb;border-radius:12px;padding:18px 20px;margin-bottom:26px;border:1px solid #fde68a;">
+          <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;color:#4b5563;">
+            <span style="color:#92400e;">拍品</span>
+            <span style="color:#111827;font-weight:700;">{card_emoji} {card_name}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;color:#4b5563;border-top:1px solid #fef3c7;">
+            <span style="color:#92400e;">稀有度</span>
+            <span style="color:#d97706;font-weight:700;">传说</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;color:#4b5563;border-top:1px solid #fef3c7;">
+            <span style="color:#92400e;">成交价</span>
+            <span style="color:#d97706;font-weight:800;font-size:15px;">🪙 {final_price} G币</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;color:#4b5563;border-top:1px solid #fef3c7;">
+            <span style="color:#92400e;">成交时间</span>
+            <span style="color:#111827;font-weight:700;">{settled_time_str}</span>
+          </div>
+        </div>
+
+        <div style="text-align:center;margin:30px 0;">
+          <a href="{SERVER_BASE_URL}/GAME/"
+             style="display:inline-block;background:linear-gradient(135deg,#fbbf24,#d97706);color:#1a1a2e;text-decoration:none;font-size:16px;font-weight:800;padding:16px 48px;border-radius:40px;box-shadow:0 10px 24px rgba(251,191,36,0.35);letter-spacing:0.5px;">
+            🎮 前往游戏中心
+          </a>
+        </div>
+
+        <div style="background:#fffbeb;border-left:4px solid #fbbf24;border-radius:8px;padding:12px 16px;font-size:12px;color:#92400e;line-height:1.7;">
+          ⚠️ 卡牌已自动存入您的卡牌库，请前往游戏中心【卡牌收集】页面查看。
+        </div>
+      </div>
+      <div style="padding:20px 30px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;">
+        <p style="font-size:11px;color:#9ca3af;line-height:1.7;margin:0;">
+          此邮件由系统自动发送，请勿直接回复。
+        </p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+"""
+    return send_email_async(to_email, subject, body, html_body)
 
 def cleanup_verification_codes_loop():
     while True:

@@ -152,15 +152,6 @@ body::before {
     transform: translateY(-1px);
 }
 
-.discord-link {
-    transition: all 0.3s;
-}
-
-.discord-link:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(88, 101, 242, 0.35);
-}
-
 .logout-btn {
     padding: 9px 22px;
     background: rgba(255,255,255,0.22);

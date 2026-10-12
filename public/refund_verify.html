@@ -113,7 +113,7 @@
             <div class="order-summary" id="orderSummary">
                 <div class="summary-title"><i class="fas fa-receipt"></i> 退款信息</div>
                 <div class="summary-row"><span class="label">退款账号</span><span class="value username" id="sumUsername">-</span></div>
-                <div class="summary-row"><span class="label">订单号</span><span class="value" id="sumOrderId">-</span></div>
+                <div class="summary-row"><span class="label" id="sumOrderLabel">订单号</span><span class="value" id="sumOrderId">-</span></div>
                 <div class="summary-row"><span class="label">商品</span><span class="value" id="sumProduct">-</span></div>
                 <div class="summary-row"><span class="label">退款原因</span><span class="value" id="sumReason">-</span></div>
                 <div class="summary-row"><span class="label">退款金额</span><span class="value amount" id="sumAmount">0.00 积分</span></div>
@@ -219,6 +219,11 @@
                     return;
                 }
                 document.getElementById('sumUsername').textContent = data.username || '-';
+                if (data.is_gateway_refund) {
+                    document.getElementById('sumOrderLabel').textContent = '卡密';
+                } else {
+                    document.getElementById('sumOrderLabel').textContent = '订单号';
+                }
                 document.getElementById('sumOrderId').textContent = data.order_id || '-';
                 document.getElementById('sumProduct').textContent = data.product_name || '-';
                 document.getElementById('sumReason').textContent = data.reason || '-';

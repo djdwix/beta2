@@ -1532,11 +1532,13 @@ def auto_settle_auctions():
     while True:
         time.sleep(300)
         try:
-            all_auctions = game.get_auctions(users)
-            now_ms = int(time.time() * 1000)
-            for auction in all_auctions:
-                if auction.get('end_at', 0) <= now_ms:
-                    game.settle_auction(users, save_users, auction['id'], email_notifier=email_service.send_email)
+            count = game.auto_settle_server_auctions(
+                users, save_users, analytics_cache, save_analytics_cache,
+                mail_attachments, save_mail_attachments,
+                email_service.send_auction_win_email_async
+            )
+            if count > 0:
+                log.info(f"自动结算了 {count} 场服务器拍卖")
         except Exception as e:
             log.error(f"Auto settle auctions error: {e}")
 
@@ -1565,12 +1567,12 @@ def auto_auction_loop():
     except Exception as e:
         log.error(f"Initial auto auction error: {e}")
     while True:
-        time.sleep(600)
+        time.sleep(120)
         try:
             game.auto_settle_server_auctions(
                 users, save_users, analytics_cache, save_analytics_cache,
                 mail_attachments, save_mail_attachments,
-                email_service.send_email
+                email_service.send_auction_win_email_async
             )
             if not game.has_active_auction(analytics_cache):
                 game.server_generate_random_auction(analytics_cache, save_analytics_cache)
@@ -12969,7 +12971,8 @@ def refund_verify_info():
         'already_verified': ticket['email_verified'],
         'expires_in': max(0, REFUND_TICKET_TTL - (int(time.time()) - ts)),
         'risk_score': ticket.get('risk_score', 0),
-        'risk_details': ticket.get('risk_details', [])
+        'risk_details': ticket.get('risk_details', []),
+        'is_gateway_refund': ticket.get('is_gateway_refund', False)
     })
 
 
@@ -15060,7 +15063,7 @@ def admin_settle_all_auctions():
     count = game.auto_settle_server_auctions(
         users, save_users, analytics_cache, save_analytics_cache,
         mail_attachments, save_mail_attachments,
-        email_service.send_email
+        email_service.send_auction_win_email_async
     )
     return jsonify({'success': True, 'message': f'已结算 {count} 场拍卖'})
 
@@ -15075,7 +15078,6 @@ def admin_membership_expiring_list():
 
 @app.route('/api/auction/list', methods=['GET'])
 def get_auction_list_api():
-    # 支持两种鉴权：普通用户 session 或 admin token
     admin_token = request.headers.get('X-Admin-Token', '')
     is_admin = admin_token and admin_token in admin_sessions and admin_sessions[admin_token] > time.time()
     
@@ -15087,7 +15089,7 @@ def get_auction_list_api():
     per_page = request.args.get('per_page', 20, type=int)
     sort_by = request.args.get('sort', 'ending').strip()
 
-    all_auctions = game.get_all_auctions_combined(users, analytics_cache)
+    all_auctions = game.get_all_auctions(analytics_cache)
 
     if sort_by == 'price':
         all_auctions.sort(key=lambda x: x.get('current_bid', 0))

@@ -887,12 +887,12 @@
         try{
             var d=await apiRequest('/api/auction/list?page=1&per_page=100');
             var c=document.getElementById('auctionListContainer');
-            var auctions=(d.auctions||[]).filter(function(a){return a.is_server_generated});
+            var now=Date.now();
+            var auctions=(d.auctions||[]).filter(function(a){return a.is_server_generated && a.end_at > now});
             if(auctions.length===0){
                 c.innerHTML='<div class="empty-state"><i class="fas fa-gavel"></i>当前无进行中的服务器拍卖</div>';
                 return;
             }
-            var now=Date.now();
             var html='';
             auctions.forEach(function(a){
                 var remain=Math.max(0,a.end_at-now);
@@ -943,6 +943,7 @@
                 showMessage(d.message,'success');
                 loadAuctions();
                 loadStats();
+                loadAuctionHistory();
             }catch(e){
                 showMessage(e.message,'error');
             }
@@ -979,6 +980,7 @@
             document.getElementById('auctionAdminResult').innerHTML='<div style="background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.15);border-radius:12px;padding:12px 16px;color:#a7f3d0;"><i class="fas fa-check-circle" style="color:#34d399;"></i> '+escapeHtml(d.message)+'</div>';
             loadAuctions();
             loadStats();
+            loadAuctionHistory();
         }catch(e){
             showMessage(e.message,'error');
         }finally{
@@ -991,7 +993,8 @@
         try{
             var d=await apiRequest('/api/auction/list?page=1&per_page=100');
             var c=document.getElementById('auctionHistoryContainer');
-            var auctions=(d.auctions||[]).filter(function(a){return a.is_server_generated});
+            var now=Date.now();
+            var auctions=(d.auctions||[]).filter(function(a){return a.is_server_generated && a.end_at <= now});
             if(auctions.length===0){
                 c.innerHTML='<div class="empty-state"><i class="fas fa-history"></i>暂无历史记录</div>';
                 return;
