@@ -85,6 +85,27 @@
         .message.bot .content .cdk-card .cdk-item .cdk-name{font-weight:600;color:#333}
         .message.bot .content .cdk-card .cdk-item .cdk-reward{font-size:12px;color:#666;margin:2px 0}
         .message.bot .content .cdk-card .cdk-item .cdk-req{font-size:11px;color:#999;margin:2px 0}
+        .message.bot .content .log-card{background:linear-gradient(135deg,#667eea15,#764ba215);border-radius:16px;padding:16px 20px;margin-top:6px;border:1px solid rgba(102,126,234,0.2)}
+        .message.bot .content .log-card .log-header{font-size:16px;font-weight:700;color:#333;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+        .message.bot .content .log-card .log-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+        .message.bot .content .log-card .log-stats .stat-item{background:#fff;border-radius:10px;padding:10px 12px;text-align:center;border:1px solid #e8e8e8}
+        .message.bot .content .log-card .log-stats .stat-item .stat-label{font-size:11px;color:#999;margin-bottom:4px}
+        .message.bot .content .log-card .log-stats .stat-item .stat-value{font-size:16px;font-weight:700;color:#667eea}
+        .message.bot .content .log-card .log-ip{background:#f8f9fa;padding:8px 14px;border-radius:8px;font-family:monospace;font-size:13px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+        .message.bot .content .log-card .log-ip .ip-label{color:#999;font-size:12px}
+        .message.bot .content .log-card .log-ip .ip-value{color:#333;font-weight:600}
+        .message.bot .content .log-card .log-btn{display:block;width:100%;padding:12px 20px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s;text-align:center}
+        .message.bot .content .log-card .log-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 16px rgba(102,126,234,0.35)}
+        .message.bot .content .log-card .log-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+        .message.bot .content .log-card .log-btn.download{background:linear-gradient(135deg,#27ae60,#2ecc71)}
+        .message.bot .content .log-card .log-btn.download:hover:not(:disabled){box-shadow:0 6px 16px rgba(39,174,96,0.35)}
+        .message.bot .content .log-card .log-cooldown{text-align:center;color:#e74c3c;font-size:13px;margin-top:8px}
+        .message.bot .content .log-card .log-tip{font-size:11px;color:#999;margin-top:10px;text-align:center;line-height:1.6}
+        .message.bot .content .log-card .log-levels{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+        .message.bot .content .log-card .log-levels .level-tag{font-size:11px;padding:3px 10px;border-radius:12px;font-weight:600}
+        .message.bot .content .log-card .log-levels .level-tag.INFO{background:#e8f0fe;color:#667eea}
+        .message.bot .content .log-card .log-levels .level-tag.WARNING{background:#fff8f0;color:#f39c12}
+        .message.bot .content .log-card .log-levels .level-tag.ERROR{background:#fef2f2;color:#e74c3c}
         .message.bot .content .music-card{background:linear-gradient(135deg,#667eea15,#764ba215);border-radius:16px;padding:16px 20px;margin-top:6px;border:1px solid rgba(102,126,234,0.2)}
         .message.bot .content .music-card .music-header{font-size:15px;font-weight:700;color:#333;margin-bottom:12px;display:flex;align-items:center;gap:8px}
         .message.bot .content .music-card .music-hint{font-size:12px;color:#999;margin-top:8px}
@@ -152,7 +173,7 @@
         .aplayer .aplayer-lrc-contents p{transition:all 0.3s ease}
         .aplayer .aplayer-lrc-contents p.aplayer-lrc-current{font-size:16px;color:#667eea;font-weight:700;opacity:1}
         .aplayer .aplayer-lrc-contents p:not(.aplayer-lrc-current){opacity:0.5}
-        @media(max-width:600px){.container{height:100vh;border-radius:0;max-width:100%}.header{padding:16px 20px}.chat-area{padding:16px}.input-area{padding:12px 16px}.quick-questions{padding:8px 16px 12px}.message{max-width:92%}.message.bot .content .weather-card .weather-details{grid-template-columns:1fr 1fr}.message.bot .content .time-card .time-details{grid-template-columns:1fr 1fr}.message.bot .content .time-card .time-main{flex-direction:column;text-align:center;gap:8px}.message.bot .content .playlist-list{grid-template-columns:1fr 1fr}}
+        @media(max-width:600px){.container{height:100vh;border-radius:0;max-width:100%}.header{padding:16px 20px}.chat-area{padding:16px}.input-area{padding:12px 16px}.quick-questions{padding:8px 16px 12px}.message{max-width:92%}.message.bot .content .weather-card .weather-details{grid-template-columns:1fr 1fr}.message.bot .content .time-card .time-details{grid-template-columns:1fr 1fr}.message.bot .content .time-card .time-main{flex-direction:column;text-align:center;gap:8px}.message.bot .content .playlist-list{grid-template-columns:1fr 1fr}.message.bot .content .log-card .log-stats{grid-template-columns:1fr 1fr}}
     </style>
 </head>
 <body>
@@ -170,6 +191,7 @@
                 <span class="highlight">试试输入：今日签到、积分余额、搜索天气、美国时间</span>
                 <br><span class="highlight">输入「我的反馈」查看反馈进度和回复</span>
                 <br><span class="highlight">输入「点歌 歌名」即可听歌，输入「推荐歌单」发现好音乐</span>
+                <br><span class="highlight">输入「下载日志」获取当前IP的服务器日志</span>
                 <div class="examples">
                     <span class="ex" onclick="sendQuick('今日签到')">📅 今日签到</span>
                     <span class="ex" onclick="sendQuick('积分余额')">⭐ 积分余额</span>
@@ -184,6 +206,7 @@
                     <span class="ex" onclick="sendQuick('新闻')">📰 今日新闻</span>
                     <span class="ex" onclick="sendQuick('北京天气')">🌤️ 搜索天气</span>
                     <span class="ex" onclick="sendQuick('当前时间')">🕐 中国时间</span>
+                    <span class="ex" onclick="sendQuick('下载日志')">📄 下载日志</span>
                 </div>
             </div>
         </div>
@@ -201,6 +224,7 @@
             <span class="quick-btn" onclick="sendQuick('新闻')">📰 今日新闻</span>
             <span class="quick-btn" onclick="sendQuick('北京天气')">🌤️ 天气</span>
             <span class="quick-btn" onclick="sendQuick('当前时间')">🕐 时间</span>
+            <span class="quick-btn" onclick="sendQuick('下载日志')">📄 下载日志</span>
             <span class="quick-btn" onclick="sendQuick('怎么购买卡密')">🛒 商城</span>
         </div>
         <div class="input-area">
@@ -217,6 +241,8 @@
         var MUSIC_API_TIMEOUT = 8000;
         var currentAPlayer = null;
         var currentPlaylistCache = {};
+        var logTicketCache = null;
+        var logCooldownInterval = null;
 
         function destroyAPlayer() {
             if (currentAPlayer) {
@@ -346,6 +372,115 @@
             formatted = formatted.replace(/<br>(\d+\.)/g, '<br>$1');
             formatted = formatted.replace(/<br>- /g, '<br>&nbsp;&nbsp;- ');
             return formatted;
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            var div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatTime(ts) {
+            if (!ts) return '--';
+            try {
+                var d = new Date(ts);
+                return d.toLocaleString('zh-CN');
+            } catch (e) {
+                return '--';
+            }
+        }
+
+        function buildLogCard(data) {
+            if (!data || !data.success) {
+                return '<div class="log-card"><div style="color:#e74c3c;">日志信息加载失败</div></div>';
+            }
+            var html = '<div class="log-card">';
+            html += '<div class="log-header">📄 服务器日志下载</div>';
+            html += '<div class="log-ip">';
+            html += '<span class="ip-label">您的IP</span>';
+            html += '<span class="ip-value">' + escapeHtml(data.ip_masked || 'unknown') + '</span>';
+            html += '</div>';
+            html += '<div class="log-stats">';
+            html += '<div class="stat-item"><div class="stat-label">日志条数</div><div class="stat-value">' + (data.log_count || 0) + '</div></div>';
+            html += '<div class="stat-item"><div class="stat-label">保留天数</div><div class="stat-value">' + (data.max_days || 7) + ' 天</div></div>';
+            html += '</div>';
+            if (data.levels && Object.keys(data.levels).length > 0) {
+                html += '<div class="log-levels">';
+                for (var lv in data.levels) {
+                    html += '<span class="level-tag ' + escapeHtml(lv) + '">' + escapeHtml(lv) + ': ' + data.levels[lv] + '</span>';
+                }
+                html += '</div>';
+            }
+            if (data.last_time) {
+                html += '<div style="font-size:12px;color:#999;margin-bottom:8px;text-align:center;">最新日志: ' + formatTime(data.last_time) + '</div>';
+            }
+            if (data.log_count > 0) {
+                if (data.can_request) {
+                    html += '<button class="log-btn" onclick="requestLogDownload()">📥 申请下载日志</button>';
+                } else {
+                    html += '<button class="log-btn" disabled>⏳ 冷却中 (' + data.cooldown_remaining + '秒)</button>';
+                    html += '<div class="log-cooldown">请等待 ' + data.cooldown_remaining + ' 秒后再试</div>';
+                }
+            } else {
+                html += '<div style="text-align:center;color:#999;font-size:13px;padding:10px;">当前IP暂无日志记录</div>';
+            }
+            html += '<div class="log-tip">💡 仅可下载当前客户端IP的日志内容<br>日志保留最近' + (data.max_days || 1) + '天，最多' + (data.max_entries || 5000) + '条</div>';
+            html += '</div>';
+            return html;
+        }
+
+        async function requestLogDownload() {
+            try {
+                var data = await apiRequest('/api/logs/request', {
+                    method: 'POST',
+                    body: JSON.stringify({})
+                });
+                if (data.success && data.download_url) {
+                    logTicketCache = data;
+                    var logCard = document.querySelector('.log-card');
+                    if (logCard) {
+                        var btn = logCard.querySelector('.log-btn');
+                        if (btn) {
+                            btn.className = 'log-btn download';
+                            btn.textContent = '⬇️ 下载日志 (' + data.log_count + '条)';
+                            btn.onclick = function() {
+                                window.location.href = data.download_url;
+                            };
+                            btn.disabled = false;
+                        }
+                    }
+                    startCooldownTimer(data.expires_in || 1800);
+                }
+            } catch (error) {
+                alert(error.message || '申请失败，请稍后重试');
+            }
+        }
+
+        function startCooldownTimer(seconds) {
+            if (logCooldownInterval) {
+                clearInterval(logCooldownInterval);
+            }
+            var remaining = seconds;
+            logCooldownInterval = setInterval(function() {
+                remaining--;
+                if (remaining <= 0) {
+                    clearInterval(logCooldownInterval);
+                    logCooldownInterval = null;
+                    var logCard = document.querySelector('.log-card');
+                    if (logCard) {
+                        var btn = logCard.querySelector('.log-btn');
+                        if (btn) {
+                            btn.className = 'log-btn';
+                            btn.textContent = '📥 申请下载日志';
+                            btn.onclick = requestLogDownload;
+                            btn.disabled = false;
+                        }
+                        var cooldownDiv = logCard.querySelector('.log-cooldown');
+                        if (cooldownDiv) cooldownDiv.remove();
+                    }
+                }
+            }, 1000);
         }
 
         function getConsecutiveRewardDesc(day) {
@@ -766,7 +901,7 @@
             var html = '<div class="music-card">';
             html += '<div class="music-header">🎵 点歌台 · ' + escapeHtml(songName) + '（共 ' + audioList.length + ' 首）</div>';
             html += '<div id="' + containerId + '" class="aplayer"></div>';
-            html += '<div class="music-hint">💡 音源来源：go-music-api（酷我）· 歌词已自动展开</div>';
+            html += '<div class="music-hint">💡 音源来源：go-music-api· 歌词已自动展开</div>';
             html += '</div>';
 
             setTimeout(function () {
@@ -989,7 +1124,7 @@
             var html = '<div class="music-card">';
             html += '<div class="music-header">🎵 正在播放 · ' + escapeHtml(sname) + '</div>';
             html += '<div id="' + containerId + '" class="aplayer"></div>';
-            html += '<div class="music-hint">💡 音源来源：go-music-api（酷我）· 歌词已自动展开</div>';
+            html += '<div class="music-hint">💡 音源来源：go-music-api· 歌词已自动展开</div>';
             html += '</div>';
             addMessage('bot', '', {
                 title: '🎧 歌单播放',
@@ -1043,13 +1178,6 @@
                 html += '</div>';
             });
             return html;
-        }
-
-        function escapeHtml(text) {
-            if (!text) return '';
-            var div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
         }
 
         function addNewsMessage() {
@@ -1107,6 +1235,8 @@
                     contentDiv.innerHTML = buildCancellationCard(extra.cancellation_data);
                 } else if (extra && extra.cdk_data) {
                     contentDiv.innerHTML = buildCdkCard(extra.cdk_data);
+                } else if (extra && extra.log_data) {
+                    contentDiv.innerHTML = buildLogCard(extra.log_data);
                 } else if (extra && extra.prebuilt_html) {
                     contentDiv.innerHTML = extra.prebuilt_html;
                     if (extra.is_playlist_card) {
@@ -1152,7 +1282,7 @@
                 }
                 div.appendChild(contentDiv);
                 
-                if (extra && extra.matched_keywords && extra.matched_keywords.length > 0 && !extra.is_personal_query && !extra.search_data && !extra.weather_data && !extra.time_data && !extra.cancellation_data && !extra.cdk_data && !extra.music_data && !extra.prebuilt_html && !extra.feedback_data && !extra.ip_signature_data && !extra.earthquake_data) {
+                if (extra && extra.matched_keywords && extra.matched_keywords.length > 0 && !extra.is_personal_query && !extra.search_data && !extra.weather_data && !extra.time_data && !extra.cancellation_data && !extra.cdk_data && !extra.music_data && !extra.prebuilt_html && !extra.feedback_data && !extra.ip_signature_data && !extra.earthquake_data && !extra.log_data) {
                     var tag = document.createElement('div');
                     tag.className = 'matched-tag';
                     tag.textContent = '🔍 匹配: ' + extra.matched_keywords.join('、');
@@ -1396,6 +1526,28 @@
                     removeTypingIndicator();
                     addMessage('bot', error.message || '搜索服务暂时不可用', {
                         title: '❌ 搜索失败'
+                    });
+                }
+                sendBtn.disabled = false;
+                msgInput.focus();
+                return;
+            }
+            
+            var isLogQuery = query.includes('下载日志') || query.includes('申请日志') || query.includes('服务器日志') || query.includes('日志下载') || query.includes('获取日志') || query.includes('查看日志');
+            if (isLogQuery) {
+                var typing = addTypingIndicator();
+                try {
+                    var data = await apiRequest('/api/logs/status', { method: 'GET' });
+                    removeTypingIndicator();
+                    addMessage('bot', '', {
+                        title: '📄 服务器日志',
+                        log_data: data,
+                        matched_keywords: ['下载日志']
+                    });
+                } catch (error) {
+                    removeTypingIndicator();
+                    addMessage('bot', error.message || '日志服务暂时不可用', {
+                        title: '❌ 日志查询失败'
                     });
                 }
                 sendBtn.disabled = false;
@@ -1647,7 +1799,7 @@
                 } else {
                     addMessage('bot', '没有找到相关内容，试试输入「搜索+内容」进行网页搜索', {
                         title: '😅 未找到匹配结果',
-                        suggestions: ['今日签到', '积分余额', 'PL余额', '新闻', '搜索天气', '美国时间', '查询CDK', '注销卡密', '我的反馈', '我的IP签名档', '最近地震', '推荐歌单', '点歌 晴天']
+                        suggestions: ['今日签到', '积分余额', 'PL余额', '新闻', '搜索天气', '美国时间', '查询CDK', '注销卡密', '我的反馈', '我的IP签名档', '最近地震', '推荐歌单', '点歌 晴天', '下载日志']
                     });
                 }
             } catch (error) {

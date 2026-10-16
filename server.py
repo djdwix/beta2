@@ -155,6 +155,10 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 if not os.path.exists(DATA_DIR):
     os.makedirs(DATA_DIR)
 
+LOG_DIR = os.path.join(os.path.dirname(__file__), 'logs')
+if not os.path.exists(LOG_DIR):
+    os.makedirs(LOG_DIR)
+
 ENCRYPTION_KEY = os.getenv('ENCRYPTION_KEY')
 if not ENCRYPTION_KEY:
     raise ValueError("ENCRYPTION_KEY environment variable is required")
@@ -246,6 +250,9 @@ RESET_LIMITS_FILE = os.path.join(DATA_DIR, 'reset_limits.enc')
 FUND_RATE_FILE = os.path.join(DATA_DIR, 'fund_rate.enc')
 GATEWAY_STOCK_FILE = os.path.join(DATA_DIR, 'gateway_stock.enc')
 FEEDBACKS_FILE = os.path.join(DATA_DIR, 'feedbacks.enc')
+ACCESS_LOG_FILE = os.path.join(LOG_DIR, 'access.log')
+IP_LOGS_FILE = os.path.join(DATA_DIR, 'ip_logs.enc')
+LOG_REQUEST_COOLDOWN_FILE = os.path.join(DATA_DIR, 'log_request_cooldown.enc')
 
 COUPON_TYPE_MAP = {
     'full_reduction': '满减券',
@@ -607,7 +614,7 @@ def save_fund_rate():
     FILE_MODIFICATION_TIMES['fund_rate'] = get_file_mtime(FUND_RATE_FILE)
 
 def reload_if_changed():
-    global users, phone_records, auth_codes, reset_codes, point_codes, premium_point_codes, boost_codes, special_point_codes, makeup_codes, gamblers_codes, box_codes, plcard_codes, premium_boost_codes, user_boosts, identity_verifications, cancellation_codes, restricted_users, cdk_packages, user_cdk_records, announcements, pl_exchange_records, pl_rate_data, user_pl_balances, system_total_points, orders, user_pay_passwords, user_code_limits, coupons, user_coupons, coupon_grants, pl_transfers, gateway_cards, mail_attachments, mail_read_receipts, pool_records, user_pool_claims, fund_data, fund_history, fund_rate, nav_data, nav_holdings, nav_history, gateway_stock, feedbacks, activities, user_activity_records, email_push_records, analytics_cache
+    global users, phone_records, auth_codes, reset_codes, point_codes, premium_point_codes, boost_codes, special_point_codes, makeup_codes, gamblers_codes, box_codes, plcard_codes, premium_boost_codes, user_boosts, identity_verifications, cancellation_codes, restricted_users, cdk_packages, user_cdk_records, announcements, pl_exchange_records, pl_rate_data, user_pl_balances, system_total_points, orders, user_pay_passwords, user_code_limits, coupons, user_coupons, coupon_grants, pl_transfers, gateway_cards, mail_attachments, mail_read_receipts, pool_records, user_pool_claims, fund_data, fund_history, fund_rate, nav_data, nav_holdings, nav_history, gateway_stock, feedbacks, activities, user_activity_records, email_push_records, analytics_cache, ip_logs, log_request_cooldown
 
     users_mtime = get_file_mtime(USERS_FILE)
     phone_mtime = get_file_mtime(PHONE_RECORDS_FILE)
@@ -657,6 +664,8 @@ def reload_if_changed():
     user_activity_records_mtime = get_file_mtime(USER_ACTIVITY_RECORDS_FILE)
     email_push_records_mtime = get_file_mtime(EMAIL_PUSH_RECORDS_FILE)
     analytics_cache_mtime = get_file_mtime(ANALYTICS_CACHE_FILE)
+    ip_logs_mtime = get_file_mtime(IP_LOGS_FILE)
+    log_cooldown_mtime = get_file_mtime(LOG_REQUEST_COOLDOWN_FILE)
 
     if users_mtime != FILE_MODIFICATION_TIMES.get('users', 0):
         users = load_data(USERS_FILE, {})
@@ -850,6 +859,14 @@ def reload_if_changed():
         analytics_cache = load_data(ANALYTICS_CACHE_FILE, {})
         FILE_MODIFICATION_TIMES['analytics_cache'] = analytics_cache_mtime
 
+    if ip_logs_mtime != FILE_MODIFICATION_TIMES.get('ip_logs', 0):
+        ip_logs = load_data(IP_LOGS_FILE, {})
+        FILE_MODIFICATION_TIMES['ip_logs'] = ip_logs_mtime
+
+    if log_cooldown_mtime != FILE_MODIFICATION_TIMES.get('log_request_cooldown', 0):
+        log_request_cooldown = load_data(LOG_REQUEST_COOLDOWN_FILE, {})
+        FILE_MODIFICATION_TIMES['log_request_cooldown'] = log_cooldown_mtime
+
 users = load_data(USERS_FILE, {})
 phone_records = load_data(PHONE_RECORDS_FILE, {})
 auth_codes = load_data(AUTH_CODES_FILE, {})
@@ -898,6 +915,9 @@ analytics_cache = load_data(ANALYTICS_CACHE_FILE, {})
 fund_rate = load_data(FUND_RATE_FILE, {})
 gateway_stock = load_data(GATEWAY_STOCK_FILE, {})
 feedbacks = load_data(FEEDBACKS_FILE, {})
+ip_logs = load_data(IP_LOGS_FILE, {})
+log_request_cooldown = load_data(LOG_REQUEST_COOLDOWN_FILE, {})
+log_download_tickets = {}
 
 FILE_MODIFICATION_TIMES['users'] = get_file_mtime(USERS_FILE)
 FILE_MODIFICATION_TIMES['phone'] = get_file_mtime(PHONE_RECORDS_FILE)
@@ -1085,6 +1105,14 @@ def save_user_coupons():
     save_data(USER_COUPONS_FILE, user_coupons)
     FILE_MODIFICATION_TIMES['user_coupons'] = get_file_mtime(USER_COUPONS_FILE)
 
+def save_ip_logs():
+    save_data(IP_LOGS_FILE, ip_logs)
+    FILE_MODIFICATION_TIMES['ip_logs'] = get_file_mtime(IP_LOGS_FILE)
+
+def save_log_request_cooldown():
+    save_data(LOG_REQUEST_COOLDOWN_FILE, log_request_cooldown)
+    FILE_MODIFICATION_TIMES['log_request_cooldown'] = get_file_mtime(LOG_REQUEST_COOLDOWN_FILE)
+
 def save_coupon_grants():
     save_data(COUPON_GRANTS_FILE, coupon_grants)
     FILE_MODIFICATION_TIMES['coupon_grants'] = get_file_mtime(COUPON_GRANTS_FILE)
@@ -1214,6 +1242,142 @@ refund_tickets = {}
 REFUND_TICKET_TTL = 1800
 REFUND_COOLDOWN_SECONDS = 30
 REFUND_EMAIL_THRESHOLD = 100
+
+MAX_LOG_FILE_SIZE = 10 * 1024 * 1024
+MAX_LOG_ENTRIES_PER_IP = 5000
+LOG_REQUEST_COOLDOWN_SECONDS = 300
+LOG_DOWNLOAD_EXPIRE_SECONDS = 1800
+LOG_MAX_DAYS = 1
+
+def get_client_ip():
+    if request.headers.get('X-Forwarded-For'):
+        return request.headers.get('X-Forwarded-For').split(',')[0].strip()
+    if request.headers.get('X-Real-IP'):
+        return request.headers.get('X-Real-IP').strip()
+    return request.remote_addr or 'unknown'
+
+def mask_ip(ip):
+    if not ip or ip == 'unknown':
+        return 'unknown'
+    parts = ip.split('.')
+    if len(parts) == 4:
+        return f"{parts[0]}.{parts[1]}.*.*"
+    return ip[:8] + '***'
+
+def append_ip_log(ip, level, message, extra=None):
+    if not ip or ip == 'unknown':
+        return
+    current_time = int(time.time() * 1000)
+    if ip not in ip_logs:
+        ip_logs[ip] = []
+    entry = {
+        'timestamp': current_time,
+        'level': level,
+        'message': message,
+        'extra': extra or {}
+    }
+    ip_logs[ip].append(entry)
+    if len(ip_logs[ip]) > MAX_LOG_ENTRIES_PER_IP:
+        ip_logs[ip] = ip_logs[ip][-MAX_LOG_ENTRIES_PER_IP:]
+    cutoff = current_time - (LOG_MAX_DAYS * 24 * 3600 * 1000)
+    ip_logs[ip] = [e for e in ip_logs[ip] if e.get('timestamp', 0) >= cutoff]
+
+def cleanup_old_ip_logs():
+    current_time = int(time.time() * 1000)
+    cutoff = current_time - (LOG_MAX_DAYS * 24 * 3600 * 1000)
+    ips_to_remove = []
+    for ip in list(ip_logs.keys()):
+        ip_logs[ip] = [e for e in ip_logs[ip] if e.get('timestamp', 0) >= cutoff]
+        if not ip_logs[ip]:
+            ips_to_remove.append(ip)
+    for ip in ips_to_remove:
+        del ip_logs[ip]
+    if ips_to_remove:
+        save_ip_logs()
+    for username in list(log_request_cooldown.keys()):
+        if current_time - log_request_cooldown[username].get('last_request', 0) > 86400000:
+            del log_request_cooldown[username]
+    if log_request_cooldown:
+        save_log_request_cooldown()
+
+def cleanup_expired_log_tickets():
+    current_time = int(time.time())
+    expired = []
+    for tid, ticket in log_download_tickets.items():
+        if current_time - ticket.get('created_at', 0) > LOG_DOWNLOAD_EXPIRE_SECONDS:
+            expired.append(tid)
+        elif ticket.get('used', False) and current_time - ticket.get('used_at', 0) > 300:
+            expired.append(tid)
+    for tid in expired:
+        del log_download_tickets[tid]
+
+def generate_log_token(username, ip):
+    timestamp = int(time.time())
+    data = f"log|{username}|{ip}|{timestamp}"
+    signature = hmac.new(QR_SECRET, data.encode(), hashlib.sha256).hexdigest()[:16]
+    combined = f"{data}|{signature}"
+    token = base64.urlsafe_b64encode(combined.encode()).decode().replace('=', '')
+    return token, timestamp
+
+def decode_log_token(token):
+    try:
+        decoded = base64.urlsafe_b64decode(token + '=' * (4 - len(token) % 4)).decode()
+        parts = decoded.split('|')
+        if len(parts) != 5 or parts[0] != 'log':
+            return None, None, None, '格式错误'
+        _, username, ip, timestamp_str, received_sig = parts
+        timestamp = int(timestamp_str)
+        data = f"log|{username}|{ip}|{timestamp_str}"
+        expected_sig = hmac.new(QR_SECRET, data.encode(), hashlib.sha256).hexdigest()[:16]
+        if not hmac.compare_digest(received_sig, expected_sig):
+            return None, None, None, '签名验证失败'
+        return username, ip, timestamp, None
+    except Exception as e:
+        return None, None, None, str(e)
+
+def get_ip_log_stats(ip):
+    if ip not in ip_logs:
+        return {'count': 0, 'first_time': 0, 'last_time': 0, 'levels': {}}
+    entries = ip_logs[ip]
+    if not entries:
+        return {'count': 0, 'first_time': 0, 'last_time': 0, 'levels': {}}
+    levels = {}
+    for e in entries:
+        lv = e.get('level', 'INFO')
+        levels[lv] = levels.get(lv, 0) + 1
+    return {
+        'count': len(entries),
+        'first_time': entries[0].get('timestamp', 0),
+        'last_time': entries[-1].get('timestamp', 0),
+        'levels': levels
+    }
+
+def format_log_entries(ip, entries):
+    lines = []
+    lines.append("=" * 80)
+    lines.append(f"服务器日志 - IP: {ip}")
+    lines.append(f"生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    lines.append(f"日志条数: {len(entries)}")
+    lines.append("=" * 80)
+    lines.append("")
+    for entry in entries:
+        ts = entry.get('timestamp', 0)
+        try:
+            time_str = datetime.fromtimestamp(ts / 1000).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+        except:
+            time_str = str(ts)
+        level = entry.get('level', 'INFO')
+        message = entry.get('message', '')
+        lines.append(f"[{time_str}] [{level}] {message}")
+        extra = entry.get('extra', {})
+        if extra:
+            for k, v in extra.items():
+                lines.append(f"    {k}: {v}")
+    lines.append("")
+    lines.append("=" * 80)
+    lines.append("日志结束")
+    lines.append("=" * 80)
+    return "\n".join(lines)
 
 def get_gateway_stock_today():
     today = datetime.now().strftime('%Y-%m-%d')
@@ -1579,6 +1743,24 @@ def auto_auction_loop():
         except Exception as e:
             log.error(f"Auto auction loop error: {e}")
 
+def log_cleanup_loop():
+    while True:
+        time.sleep(3600)
+        try:
+            cleanup_old_ip_logs()
+            cleanup_expired_log_tickets()
+            save_ip_logs()
+        except Exception as e:
+            log.error(f"Log cleanup error: {e}")
+
+def log_save_loop():
+    while True:
+        time.sleep(60)
+        try:
+            save_ip_logs()
+        except Exception as e:
+            log.error(f"Log save error: {e}")
+
 auto_auction_thread = threading.Thread(target=auto_auction_loop, daemon=True)
 auto_auction_thread.start()
 
@@ -1608,6 +1790,12 @@ pl_thread.start()
 
 fund_interest_thread = threading.Thread(target=fund_interest_loop, daemon=True)
 fund_interest_thread.start()
+
+log_cleanup_thread = threading.Thread(target=log_cleanup_loop, daemon=True)
+log_cleanup_thread.start()
+
+log_save_thread = threading.Thread(target=log_save_loop, daemon=True)
+log_save_thread.start()
 
 def exchange_points_to_pl(username, points_amount):
     if username not in users:
@@ -13089,15 +13277,6 @@ def refund_status(order_id):
         'risk_details': ticket.get('risk_details', [])
     })
 
-@app.route('/api/order/<order_id>/refund-self', methods=['POST'])
-@csrf_protect
-@login_required
-def refund_self_deprecated(order_id):
-    return jsonify({
-        'error': '该接口已停用，请使用新的退款流程',
-        'redirect': '/refund.html'
-    }), 410
-
 @app.route('/api/order/search', methods=['GET'])
 @login_required
 def search_order():
@@ -13593,7 +13772,7 @@ def get_next_milestone(current, milestone_type):
 def get_news():
     start_time = time.time()
     try:
-        response = requests.get('https://zj.v.api.aa1.cn/api/60s/', timeout=10)
+        response = requests.get('https://60s.aa1.cn/60s-api/new/api/60s-v5/', timeout=10)
         if response.status_code == 200:
             content_type = response.headers.get('content-type', '')
             if 'image' in content_type:
@@ -15128,13 +15307,10 @@ def place_bid_api():
     if not auction_id:
         return jsonify({'error': '缺少拍卖ID'}), 400
 
-    if auction_id.startswith('srv_auc_'):
-        success, message = game.place_bid_server_auction(
-            users, save_users, username, auction_id, bid_amount,
-            analytics_cache, save_analytics_cache
-        )
-    else:
-        success, message = game.place_bid(users, save_users, username, auction_id, bid_amount)
+    success, message = game.place_bid_server_auction(
+        users, save_users, username, auction_id, bid_amount,
+        analytics_cache, save_analytics_cache
+    )
 
     if not success:
         return jsonify({'error': message}), 400
@@ -15190,7 +15366,12 @@ def settle_auction_api():
     auction_id = data.get('auction_id', '').strip()
     if not auction_id:
         return jsonify({'error': '缺少拍卖ID'}), 400
-    success, message, final_price = game.settle_auction(users, save_users, auction_id, email_notifier=email_service.send_email)
+    success, message, final_price = game.settle_server_auction(
+        users, save_users, auction_id,
+        analytics_cache, save_analytics_cache,
+        mail_attachments, save_mail_attachments,
+        email_service.send_auction_win_email_async
+    )
     if not success:
         return jsonify({'error': message}), 400
     reload_if_changed()
@@ -16555,6 +16736,158 @@ def get_weather_forecast():
         log.error(f"Weather forecast API error: {e}")
         return jsonify({'error': '服务器错误: ' + str(e)}), 500
 
+@app.route('/api/logs/status', methods=['GET'])
+@login_required
+def get_log_status():
+    username = session['user']['username']
+    ip = get_client_ip()
+    cleanup_expired_log_tickets()
+    stats = get_ip_log_stats(ip)
+    current_time = int(time.time())
+    cooldown_data = log_request_cooldown.get(username, {})
+    last_request = cooldown_data.get('last_request', 0)
+    cooldown_remaining = max(0, LOG_REQUEST_COOLDOWN_SECONDS - (current_time - last_request))
+    can_request = cooldown_remaining == 0
+    return jsonify({
+        'success': True,
+        'ip_masked': mask_ip(ip),
+        'log_count': stats['count'],
+        'first_time': stats['first_time'],
+        'last_time': stats['last_time'],
+        'levels': stats['levels'],
+        'can_request': can_request,
+        'cooldown_remaining': cooldown_remaining,
+        'cooldown_seconds': LOG_REQUEST_COOLDOWN_SECONDS,
+        'max_days': LOG_MAX_DAYS,
+        'max_entries': MAX_LOG_ENTRIES_PER_IP
+    })
+
+@app.route('/api/logs/request', methods=['POST'])
+@csrf_protect
+@limiter.limit('3 per hour')
+@login_required
+def request_log_download():
+    username = session['user']['username']
+    ip = get_client_ip()
+    current_time = int(time.time())
+    cleanup_expired_log_tickets()
+    cooldown_data = log_request_cooldown.get(username, {})
+    last_request = cooldown_data.get('last_request', 0)
+    cooldown_remaining = LOG_REQUEST_COOLDOWN_SECONDS - (current_time - last_request)
+    if cooldown_remaining > 0:
+        return jsonify({
+            'error': f'请求过于频繁，请等待 {cooldown_remaining} 秒后再试',
+            'cooldown_remaining': cooldown_remaining
+        }), 429
+    if ip not in ip_logs or not ip_logs[ip]:
+        return jsonify({'error': '当前IP暂无日志记录'}), 400
+    token, timestamp = generate_log_token(username, ip)
+    ticket_id = f"log_{current_time}_{random.randint(1000, 9999)}"
+    log_download_tickets[ticket_id] = {
+        'ticket_id': ticket_id,
+        'username': username,
+        'ip': ip,
+        'token': token,
+        'created_at': current_time,
+        'expires_at': current_time + LOG_DOWNLOAD_EXPIRE_SECONDS,
+        'used': False,
+        'used_at': 0
+    }
+    log_request_cooldown[username] = {
+        'last_request': current_time,
+        'ip': ip
+    }
+    save_log_request_cooldown()
+    stats = get_ip_log_stats(ip)
+    return jsonify({
+        'success': True,
+        'ticket_id': ticket_id,
+        'token': token,
+        'download_url': f'/api/logs/download?token={token}',
+        'expires_in': LOG_DOWNLOAD_EXPIRE_SECONDS,
+        'log_count': stats['count'],
+        'ip_masked': mask_ip(ip),
+        'message': '日志下载链接已生成，请及时下载'
+    })
+
+@app.route('/api/logs/download', methods=['GET'])
+def download_logs():
+    token = request.args.get('token', '').strip()
+    if not token:
+        return jsonify({'error': '缺少下载令牌'}), 400
+
+    username, ip, timestamp, error = decode_log_token(token)
+    if error:
+        return jsonify({'error': f'令牌无效: {error}'}), 400
+
+    current_time = int(time.time())
+    if current_time - timestamp > LOG_DOWNLOAD_EXPIRE_SECONDS:
+        return jsonify({'error': '下载链接已过期，请重新申请'}), 400
+
+    ticket_found = None
+    for tid, ticket in log_download_tickets.items():
+        if ticket.get('token') == token:
+            ticket_found = ticket
+            break
+
+    if not ticket_found:
+        return jsonify({'error': '下载令牌无效'}), 400
+
+    if ticket_found.get('expires_at', 0) < current_time:
+        tid = ticket_found.get('ticket_id')
+        if tid in log_download_tickets:
+            del log_download_tickets[tid]
+        return jsonify({'error': '下载链接已过期'}), 400
+
+    if ip not in ip_logs or not ip_logs[ip]:
+        return jsonify({'error': '该IP暂无日志记录'}), 400
+
+    entries = ip_logs[ip]
+    log_content = format_log_entries(ip, entries)
+
+    ticket_found['used'] = True
+    ticket_found['used_at'] = current_time
+
+    safe_ip = mask_ip(ip).replace('*', 'x').replace('.', '_')
+    filename = f"server_log_{safe_ip}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+
+    response = make_response(log_content.encode('utf-8'))
+    response.headers['Content-Type'] = 'text/plain; charset=utf-8'
+    response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
+@app.after_request
+def log_request_info(response):
+    try:
+        ip = get_client_ip()
+        if ip and ip != 'unknown':
+            if request.path.startswith('/api/') or request.path.startswith('/admin'):
+                if request.path not in ['/api/logs/download', '/api/logs/status']:
+                    level = 'INFO'
+                    if response.status_code >= 500:
+                        level = 'ERROR'
+                    elif response.status_code >= 400:
+                        level = 'WARNING'
+                    method = request.method
+                    path = request.path
+                    status = response.status_code
+                    message = f"{method} {path} -> {status}"
+                    extra = {
+                        'user_agent': request.headers.get('User-Agent', '')[:100],
+                        'referer': request.headers.get('Referer', '')[:100]
+                    }
+                    if 'user' in session and session['user']:
+                        extra['username'] = session['user'].get('username', '')
+                    append_ip_log(ip, level, message, extra)
+                    if random.random() < 0.01:
+                        save_ip_logs()
+    except Exception as e:
+        pass
+    return response
+
 @app.route('/')
 def index():
     return send_from_directory('public', 'index.html')
@@ -16710,6 +17043,8 @@ def signal_handler(signum, frame):
         save_nav_holdings()
         save_nav_history()
         save_gateway_stock()
+        save_ip_logs()
+        save_log_request_cooldown()
         print('数据已保存并清理，服务器关闭完成')
     except Exception as e:
         print(f'保存数据时出错: {e}')

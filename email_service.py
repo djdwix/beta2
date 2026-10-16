@@ -1143,9 +1143,9 @@ def send_auction_win_email_async(username, to_email, card_name, card_emoji, rari
         </div>
 
         <div style="text-align:center;margin:30px 0;">
-          <a href="{SERVER_BASE_URL}/GAME/"
+          <a href="{SERVER_BASE_URL}/GAME/collection.html"
              style="display:inline-block;background:linear-gradient(135deg,#fbbf24,#d97706);color:#1a1a2e;text-decoration:none;font-size:16px;font-weight:800;padding:16px 48px;border-radius:40px;box-shadow:0 10px 24px rgba(251,191,36,0.35);letter-spacing:0.5px;">
-            🎮 前往游戏中心
+            🎴 前往卡牌收集页面
           </a>
         </div>
 
