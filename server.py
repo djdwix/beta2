@@ -1244,9 +1244,9 @@ REFUND_COOLDOWN_SECONDS = 30
 REFUND_EMAIL_THRESHOLD = 100
 
 MAX_LOG_FILE_SIZE = 10 * 1024 * 1024
-MAX_LOG_ENTRIES_PER_IP = 5000
-LOG_REQUEST_COOLDOWN_SECONDS = 300
-LOG_DOWNLOAD_EXPIRE_SECONDS = 1800
+MAX_LOG_ENTRIES_PER_IP = 300
+LOG_REQUEST_COOLDOWN_SECONDS = 43200
+LOG_DOWNLOAD_EXPIRE_SECONDS = 600
 LOG_MAX_DAYS = 1
 
 def get_client_ip():
@@ -1745,7 +1745,7 @@ def auto_auction_loop():
 
 def log_cleanup_loop():
     while True:
-        time.sleep(3600)
+        time.sleep(120)
         try:
             cleanup_old_ip_logs()
             cleanup_expired_log_tickets()
@@ -16764,7 +16764,7 @@ def get_log_status():
 
 @app.route('/api/logs/request', methods=['POST'])
 @csrf_protect
-@limiter.limit('3 per hour')
+@limiter.limit('5 per hour')
 @login_required
 def request_log_download():
     username = session['user']['username']
