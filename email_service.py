@@ -9,6 +9,8 @@ import time
 from threading import Lock, Thread
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
 from dotenv import load_dotenv
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
@@ -185,7 +187,30 @@ initialize_storage()
 def generate_verification_code(length=6):
     return ''.join(random.choices(string.digits, k=length))
 
-def _send_email_sync(to_email, subject, body, html_body=None):
+def _build_attachment_parts(attachments):
+    parts = []
+    if not attachments:
+        return parts
+    for att in attachments:
+        try:
+            filename = att.get('filename', 'attachment')
+            content = att.get('content', b'')
+            mime_type = att.get('mime_type', 'application/octet-stream')
+            if isinstance(content, str):
+                content = content.encode('utf-8')
+            maintype, _, subtype = mime_type.partition('/')
+            if not subtype:
+                maintype, subtype = 'application', 'octet-stream'
+            part = MIMEBase(maintype, subtype)
+            part.set_payload(content)
+            encoders.encode_base64(part)
+            part.add_header('Content-Disposition', 'attachment', filename=('utf-8', '', filename))
+            parts.append(part)
+        except Exception as e:
+            logger.error(f"构建附件失败: {e}")
+    return parts
+
+def _send_email_sync(to_email, subject, body, html_body=None, attachments=None):
     if not SMTP_EMAIL or not SMTP_PASSWORD:
         logger.error("SMTP配置不完整，请检查 FEEDBACK_EMAIL 和 FEEDBACK_EMAIL_PASSWORD")
         return False, "邮件服务配置不完整"
@@ -202,6 +227,18 @@ def _send_email_sync(to_email, subject, body, html_body=None):
         if html_body:
             part_html = MIMEText(html_body, 'html', 'utf-8')
             msg.attach(part_html)
+
+        if attachments:
+            att_parts = _build_attachment_parts(attachments)
+            if att_parts:
+                mixed_msg = MIMEMultipart('mixed')
+                mixed_msg['From'] = formataddr(('虚拟手机号生成器', SMTP_EMAIL))
+                mixed_msg['To'] = to_email
+                mixed_msg['Subject'] = subject
+                mixed_msg.attach(msg)
+                for part in att_parts:
+                    mixed_msg.attach(part)
+                msg = mixed_msg
 
         context = ssl.create_default_context()
 
@@ -228,13 +265,13 @@ def _send_email_sync(to_email, subject, body, html_body=None):
         logger.error(f"发送邮件异常: {e}")
         return False, f"邮件发送异常: {str(e)}"
 
-def send_email(to_email, subject, body, html_body=None):
-    return _send_email_sync(to_email, subject, body, html_body)
+def send_email(to_email, subject, body, html_body=None, attachments=None):
+    return _send_email_sync(to_email, subject, body, html_body, attachments=attachments)
 
-def send_email_async(to_email, subject, body, html_body=None):
+def send_email_async(to_email, subject, body, html_body=None, attachments=None):
     def _task():
         try:
-            _send_email_sync(to_email, subject, body, html_body)
+            _send_email_sync(to_email, subject, body, html_body, attachments=attachments)
         except Exception as e:
             logger.error(f"异步邮件发送异常: {to_email} - {e}")
     try:
@@ -244,11 +281,11 @@ def send_email_async(to_email, subject, body, html_body=None):
         logger.error(f"提交异步邮件任务失败: {e}")
         return False, f"提交异步邮件任务失败: {str(e)}"
 
-def send_email_async_with_callback(to_email, subject, body, html_body=None, callback=None):
+def send_email_async_with_callback(to_email, subject, body, html_body=None, callback=None, attachments=None):
     def _task():
         result = (False, "未知错误")
         try:
-            result = _send_email_sync(to_email, subject, body, html_body)
+            result = _send_email_sync(to_email, subject, body, html_body, attachments=attachments)
         except Exception as e:
             logger.error(f"异步邮件发送异常: {to_email} - {e}")
             result = (False, str(e))
@@ -705,7 +742,7 @@ def resend_verification_code(email, username=None, purpose="验证"):
         save_verification_codes(codes)
     return send_verification_code(email, username, purpose)
 
-def send_feedback_email(username, user_email, feedback_type, feedback_id, content):
+def send_feedback_email(username, user_email, feedback_type, feedback_id, content, attachments=None):
     if not SMTP_EMAIL or not SMTP_PASSWORD:
         logger.error("SMTP配置不完整，无法发送反馈邮件")
         return False, "邮件服务配置不完整"
@@ -882,7 +919,7 @@ def send_feedback_email(username, user_email, feedback_type, feedback_id, conten
 </body>
 </html>"""
 
-    return _send_email_sync(SMTP_EMAIL, subject, body, html_body)
+    return _send_email_sync(SMTP_EMAIL, subject, body, html_body, attachments=attachments)
 
 def send_restriction_notification_email(username, user_email, restriction_types, expires_at_ms, reason):
     if not SMTP_EMAIL or not SMTP_PASSWORD:

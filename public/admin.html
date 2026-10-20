@@ -174,6 +174,8 @@
         .auction-card-admin .aca-meta{font-size:12px;color:rgba(255,255,255,0.5);margin-top:2px}
         .auction-card-admin .aca-price{font-size:14px;font-weight:700;color:#fbbf24;margin-top:4px}
         .auction-card-admin .aca-actions{display:flex;gap:8px;flex-wrap:wrap}
+        .attachment-tag{display:inline-block;font-size:11px;background:rgba(96,165,250,0.15);color:#60a5fa;padding:3px 10px;border-radius:10px;margin:2px 4px 2px 0;border:1px solid rgba(96,165,250,0.2);white-space:nowrap}
+        .attachment-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
         @media(max-width:768px){
             .admin-container{padding:12px 16px}
             .login-card{padding:32px 24px;width:95%}
@@ -1247,6 +1249,16 @@
     window.deleteKbItem=function(id){showModal('确定要删除此知识条目吗？此操作不可恢复。',function(){apiRequest('/api/admin/knowledge/delete',{method:'POST',body:JSON.stringify({id:id})}).then(function(){showMessage('删除成功','success');loadKnowledgeBase()}).catch(function(e){showMessage(e.message,'error')})})}
     async function addKnowledgeItem(){var title=document.getElementById('kbNewTitle').value.trim();var keywordsRaw=document.getElementById('kbNewKeywords').value.trim();var content=document.getElementById('kbNewContent').value.trim();if(!title){showMessage('请输入标题','error');return}if(!keywordsRaw){showMessage('请输入关键词','error');return}if(!content){showMessage('请输入内容','error');return}var keywords=keywordsRaw.split(',').map(function(s){return s.trim()}).filter(function(s){return s});if(keywords.length===0){showMessage('至少需要一个关键词','error');return}var btn=document.getElementById('addKbBtn');btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> 添加中...';try{var d=await apiRequest('/api/admin/knowledge/add',{method:'POST',body:JSON.stringify({title:title,keywords:keywords,content:content})});showMessage(d.message,'success');document.getElementById('kbAddResult').innerHTML='<div style="background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.15);border-radius:12px;padding:12px 16px;color:#a7f3d0;"><i class="fas fa-check-circle" style="color:#34d399;"></i> 添加成功！</div>';document.getElementById('kbNewTitle').value='';document.getElementById('kbNewKeywords').value='';document.getElementById('kbNewContent').value='';loadKnowledgeBase()}catch(e){showMessage(e.message,'error')}finally{btn.disabled=false;btn.innerHTML='<i class="fas fa-plus"></i> 添加知识'}}
 
+    function renderAttachmentTags(names){
+        if(!names||names.length===0)return '';
+        var html='<div class="attachment-list">';
+        names.forEach(function(n){
+            html+='<span class="attachment-tag"><i class="fas fa-paperclip"></i> '+escapeHtml(n)+'</span>';
+        });
+        html+='</div>';
+        return html;
+    }
+
     async function loadFeedbackList(page){
         page=page||currentFeedbackPage;
         try{
@@ -1260,13 +1272,18 @@
             }
             var statusMap={pending:'待处理',replied:'已回复',closed:'已关闭'};
             var statusTypeMap={pending:'warning',replied:'success',closed:'neutral'};
-            var html='<table><thead><tr><th>反馈ID</th><th>用户名</th><th>邮箱</th><th>类型</th><th>内容</th><th>提交时间</th><th>状态</th><th>操作</th></tr></thead><tbody>';
+            var html='<table><thead><tr><th>反馈ID</th><th>用户名</th><th>邮箱</th><th>类型</th><th>内容</th><th>附件</th><th>提交时间</th><th>状态</th><th>操作</th></tr></thead><tbody>';
             d.feedbacks.forEach(function(f){
                 var contentPreview=escapeHtml(f.content);
                 if(contentPreview.length>60)contentPreview=contentPreview.substring(0,60)+'...';
                 var statusText=statusMap[f.status]||f.status;
                 var statusType=statusTypeMap[f.status]||'neutral';
-                html+='<tr><td><code style="font-family:monospace;font-size:11px;color:#a78bfa;">'+escapeHtml(f.feedback_id)+'</code></td><td><strong>'+escapeHtml(f.username)+'</strong></td><td>'+escapeHtml(f.email)+'</td><td>'+escapeHtml(f.feedback_type)+'</td><td><div title="'+escapeHtml(f.content).replace(/"/g,'&quot;')+'" style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+contentPreview+'</div></td><td>'+formatTime(f.created_at)+'</td><td>'+badge(statusText,statusType)+'</td><td><button class="action-btn action-btn-primary" onclick="viewFeedback(\''+escapeHtml(f.feedback_id)+'\')"><i class="fas fa-eye"></i> 查看</button><button class="action-btn action-btn-danger" onclick="deleteFeedback(\''+escapeHtml(f.feedback_id)+'\')"><i class="fas fa-trash"></i> 删除</button></td></tr>';
+                var attachNames=f.attachment_names||[];
+                var attachCell='-';
+                if(attachNames.length>0){
+                    attachCell=attachNames.map(function(n){return '<span class="attachment-tag"><i class="fas fa-paperclip"></i> '+escapeHtml(n)+'</span>'}).join('');
+                }
+                html+='<tr><td><code style="font-family:monospace;font-size:11px;color:#a78bfa;">'+escapeHtml(f.feedback_id)+'</code></td><td><strong>'+escapeHtml(f.username)+'</strong></td><td>'+escapeHtml(f.email)+'</td><td>'+escapeHtml(f.feedback_type)+'</td><td><div title="'+escapeHtml(f.content).replace(/"/g,'&quot;')+'" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+contentPreview+'</div></td><td style="max-width:200px;white-space:normal;">'+attachCell+'</td><td>'+formatTime(f.created_at)+'</td><td>'+badge(statusText,statusType)+'</td><td><button class="action-btn action-btn-primary" onclick="viewFeedback(\''+escapeHtml(f.feedback_id)+'\')"><i class="fas fa-eye"></i> 查看</button><button class="action-btn action-btn-danger" onclick="deleteFeedback(\''+escapeHtml(f.feedback_id)+'\')"><i class="fas fa-trash"></i> 删除</button></td></tr>';
             });
             html+='</tbody></table>';
             c.innerHTML=html;
@@ -1302,6 +1319,13 @@
             modalHtml+='<div style="color:rgba(255,255,255,0.4);font-size:12px;margin-bottom:8px;">反馈内容</div>';
             modalHtml+='<div style="color:#d1d5db;font-size:14px;white-space:pre-wrap;word-break:break-word;">'+escapeHtml(f.content)+'</div>';
             modalHtml+='</div>';
+            var attachNames=f.attachment_names||[];
+            if(attachNames.length>0){
+                modalHtml+='<div style="background:rgba(96,165,250,0.06);border:1px solid rgba(96,165,250,0.15);border-radius:12px;padding:14px 18px;margin-bottom:16px;">';
+                modalHtml+='<div style="color:#60a5fa;font-size:12px;margin-bottom:8px;font-weight:600;"><i class="fas fa-paperclip"></i> 附件（共 '+attachNames.length+' 个，仅随反馈邮件发送，服务器不保存文件）</div>';
+                modalHtml+=renderAttachmentTags(attachNames);
+                modalHtml+='</div>';
+            }
             modalHtml+='<div style="margin-bottom:14px;"><label style="display:block;color:rgba(255,255,255,0.5);font-size:12px;margin-bottom:6px;">状态</label><select id="fbReplyStatus" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:#fff;font-size:14px;outline:none;">'+statusOptions+'</select></div>';
             modalHtml+='<div><label style="display:block;color:rgba(255,255,255,0.5);font-size:12px;margin-bottom:6px;">回复内容</label><textarea id="fbReplyContent" rows="4" style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:#fff;font-size:14px;outline:none;resize:vertical;font-family:inherit;">'+replyValue+'</textarea></div>';
             modalHtml+='</div>';

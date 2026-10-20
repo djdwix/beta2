@@ -138,6 +138,8 @@
         .message.bot .data-card .row .label{color:#888}
         .message.bot .data-card .row .value{font-weight:600;color:#333;text-align:right}
         .message.bot .data-card .row .value.milestone{font-size:12px;color:#667eea;font-weight:500}
+        .message.bot .feedback-attachments{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+        .message.bot .feedback-attachments .fb-attach-tag{font-size:11px;background:#e8f0fe;color:#667eea;padding:3px 10px;border-radius:10px;border:1px solid rgba(102,126,234,0.2);white-space:nowrap}
         .typing-indicator{align-self:flex-start;background:#fff;padding:12px 20px;border-radius:16px;border-bottom-left-radius:4px;display:flex;gap:4px;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
         .typing-indicator .dot{width:8px;height:8px;background:#667eea;border-radius:50%;animation:bounce 1.4s infinite}
         .typing-indicator .dot:nth-child(2){animation-delay:0.2s}
@@ -425,7 +427,7 @@
             } else {
                 html += '<div style="text-align:center;color:#999;font-size:13px;padding:10px;">当前IP暂无日志记录</div>';
             }
-            html += '<div class="log-tip">💡 仅可下载当前客户端IP的日志内容<br>日志保留最近' + (data.max_days || 1) + '天，最多' + (data.max_entries || 5000) + '条</div>';
+            html += '<div class="log-tip">💡 仅可下载当前IP下您本人的操作日志<br>日志保留最近' + (data.max_days || 1) + '天，最多' + (data.max_entries || 5000) + '条</div>';
             html += '</div>';
             return html;
         }
@@ -1328,6 +1330,14 @@
                 html += '</div>';
                 html += '<div style="font-size:12px;color:#8a8aaa;margin-bottom:8px;">📂 ' + escapeHtml(fb.feedback_type) + ' · 🕐 ' + new Date(fb.created_at).toLocaleString('zh-CN') + '</div>';
                 html += '<div style="font-size:13px;color:#333;line-height:1.6;white-space:pre-wrap;word-break:break-word;background:#fff;padding:10px 12px;border-radius:8px;border-left:3px solid #667eea;">' + escapeHtml(fb.content) + '</div>';
+                if (fb.attachment_names && fb.attachment_names.length > 0) {
+                    html += '<div class="feedback-attachments">';
+                    fb.attachment_names.forEach(function(n) {
+                        html += '<span class="fb-attach-tag">📎 ' + escapeHtml(n) + '</span>';
+                    });
+                    html += '</div>';
+                    html += '<div style="font-size:11px;color:#999;margin-top:6px;">附件已随反馈邮件发送，服务器不保存文件</div>';
+                }
                 if (fb.reply) {
                     html += '<div style="background:#f0fdf4;border-left:3px solid #57F287;padding:10px 12px;margin-top:8px;border-radius:8px;font-size:13px;">';
                     html += '<div style="color:#3ba55c;font-weight:700;margin-bottom:6px;">💬 管理员回复</div>';

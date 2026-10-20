@@ -122,6 +122,8 @@ RATE_LIMITS = {
 
 LOCK_TIMEOUT = 15
 
+app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
+
 LRC_TS = re.compile(r"\[(\d{1,2}):(\d{1,2})(?:\.(\d+))?\]")
 
 QR_SECRET = os.getenv('QR_SECRET')
@@ -1283,8 +1285,8 @@ def append_ip_log(ip, level, message, extra=None):
     ip_logs[ip] = [e for e in ip_logs[ip] if e.get('timestamp', 0) >= cutoff]
 
 def cleanup_old_ip_logs():
-    current_time = int(time.time() * 1000)
-    cutoff = current_time - (LOG_MAX_DAYS * 24 * 3600 * 1000)
+    current_time_ms = int(time.time() * 1000)
+    cutoff = current_time_ms - (LOG_MAX_DAYS * 24 * 3600 * 1000)
     ips_to_remove = []
     for ip in list(ip_logs.keys()):
         ip_logs[ip] = [e for e in ip_logs[ip] if e.get('timestamp', 0) >= cutoff]
@@ -1294,10 +1296,16 @@ def cleanup_old_ip_logs():
         del ip_logs[ip]
     if ips_to_remove:
         save_ip_logs()
-    for username in list(log_request_cooldown.keys()):
-        if current_time - log_request_cooldown[username].get('last_request', 0) > 86400000:
-            del log_request_cooldown[username]
-    if log_request_cooldown:
+
+    current_time_sec = int(time.time())
+    cooldown_to_remove = []
+    for username, data in list(log_request_cooldown.items()):
+        last_req = data.get('last_request', 0)
+        if last_req > 0 and current_time_sec - last_req > 86400:
+            cooldown_to_remove.append(username)
+    for username in cooldown_to_remove:
+        del log_request_cooldown[username]
+    if cooldown_to_remove:
         save_log_request_cooldown()
 
 def cleanup_expired_log_tickets():
@@ -1335,10 +1343,10 @@ def decode_log_token(token):
     except Exception as e:
         return None, None, None, str(e)
 
-def get_ip_log_stats(ip):
+def get_ip_log_stats(ip, username):
     if ip not in ip_logs:
         return {'count': 0, 'first_time': 0, 'last_time': 0, 'levels': {}}
-    entries = ip_logs[ip]
+    entries = [e for e in ip_logs[ip] if e.get('extra', {}).get('username', '') == username]
     if not entries:
         return {'count': 0, 'first_time': 0, 'last_time': 0, 'levels': {}}
     levels = {}
@@ -1352,10 +1360,11 @@ def get_ip_log_stats(ip):
         'levels': levels
     }
 
-def format_log_entries(ip, entries):
+def format_log_entries(ip, entries, username):
     lines = []
     lines.append("=" * 80)
     lines.append(f"服务器日志 - IP: {ip}")
+    lines.append(f"账号范围: {username}（仅本人操作记录）")
     lines.append(f"生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     lines.append(f"日志条数: {len(entries)}")
     lines.append("=" * 80)
@@ -14864,10 +14873,9 @@ def get_public_announcements():
 def submit_feedback():
     start_time = time.time()
     username = session['user']['username']
-    data = request.get_json()
 
-    feedback_type = data.get('feedback_type', '').strip()
-    content = data.get('content', '').strip()
+    feedback_type = request.form.get('feedback_type', '').strip()
+    content = request.form.get('content', '').strip()
 
     if not feedback_type:
         return jsonify({'error': '请选择反馈类型'}), 400
@@ -14891,6 +14899,36 @@ def submit_feedback():
     if not user_email:
         return jsonify({'error': '您的账号未绑定邮箱，请先绑定邮箱后再提交反馈'}), 400
 
+    files = request.files.getlist('attachments')
+    if len(files) > 3:
+        return jsonify({'error': '最多上传3个附件'}), 400
+
+    attachments = []
+    total_size = 0
+    allowed_ext = {'.png', '.jpg', '.jpeg', '.gif', '.webp', '.pdf', '.txt', '.log', '.zip'}
+
+    for f in files:
+        if not f or not f.filename:
+            continue
+        filename = os.path.basename(f.filename)[:120]
+        ext = os.path.splitext(filename)[1].lower()
+        if ext not in allowed_ext:
+            return jsonify({'error': f'不支持的附件类型: {ext}'}), 400
+        raw = f.read()
+        size = len(raw)
+        if size == 0:
+            continue
+        if size > 5 * 1024 * 1024:
+            return jsonify({'error': f'附件 {filename} 超过5MB限制'}), 400
+        total_size += size
+        if total_size > 12 * 1024 * 1024:
+            return jsonify({'error': '附件总大小超过12MB限制'}), 400
+        attachments.append({
+            'filename': filename,
+            'content': raw,
+            'mime_type': f.mimetype or 'application/octet-stream'
+        })
+
     feedback_id = generate_feedback_id()
 
     feedbacks[feedback_id] = {
@@ -14905,8 +14943,10 @@ def submit_feedback():
     save_feedbacks()
 
     success, message = email_service.send_feedback_email(
-        username, user_email, feedback_type, feedback_id, content
+        username, user_email, feedback_type, feedback_id, content, attachments=attachments
     )
+
+    attachments.clear()
 
     if not success:
         log.warning(f"反馈邮件发送失败: {feedback_id}, 原因: {message}")
@@ -16742,12 +16782,16 @@ def get_log_status():
     username = session['user']['username']
     ip = get_client_ip()
     cleanup_expired_log_tickets()
-    stats = get_ip_log_stats(ip)
+
+    stats = get_ip_log_stats(ip, username)
     current_time = int(time.time())
-    cooldown_data = log_request_cooldown.get(username, {})
+
+    fresh_cooldown = load_data(LOG_REQUEST_COOLDOWN_FILE, {})
+    cooldown_data = fresh_cooldown.get(username, {})
     last_request = cooldown_data.get('last_request', 0)
-    cooldown_remaining = max(0, LOG_REQUEST_COOLDOWN_SECONDS - (current_time - last_request))
-    can_request = cooldown_remaining == 0
+    elapsed = current_time - last_request if last_request > 0 else LOG_REQUEST_COOLDOWN_SECONDS
+    cooldown_remaining = max(0, LOG_REQUEST_COOLDOWN_SECONDS - elapsed)
+
     return jsonify({
         'success': True,
         'ip_masked': mask_ip(ip),
@@ -16755,11 +16799,13 @@ def get_log_status():
         'first_time': stats['first_time'],
         'last_time': stats['last_time'],
         'levels': stats['levels'],
-        'can_request': can_request,
+        'can_request': cooldown_remaining == 0,
         'cooldown_remaining': cooldown_remaining,
         'cooldown_seconds': LOG_REQUEST_COOLDOWN_SECONDS,
         'max_days': LOG_MAX_DAYS,
-        'max_entries': MAX_LOG_ENTRIES_PER_IP
+        'max_entries': MAX_LOG_ENTRIES_PER_IP,
+        'request_count': cooldown_data.get('request_count', 0),
+        'last_request_time': last_request
     })
 
 @app.route('/api/logs/request', methods=['POST'])
@@ -16771,16 +16817,28 @@ def request_log_download():
     ip = get_client_ip()
     current_time = int(time.time())
     cleanup_expired_log_tickets()
-    cooldown_data = log_request_cooldown.get(username, {})
+
+    fresh_cooldown = load_data(LOG_REQUEST_COOLDOWN_FILE, {})
+    cooldown_data = fresh_cooldown.get(username, {})
     last_request = cooldown_data.get('last_request', 0)
-    cooldown_remaining = LOG_REQUEST_COOLDOWN_SECONDS - (current_time - last_request)
-    if cooldown_remaining > 0:
+
+    if last_request > 0:
+        elapsed = current_time - last_request
+        if elapsed < LOG_REQUEST_COOLDOWN_SECONDS:
+            return jsonify({
+                'error': f'请求过于频繁，请等待 {LOG_REQUEST_COOLDOWN_SECONDS - elapsed} 秒后再试',
+                'cooldown_remaining': LOG_REQUEST_COOLDOWN_SECONDS - elapsed,
+                'can_request': False
+            }), 429
+
+    own_entries = [e for e in ip_logs.get(ip, []) if e.get('extra', {}).get('username', '') == username]
+    if not own_entries:
         return jsonify({
-            'error': f'请求过于频繁，请等待 {cooldown_remaining} 秒后再试',
-            'cooldown_remaining': cooldown_remaining
-        }), 429
-    if ip not in ip_logs or not ip_logs[ip]:
-        return jsonify({'error': '当前IP暂无日志记录'}), 400
+            'error': '当前IP下暂无您的操作日志记录',
+            'can_request': True,
+            'log_count': 0
+        }), 400
+
     token, timestamp = generate_log_token(username, ip)
     ticket_id = f"log_{current_time}_{random.randint(1000, 9999)}"
     log_download_tickets[ticket_id] = {
@@ -16793,12 +16851,17 @@ def request_log_download():
         'used': False,
         'used_at': 0
     }
-    log_request_cooldown[username] = {
+
+    fresh_cooldown[username] = {
         'last_request': current_time,
-        'ip': ip
+        'ip': ip,
+        'request_count': cooldown_data.get('request_count', 0) + 1
     }
-    save_log_request_cooldown()
-    stats = get_ip_log_stats(ip)
+    log_request_cooldown[username] = fresh_cooldown[username]
+    save_data(LOG_REQUEST_COOLDOWN_FILE, fresh_cooldown)
+    FILE_MODIFICATION_TIMES['log_request_cooldown'] = get_file_mtime(LOG_REQUEST_COOLDOWN_FILE)
+
+    stats = get_ip_log_stats(ip, username)
     return jsonify({
         'success': True,
         'ticket_id': ticket_id,
@@ -16807,7 +16870,11 @@ def request_log_download():
         'expires_in': LOG_DOWNLOAD_EXPIRE_SECONDS,
         'log_count': stats['count'],
         'ip_masked': mask_ip(ip),
-        'message': '日志下载链接已生成，请及时下载'
+        'message': '日志下载链接已生成，仅包含您本人的操作记录，请及时下载',
+        'cooldown_seconds': LOG_REQUEST_COOLDOWN_SECONDS,
+        'cooldown_remaining': LOG_REQUEST_COOLDOWN_SECONDS,
+        'can_request': False,
+        'request_count': fresh_cooldown[username]['request_count']
     })
 
 @app.route('/api/logs/download', methods=['GET'])
@@ -16839,17 +16906,18 @@ def download_logs():
             del log_download_tickets[tid]
         return jsonify({'error': '下载链接已过期'}), 400
 
-    if ip not in ip_logs or not ip_logs[ip]:
-        return jsonify({'error': '该IP暂无日志记录'}), 400
+    own_entries = [e for e in ip_logs.get(ip, []) if e.get('extra', {}).get('username', '') == username]
+    if not own_entries:
+        return jsonify({'error': '当前IP下暂无您的操作日志记录'}), 400
 
-    entries = ip_logs[ip]
-    log_content = format_log_entries(ip, entries)
+    log_content = format_log_entries(ip, own_entries, username)
 
     ticket_found['used'] = True
     ticket_found['used_at'] = current_time
 
     safe_ip = mask_ip(ip).replace('*', 'x').replace('.', '_')
-    filename = f"server_log_{safe_ip}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+    safe_user = ''.join(c for c in username if c.isalnum() or c in '_-')[:20] or 'user'
+    filename = f"server_log_{safe_user}_{safe_ip}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
 
     response = make_response(log_content.encode('utf-8'))
     response.headers['Content-Type'] = 'text/plain; charset=utf-8'
@@ -16881,6 +16949,8 @@ def log_request_info(response):
                     }
                     if 'user' in session and session['user']:
                         extra['username'] = session['user'].get('username', '')
+                    else:
+                        extra['username'] = ''
                     append_ip_log(ip, level, message, extra)
                     if random.random() < 0.01:
                         save_ip_logs()

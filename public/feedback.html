@@ -178,6 +178,99 @@
             resize: vertical;
             line-height: 1.6;
         }
+        .file-input-wrapper {
+            position: relative;
+        }
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            width: 0.1px;
+            height: 0.1px;
+            opacity: 0;
+            overflow: hidden;
+            z-index: -1;
+        }
+        .file-input-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 18px 18px;
+            font-size: 14px;
+            font-weight: 700;
+            color: #ea580c;
+            background: #fffbf5;
+            border: 2px dashed #fdba74;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.25s;
+            text-align: center;
+        }
+        .file-input-label:hover {
+            background: #fff7ed;
+            border-color: #fb923c;
+        }
+        .file-input-label .file-icon {
+            font-size: 22px;
+        }
+        .selected-files {
+            margin-top: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .selected-file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            background: #fff;
+            border: 1px solid #fed7aa;
+            border-radius: 12px;
+            font-size: 13px;
+            color: #7c2d12;
+            font-weight: 600;
+            gap: 10px;
+        }
+        .selected-file-item .file-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .selected-file-item .file-size {
+            color: #b45309;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+        .selected-file-item .file-remove {
+            flex-shrink: 0;
+            background: #fef3e2;
+            color: #b45309;
+            border: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 800;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .selected-file-item .file-remove:hover {
+            background: #fed7aa;
+            color: #7c2d12;
+        }
+        .file-hint {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #b45309;
+            font-weight: 600;
+            line-height: 1.6;
+        }
         .char-count {
             text-align: right;
             font-size: 12px;
@@ -374,6 +467,21 @@
             border-left: 4px solid #fb923c;
             font-weight: 500;
         }
+        .feedback-item .fi-attachments {
+            margin-top: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .feedback-item .fi-attachment-tag {
+            font-size: 12px;
+            color: #b45309;
+            background: #fff;
+            padding: 5px 12px;
+            border-radius: 10px;
+            border: 1px solid #fed7aa;
+            font-weight: 600;
+        }
         .reply-box {
             margin-top: 14px;
             padding: 16px 18px;
@@ -505,6 +613,19 @@
                         <textarea id="content" placeholder="请详细描述您遇到的问题或建议（5-2000字）..." maxlength="2000"></textarea>
                         <div class="char-count" id="charCount">0 / 2000</div>
                     </div>
+                    <div class="form-group">
+                        <label>附件（可选）</label>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="attachments" multiple
+                                   accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.txt,.log,.zip">
+                            <label for="attachments" class="file-input-label">
+                                <span class="file-icon">📎</span>
+                                <span>点击选择附件</span>
+                            </label>
+                        </div>
+                        <div class="selected-files" id="selectedFiles"></div>
+                        <div class="file-hint">最多 3 个文件，单个不超过 5MB，总大小不超过 12MB。支持图片、PDF、TXT、LOG、ZIP。</div>
+                    </div>
                     <button type="submit" class="submit-btn" id="submitBtn">提交反馈</button>
                     <a href="/" class="back-link">← 返回首页</a>
                 </form>
@@ -540,6 +661,12 @@
             closed: { text: '已关闭', cls: 'closed' }
         };
 
+        const MAX_FILES = 3;
+        const MAX_FILE_SIZE = 5 * 1024 * 1024;
+        const MAX_TOTAL_SIZE = 12 * 1024 * 1024;
+
+        let selectedFiles = [];
+
         function showToast(message, type) {
             const toast = document.getElementById('toast');
             toast.textContent = message;
@@ -566,6 +693,12 @@
             }
         }
 
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+        }
+
         async function fetchCsrfToken() {
             try {
                 const res = await fetch('/api/csrf-token', { credentials: 'include' });
@@ -590,6 +723,57 @@
                 console.error('Load user info failed', e);
                 window.location.href = '/login.html';
             }
+        }
+
+        function renderSelectedFiles() {
+            const container = document.getElementById('selectedFiles');
+            if (!selectedFiles.length) {
+                container.innerHTML = '';
+                return;
+            }
+            container.innerHTML = selectedFiles.map((f, idx) => `
+                <div class="selected-file-item">
+                    <span class="file-name">📄 ${escapeHtml(f.name)}</span>
+                    <span class="file-size">${formatFileSize(f.size)}</span>
+                    <button type="button" class="file-remove" data-idx="${idx}" title="移除">×</button>
+                </div>
+            `).join('');
+
+            container.querySelectorAll('.file-remove').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const idx = parseInt(btn.getAttribute('data-idx'), 10);
+                    selectedFiles.splice(idx, 1);
+                    renderSelectedFiles();
+                });
+            });
+        }
+
+        function addFilesFromInput(fileList) {
+            if (!fileList || fileList.length === 0) return;
+
+            const incoming = Array.from(fileList);
+
+            for (const file of incoming) {
+                if (selectedFiles.length >= MAX_FILES) {
+                    showToast(`最多上传 ${MAX_FILES} 个附件`, 'error');
+                    break;
+                }
+                if (file.size > MAX_FILE_SIZE) {
+                    showToast(`附件 ${file.name} 超过 5MB 限制`, 'error');
+                    continue;
+                }
+                const totalSize = selectedFiles.reduce((s, f) => s + f.size, 0) + file.size;
+                if (totalSize > MAX_TOTAL_SIZE) {
+                    showToast('附件总大小超过 12MB 限制', 'error');
+                    break;
+                }
+                const dup = selectedFiles.some(f => f.name === file.name && f.size === file.size);
+                if (dup) {
+                    continue;
+                }
+                selectedFiles.push(file);
+            }
+            renderSelectedFiles();
         }
 
         async function loadFeedbackList(page) {
@@ -680,6 +864,12 @@
             else if (len > 1500) charCount.classList.add('warning');
         });
 
+        const fileInput = document.getElementById('attachments');
+        fileInput.addEventListener('change', () => {
+            addFilesFromInput(fileInput.files);
+            fileInput.value = '';
+        });
+
         document.getElementById('feedbackForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('submitBtn');
@@ -694,22 +884,35 @@
                 showToast('反馈内容至少5个字符', 'error');
                 return;
             }
+            if (selectedFiles.length > MAX_FILES) {
+                showToast(`最多上传 ${MAX_FILES} 个附件`, 'error');
+                return;
+            }
+
+            const totalSize = selectedFiles.reduce((s, f) => s + f.size, 0);
+            if (totalSize > MAX_TOTAL_SIZE) {
+                showToast('附件总大小超过 12MB 限制', 'error');
+                return;
+            }
 
             btn.disabled = true;
             btn.textContent = '提交中...';
 
             try {
+                const formData = new FormData();
+                formData.append('feedback_type', feedbackType);
+                formData.append('content', content);
+                for (const file of selectedFiles) {
+                    formData.append('attachments', file, file.name);
+                }
+
                 const res = await fetch('/api/feedback/submit', {
                     method: 'POST',
                     credentials: 'include',
                     headers: {
-                        'Content-Type': 'application/json',
                         'X-CSRF-Token': csrfToken
                     },
-                    body: JSON.stringify({
-                        feedback_type: feedbackType,
-                        content: content
-                    })
+                    body: formData
                 });
                 const data = await res.json();
 
@@ -721,6 +924,8 @@
                     contentInput.value = '';
                     charCount.textContent = '0 / 2000';
                     charCount.className = 'char-count';
+                    selectedFiles = [];
+                    renderSelectedFiles();
                 } else {
                     showToast(data.error || '提交失败，请重试', 'error');
                 }
