@@ -6,6 +6,8 @@ import string
 import logging
 import json
 import time
+import atexit
+import threading
 from threading import Lock, Thread
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -86,97 +88,182 @@ def ensure_data_dir():
         os.makedirs(data_dir)
     return data_dir
 
-def load_verification_codes():
+_codes_cache = {}
+_limits_cache = {}
+_codes_loaded = False
+_limits_loaded = False
+_codes_dirty = False
+_limits_dirty = False
+_flush_stop = threading.Event()
+_flush_lock = Lock()
+
+FLUSH_INTERVAL = 5.0
+
+def _read_codes_from_disk():
+    global _codes_cache, _codes_loaded
+    if _codes_loaded:
+        return _codes_cache
     data_dir = ensure_data_dir()
     codes_file = VERIFICATION_CODES_FILE
     with VERIFICATION_CODES_LOCK:
+        if _codes_loaded:
+            return _codes_cache
         if os.path.exists(codes_file):
             try:
                 with open(codes_file, 'rb') as f:
                     encrypted_data = f.read()
                     if encrypted_data:
-                        return decrypt_data(encrypted_data)
-                    return {}
+                        _codes_cache = decrypt_data(encrypted_data)
+                    else:
+                        _codes_cache = {}
             except Exception as e:
                 logger.error(f"加载验证码数据失败: {e}")
-                return {}
-        return {}
+                _codes_cache = {}
+        else:
+            _codes_cache = {}
+        _codes_loaded = True
+        return _codes_cache
 
-def save_verification_codes(codes_data):
-    data_dir = ensure_data_dir()
-    codes_file = VERIFICATION_CODES_FILE
-    with VERIFICATION_CODES_LOCK:
-        try:
-            encrypted_data = encrypt_data(codes_data)
-            with open(codes_file, 'wb') as f:
-                f.write(encrypted_data)
-            logger.info(f"验证码数据已保存: {codes_file}")
-            return True
-        except Exception as e:
-            logger.error(f"保存验证码数据失败: {e}")
-            return False
-
-def load_email_limits():
+def _read_limits_from_disk():
+    global _limits_cache, _limits_loaded
+    if _limits_loaded:
+        return _limits_cache
     data_dir = ensure_data_dir()
     limits_file = EMAIL_LIMITS_FILE
     with EMAIL_LIMITS_LOCK:
+        if _limits_loaded:
+            return _limits_cache
         if os.path.exists(limits_file):
             try:
                 with open(limits_file, 'rb') as f:
                     encrypted_data = f.read()
                     if encrypted_data:
-                        return decrypt_data(encrypted_data)
-                    return {}
+                        _limits_cache = decrypt_data(encrypted_data)
+                    else:
+                        _limits_cache = {}
             except Exception as e:
                 logger.error(f"加载邮箱限制数据失败: {e}")
-                return {}
-        return {}
+                _limits_cache = {}
+        else:
+            _limits_cache = {}
+        _limits_loaded = True
+        return _limits_cache
+
+def _write_codes_to_disk():
+    global _codes_dirty
+    with _flush_lock:
+        if not _codes_dirty:
+            return
+        _codes_dirty = False
+    try:
+        data_dir = ensure_data_dir()
+        codes_file = VERIFICATION_CODES_FILE
+        with VERIFICATION_CODES_LOCK:
+            snapshot = dict(_codes_cache)
+        encrypted_data = encrypt_data(snapshot)
+        tmp_path = codes_file + '.tmp'
+        with open(tmp_path, 'wb') as f:
+            f.write(encrypted_data)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp_path, codes_file)
+        logger.info(f"验证码数据已落盘: {codes_file}")
+    except Exception as e:
+        logger.error(f"保存验证码数据失败: {e}")
+        with _flush_lock:
+            _codes_dirty = True
+
+def _write_limits_to_disk():
+    global _limits_dirty
+    with _flush_lock:
+        if not _limits_dirty:
+            return
+        _limits_dirty = False
+    try:
+        data_dir = ensure_data_dir()
+        limits_file = EMAIL_LIMITS_FILE
+        with EMAIL_LIMITS_LOCK:
+            snapshot = dict(_limits_cache)
+        encrypted_data = encrypt_data(snapshot)
+        tmp_path = limits_file + '.tmp'
+        with open(tmp_path, 'wb') as f:
+            f.write(encrypted_data)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp_path, limits_file)
+        logger.info(f"邮箱限制数据已落盘: {limits_file}")
+    except Exception as e:
+        logger.error(f"保存邮箱限制数据失败: {e}")
+        with _flush_lock:
+            _limits_dirty = True
+
+def _flush_worker():
+    while not _flush_stop.wait(FLUSH_INTERVAL):
+        try:
+            _write_codes_to_disk()
+            _write_limits_to_disk()
+        except Exception as e:
+            logger.error(f"邮件存储 flush 异常: {e}")
+
+def flush_all_email_store():
+    _write_codes_to_disk()
+    _write_limits_to_disk()
+
+_flush_thread = Thread(target=_flush_worker, daemon=True, name='EmailStoreFlush')
+_flush_thread.start()
+atexit.register(flush_all_email_store)
+
+def load_verification_codes():
+    return _read_codes_from_disk()
+
+def save_verification_codes(codes_data):
+    global _codes_cache, _codes_dirty
+    with VERIFICATION_CODES_LOCK:
+        _codes_cache = codes_data
+        _codes_dirty = True
+    logger.info(f"验证码数据已标记待落盘: {VERIFICATION_CODES_FILE}")
+    return True
+
+def load_email_limits():
+    return _read_limits_from_disk()
 
 def save_email_limits(limits_data):
-    data_dir = ensure_data_dir()
-    limits_file = EMAIL_LIMITS_FILE
+    global _limits_cache, _limits_dirty
     with EMAIL_LIMITS_LOCK:
-        try:
-            encrypted_data = encrypt_data(limits_data)
-            with open(limits_file, 'wb') as f:
-                f.write(encrypted_data)
-            logger.info(f"邮箱限制数据已保存: {limits_file}")
-            return True
-        except Exception as e:
-            logger.error(f"保存邮箱限制数据失败: {e}")
-            return False
+        _limits_cache = limits_data
+        _limits_dirty = True
+    logger.info(f"邮箱限制数据已标记待落盘: {EMAIL_LIMITS_FILE}")
+    return True
 
 def init_email_limits():
     data_dir = ensure_data_dir()
     limits_file = EMAIL_LIMITS_FILE
-    with EMAIL_LIMITS_LOCK:
-        if not os.path.exists(limits_file):
-            try:
-                encrypted_data = encrypt_data({})
-                with open(limits_file, 'wb') as f:
-                    f.write(encrypted_data)
-                logger.info(f"邮箱限制文件已初始化创建: {limits_file}")
-                return True
-            except Exception as e:
-                logger.error(f"初始化邮箱限制文件失败: {e}")
-                return False
-        return True
+    if not os.path.exists(limits_file):
+        try:
+            encrypted_data = encrypt_data({})
+            with open(limits_file, 'wb') as f:
+                f.write(encrypted_data)
+            logger.info(f"邮箱限制文件已初始化创建: {limits_file}")
+            return True
+        except Exception as e:
+            logger.error(f"初始化邮箱限制文件失败: {e}")
+            return False
+    return True
 
 def init_verification_codes():
     data_dir = ensure_data_dir()
     codes_file = VERIFICATION_CODES_FILE
-    with VERIFICATION_CODES_LOCK:
-        if not os.path.exists(codes_file):
-            try:
-                encrypted_data = encrypt_data({})
-                with open(codes_file, 'wb') as f:
-                    f.write(encrypted_data)
-                logger.info(f"验证码文件已初始化创建: {codes_file}")
-                return True
-            except Exception as e:
-                logger.error(f"初始化验证码文件失败: {e}")
-                return False
-        return True
+    if not os.path.exists(codes_file):
+        try:
+            encrypted_data = encrypt_data({})
+            with open(codes_file, 'wb') as f:
+                f.write(encrypted_data)
+            logger.info(f"验证码文件已初始化创建: {codes_file}")
+            return True
+        except Exception as e:
+            logger.error(f"初始化验证码文件失败: {e}")
+            return False
+    return True
 
 def initialize_storage():
     init_email_limits()

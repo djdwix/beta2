@@ -35,6 +35,7 @@ import qrcode
 from io import BytesIO
 from filelock import FileLock, Timeout
 import email_service
+import atexit
 
 logging.basicConfig(
     level=logging.INFO,
@@ -267,14 +268,128 @@ COUPON_TYPE_MAP = {
 
 FILE_MODIFICATION_TIMES = {}
 
+class DataStore:
+    FLUSH_INTERVAL = 3.0
+    FLUSH_MAX_BATCH = 100
+
+    def __init__(self, data_dir, cipher, load_defaults=None):
+        self.data_dir = data_dir
+        self.cipher = cipher
+        self._cache = {}
+        self._dirty = set()
+        self._locks = {}
+        self._global_lock = threading.RLock()
+        self._stop = threading.Event()
+        self._load_defaults = load_defaults or {}
+        self._flush_thread = threading.Thread(
+            target=self._flush_loop, daemon=True, name="DataStoreFlush"
+        )
+        self._flush_thread.start()
+        atexit.register(self.flush_all)
+
+    def get(self, key):
+        with self._global_lock:
+            if key in self._cache:
+                return self._cache[key]
+        data = self._load_from_disk(key)
+        with self._global_lock:
+            if key not in self._cache:
+                self._cache[key] = data
+            return self._cache[key]
+
+    def set(self, key, data):
+        with self._global_lock:
+            self._cache[key] = data
+            self._dirty.add(key)
+
+    def mark_dirty(self, key):
+        with self._global_lock:
+            self._dirty.add(key)
+
+    def get_lock(self, key):
+        with self._global_lock:
+            if key not in self._locks:
+                self._locks[key] = threading.RLock()
+            return self._locks[key]
+
+    def _flush_loop(self):
+        while not self._stop.wait(self.FLUSH_INTERVAL):
+            try:
+                self._flush_dirty()
+            except Exception as e:
+                log.error(f"DataStore flush error: {e}")
+
+    def _flush_dirty(self):
+        with self._global_lock:
+            if not self._dirty:
+                return
+            keys = list(self._dirty)[:self.FLUSH_MAX_BATCH]
+            for k in keys:
+                self._dirty.discard(k)
+        for key in keys:
+            data = self._cache.get(key)
+            if data is None:
+                continue
+            try:
+                self._write_to_disk(key, data)
+            except Exception as e:
+                log.error(f"DataStore write {key} failed: {e}")
+                with self._global_lock:
+                    self._dirty.add(key)
+
+    def flush_all(self):
+        with self._global_lock:
+            keys = list(self._dirty)
+        for key in keys:
+            data = self._cache.get(key)
+            if data is None:
+                continue
+            try:
+                self._write_to_disk(key, data)
+                with self._global_lock:
+                    self._dirty.discard(key)
+            except Exception as e:
+                log.error(f"DataStore flush_all {key} failed: {e}")
+
+    def _path(self, key):
+        return os.path.join(self.data_dir, key)
+
+    def _load_from_disk(self, key):
+        path = self._path(key)
+        default = self._load_defaults.get(key, {})
+        if not os.path.exists(path):
+            return default
+        try:
+            with open(path, 'rb') as f:
+                return json.loads(self.cipher.decrypt(f.read()).decode('utf-8'))
+        except Exception as e:
+            log.error(f"DataStore load {key} failed: {e}")
+            return default
+
+    def _write_to_disk(self, key, data):
+        path = self._path(key)
+        tmp = path + ".tmp"
+        payload = self.cipher.encrypt(
+            json.dumps(data, ensure_ascii=False, default=str).encode('utf-8')
+        )
+        with open(tmp, 'wb') as f:
+            f.write(payload)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, path)
+
+store = DataStore(DATA_DIR, cipher)
+
+def _file_key(file_path):
+    return os.path.basename(file_path)
+
 def get_file_lock(file_path):
-    lock_path = file_path + '.lock'
-    return FileLock(lock_path, timeout=LOCK_TIMEOUT)
+    return store.get_lock(_file_key(file_path))
 
 def get_file_mtime(file_path):
     try:
         return os.path.getmtime(file_path)
-    except:
+    except Exception:
         return 0
 
 def encrypt_data(data):
@@ -288,114 +403,58 @@ def decrypt_data(encrypted_data):
 def load_data(file_path, default_value=None):
     if default_value is None:
         default_value = {}
-    if not os.path.exists(file_path):
-        return default_value
-    max_retries = 3
-    for attempt in range(max_retries):
-        try:
-            lock = get_file_lock(file_path)
-            with lock.acquire(timeout=LOCK_TIMEOUT):
-                with open(file_path, 'rb') as f:
-                    encrypted_data = f.read()
-                    return decrypt_data(encrypted_data)
-        except Timeout:
-            log.warning(f"Lock timeout loading {file_path}, attempt {attempt + 1}/{max_retries}")
-            if attempt < max_retries - 1:
-                time.sleep(0.5 * (attempt + 1))
-            else:
-                log.error(f"Lock timeout loading {file_path} after {max_retries} attempts")
-                return default_value
-        except Exception as e:
-            log.error(f"Error loading {file_path}: {e}")
-            return default_value
-    return default_value
+    key = _file_key(file_path)
+    store._load_defaults[key] = default_value
+    return store.get(key)
 
 def save_data(file_path, data):
-    max_retries = 3
-    for attempt in range(max_retries):
-        try:
-            lock = get_file_lock(file_path)
-            with lock.acquire(timeout=LOCK_TIMEOUT):
-                encrypted_data = encrypt_data(data)
-                with open(file_path, 'wb') as f:
-                    f.write(encrypted_data)
-                return True
-        except Timeout:
-            log.warning(f"Lock timeout saving {file_path}, attempt {attempt + 1}/{max_retries}")
-            if attempt < max_retries - 1:
-                time.sleep(0.5 * (attempt + 1))
-            else:
-                log.error(f"Lock timeout saving {file_path} after {max_retries} attempts")
-                return False
-        except Exception as e:
-            log.error(f"Error saving {file_path}: {e}")
-            return False
-    return False
+    key = _file_key(file_path)
+    store.set(key, data)
+    return True
 
-# ======================= DYNAMIC PRICING SYSTEM =======================
+def mark_dirty(file_path):
+    store.mark_dirty(_file_key(file_path))
 
 def get_user_effective_points(username):
-    """
-    Calculate the user's effective points balance (regular points + fund balance)
-    """
     if username not in users:
         return 0
-    
     user_data = users.get(username, {})
     regular_points = user_data.get('totalPoints', 0)
     fund_balance = get_user_fund_balance(username)
-    
     return regular_points + fund_balance
 
 
 def get_price_multiplier(username):
-    """
-    Get the price multiplier based on the user's effective points balance.
-    Uses tiered pricing: higher balance = higher multiplier.
-    """
     effective_points = get_user_effective_points(username)
-    
     if effective_points >= 500000:
-        return 1.90  # 90% increase
+        return 1.90
     elif effective_points >= 300000:
-        return 1.70  # 70% increase
+        return 1.70
     elif effective_points >= 200000:
-        return 1.48  # 48% increase
+        return 1.48
     elif effective_points >= 100000:
-        return 1.35  # 35% increase
+        return 1.35
     elif effective_points >= 50000:
-        return 1.20  # 20% increase
+        return 1.20
     else:
-        return 1.00  # No multiplier for balances under 50,000
+        return 1.00
 
 
 def get_final_price(original_price, username):
-    """
-    Calculate the final price after applying new user discount and tiered price multiplier.
-    The multiplier is applied AFTER any new user discount.
-    """
-    # Step 1: Apply new user discount (if applicable)
     if is_new_user(username):
         discounted_price = round(original_price * 0.8, 2)
     else:
         discounted_price = original_price
-    
-    # Step 2: Apply tiered price multiplier based on effective points
     multiplier = get_price_multiplier(username)
     final_price = round(discounted_price * multiplier, 2)
-    
     return final_price
 
 
 def get_price_info(original_price, username):
-    """
-    Get detailed price information including discount and multiplier breakdown.
-    Useful for displaying to the user.
-    """
     is_new = is_new_user(username)
     effective_points = get_user_effective_points(username)
     multiplier = get_price_multiplier(username)
-    
+
     if is_new:
         discounted_price = round(original_price * 0.8, 2)
         discount_amount = round(original_price - discounted_price, 2)
@@ -404,10 +463,10 @@ def get_price_info(original_price, username):
         discounted_price = original_price
         discount_amount = 0
         discount_type = 'none'
-    
+
     final_price = round(discounted_price * multiplier, 2)
     multiplier_amount = round(final_price - discounted_price, 2)
-    
+
     return {
         'original_price': original_price,
         'discounted_price': discounted_price,
@@ -420,14 +479,12 @@ def get_price_info(original_price, username):
         'is_new_user': is_new
     }
 
-# ======================= END DYNAMIC PRICING SYSTEM =======================
-
 def load_id_cards_used():
     if os.path.exists(ID_CARDS_USED_FILE):
         try:
             with open(ID_CARDS_USED_FILE, 'r', encoding='utf-8') as f:
                 return json.load(f)
-        except:
+        except Exception:
             return {}
     return {}
 
@@ -441,48 +498,17 @@ def save_id_cards_used(used_data):
         return False
 
 def load_captcha_storage():
-    if os.path.exists(CAPTCHA_STORAGE_FILE):
-        try:
-            lock = get_file_lock(CAPTCHA_STORAGE_FILE)
-            with lock.acquire(timeout=LOCK_TIMEOUT):
-                with open(CAPTCHA_STORAGE_FILE, 'rb') as f:
-                    encrypted_data = f.read()
-                    return decrypt_data(encrypted_data)
-        except:
-            return {}
-    return {}
+    return store.get(_file_key(CAPTCHA_STORAGE_FILE))
 
 def save_captcha_storage(data):
-    try:
-        lock = get_file_lock(CAPTCHA_STORAGE_FILE)
-        with lock.acquire(timeout=LOCK_TIMEOUT):
-            encrypted_data = encrypt_data(data)
-            with open(CAPTCHA_STORAGE_FILE, 'wb') as f:
-                f.write(encrypted_data)
-    except Exception as e:
-        log.error(f"Error saving captcha storage: {e}")
+    store.set(_file_key(CAPTCHA_STORAGE_FILE), data)
 
 def load_system_total_points():
-    if os.path.exists(SYSTEM_POINTS_FILE):
-        try:
-            lock = get_file_lock(SYSTEM_POINTS_FILE)
-            with lock.acquire(timeout=LOCK_TIMEOUT):
-                with open(SYSTEM_POINTS_FILE, 'rb') as f:
-                    encrypted_data = f.read()
-                    return decrypt_data(encrypted_data).get('total_points', 0)
-        except:
-            return 0
-    return 0
+    data = store.get(_file_key(SYSTEM_POINTS_FILE))
+    return data.get('total_points', 0)
 
 def save_system_total_points(points):
-    try:
-        lock = get_file_lock(SYSTEM_POINTS_FILE)
-        with lock.acquire(timeout=LOCK_TIMEOUT):
-            encrypted_data = encrypt_data({'total_points': points})
-            with open(SYSTEM_POINTS_FILE, 'wb') as f:
-                f.write(encrypted_data)
-    except Exception as e:
-        log.error(f"Error saving system points: {e}")
+    store.set(_file_key(SYSTEM_POINTS_FILE), {'total_points': points})
 
 system_total_points = load_system_total_points()
 
@@ -498,72 +524,23 @@ def burn_excess_system_points():
     return 0
 
 def load_newbie_pool_data():
-    if os.path.exists(NEWBIE_POOL_FILE):
-        try:
-            lock = get_file_lock(NEWBIE_POOL_FILE)
-            with lock.acquire(timeout=LOCK_TIMEOUT):
-                with open(NEWBIE_POOL_FILE, 'rb') as f:
-                    encrypted_data = f.read()
-                    return decrypt_data(encrypted_data)
-        except:
-            return {}
-    return {}
+    return store.get(_file_key(NEWBIE_POOL_FILE))
 
 def save_newbie_pool_data(data):
-    try:
-        lock = get_file_lock(NEWBIE_POOL_FILE)
-        with lock.acquire(timeout=LOCK_TIMEOUT):
-            encrypted_data = encrypt_data(data)
-            with open(NEWBIE_POOL_FILE, 'wb') as f:
-                f.write(encrypted_data)
-    except Exception as e:
-        log.error(f"Error saving newbie pool: {e}")
+    store.set(_file_key(NEWBIE_POOL_FILE), data)
 
 def load_reset_limits():
-    if os.path.exists(RESET_LIMITS_FILE):
-        try:
-            lock = get_file_lock(RESET_LIMITS_FILE)
-            with lock.acquire(timeout=LOCK_TIMEOUT):
-                with open(RESET_LIMITS_FILE, 'rb') as f:
-                    encrypted_data = f.read()
-                    return decrypt_data(encrypted_data)
-        except:
-            return {}
-    return {}
+    return store.get(_file_key(RESET_LIMITS_FILE))
 
 def save_reset_limits(data):
-    try:
-        lock = get_file_lock(RESET_LIMITS_FILE)
-        with lock.acquire(timeout=LOCK_TIMEOUT):
-            encrypted_data = encrypt_data(data)
-            with open(RESET_LIMITS_FILE, 'wb') as f:
-                f.write(encrypted_data)
-            return True
-    except Exception as e:
-        log.error(f"Error saving reset limits: {e}")
-        return False
+    store.set(_file_key(RESET_LIMITS_FILE), data)
+    return True
 
 def load_newbie_pool_claims():
-    if os.path.exists(NEWBIE_POOL_CLAIMS_FILE):
-        try:
-            lock = get_file_lock(NEWBIE_POOL_CLAIMS_FILE)
-            with lock.acquire(timeout=LOCK_TIMEOUT):
-                with open(NEWBIE_POOL_CLAIMS_FILE, 'rb') as f:
-                    encrypted_data = f.read()
-                    return decrypt_data(encrypted_data)
-        except:
-            return {}
-    return {}
+    return store.get(_file_key(NEWBIE_POOL_CLAIMS_FILE))
 
 def save_newbie_pool_claims(data):
-    try:
-        lock = get_file_lock(NEWBIE_POOL_CLAIMS_FILE)
-        with lock.acquire(timeout=LOCK_TIMEOUT):
-            encrypted_data = encrypt_data(data)
-            with open(NEWBIE_POOL_CLAIMS_FILE, 'wb') as f:
-                f.write(encrypted_data)
-    except Exception as e:
-        log.error(f"Error saving newbie claims: {e}")
+    store.set(_file_key(NEWBIE_POOL_CLAIMS_FILE), data)
 
 newbie_pool_data = load_newbie_pool_data()
 newbie_pool_claims = load_newbie_pool_claims()
@@ -588,286 +565,28 @@ mail_attachments = load_data(MAIL_ATTACHMENTS_FILE, {})
 mail_read_receipts = load_data(MAIL_READ_RECEIPTS_FILE, {})
 
 def save_mail_attachments():
-    save_data(MAIL_ATTACHMENTS_FILE, mail_attachments)
-    FILE_MODIFICATION_TIMES['mail_attachments'] = get_file_mtime(MAIL_ATTACHMENTS_FILE)
+    mark_dirty(MAIL_ATTACHMENTS_FILE)
 
 def save_mail_read_receipts():
-    save_data(MAIL_READ_RECEIPTS_FILE, mail_read_receipts)
-    FILE_MODIFICATION_TIMES['mail_read_receipts'] = get_file_mtime(MAIL_READ_RECEIPTS_FILE)
+    mark_dirty(MAIL_READ_RECEIPTS_FILE)
 
 def save_pool_records():
-    save_data(POOL_RECORDS_FILE, pool_records)
-    FILE_MODIFICATION_TIMES['pool_records'] = get_file_mtime(POOL_RECORDS_FILE)
+    mark_dirty(POOL_RECORDS_FILE)
 
 def save_user_pool_claims():
-    save_data(USER_POOL_CLAIMS_FILE, user_pool_claims)
-    FILE_MODIFICATION_TIMES['user_pool_claims'] = get_file_mtime(USER_POOL_CLAIMS_FILE)
+    mark_dirty(USER_POOL_CLAIMS_FILE)
 
 def save_fund_data():
-    save_data(FUND_DATA_FILE, fund_data)
-    FILE_MODIFICATION_TIMES['fund_data'] = get_file_mtime(FUND_DATA_FILE)
+    mark_dirty(FUND_DATA_FILE)
 
 def save_fund_history():
-    save_data(FUND_HISTORY_FILE, fund_history)
-    FILE_MODIFICATION_TIMES['fund_history'] = get_file_mtime(FUND_HISTORY_FILE)
+    mark_dirty(FUND_HISTORY_FILE)
 
 def save_fund_rate():
-    save_data(FUND_RATE_FILE, fund_rate)
-    FILE_MODIFICATION_TIMES['fund_rate'] = get_file_mtime(FUND_RATE_FILE)
+    mark_dirty(FUND_RATE_FILE)
 
 def reload_if_changed():
-    global users, phone_records, auth_codes, reset_codes, point_codes, premium_point_codes, boost_codes, special_point_codes, makeup_codes, gamblers_codes, box_codes, plcard_codes, premium_boost_codes, user_boosts, identity_verifications, cancellation_codes, restricted_users, cdk_packages, user_cdk_records, announcements, pl_exchange_records, pl_rate_data, user_pl_balances, system_total_points, orders, user_pay_passwords, user_code_limits, coupons, user_coupons, coupon_grants, pl_transfers, gateway_cards, mail_attachments, mail_read_receipts, pool_records, user_pool_claims, fund_data, fund_history, fund_rate, nav_data, nav_holdings, nav_history, gateway_stock, feedbacks, activities, user_activity_records, email_push_records, analytics_cache, ip_logs, log_request_cooldown
-
-    users_mtime = get_file_mtime(USERS_FILE)
-    phone_mtime = get_file_mtime(PHONE_RECORDS_FILE)
-    auth_mtime = get_file_mtime(AUTH_CODES_FILE)
-    reset_mtime = get_file_mtime(RESET_CODES_FILE)
-    point_mtime = get_file_mtime(POINT_CODES_FILE)
-    premium_mtime = get_file_mtime(PREMIUM_POINT_CODES_FILE)
-    boost_mtime = get_file_mtime(BOOST_CODES_FILE)
-    special_mtime = get_file_mtime(SPECIAL_POINT_CODES_FILE)
-    makeup_mtime = get_file_mtime(MAKEUP_CODES_FILE)
-    gamblers_mtime = get_file_mtime(GAMBLERS_CODES_FILE)
-    box_mtime = get_file_mtime(BOX_CODES_FILE)
-    plcard_mtime = get_file_mtime(PLCARD_CODES_FILE)
-    premium_boost_mtime = get_file_mtime(PREMIUM_BOOST_CODES_FILE)
-    user_boost_mtime = get_file_mtime(USER_BOOSTS_FILE)
-    identity_mtime = get_file_mtime(IDENTITY_VERIFICATIONS_FILE)
-    cancellation_mtime = get_file_mtime(CANCELLATION_CODES_FILE)
-    restricted_mtime = get_file_mtime(RESTRICTED_USERS_FILE)
-    cdk_mtime = get_file_mtime(CDK_PACKAGES_FILE)
-    user_cdk_mtime = get_file_mtime(USER_CDK_RECORDS_FILE)
-    announcement_mtime = get_file_mtime(ANNOUNCEMENTS_FILE)
-    pl_exchange_mtime = get_file_mtime(PL_EXCHANGE_FILE)
-    pl_rate_mtime = get_file_mtime(PL_RATE_FILE)
-    user_pl_mtime = get_file_mtime(USER_PL_FILE)
-    system_points_mtime = get_file_mtime(SYSTEM_POINTS_FILE)
-    orders_mtime = get_file_mtime(ORDERS_FILE)
-    pay_password_mtime = get_file_mtime(USER_PAY_PASSWORDS_FILE)
-    code_limits_mtime = get_file_mtime(USER_CODE_LIMITS_FILE)
-    coupons_mtime = get_file_mtime(COUPONS_FILE)
-    user_coupons_mtime = get_file_mtime(USER_COUPONS_FILE)
-    coupon_grants_mtime = get_file_mtime(COUPON_GRANTS_FILE)
-    pl_transfers_mtime = get_file_mtime(PL_TRANSFERS_FILE)
-    gateway_cards_mtime = get_file_mtime(GATEWAY_CARDS_FILE)
-    mail_attachments_mtime = get_file_mtime(MAIL_ATTACHMENTS_FILE)
-    mail_read_receipts_mtime = get_file_mtime(MAIL_READ_RECEIPTS_FILE)
-    pool_records_mtime = get_file_mtime(POOL_RECORDS_FILE)
-    user_pool_claims_mtime = get_file_mtime(USER_POOL_CLAIMS_FILE)
-    fund_data_mtime = get_file_mtime(FUND_DATA_FILE)
-    fund_history_mtime = get_file_mtime(FUND_HISTORY_FILE)
-    fund_rate_mtime = get_file_mtime(FUND_RATE_FILE)
-    nav_data_mtime = get_file_mtime(NAV_DATA_FILE)
-    nav_holdings_mtime = get_file_mtime(NAV_HOLDINGS_FILE)
-    nav_history_mtime = get_file_mtime(NAV_HISTORY_FILE)
-    gateway_stock_mtime = get_file_mtime(GATEWAY_STOCK_FILE)
-    feedbacks_mtime = get_file_mtime(FEEDBACKS_FILE)
-    activities_mtime = get_file_mtime(ACTIVITIES_FILE)
-    user_activity_records_mtime = get_file_mtime(USER_ACTIVITY_RECORDS_FILE)
-    email_push_records_mtime = get_file_mtime(EMAIL_PUSH_RECORDS_FILE)
-    analytics_cache_mtime = get_file_mtime(ANALYTICS_CACHE_FILE)
-    ip_logs_mtime = get_file_mtime(IP_LOGS_FILE)
-    log_cooldown_mtime = get_file_mtime(LOG_REQUEST_COOLDOWN_FILE)
-
-    if users_mtime != FILE_MODIFICATION_TIMES.get('users', 0):
-        users = load_data(USERS_FILE, {})
-        FILE_MODIFICATION_TIMES['users'] = users_mtime
-
-    if phone_mtime != FILE_MODIFICATION_TIMES.get('phone', 0):
-        phone_records = load_data(PHONE_RECORDS_FILE, {})
-        FILE_MODIFICATION_TIMES['phone'] = phone_mtime
-
-    if auth_mtime != FILE_MODIFICATION_TIMES.get('auth', 0):
-        auth_codes = load_data(AUTH_CODES_FILE, {})
-        FILE_MODIFICATION_TIMES['auth'] = auth_mtime
-
-    if reset_mtime != FILE_MODIFICATION_TIMES.get('reset', 0):
-        reset_codes = load_data(RESET_CODES_FILE, {})
-        FILE_MODIFICATION_TIMES['reset'] = reset_mtime
-
-    if point_mtime != FILE_MODIFICATION_TIMES.get('point', 0):
-        point_codes = load_data(POINT_CODES_FILE, {})
-        FILE_MODIFICATION_TIMES['point'] = point_mtime
-
-    if premium_mtime != FILE_MODIFICATION_TIMES.get('premium_point', 0):
-        premium_point_codes = load_data(PREMIUM_POINT_CODES_FILE, {})
-        FILE_MODIFICATION_TIMES['premium_point'] = premium_mtime
-
-    if boost_mtime != FILE_MODIFICATION_TIMES.get('boost', 0):
-        boost_codes = load_data(BOOST_CODES_FILE, {})
-        FILE_MODIFICATION_TIMES['boost'] = boost_mtime
-
-    if special_mtime != FILE_MODIFICATION_TIMES.get('special_point', 0):
-        special_point_codes = load_data(SPECIAL_POINT_CODES_FILE, {})
-        FILE_MODIFICATION_TIMES['special_point'] = special_mtime
-
-    if makeup_mtime != FILE_MODIFICATION_TIMES.get('makeup', 0):
-        makeup_codes = load_data(MAKEUP_CODES_FILE, {})
-        FILE_MODIFICATION_TIMES['makeup'] = makeup_mtime
-
-    if gamblers_mtime != FILE_MODIFICATION_TIMES.get('gamblers', 0):
-        gamblers_codes = load_data(GAMBLERS_CODES_FILE, {})
-        FILE_MODIFICATION_TIMES['gamblers'] = gamblers_mtime
-
-    if box_mtime != FILE_MODIFICATION_TIMES.get('box', 0):
-        box_codes = load_data(BOX_CODES_FILE, {})
-        FILE_MODIFICATION_TIMES['box'] = box_mtime
-
-    if plcard_mtime != FILE_MODIFICATION_TIMES.get('plcard', 0):
-        plcard_codes = load_data(PLCARD_CODES_FILE, {})
-        FILE_MODIFICATION_TIMES['plcard'] = plcard_mtime
-
-    if premium_boost_mtime != FILE_MODIFICATION_TIMES.get('premium_boost', 0):
-        premium_boost_codes = load_data(PREMIUM_BOOST_CODES_FILE, {})
-        FILE_MODIFICATION_TIMES['premium_boost'] = premium_boost_mtime
-
-    if user_boost_mtime != FILE_MODIFICATION_TIMES.get('user_boost', 0):
-        user_boosts = load_data(USER_BOOSTS_FILE, {})
-        FILE_MODIFICATION_TIMES['user_boost'] = user_boost_mtime
-
-    if identity_mtime != FILE_MODIFICATION_TIMES.get('identity', 0):
-        identity_verifications = load_data(IDENTITY_VERIFICATIONS_FILE, {})
-        FILE_MODIFICATION_TIMES['identity'] = identity_mtime
-
-    if cancellation_mtime != FILE_MODIFICATION_TIMES.get('cancellation', 0):
-        cancellation_codes = load_data(CANCELLATION_CODES_FILE, {})
-        FILE_MODIFICATION_TIMES['cancellation'] = cancellation_mtime
-
-    if restricted_mtime != FILE_MODIFICATION_TIMES.get('restricted', 0):
-        restricted_users = load_data(RESTRICTED_USERS_FILE, {})
-        FILE_MODIFICATION_TIMES['restricted'] = restricted_mtime
-
-    if cdk_mtime != FILE_MODIFICATION_TIMES.get('cdk', 0):
-        cdk_packages = load_data(CDK_PACKAGES_FILE, {})
-        FILE_MODIFICATION_TIMES['cdk'] = cdk_mtime
-
-    if user_cdk_mtime != FILE_MODIFICATION_TIMES.get('user_cdk', 0):
-        user_cdk_records = load_data(USER_CDK_RECORDS_FILE, {})
-        FILE_MODIFICATION_TIMES['user_cdk'] = user_cdk_mtime
-
-    if announcement_mtime != FILE_MODIFICATION_TIMES.get('announcements', 0):
-        announcements = load_data(ANNOUNCEMENTS_FILE, {})
-        FILE_MODIFICATION_TIMES['announcements'] = announcement_mtime
-
-    if pl_exchange_mtime != FILE_MODIFICATION_TIMES.get('pl_exchange', 0):
-        pl_exchange_records = load_data(PL_EXCHANGE_FILE, {})
-        FILE_MODIFICATION_TIMES['pl_exchange'] = pl_exchange_mtime
-
-    if pl_rate_mtime != FILE_MODIFICATION_TIMES.get('pl_rate', 0):
-        pl_rate_data = load_data(PL_RATE_FILE, {})
-        FILE_MODIFICATION_TIMES['pl_rate'] = pl_rate_mtime
-
-    if user_pl_mtime != FILE_MODIFICATION_TIMES.get('user_pl', 0):
-        user_pl_balances = load_data(USER_PL_FILE, {})
-        FILE_MODIFICATION_TIMES['user_pl'] = user_pl_mtime
-
-    if system_points_mtime != FILE_MODIFICATION_TIMES.get('system_points', 0):
-        system_total_points = load_system_total_points()
-        FILE_MODIFICATION_TIMES['system_points'] = system_points_mtime
-
-    if orders_mtime != FILE_MODIFICATION_TIMES.get('orders', 0):
-        orders = load_data(ORDERS_FILE, {})
-        FILE_MODIFICATION_TIMES['orders'] = orders_mtime
-
-    if pay_password_mtime != FILE_MODIFICATION_TIMES.get('pay_password', 0):
-        user_pay_passwords = load_data(USER_PAY_PASSWORDS_FILE, {})
-        FILE_MODIFICATION_TIMES['pay_password'] = pay_password_mtime
-
-    if code_limits_mtime != FILE_MODIFICATION_TIMES.get('code_limits', 0):
-        user_code_limits = load_data(USER_CODE_LIMITS_FILE, {})
-        FILE_MODIFICATION_TIMES['code_limits'] = code_limits_mtime
-
-    if coupons_mtime != FILE_MODIFICATION_TIMES.get('coupons', 0):
-        coupons = load_data(COUPONS_FILE, {})
-        FILE_MODIFICATION_TIMES['coupons'] = coupons_mtime
-
-    if user_coupons_mtime != FILE_MODIFICATION_TIMES.get('user_coupons', 0):
-        user_coupons = load_data(USER_COUPONS_FILE, {})
-        FILE_MODIFICATION_TIMES['user_coupons'] = user_coupons_mtime
-
-    if coupon_grants_mtime != FILE_MODIFICATION_TIMES.get('coupon_grants', 0):
-        coupon_grants = load_data(COUPON_GRANTS_FILE, {})
-        FILE_MODIFICATION_TIMES['coupon_grants'] = coupon_grants_mtime
-
-    if pl_transfers_mtime != FILE_MODIFICATION_TIMES.get('pl_transfers', 0):
-        pl_transfers = load_data(PL_TRANSFERS_FILE, {})
-        FILE_MODIFICATION_TIMES['pl_transfers'] = pl_transfers_mtime
-
-    if gateway_cards_mtime != FILE_MODIFICATION_TIMES.get('gateway_cards', 0):
-        gateway_cards = load_data(GATEWAY_CARDS_FILE, {})
-        FILE_MODIFICATION_TIMES['gateway_cards'] = gateway_cards_mtime
-
-    if mail_attachments_mtime != FILE_MODIFICATION_TIMES.get('mail_attachments', 0):
-        mail_attachments = load_data(MAIL_ATTACHMENTS_FILE, {})
-        FILE_MODIFICATION_TIMES['mail_attachments'] = mail_attachments_mtime
-
-    if mail_read_receipts_mtime != FILE_MODIFICATION_TIMES.get('mail_read_receipts', 0):
-        mail_read_receipts = load_data(MAIL_READ_RECEIPTS_FILE, {})
-        FILE_MODIFICATION_TIMES['mail_read_receipts'] = mail_read_receipts_mtime
-
-    if pool_records_mtime != FILE_MODIFICATION_TIMES.get('pool_records', 0):
-        pool_records = load_data(POOL_RECORDS_FILE, {})
-        FILE_MODIFICATION_TIMES['pool_records'] = pool_records_mtime
-
-    if user_pool_claims_mtime != FILE_MODIFICATION_TIMES.get('user_pool_claims', 0):
-        user_pool_claims = load_data(USER_POOL_CLAIMS_FILE, {})
-        FILE_MODIFICATION_TIMES['user_pool_claims'] = user_pool_claims_mtime
-
-    if fund_data_mtime != FILE_MODIFICATION_TIMES.get('fund_data', 0):
-        fund_data = load_data(FUND_DATA_FILE, {})
-        FILE_MODIFICATION_TIMES['fund_data'] = fund_data_mtime
-
-    if fund_history_mtime != FILE_MODIFICATION_TIMES.get('fund_history', 0):
-        fund_history = load_data(FUND_HISTORY_FILE, {})
-        FILE_MODIFICATION_TIMES['fund_history'] = fund_history_mtime
-
-    if fund_rate_mtime != FILE_MODIFICATION_TIMES.get('fund_rate', 0):
-        fund_rate = load_data(FUND_RATE_FILE, {})
-        FILE_MODIFICATION_TIMES['fund_rate'] = fund_rate_mtime
-
-    if nav_data_mtime != FILE_MODIFICATION_TIMES.get('nav_data', 0):
-        nav_data = load_data(NAV_DATA_FILE, {})
-        FILE_MODIFICATION_TIMES['nav_data'] = nav_data_mtime
-
-    if nav_holdings_mtime != FILE_MODIFICATION_TIMES.get('nav_holdings', 0):
-        nav_holdings = load_data(NAV_HOLDINGS_FILE, {})
-        FILE_MODIFICATION_TIMES['nav_holdings'] = nav_holdings_mtime
-
-    if nav_history_mtime != FILE_MODIFICATION_TIMES.get('nav_history', 0):
-        nav_history = load_data(NAV_HISTORY_FILE, {})
-        FILE_MODIFICATION_TIMES['nav_history'] = nav_history_mtime
-
-    if gateway_stock_mtime != FILE_MODIFICATION_TIMES.get('gateway_stock', 0):
-        gateway_stock = load_data(GATEWAY_STOCK_FILE, {})
-        FILE_MODIFICATION_TIMES['gateway_stock'] = gateway_stock_mtime
-
-    if feedbacks_mtime != FILE_MODIFICATION_TIMES.get('feedbacks', 0):
-        feedbacks = load_data(FEEDBACKS_FILE, {})
-        FILE_MODIFICATION_TIMES['feedbacks'] = feedbacks_mtime
-
-    if activities_mtime != FILE_MODIFICATION_TIMES.get('activities', 0):
-        activities = load_data(ACTIVITIES_FILE, {})
-        FILE_MODIFICATION_TIMES['activities'] = activities_mtime
-
-    if user_activity_records_mtime != FILE_MODIFICATION_TIMES.get('user_activity_records', 0):
-        user_activity_records = load_data(USER_ACTIVITY_RECORDS_FILE, {})
-        FILE_MODIFICATION_TIMES['user_activity_records'] = user_activity_records_mtime
-
-    if email_push_records_mtime != FILE_MODIFICATION_TIMES.get('email_push_records', 0):
-        email_push_records = load_data(EMAIL_PUSH_RECORDS_FILE, {})
-        FILE_MODIFICATION_TIMES['email_push_records'] = email_push_records_mtime
-
-    if analytics_cache_mtime != FILE_MODIFICATION_TIMES.get('analytics_cache', 0):
-        analytics_cache = load_data(ANALYTICS_CACHE_FILE, {})
-        FILE_MODIFICATION_TIMES['analytics_cache'] = analytics_cache_mtime
-
-    if ip_logs_mtime != FILE_MODIFICATION_TIMES.get('ip_logs', 0):
-        ip_logs = load_data(IP_LOGS_FILE, {})
-        FILE_MODIFICATION_TIMES['ip_logs'] = ip_logs_mtime
-
-    if log_cooldown_mtime != FILE_MODIFICATION_TIMES.get('log_request_cooldown', 0):
-        log_request_cooldown = load_data(LOG_REQUEST_COOLDOWN_FILE, {})
-        FILE_MODIFICATION_TIMES['log_request_cooldown'] = log_cooldown_mtime
+    pass
 
 users = load_data(USERS_FILE, {})
 phone_records = load_data(PHONE_RECORDS_FILE, {})
@@ -968,176 +687,133 @@ FILE_MODIFICATION_TIMES['gateway_stock'] = get_file_mtime(GATEWAY_STOCK_FILE)
 FILE_MODIFICATION_TIMES['feedbacks'] = get_file_mtime(FEEDBACKS_FILE)
 
 def save_users():
-    save_data(USERS_FILE, users)
-    FILE_MODIFICATION_TIMES['users'] = get_file_mtime(USERS_FILE)
+    mark_dirty(USERS_FILE)
 
 def save_phone_records():
-    save_data(PHONE_RECORDS_FILE, phone_records)
-    FILE_MODIFICATION_TIMES['phone'] = get_file_mtime(PHONE_RECORDS_FILE)
+    mark_dirty(PHONE_RECORDS_FILE)
 
 def save_feedbacks():
-    save_data(FEEDBACKS_FILE, feedbacks)
-    FILE_MODIFICATION_TIMES['feedbacks'] = get_file_mtime(FEEDBACKS_FILE)
+    mark_dirty(FEEDBACKS_FILE)
 
 def save_auth_codes():
-    save_data(AUTH_CODES_FILE, auth_codes)
-    FILE_MODIFICATION_TIMES['auth'] = get_file_mtime(AUTH_CODES_FILE)
+    mark_dirty(AUTH_CODES_FILE)
 
 def save_reset_codes():
-    save_data(RESET_CODES_FILE, reset_codes)
-    FILE_MODIFICATION_TIMES['reset'] = get_file_mtime(RESET_CODES_FILE)
+    mark_dirty(RESET_CODES_FILE)
 
 def save_point_codes():
-    save_data(POINT_CODES_FILE, point_codes)
-    FILE_MODIFICATION_TIMES['point'] = get_file_mtime(POINT_CODES_FILE)
+    mark_dirty(POINT_CODES_FILE)
 
 def save_premium_point_codes():
-    save_data(PREMIUM_POINT_CODES_FILE, premium_point_codes)
-    FILE_MODIFICATION_TIMES['premium_point'] = get_file_mtime(PREMIUM_POINT_CODES_FILE)
+    mark_dirty(PREMIUM_POINT_CODES_FILE)
 
 def save_boost_codes():
-    save_data(BOOST_CODES_FILE, boost_codes)
-    FILE_MODIFICATION_TIMES['boost'] = get_file_mtime(BOOST_CODES_FILE)
+    mark_dirty(BOOST_CODES_FILE)
 
 def save_special_point_codes():
-    save_data(SPECIAL_POINT_CODES_FILE, special_point_codes)
-    FILE_MODIFICATION_TIMES['special_point'] = get_file_mtime(SPECIAL_POINT_CODES_FILE)
+    mark_dirty(SPECIAL_POINT_CODES_FILE)
 
 def save_makeup_codes():
-    save_data(MAKEUP_CODES_FILE, makeup_codes)
-    FILE_MODIFICATION_TIMES['makeup'] = get_file_mtime(MAKEUP_CODES_FILE)
+    mark_dirty(MAKEUP_CODES_FILE)
 
 def save_gamblers_codes():
-    save_data(GAMBLERS_CODES_FILE, gamblers_codes)
-    FILE_MODIFICATION_TIMES['gamblers'] = get_file_mtime(GAMBLERS_CODES_FILE)
+    mark_dirty(GAMBLERS_CODES_FILE)
 
 def save_box_codes():
-    save_data(BOX_CODES_FILE, box_codes)
-    FILE_MODIFICATION_TIMES['box'] = get_file_mtime(BOX_CODES_FILE)
+    mark_dirty(BOX_CODES_FILE)
 
 def save_plcard_codes():
-    save_data(PLCARD_CODES_FILE, plcard_codes)
-    FILE_MODIFICATION_TIMES['plcard'] = get_file_mtime(PLCARD_CODES_FILE)
+    mark_dirty(PLCARD_CODES_FILE)
 
 def save_premium_boost_codes():
-    save_data(PREMIUM_BOOST_CODES_FILE, premium_boost_codes)
-    FILE_MODIFICATION_TIMES['premium_boost'] = get_file_mtime(PREMIUM_BOOST_CODES_FILE)
+    mark_dirty(PREMIUM_BOOST_CODES_FILE)
 
 def save_user_boosts():
-    save_data(USER_BOOSTS_FILE, user_boosts)
-    FILE_MODIFICATION_TIMES['user_boost'] = get_file_mtime(USER_BOOSTS_FILE)
+    mark_dirty(USER_BOOSTS_FILE)
 
 def save_identity_verifications():
-    save_data(IDENTITY_VERIFICATIONS_FILE, identity_verifications)
-    FILE_MODIFICATION_TIMES['identity'] = get_file_mtime(IDENTITY_VERIFICATIONS_FILE)
+    mark_dirty(IDENTITY_VERIFICATIONS_FILE)
 
 def save_cancellation_codes():
-    save_data(CANCELLATION_CODES_FILE, cancellation_codes)
-    FILE_MODIFICATION_TIMES['cancellation'] = get_file_mtime(CANCELLATION_CODES_FILE)
+    mark_dirty(CANCELLATION_CODES_FILE)
 
 def save_activities():
-    save_data(ACTIVITIES_FILE, activities)
-    FILE_MODIFICATION_TIMES['activities'] = get_file_mtime(ACTIVITIES_FILE)
+    mark_dirty(ACTIVITIES_FILE)
 
 def save_user_activity_records():
-    save_data(USER_ACTIVITY_RECORDS_FILE, user_activity_records)
-    FILE_MODIFICATION_TIMES['user_activity_records'] = get_file_mtime(USER_ACTIVITY_RECORDS_FILE)
+    mark_dirty(USER_ACTIVITY_RECORDS_FILE)
 
 def save_email_push_records():
-    save_data(EMAIL_PUSH_RECORDS_FILE, email_push_records)
-    FILE_MODIFICATION_TIMES['email_push_records'] = get_file_mtime(EMAIL_PUSH_RECORDS_FILE)
+    mark_dirty(EMAIL_PUSH_RECORDS_FILE)
 
 def save_analytics_cache():
-    save_data(ANALYTICS_CACHE_FILE, analytics_cache)
-    FILE_MODIFICATION_TIMES['analytics_cache'] = get_file_mtime(ANALYTICS_CACHE_FILE)
+    mark_dirty(ANALYTICS_CACHE_FILE)
 
 def save_restricted_users():
-    save_data(RESTRICTED_USERS_FILE, restricted_users)
-    FILE_MODIFICATION_TIMES['restricted'] = get_file_mtime(RESTRICTED_USERS_FILE)
+    mark_dirty(RESTRICTED_USERS_FILE)
 
 def save_cdk_packages():
-    save_data(CDK_PACKAGES_FILE, cdk_packages)
-    FILE_MODIFICATION_TIMES['cdk'] = get_file_mtime(CDK_PACKAGES_FILE)
+    mark_dirty(CDK_PACKAGES_FILE)
 
 def save_user_cdk_records():
-    save_data(USER_CDK_RECORDS_FILE, user_cdk_records)
-    FILE_MODIFICATION_TIMES['user_cdk'] = get_file_mtime(USER_CDK_RECORDS_FILE)
+    mark_dirty(USER_CDK_RECORDS_FILE)
 
 def save_announcements():
-    save_data(ANNOUNCEMENTS_FILE, announcements)
-    FILE_MODIFICATION_TIMES['announcements'] = get_file_mtime(ANNOUNCEMENTS_FILE)
+    mark_dirty(ANNOUNCEMENTS_FILE)
 
 def save_pl_exchange_records():
-    save_data(PL_EXCHANGE_FILE, pl_exchange_records)
-    FILE_MODIFICATION_TIMES['pl_exchange'] = get_file_mtime(PL_EXCHANGE_FILE)
+    mark_dirty(PL_EXCHANGE_FILE)
 
 def save_pl_rate_data():
-    save_data(PL_RATE_FILE, pl_rate_data)
-    FILE_MODIFICATION_TIMES['pl_rate'] = get_file_mtime(PL_RATE_FILE)
+    mark_dirty(PL_RATE_FILE)
 
 def save_user_pl_balances():
-    save_data(USER_PL_FILE, user_pl_balances)
-    FILE_MODIFICATION_TIMES['user_pl'] = get_file_mtime(USER_PL_FILE)
+    mark_dirty(USER_PL_FILE)
 
 def save_system_points():
     save_system_total_points(system_total_points)
-    FILE_MODIFICATION_TIMES['system_points'] = get_file_mtime(SYSTEM_POINTS_FILE)
 
 def save_orders():
-    save_data(ORDERS_FILE, orders)
-    FILE_MODIFICATION_TIMES['orders'] = get_file_mtime(ORDERS_FILE)
+    mark_dirty(ORDERS_FILE)
 
 def save_user_pay_passwords():
-    save_data(USER_PAY_PASSWORDS_FILE, user_pay_passwords)
-    FILE_MODIFICATION_TIMES['pay_password'] = get_file_mtime(USER_PAY_PASSWORDS_FILE)
+    mark_dirty(USER_PAY_PASSWORDS_FILE)
 
 def save_user_code_limits():
-    save_data(USER_CODE_LIMITS_FILE, user_code_limits)
-    FILE_MODIFICATION_TIMES['code_limits'] = get_file_mtime(USER_CODE_LIMITS_FILE)
+    mark_dirty(USER_CODE_LIMITS_FILE)
 
 def save_coupons():
-    save_data(COUPONS_FILE, coupons)
-    FILE_MODIFICATION_TIMES['coupons'] = get_file_mtime(COUPONS_FILE)
+    mark_dirty(COUPONS_FILE)
 
 def save_gateway_cards():
-    save_data(GATEWAY_CARDS_FILE, gateway_cards)
-    FILE_MODIFICATION_TIMES['gateway_cards'] = get_file_mtime(GATEWAY_CARDS_FILE)
+    mark_dirty(GATEWAY_CARDS_FILE)
 
 def save_user_coupons():
-    save_data(USER_COUPONS_FILE, user_coupons)
-    FILE_MODIFICATION_TIMES['user_coupons'] = get_file_mtime(USER_COUPONS_FILE)
+    mark_dirty(USER_COUPONS_FILE)
 
 def save_ip_logs():
-    save_data(IP_LOGS_FILE, ip_logs)
-    FILE_MODIFICATION_TIMES['ip_logs'] = get_file_mtime(IP_LOGS_FILE)
+    mark_dirty(IP_LOGS_FILE)
 
 def save_log_request_cooldown():
-    save_data(LOG_REQUEST_COOLDOWN_FILE, log_request_cooldown)
-    FILE_MODIFICATION_TIMES['log_request_cooldown'] = get_file_mtime(LOG_REQUEST_COOLDOWN_FILE)
+    mark_dirty(LOG_REQUEST_COOLDOWN_FILE)
 
 def save_coupon_grants():
-    save_data(COUPON_GRANTS_FILE, coupon_grants)
-    FILE_MODIFICATION_TIMES['coupon_grants'] = get_file_mtime(COUPON_GRANTS_FILE)
+    mark_dirty(COUPON_GRANTS_FILE)
 
 def save_pl_transfers():
-    save_data(PL_TRANSFERS_FILE, pl_transfers)
-    FILE_MODIFICATION_TIMES['pl_transfers'] = get_file_mtime(PL_TRANSFERS_FILE)
+    mark_dirty(PL_TRANSFERS_FILE)
 
 def save_nav_data():
-    save_data(NAV_DATA_FILE, nav_data)
-    FILE_MODIFICATION_TIMES['nav_data'] = get_file_mtime(NAV_DATA_FILE)
+    mark_dirty(NAV_DATA_FILE)
 
 def save_nav_holdings():
-    save_data(NAV_HOLDINGS_FILE, nav_holdings)
-    FILE_MODIFICATION_TIMES['nav_holdings'] = get_file_mtime(NAV_HOLDINGS_FILE)
+    mark_dirty(NAV_HOLDINGS_FILE)
 
 def save_nav_history():
-    save_data(NAV_HISTORY_FILE, nav_history)
-    FILE_MODIFICATION_TIMES['nav_history'] = get_file_mtime(NAV_HISTORY_FILE)
+    mark_dirty(NAV_HISTORY_FILE)
 
 def save_gateway_stock():
-    save_data(GATEWAY_STOCK_FILE, gateway_stock)
-    FILE_MODIFICATION_TIMES['gateway_stock'] = get_file_mtime(GATEWAY_STOCK_FILE)
+    mark_dirty(GATEWAY_STOCK_FILE)
 
 def migrate_user_data():
     modified = False
@@ -1373,7 +1049,7 @@ def format_log_entries(ip, entries, username):
         ts = entry.get('timestamp', 0)
         try:
             time_str = datetime.fromtimestamp(ts / 1000).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
-        except:
+        except Exception:
             time_str = str(ts)
         level = entry.get('level', 'INFO')
         message = entry.get('message', '')
@@ -1464,7 +1140,6 @@ def get_current_fund_rate():
 
 def generate_new_fund_rate():
     today = datetime.now().strftime('%Y-%m-%d')
-    import hashlib
     seed_bytes = today.encode() + b'fund_rate_salt_2024'
     seed_hash = hashlib.md5(seed_bytes).hexdigest()
     seed_int = int(seed_hash[:8], 16)
@@ -1944,7 +1619,13 @@ def mask_id_number(id_number):
         return id_number
     return id_number[:3] + '*****' + id_number[14:]
 
-def generate_reset_code():
+def _existing_codes_set():
+    return (set(reset_codes.keys()) | set(point_codes.keys()) | set(premium_point_codes.keys()) |
+            set(boost_codes.keys()) | set(cancellation_codes.keys()) | set(special_point_codes.keys()) |
+            set(makeup_codes.keys()) | set(gamblers_codes.keys()) | set(box_codes.keys()) |
+            set(plcard_codes.keys()) | set(premium_boost_codes.keys()))
+
+def _generate_code():
     chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
     while True:
         parts = []
@@ -1952,21 +1633,14 @@ def generate_reset_code():
             part = ''.join(random.choice(chars) for _ in range(4))
             parts.append(part)
         code = '-'.join(parts)
-        existing_codes = set(reset_codes.keys()) | set(point_codes.keys()) | set(premium_point_codes.keys()) | set(boost_codes.keys()) | set(cancellation_codes.keys()) | set(special_point_codes.keys()) | set(makeup_codes.keys()) | set(gamblers_codes.keys()) | set(box_codes.keys()) | set(plcard_codes.keys()) | set(premium_boost_codes.keys())
-        if code not in existing_codes:
+        if code not in _existing_codes_set():
             return code
 
+def generate_reset_code():
+    return _generate_code()
+
 def generate_point_code():
-    chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-    while True:
-        parts = []
-        for _ in range(4):
-            part = ''.join(random.choice(chars) for _ in range(4))
-            parts.append(part)
-        code = '-'.join(parts)
-        existing_codes = set(reset_codes.keys()) | set(point_codes.keys()) | set(premium_point_codes.keys()) | set(boost_codes.keys()) | set(cancellation_codes.keys()) | set(special_point_codes.keys()) | set(makeup_codes.keys()) | set(gamblers_codes.keys()) | set(box_codes.keys()) | set(plcard_codes.keys()) | set(premium_boost_codes.keys())
-        if code not in existing_codes:
-            return code
+    return _generate_code()
 
 def generate_gateway_key():
     chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
@@ -1980,112 +1654,31 @@ def generate_gateway_key():
             return key
 
 def generate_premium_point_code():
-    chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-    while True:
-        parts = []
-        for _ in range(4):
-            part = ''.join(random.choice(chars) for _ in range(4))
-            parts.append(part)
-        code = '-'.join(parts)
-        existing_codes = set(reset_codes.keys()) | set(point_codes.keys()) | set(premium_point_codes.keys()) | set(boost_codes.keys()) | set(cancellation_codes.keys()) | set(special_point_codes.keys()) | set(makeup_codes.keys()) | set(gamblers_codes.keys()) | set(box_codes.keys()) | set(plcard_codes.keys()) | set(premium_boost_codes.keys())
-        if code not in existing_codes:
-            return code
+    return _generate_code()
 
 def generate_boost_code():
-    chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-    while True:
-        parts = []
-        for _ in range(4):
-            part = ''.join(random.choice(chars) for _ in range(4))
-            parts.append(part)
-        code = '-'.join(parts)
-        existing_codes = set(reset_codes.keys()) | set(point_codes.keys()) | set(premium_point_codes.keys()) | set(boost_codes.keys()) | set(cancellation_codes.keys()) | set(special_point_codes.keys()) | set(makeup_codes.keys()) | set(gamblers_codes.keys()) | set(box_codes.keys()) | set(plcard_codes.keys()) | set(premium_boost_codes.keys())
-        if code not in existing_codes:
-            return code
+    return _generate_code()
 
 def generate_cancellation_code():
-    chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-    while True:
-        parts = []
-        for _ in range(4):
-            part = ''.join(random.choice(chars) for _ in range(4))
-            parts.append(part)
-        code = '-'.join(parts)
-        existing_codes = set(reset_codes.keys()) | set(point_codes.keys()) | set(premium_point_codes.keys()) | set(boost_codes.keys()) | set(cancellation_codes.keys()) | set(special_point_codes.keys()) | set(makeup_codes.keys()) | set(gamblers_codes.keys()) | set(box_codes.keys()) | set(plcard_codes.keys()) | set(premium_boost_codes.keys())
-        if code not in existing_codes:
-            return code
+    return _generate_code()
 
 def generate_special_point_code():
-    chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-    while True:
-        parts = []
-        for _ in range(4):
-            part = ''.join(random.choice(chars) for _ in range(4))
-            parts.append(part)
-        code = '-'.join(parts)
-        existing_codes = set(reset_codes.keys()) | set(point_codes.keys()) | set(premium_point_codes.keys()) | set(boost_codes.keys()) | set(cancellation_codes.keys()) | set(special_point_codes.keys()) | set(makeup_codes.keys()) | set(gamblers_codes.keys()) | set(box_codes.keys()) | set(plcard_codes.keys()) | set(premium_boost_codes.keys())
-        if code not in existing_codes:
-            return code
+    return _generate_code()
 
 def generate_makeup_code():
-    chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-    while True:
-        parts = []
-        for _ in range(4):
-            part = ''.join(random.choice(chars) for _ in range(4))
-            parts.append(part)
-        code = '-'.join(parts)
-        existing_codes = set(reset_codes.keys()) | set(point_codes.keys()) | set(premium_point_codes.keys()) | set(boost_codes.keys()) | set(cancellation_codes.keys()) | set(special_point_codes.keys()) | set(makeup_codes.keys()) | set(gamblers_codes.keys()) | set(box_codes.keys()) | set(plcard_codes.keys()) | set(premium_boost_codes.keys())
-        if code not in existing_codes:
-            return code
+    return _generate_code()
 
 def generate_gamblers_code():
-    chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-    while True:
-        parts = []
-        for _ in range(4):
-            part = ''.join(random.choice(chars) for _ in range(4))
-            parts.append(part)
-        code = '-'.join(parts)
-        existing_codes = set(reset_codes.keys()) | set(point_codes.keys()) | set(premium_point_codes.keys()) | set(boost_codes.keys()) | set(cancellation_codes.keys()) | set(special_point_codes.keys()) | set(makeup_codes.keys()) | set(gamblers_codes.keys()) | set(box_codes.keys()) | set(plcard_codes.keys()) | set(premium_boost_codes.keys())
-        if code not in existing_codes:
-            return code
+    return _generate_code()
 
 def generate_box_code():
-    chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-    while True:
-        parts = []
-        for _ in range(4):
-            part = ''.join(random.choice(chars) for _ in range(4))
-            parts.append(part)
-        code = '-'.join(parts)
-        existing_codes = set(reset_codes.keys()) | set(point_codes.keys()) | set(premium_point_codes.keys()) | set(boost_codes.keys()) | set(cancellation_codes.keys()) | set(special_point_codes.keys()) | set(makeup_codes.keys()) | set(gamblers_codes.keys()) | set(box_codes.keys()) | set(plcard_codes.keys()) | set(premium_boost_codes.keys())
-        if code not in existing_codes:
-            return code
+    return _generate_code()
 
 def generate_plcard_code():
-    chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-    while True:
-        parts = []
-        for _ in range(4):
-            part = ''.join(random.choice(chars) for _ in range(4))
-            parts.append(part)
-        code = '-'.join(parts)
-        existing_codes = set(reset_codes.keys()) | set(point_codes.keys()) | set(premium_point_codes.keys()) | set(boost_codes.keys()) | set(cancellation_codes.keys()) | set(special_point_codes.keys()) | set(makeup_codes.keys()) | set(gamblers_codes.keys()) | set(box_codes.keys()) | set(plcard_codes.keys()) | set(premium_boost_codes.keys())
-        if code not in existing_codes:
-            return code
+    return _generate_code()
 
 def generate_premium_boost_code():
-    chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-    while True:
-        parts = []
-        for _ in range(4):
-            part = ''.join(random.choice(chars) for _ in range(4))
-            parts.append(part)
-        code = '-'.join(parts)
-        existing_codes = set(reset_codes.keys()) | set(point_codes.keys()) | set(premium_point_codes.keys()) | set(boost_codes.keys()) | set(cancellation_codes.keys()) | set(special_point_codes.keys()) | set(makeup_codes.keys()) | set(gamblers_codes.keys()) | set(box_codes.keys()) | set(plcard_codes.keys()) | set(premium_boost_codes.keys())
-        if code not in existing_codes:
-            return code
+    return _generate_code()
 
 def generate_feedback_id():
     timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
@@ -2130,14 +1723,10 @@ def is_new_user(username):
     try:
         created_time = datetime.fromisoformat(created_at)
         return (datetime.now() - created_time) < timedelta(hours=24)
-    except:
+    except Exception:
         return False
 
 def get_discounted_price(original_price, username):
-    """
-    Get the final price after applying new user discount and tiered multiplier.
-    This uses the dynamic pricing system.
-    """
     return get_final_price(original_price, username)
 
 def is_bonus_period():
@@ -2211,7 +1800,6 @@ def reset_daily_points_if_needed(username):
         return False
     last_login_date = user_data.get('lastLoginDate', '')
     last_earned_date = user_data.get('lastEarnedDate', '')
-    today = datetime.now().strftime('%Y-%m-%d')
 
     if last_login_date != today:
         if user_data.get('dailyEarnedPoints', 0) > 0:
@@ -2321,7 +1909,7 @@ def check_and_award_attendance_rewards(username):
     rewards = []
     claimed_total_cycles = user_data.get('attendanceClaimedTotalCycles', {})
     claimed_consecutive_cycles = user_data.get('attendanceClaimedConsecutiveCycles', {})
-    
+
     pending_attachments = []
 
     if total_days >= 3 and total_days % 30 == 3:
@@ -2968,7 +2556,7 @@ def cleanup_unverified_users():
                     created_at = datetime.fromisoformat(created_at_str)
                     if (current_time - created_at) > timedelta(hours=24):
                         users_to_delete.append(username)
-                except:
+                except Exception:
                     pass
     for username in users_to_delete:
         delete_user_completely(username)
@@ -2984,7 +2572,7 @@ def cleanup_inactive_users():
                 days_inactive = (current_time - last_login_dt).days
                 if days_inactive >= 60:
                     users_to_delete.append(username)
-            except:
+            except Exception:
                 pass
     for username in users_to_delete:
         delete_user_completely(username)
@@ -3022,7 +2610,7 @@ def get_daily_pool_amount():
     for username, claims in user_pool_claims.items():
         if yesterday in claims:
             yesterday_payout += pool_records.get(yesterday, {}).get('total_payout', 0)
-    
+
     eligible_users = 0
     for username, user_data in users.items():
         if check_identity_verified(username) and not is_login_restricted(username):
@@ -3030,14 +2618,14 @@ def get_daily_pool_amount():
                 base = calculate_user_pool_base(username)
                 if base > 0:
                     eligible_users += 1
-    
+
     min_per_user = 50
     max_per_user = 200
-    
+
     dynamic_min = max(10000, eligible_users * min_per_user)
     dynamic_max = max(50000, eligible_users * max_per_user)
     dynamic_max = min(dynamic_max, 500000)
-    
+
     base = max(dynamic_min, yesterday_payout * POOL_GROWTH_FACTOR)
     return min(base, dynamic_max)
 
@@ -3045,15 +2633,15 @@ def get_daily_pool_amount():
 def settle_pool_funds():
     global system_total_points
     today = get_today_pool_date()
-    
+
     if today in pool_records and pool_records[today].get('settled', False):
         return pool_records[today].get('pool_amount', 0)
-    
+
     theoretical_amount = get_daily_pool_amount()
-    
+
     max_allocatable = round(system_total_points * 0.8, 4)
     pool_amount = min(theoretical_amount, max_allocatable)
-    
+
     if pool_amount <= 0:
         if today not in pool_records:
             pool_records[today] = {'total_payout': 0, 'payout_details': {}}
@@ -3064,12 +2652,12 @@ def settle_pool_funds():
         pool_records[today]['settled_at'] = int(time.time() * 1000)
         save_pool_records()
         return 0
-    
+
     deduct_system_total_points(pool_amount)
-    
+
     if today not in pool_records:
         pool_records[today] = {'total_payout': 0, 'payout_details': {}}
-    
+
     pool_records[today]['pool_amount'] = pool_amount
     pool_records[today]['theoretical_amount'] = theoretical_amount
     pool_records[today]['allocated_from_system'] = pool_amount
@@ -3077,7 +2665,7 @@ def settle_pool_funds():
     pool_records[today]['settled_at'] = int(time.time() * 1000)
     pool_records[today]['remaining_unclaimed'] = pool_amount
     save_pool_records()
-    
+
     log.debug(f"Pool fund allocated: {pool_amount} from system pool (theoretical={theoretical_amount}), remaining system: {system_total_points}")
     return pool_amount
 
@@ -3085,38 +2673,38 @@ def settle_pool_funds():
 def settle_yesterday_pool_unclaimed():
     global system_total_points
     yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
-    
+
     if yesterday not in pool_records:
         return
-    
+
     record = pool_records[yesterday]
-    
+
     if record.get('unclaimed_settled', False):
         return
-    
+
     pool_amount = record.get('pool_amount', 0)
     total_payout = record.get('total_payout', 0)
-    
+
     if pool_amount <= 0:
         record['unclaimed_settled'] = True
         record['unclaimed_settled_at'] = int(time.time() * 1000)
         save_pool_records()
         return
-    
+
     unclaimed = max(0, round(pool_amount - total_payout, 4))
-    
+
     if unclaimed > 0:
         refund_to_system = round(unclaimed * 0.2, 4)
         burned = round(unclaimed * 0.8, 4)
-        
+
         if refund_to_system > 0:
             add_system_total_points(refund_to_system)
-        
+
         record['unclaimed_amount'] = unclaimed
         record['refunded_to_system'] = refund_to_system
         record['burned_amount'] = burned
         log.debug(f"Pool unclaimed settled for {yesterday}: unclaimed={unclaimed}, refunded={refund_to_system}, burned={burned}")
-    
+
     record['unclaimed_settled'] = True
     record['unclaimed_settled_at'] = int(time.time() * 1000)
     save_pool_records()
@@ -3151,7 +2739,7 @@ def calculate_user_pool_base(username):
             created = datetime.fromisoformat(created_at)
             if (datetime.now() - created).days <= NEW_USER_PROTECT_DAYS:
                 raw_base *= (1 + NEW_USER_BONUS_RATIO)
-        except:
+        except Exception:
             pass
     return round(raw_base, 4)
 
@@ -3191,16 +2779,16 @@ def normalize_user_bases_with_bonus(user_bases):
         username = list(user_bases.keys())[0]
         single_cap = int(pool_amount * 0.3)
         return {username: single_cap}
-    
+
     main_pool = pool_amount * 0.8
     bonus_pool = pool_amount * 0.2
-    
+
     total_base = sum(d['base'] for d in user_bases.values())
     main_result = {}
     if total_base > 0:
         for username, data in user_bases.items():
             main_result[username] = main_pool * (data['base'] / total_base)
-    
+
     bonus_result = {}
     bonus_users = [u for u, d in user_bases.items() if d.get('consecutive_days', 0) >= 7]
     if bonus_users:
@@ -3208,11 +2796,11 @@ def normalize_user_bases_with_bonus(user_bases):
         if total_cons > 0:
             for u in bonus_users:
                 bonus_result[u] = bonus_pool * (user_bases[u].get('consecutive_days', 0) / total_cons)
-    
+
     result = {}
     for username in user_bases:
         result[username] = round(main_result.get(username, 0) + bonus_result.get(username, 0), 4)
-    
+
     return result
 
 def normalize_cdk_rewards(package):
@@ -3258,7 +2846,7 @@ def calculate_user_pool_base_without_decay(username):
             created = datetime.fromisoformat(created_at)
             if (datetime.now() - created).days <= NEW_USER_PROTECT_DAYS:
                 raw_base *= (1 + NEW_USER_BONUS_RATIO)
-        except:
+        except Exception:
             pass
     return round(raw_base, 4)
 
@@ -3297,54 +2885,54 @@ def process_pool_reward_for_user(username):
     try:
         if has_user_claimed_pool_today(username):
             return None, '今日已领取'
-        
+
         if has_cooldown_remaining(username):
             return None, '领取冷却中，请稍后再试'
-        
+
         user_data = users.get(username)
         if not user_data:
             return None, '用户不存在'
-        
+
         total_days = user_data.get('attendanceTotalDays', 0)
         if total_days < 7:
             return None, f'需要累计签到7天才可瓜分，当前累计签到{total_days}天'
-        
+
         if is_login_restricted(username):
             return None, '账号已被限制，无法瓜分'
-        
+
         if not check_identity_verified(username):
             return None, '请先完成身份认证'
-        
+
         settle_pool_funds()
-        
+
         today = get_today_pool_date()
         if today not in pool_records:
             pool_records[today] = {'total_payout': 0, 'payout_details': {}}
-        
+
         allocated = pool_records[today].get('allocated_from_system', 0)
         already_paid = pool_records[today].get('total_payout', 0)
         remaining = max(0, round(allocated - already_paid, 4))
-        
+
         if remaining <= 0:
             return None, '今日瓜分池已被领完，请明日再试'
-        
+
         reward = get_user_today_pool_reward(username)
         if reward <= 0:
             return None, '积分基数为0，无法瓜分'
-        
+
         if reward > remaining:
             reward = remaining
-        
+
         reward = round(reward, 4)
         if reward <= 0:
             return None, '今日瓜分池已被领完，请明日再试'
-        
+
         mail_attachment_id = f"mail_{int(time.time()*1000)}_{random.randint(1000,9999)}"
         pool_amount = pool_records[today].get('pool_amount', 0)
         user_bases = build_user_bases()
         normalized = normalize_user_bases_with_bonus(user_bases)
         base = normalized.get(username, 0)
-        
+
         mail_attachments[mail_attachment_id] = {
             'id': mail_attachment_id,
             'username': username,
@@ -3362,17 +2950,17 @@ def process_pool_reward_for_user(username):
         save_mail_attachments()
         mark_user_pool_claimed(username)
         mark_cooldown(username)
-        
+
         if 'payout_details' not in pool_records[today]:
             pool_records[today]['payout_details'] = {}
-        
+
         pool_records[today]['total_payout'] = round(pool_records[today].get('total_payout', 0) + reward, 4)
         pool_records[today]['payout_details'][username] = round(pool_records[today]['payout_details'].get(username, 0) + reward, 4)
         pool_records[today]['remaining_unclaimed'] = max(0, round(allocated - pool_records[today]['total_payout'], 4))
         save_pool_records()
-        
+
         return reward, None
-        
+
     except Exception as e:
         log.error(f"Error in process_pool_reward_for_user: {e}")
         import traceback
@@ -3382,9 +2970,9 @@ def process_pool_reward_for_user(username):
 def get_newbie_pool_status():
     today = datetime.now().strftime('%Y-%m-%d')
     system_total = load_system_total_points()
-    
+
     pool_amount = newbie_pool_data.get(today, {}).get('pool_amount', 0)
-    
+
     if pool_amount == 0:
         pool_amount = min(system_total * 0.05, 10000)
         if today not in newbie_pool_data:
@@ -3392,7 +2980,7 @@ def get_newbie_pool_status():
         newbie_pool_data[today]['pool_amount'] = pool_amount
         newbie_pool_data[today]['updated_at'] = int(time.time() * 1000)
         save_newbie_pool_data(newbie_pool_data)
-    
+
     eligible_users = []
     for username, user_data in users.items():
         created_at_str = user_data.get('createdAt', '')
@@ -3411,12 +2999,12 @@ def get_newbie_pool_status():
                     'is_active': is_active,
                     'verified': True
                 })
-        except:
+        except Exception:
             pass
-    
+
     total_eligible = len(eligible_users)
     max_reward = min(pool_amount * 0.01, 100)
-    
+
     return {
         'today': today,
         'pool_amount': round(pool_amount, 2),
@@ -3429,47 +3017,47 @@ def get_user_newbie_reward(username):
     user_data = users.get(username)
     if not user_data:
         return 0
-    
+
     created_at_str = user_data.get('createdAt', '')
     if not created_at_str:
         return 0
-    
+
     try:
         created_at = datetime.fromisoformat(created_at_str)
         days_old = (datetime.now() - created_at).days
         if days_old > 7:
             return 0
-    except:
+    except Exception:
         return 0
-    
+
     if is_login_restricted(username) or not check_identity_verified(username):
         return 0
-    
+
     today = datetime.now().strftime('%Y-%m-%d')
     has_attended = user_data.get('lastAttendanceDate', '') == today
     is_active = user_data.get('lastLoginDate', '') == today
-    
+
     base_multiplier = 1.0
     if has_attended:
         base_multiplier += 1.0
     if is_active:
         base_multiplier += 1.0
-    
+
     days_factor = 1.0 - (days_old / 7) * 0.5
     base_multiplier = base_multiplier * max(0.5, days_factor)
     base_multiplier = min(base_multiplier, 3.0)
-    
+
     status = get_newbie_pool_status()
     max_reward = status.get('max_reward', 10)
     base_reward = max_reward * 0.3
     reward = base_reward * base_multiplier
     reward = min(reward, max_reward)
-    
+
     eligible_count = status.get('eligible_count', 1)
     if eligible_count > 0:
         per_user_limit = status.get('pool_amount', 1000) / eligible_count
         reward = min(reward, per_user_limit * 0.1)
-    
+
     return round(reward, 2)
 
 def has_user_claimed_newbie_today(username):
@@ -3487,47 +3075,47 @@ def mark_user_newbie_claimed(username):
 def claim_newbie_reward(username):
     if not check_identity_verified(username):
         return None, '请先完成身份认证'
-    
+
     if is_login_restricted(username):
         return None, '账号已被限制'
-    
+
     user_data = users.get(username)
     if not user_data:
         return None, '用户不存在'
-    
+
     created_at_str = user_data.get('createdAt', '')
     if not created_at_str:
         return None, '无法验证注册时间'
-    
+
     try:
         created_at = datetime.fromisoformat(created_at_str)
         days_old = (datetime.now() - created_at).days
         if days_old > 7:
             return None, f'注册已超过7天（已{days_old}天），无法领取新人奖励'
-    except:
+    except Exception:
         return None, '无法验证注册时间'
-    
+
     if has_user_claimed_newbie_today(username):
         return None, '今日已领取新人奖励'
-    
+
     reward = get_user_newbie_reward(username)
     if reward <= 0:
         return None, '当前奖励为0，无法领取'
-    
+
     global system_total_points
     if system_total_points < reward:
         return None, f'系统积分池不足，当前池子{system_total_points:.2f}积分'
-    
+
     add_points_without_limit(username, reward)
     deduct_system_total_points(reward)
-    
+
     mark_user_newbie_claimed(username)
-    
+
     today = datetime.now().strftime('%Y-%m-%d')
     if today in newbie_pool_data:
         newbie_pool_data[today]['pool_amount'] = max(0, newbie_pool_data[today].get('pool_amount', 0) - reward)
         save_newbie_pool_data(newbie_pool_data)
-    
+
     mail_attachment_id = f"mail_{int(time.time()*1000)}_{random.randint(1000,9999)}"
     mail_attachments[mail_attachment_id] = {
         'id': mail_attachment_id,
@@ -3544,7 +3132,7 @@ def claim_newbie_reward(username):
         'source': 'newbie_pool'
     }
     save_mail_attachments()
-    
+
     return reward, None
 
 def get_nav_profit_tax_rate(profit, cost):
@@ -3793,7 +3381,7 @@ def cleanup_all_expired_data():
         if isinstance(created_at, str):
             try:
                 created_at = int(created_at)
-            except:
+            except Exception:
                 created_at = 0
 
         status = order.get('status', 'pending')
@@ -3875,7 +3463,7 @@ def cleanup_all_expired_data():
 
     try:
         email_service.cleanup_expired_codes()
-    except:
+    except Exception:
         pass
 
 def enforce_phone_record_limit():
@@ -3923,10 +3511,10 @@ def get_available_id_card():
     for id_num, used in used_data.items():
         if used:
             used_id_numbers.add(id_num)
-    
+
     if not os.path.exists(ID_CARDS_CSV):
         return None
-    
+
     try:
         with open(ID_CARDS_CSV, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
@@ -3952,13 +3540,13 @@ def get_available_id_card():
 def get_id_cards_stats():
     if not os.path.exists(ID_CARDS_CSV):
         return {'total': 0, 'used': 0, 'available': 0}
-    
+
     used_data = load_id_cards_used()
     used_id_numbers = set()
     for id_num, used in used_data.items():
         if used:
             used_id_numbers.add(id_num)
-    
+
     total = 0
     unique_id_numbers = set()
     try:
@@ -3972,10 +3560,10 @@ def get_id_cards_stats():
     except Exception as e:
         log.error(f"Error reading id cards CSV: {e}")
         return {'total': 0, 'used': 0, 'available': 0}
-    
+
     unique_total = len(unique_id_numbers)
     used_count = len([x for x in used_id_numbers if x in unique_id_numbers])
-    
+
     return {
         'total': total,
         'unique_total': unique_total,
@@ -3999,9 +3587,6 @@ def normalize_lrc(text):
 
 def fetch_weather_from_openmeteo(latitude, longitude):
     try:
-        import requests
-        from datetime import datetime
-
         url = (
             f'https://api.open-meteo.com/v1/forecast'
             f'?latitude={latitude}'
@@ -4020,106 +3605,16 @@ def fetch_weather_from_openmeteo(latitude, longitude):
         data = response.json()
 
         weather_codes = {
-            0: '☀️ 晴天',
-            1: '🌤️ 主要晴朗',
-            2: '⛅ 部分多云',
-            3: '☁️ 阴天',
-            4: '🌫️ 烟雾',
-            5: '🌫️ 霾',
-            6: '🌫️ 浮尘',
-            7: '🌫️ 扬尘',
-            8: '🌫️ 尘卷风',
-            9: '🌫️ 沙尘暴',
-            10: '🌫️ 轻雾',
-            11: '🌫️ 薄雾',
-            12: '🌫️ 浓雾',
-            13: '⚡ 闪电',
-            14: '🌧️ 小雨',
-            15: '🌧️ 中雨',
-            16: '🌧️ 大雨',
-            17: '⛈️ 雷暴',
-            18: '🌧️ 毛毛雨',
-            19: '🌧️ 冻雨',
-            20: '🌧️ 小阵雨',
-            21: '🌧️ 阵雨',
-            22: '🌧️ 大阵雨',
-            23: '🌨️ 小阵雪',
-            24: '🌨️ 阵雪',
-            25: '🌨️ 大阵雪',
-            26: '❄️ 小雪',
-            27: '❄️ 中雪',
-            28: '❄️ 大雪',
-            29: '❄️ 暴雪',
-            30: '🌫️ 轻雾',
-            31: '🌫️ 薄雾',
-            32: '🌫️ 浓雾',
-            33: '🌫️ 雾凇',
-            34: '🌫️ 轻雾凇',
-            35: '🌫️ 浓雾凇',
-            36: '🌫️ 轻雾',
-            37: '🌫️ 薄雾',
-            38: '🌫️ 浓雾',
-            39: '🌫️ 雾凇',
-            40: '🌧️ 小雨',
-            41: '🌧️ 中雨',
-            42: '🌧️ 大雨',
-            43: '🌧️ 暴雨',
-            44: '🌧️ 大暴雨',
-            45: '🌫️ 雾',
-            46: '🌫️ 轻雾',
-            47: '🌫️ 浓雾',
-            48: '🌫️ 雾凇',
-            49: '🌫️ 浓雾凇',
-            50: '🌧️ 小雨',
-            51: '🌧️ 小雨',
-            52: '🌧️ 中雨',
-            53: '🌧️ 中雨',
-            54: '🌧️ 大雨',
-            55: '🌧️ 大雨',
-            56: '🌧️ 冻毛毛雨',
-            57: '🌧️ 强冻毛毛雨',
-            58: '🌧️ 小雨',
-            59: '🌧️ 中雨',
-            60: '🌧️ 小雨',
-            61: '🌧️ 小雨',
-            62: '🌧️ 中雨',
-            63: '🌧️ 中雨',
-            64: '🌧️ 大雨',
-            65: '🌧️ 大雨',
-            66: '🌧️ 冻雨',
-            67: '🌧️ 强冻雨',
-            68: '🌧️ 小雨夹雪',
-            69: '🌧️ 大雨夹雪',
-            70: '❄️ 小雪',
-            71: '❄️ 小雪',
-            72: '❄️ 中雪',
-            73: '❄️ 中雪',
-            74: '❄️ 大雪',
-            75: '❄️ 大雪',
-            76: '❄️ 雪粒',
-            77: '❄️ 雪粒',
-            78: '❄️ 雪粒',
-            79: '❄️ 雪粒',
-            80: '🌧️ 阵雨',
-            81: '🌧️ 阵雨',
-            82: '🌧️ 强阵雨',
-            83: '🌧️ 阵雨夹雪',
-            84: '🌧️ 强阵雨夹雪',
-            85: '🌨️ 小阵雪',
-            86: '🌨️ 大阵雪',
-            87: '🌨️ 小阵雪',
-            88: '🌨️ 大阵雪',
-            89: '🌨️ 小阵雪',
-            90: '🌨️ 大阵雪',
-            91: '🌧️ 小雨',
-            92: '🌧️ 中雨',
-            93: '🌧️ 大雨',
-            94: '🌧️ 暴雨',
-            95: '⛈️ 雷暴',
-            96: '⛈️ 雷暴',
-            97: '⛈️ 强雷暴',
-            98: '⛈️ 雷暴伴沙尘',
-            99: '⛈️ 强雷暴'
+            0: '☀️ 晴天', 1: '🌤️ 主要晴朗', 2: '⛅ 部分多云', 3: '☁️ 阴天',
+            45: '🌫️ 雾', 48: '🌫️ 雾凇',
+            51: '🌧️ 小雨', 53: '🌧️ 中雨', 55: '🌧️ 大雨',
+            56: '🌧️ 冻毛毛雨', 57: '🌧️ 强冻毛毛雨',
+            61: '🌧️ 小雨', 63: '🌧️ 中雨', 65: '🌧️ 大雨',
+            66: '🌧️ 冻雨', 67: '🌧️ 强冻雨',
+            71: '❄️ 小雪', 73: '❄️ 中雪', 75: '❄️ 大雪', 77: '❄️ 雪粒',
+            80: '🌧️ 阵雨', 81: '🌧️ 阵雨', 82: '🌧️ 强阵雨',
+            85: '🌨️ 小阵雪', 86: '🌨️ 大阵雪',
+            95: '⛈️ 雷暴', 96: '⛈️ 雷暴', 99: '⛈️ 强雷暴'
         }
 
         current = data.get('current', {})
@@ -4153,7 +3648,7 @@ def fetch_weather_from_openmeteo(latitude, longitude):
                     if dt.date() == now.date() and dt.hour == now_hour:
                         target_index = i
                         break
-                except:
+                except Exception:
                     continue
 
             if target_index == -1:
@@ -4163,7 +3658,7 @@ def fetch_weather_from_openmeteo(latitude, longitude):
                         if dt.date() == now.date() and dt.hour >= now_hour:
                             target_index = i
                             break
-                    except:
+                    except Exception:
                         continue
 
             if target_index != -1:
@@ -4181,7 +3676,7 @@ def fetch_weather_from_openmeteo(latitude, longitude):
                                 'temp': str(round(temp)),
                                 'rain': str(round(rain)) + '%' if rain is not None else ''
                             })
-                    except:
+                    except Exception:
                         continue
 
         return {
@@ -4325,8 +3820,6 @@ def lookup_region_coordinates(city_name):
 
 def geocode_city_openmeteo(city_name):
     try:
-        import requests
-
         def query_geocode(name, count=5):
             url = f'https://geocoding-api.open-meteo.com/v1/search?name={requests.utils.quote(name)}&count={count}&language=zh'
             try:
@@ -4685,8 +4178,8 @@ def calc_gateway_refund_amount(username, card_key):
     )
 
 def _do_refund(username, order_id, refund_points, refund_amount, reason):
-    lock = get_file_lock(os.path.join(DATA_DIR, f'refund_order_{order_id}'))
-    with lock.acquire(timeout=LOCK_TIMEOUT):
+    lock = store.get_lock(f'refund_order_{order_id}')
+    with lock:
         order = orders.get(order_id)
         if not order:
             raise ValueError('订单不存在')
@@ -4778,8 +4271,8 @@ def _do_refund(username, order_id, refund_points, refund_amount, reason):
         }
 
 def _do_refund_gateway(username, card_key, refund_points, refund_amount, reason, original_order_id=None):
-    lock = get_file_lock(os.path.join(DATA_DIR, f'refund_gateway_{card_key}'))
-    with lock.acquire(timeout=LOCK_TIMEOUT):
+    lock = store.get_lock(f'refund_gateway_{card_key}')
+    with lock:
         card_data = gateway_cards.get(username)
         if not card_data or card_data.get('key') != card_key:
             raise ValueError('通行卡密不存在或已被使用')
@@ -4994,7 +4487,7 @@ def csrf_protect(f):
             session_token = session.get('_csrf_token')
             if not session_token:
                 return jsonify({'error': '会话已过期，请刷新页面'}), 403
-            
+
             token = request.headers.get('X-CSRF-Token')
             if not token or token != session_token:
                 return jsonify({'error': 'CSRF验证失败，请刷新页面重试'}), 403
@@ -5067,8 +4560,7 @@ def health_check():
     try:
         checks['system_points'] = {
             'status': 'ok',
-            'balance': round(system_total_points, 4),
-            'pool_balance': round(pool_balance, 4) if 'pool_balance' in globals() else 0
+            'balance': round(system_total_points, 4)
         }
     except Exception as e:
         checks['system_points'] = {'status': 'error', 'message': str(e)}
@@ -5083,13 +4575,12 @@ def health_check():
         checks['feedback'] = {'status': 'error', 'message': str(e)}
 
     try:
-        import smtplib
-        smtp_configured = bool(SMTP_EMAIL and SMTP_PASSWORD)
+        smtp_configured = bool(email_service.SMTP_EMAIL and email_service.SMTP_PASSWORD)
         checks['smtp'] = {
             'status': 'ok' if smtp_configured else 'warning',
             'configured': smtp_configured,
-            'server': SMTP_SERVER,
-            'port': SMTP_PORT
+            'server': email_service.SMTP_SERVER,
+            'port': email_service.SMTP_PORT
         }
     except Exception as e:
         checks['smtp'] = {'status': 'error', 'message': str(e)}
@@ -5115,19 +4606,19 @@ def admin_login():
     data = request.get_json()
     username = data.get('username', '').strip()
     password = data.get('password', '')
-    
+
     if not username or not password:
         return jsonify({'error': '请提供用户名和密码'}), 400
-    
+
     if username != ADMIN_USERNAME:
         return jsonify({'error': '用户名或密码错误'}), 401
-    
+
     if not bcrypt.check_password_hash(ADMIN_PASSWORD_HASH, password):
         return jsonify({'error': '用户名或密码错误'}), 401
-    
+
     session_token = secrets.token_urlsafe(32)
     admin_sessions[session_token] = time.time() + ADMIN_SESSION_TIMEOUT
-    
+
     return jsonify({
         'success': True,
         'token': session_token,
@@ -5530,17 +5021,16 @@ def get_current_nav():
 
 def generate_new_nav():
     today = datetime.now().strftime('%Y-%m-%d')
-    import hashlib
     seed_bytes = today.encode() + b'nav_salt_2024'
     seed_hash = hashlib.md5(seed_bytes).hexdigest()
     seed_int = int(seed_hash[:8], 16)
     random.seed(seed_int)
     nav = round(random.uniform(NAV_MIN, NAV_MAX), 4)
     random.seed()
-    
+
     yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
     yesterday_nav = nav_data.get(yesterday, {}).get('nav', None)
-    
+
     if yesterday_nav is not None:
         change_percent = abs(nav - yesterday_nav) / yesterday_nav if yesterday_nav > 0 else 0
         if change_percent > 0.15:
@@ -5548,7 +5038,7 @@ def generate_new_nav():
                 nav = round(yesterday_nav * 1.15, 4)
             else:
                 nav = round(yesterday_nav * 0.85, 4)
-    
+
     nav_data[today] = {
         'nav': nav,
         'date': today,
@@ -5598,18 +5088,18 @@ def nav_buy(username, amount):
         return None, '用户不存在'
     if user_data.get('totalPoints', 0) < amount:
         return None, f'积分不足，需要{amount}积分，当前{user_data.get("totalPoints", 0):.2f}积分'
-    
+
     current_nav = get_current_nav()
     shares = round(amount / current_nav, 2)
     if shares <= 0:
         return None, '申购金额太少，无法获得有效份额'
-    
+
     user_data['totalPoints'] = round(user_data['totalPoints'] - amount, 2)
     save_users()
-    
+
     if username not in nav_holdings:
         nav_holdings[username] = []
-    
+
     nav_holdings[username].append({
         'shares': shares,
         'buy_nav': current_nav,
@@ -5617,7 +5107,7 @@ def nav_buy(username, amount):
         'buy_time': int(time.time() * 1000)
     })
     save_nav_holdings()
-    
+
     record_id = f"nav_{int(time.time()*1000)}_{random.randint(1000,9999)}"
     nav_history[record_id] = {
         'id': record_id,
@@ -5629,7 +5119,7 @@ def nav_buy(username, amount):
         'timestamp': int(time.time() * 1000)
     }
     save_nav_history()
-    
+
     return {'shares': shares, 'nav': current_nav, 'amount': amount}, None
 
 def nav_sell(username, shares_to_sell):
@@ -5791,24 +5281,24 @@ def force_recalculate_first_attendance_date():
         total_days = user_data.get('attendanceTotalDays', 0)
         consecutive_days = user_data.get('attendanceConsecutiveDays', 0)
         last_date = user_data.get('lastAttendanceDate', '')
-        
+
         if not last_date:
             continue
-        
+
         if total_days == 0:
             continue
-        
+
         try:
             last_dt = datetime.strptime(last_date, '%Y-%m-%d')
             first_dt = last_dt - timedelta(days=total_days - 1)
             first_date_str = first_dt.strftime('%Y-%m-%d')
-            
+
             if user_data.get('firstAttendanceDate') != first_date_str:
                 user_data['firstAttendanceDate'] = first_date_str
                 modified = True
-        except Exception as e:
+        except Exception:
             pass
-    
+
     if modified:
         save_users()
 
@@ -5830,13 +5320,13 @@ def decode_qr_token(token):
         product_number = parts[1]
         timestamp = int(parts[2])
         received_signature = parts[3]
-        
+
         data = f"{order_id}|{product_number}|{timestamp}"
         expected_signature = hmac.new(QR_SECRET, data.encode(), hashlib.sha256).hexdigest()[:16]
-        
+
         if not hmac.compare_digest(received_signature, expected_signature):
             return None, None, None, '签名验证失败'
-        
+
         return order_id, product_number, timestamp, None
     except Exception as e:
         return None, None, None, str(e)
@@ -5941,7 +5431,7 @@ def perform_refund_risk_check(username, refund_points):
             if days_since_reg < 1:
                 risk_score += 20
                 risk_details.append({'text': '注册不足24小时', 'score': 20})
-        except:
+        except Exception:
             pass
 
     email = user_data.get('email', '')
@@ -6075,10 +5565,21 @@ def not_found(error):
 def ratelimit_handler(e):
     return jsonify({'error': '请求过于频繁，请稍后再试', 'retry_after': str(e.description)}), 429
 
+_last_reload_time = [0.0]
+_last_cleanup_time = [0.0]
+
 @app.before_request
 def before_request():
-    reload_if_changed()
-    cleanup_all_expired_data()
+    now = time.time()
+    if now - _last_reload_time[0] > 1.0:
+        reload_if_changed()
+        _last_reload_time[0] = now
+    if now - _last_cleanup_time[0] > 60.0:
+        try:
+            cleanup_all_expired_data()
+        except Exception as e:
+            log.error(f"periodic cleanup error: {e}")
+        _last_cleanup_time[0] = now
 
 @app.route('/api/claim-backfill-reward', methods=['POST'])
 @csrf_protect
@@ -6173,7 +5674,7 @@ def admin_get_users():
             try:
                 created = datetime.fromisoformat(created_at)
                 days_since_reg = (datetime.now() - created).days
-            except:
+            except Exception:
                 pass
 
         member_tier = game.get_member_tier(users, username)
@@ -6217,159 +5718,42 @@ def admin_get_codes():
 
     result_codes = []
 
+    def add_codes(storage, ctype):
+        for code, data in storage.items():
+            if username and data.get('username') != username:
+                continue
+            result_codes.append({
+                'code': code,
+                'username': data.get('username', ''),
+                'type': ctype,
+                'used': data.get('used', False),
+                'recycled': data.get('recycled', False),
+                'createdAt': data.get('createdAt', 0),
+                'adminGranted': data.get('adminGranted', False)
+            })
+
     if not code_type or code_type == 'reset':
-        for code, data in reset_codes.items():
-            if username and data.get('username') != username:
-                continue
-            result_codes.append({
-                'code': code,
-                'username': data.get('username', ''),
-                'type': 'reset',
-                'used': data.get('used', False),
-                'recycled': data.get('recycled', False),
-                'createdAt': data.get('createdAt', 0),
-                'adminGranted': data.get('adminGranted', False)
-            })
-
+        add_codes(reset_codes, 'reset')
     if not code_type or code_type == 'point':
-        for code, data in point_codes.items():
-            if username and data.get('username') != username:
-                continue
-            result_codes.append({
-                'code': code,
-                'username': data.get('username', ''),
-                'type': 'point',
-                'used': data.get('used', False),
-                'recycled': data.get('recycled', False),
-                'createdAt': data.get('createdAt', 0),
-                'adminGranted': data.get('adminGranted', False)
-            })
-
+        add_codes(point_codes, 'point')
     if not code_type or code_type == 'premium_point':
-        for code, data in premium_point_codes.items():
-            if username and data.get('username') != username:
-                continue
-            result_codes.append({
-                'code': code,
-                'username': data.get('username', ''),
-                'type': 'premium_point',
-                'used': data.get('used', False),
-                'recycled': data.get('recycled', False),
-                'createdAt': data.get('createdAt', 0),
-                'adminGranted': data.get('adminGranted', False)
-            })
-
+        add_codes(premium_point_codes, 'premium_point')
     if not code_type or code_type == 'boost':
-        for code, data in boost_codes.items():
-            if username and data.get('username') != username:
-                continue
-            result_codes.append({
-                'code': code,
-                'username': data.get('username', ''),
-                'type': 'boost',
-                'used': data.get('used', False),
-                'recycled': data.get('recycled', False),
-                'createdAt': data.get('createdAt', 0),
-                'adminGranted': data.get('adminGranted', False)
-            })
-
+        add_codes(boost_codes, 'boost')
     if not code_type or code_type == 'cancellation':
-        for code, data in cancellation_codes.items():
-            if username and data.get('username') != username:
-                continue
-            result_codes.append({
-                'code': code,
-                'username': data.get('username', ''),
-                'type': 'cancellation',
-                'used': data.get('used', False),
-                'recycled': data.get('recycled', False),
-                'createdAt': data.get('createdAt', 0),
-                'adminGranted': data.get('adminGranted', False)
-            })
-
+        add_codes(cancellation_codes, 'cancellation')
     if not code_type or code_type == 'special_point':
-        for code, data in special_point_codes.items():
-            if username and data.get('username') != username:
-                continue
-            result_codes.append({
-                'code': code,
-                'username': data.get('username', ''),
-                'type': 'special_point',
-                'used': data.get('used', False),
-                'recycled': data.get('recycled', False),
-                'createdAt': data.get('createdAt', 0),
-                'adminGranted': data.get('adminGranted', False)
-            })
-
+        add_codes(special_point_codes, 'special_point')
     if not code_type or code_type == 'makeup':
-        for code, data in makeup_codes.items():
-            if username and data.get('username') != username:
-                continue
-            result_codes.append({
-                'code': code,
-                'username': data.get('username', ''),
-                'type': 'makeup',
-                'used': data.get('used', False),
-                'recycled': data.get('recycled', False),
-                'createdAt': data.get('createdAt', 0),
-                'adminGranted': data.get('adminGranted', False)
-            })
-
+        add_codes(makeup_codes, 'makeup')
     if not code_type or code_type == 'gamblers':
-        for code, data in gamblers_codes.items():
-            if username and data.get('username') != username:
-                continue
-            result_codes.append({
-                'code': code,
-                'username': data.get('username', ''),
-                'type': 'gamblers',
-                'used': data.get('used', False),
-                'recycled': data.get('recycled', False),
-                'createdAt': data.get('createdAt', 0),
-                'adminGranted': data.get('adminGranted', False)
-            })
-
+        add_codes(gamblers_codes, 'gamblers')
     if not code_type or code_type == 'box':
-        for code, data in box_codes.items():
-            if username and data.get('username') != username:
-                continue
-            result_codes.append({
-                'code': code,
-                'username': data.get('username', ''),
-                'type': 'box',
-                'used': data.get('used', False),
-                'recycled': data.get('recycled', False),
-                'createdAt': data.get('createdAt', 0),
-                'adminGranted': data.get('adminGranted', False)
-            })
-
+        add_codes(box_codes, 'box')
     if not code_type or code_type == 'plcard':
-        for code, data in plcard_codes.items():
-            if username and data.get('username') != username:
-                continue
-            result_codes.append({
-                'code': code,
-                'username': data.get('username', ''),
-                'type': 'plcard',
-                'used': data.get('used', False),
-                'recycled': data.get('recycled', False),
-                'createdAt': data.get('createdAt', 0),
-                'adminGranted': data.get('adminGranted', False)
-            })
-
+        add_codes(plcard_codes, 'plcard')
     if not code_type or code_type == 'premium_boost':
-        for code, data in premium_boost_codes.items():
-            if username and data.get('username') != username:
-                continue
-            result_codes.append({
-                'code': code,
-                'username': data.get('username', ''),
-                'type': 'premium_boost',
-                'used': data.get('used', False),
-                'recycled': data.get('recycled', False),
-                'createdAt': data.get('createdAt', 0),
-                'adminGranted': data.get('adminGranted', False)
-            })
+        add_codes(premium_boost_codes, 'premium_boost')
 
     result_codes.sort(key=lambda x: x.get('createdAt', 0), reverse=True)
 
@@ -6381,7 +5765,7 @@ def admin_reissue_cancellation():
     data = request.get_json()
     username = data.get('username', '').strip()
     from_ai = data.get('from_ai', False)
-    
+
     if from_ai:
         if 'user' not in session:
             return jsonify({'error': '请先登录'}), 401
@@ -6431,7 +5815,7 @@ def admin_reissue_cancellation():
             return jsonify({'error': '用户背包中已有有效的注销卡密，无需补发'}), 400
 
     cancellation_code = generate_cancellation_code()
-    
+
     cancellation_codes[cancellation_code] = {
         'code': cancellation_code,
         'username': username,
@@ -6456,7 +5840,7 @@ def admin_reissue_cancellation():
             'suggestion': '查看背包',
             'suggestion_url': '/'
         })
-    
+
     return jsonify({
         'success': True,
         'message': f'成功为用户{username}补发注销卡密'
@@ -6588,7 +5972,7 @@ def admin_restrict_batch():
 
     try:
         duration_hours = float(duration_hours)
-    except:
+    except Exception:
         duration_hours = 0
     if duration_hours < 0:
         duration_hours = 0
@@ -6901,7 +6285,7 @@ def admin_create_cdk_package():
         r_value = str(r.get('value', '')).strip()
         try:
             r_qty = int(r.get('quantity', 1))
-        except:
+        except Exception:
             return jsonify({'error': f'第{idx+1}项奖励数量无效'}), 400
 
         if r_type not in valid_types:
@@ -6915,7 +6299,7 @@ def admin_create_cdk_package():
                 val = float(r_value)
                 if val <= 0 or val > 100000:
                     return jsonify({'error': f'第{idx+1}项积分数量必须在1-100000之间'}), 400
-            except:
+            except Exception:
                 return jsonify({'error': f'第{idx+1}项积分数量必须是数字'}), 400
 
         normalized_rewards.append({
@@ -6931,14 +6315,14 @@ def admin_create_cdk_package():
         try:
             start_dt = datetime.strptime(start_time_str, '%Y-%m-%dT%H:%M')
             start_time_ms = int(start_dt.timestamp() * 1000)
-        except:
+        except Exception:
             return jsonify({'error': '起始时间格式错误'}), 400
 
     if expiry_time_str:
         try:
             expiry_dt = datetime.strptime(expiry_time_str, '%Y-%m-%dT%H:%M')
             expiry_time_ms = int(expiry_dt.timestamp() * 1000)
-        except:
+        except Exception:
             return jsonify({'error': '截止时间格式错误'}), 400
 
     if expiry_time_ms > 0 and start_time_ms > 0:
@@ -7071,7 +6455,7 @@ def exchange_cdk():
         r_value = str(reward.get('value', '')).strip()
         try:
             r_qty = int(reward.get('quantity', 1))
-        except:
+        except Exception:
             r_qty = 1
 
         if r_qty < 1:
@@ -7082,7 +6466,7 @@ def exchange_cdk():
         if r_type == 'points':
             try:
                 points_to_add = float(r_value) * r_qty
-            except:
+            except Exception:
                 continue
             if points_to_add <= 0:
                 continue
@@ -7224,14 +6608,14 @@ def admin_create_announcement():
         try:
             start_dt = datetime.strptime(start_time_str, '%Y-%m-%dT%H:%M')
             start_time_ms = int(start_dt.timestamp() * 1000)
-        except:
+        except Exception:
             return jsonify({'error': '起始时间格式错误'}), 400
 
     if end_time_str:
         try:
             end_dt = datetime.strptime(end_time_str, '%Y-%m-%dT%H:%M')
             end_time_ms = int(end_dt.timestamp() * 1000)
-        except:
+        except Exception:
             return jsonify({'error': '截止时间格式错误'}), 400
 
     if end_time_ms > 0 and start_time_ms > 0 and end_time_ms <= start_time_ms:
@@ -7289,14 +6673,14 @@ def admin_update_announcement():
         try:
             start_dt = datetime.strptime(start_time_str, '%Y-%m-%dT%H:%M')
             start_time_ms = int(start_dt.timestamp() * 1000)
-        except:
+        except Exception:
             return jsonify({'error': '起始时间格式错误'}), 400
 
     if end_time_str:
         try:
             end_dt = datetime.strptime(end_time_str, '%Y-%m-%dT%H:%M')
             end_time_ms = int(end_dt.timestamp() * 1000)
-        except:
+        except Exception:
             return jsonify({'error': '截止时间格式错误'}), 400
 
     if end_time_ms > 0 and start_time_ms > 0 and end_time_ms <= start_time_ms:
@@ -7500,12 +6884,11 @@ def create_batch_order():
         return jsonify({'error': '注销卡密每个账号仅限购买一次'}), 400
 
     product_info = product_map[product_type]
-    
-    # Get detailed price information with tiered pricing
+
     price_info = get_price_info(product_info['price'], username)
     original_price = price_info['original_price']
     final_price = price_info['final_price']
-    
+
     total_points_price = round(final_price * quantity, 2)
     total_original = round(original_price * quantity, 2)
 
@@ -7630,7 +7013,7 @@ def create_order(username, product_name, product_price, payment_method, product_
     is_pl = payment_method == 'pl'
     current_rate = get_current_pl_rate()
     points_price = product_price if not is_pl else product_price * current_rate if current_rate > 0 else product_price
-    
+
     price_info = get_price_info(product_price, username)
     effective_points = get_user_effective_points(username)
     multiplier = get_price_multiplier(username)
@@ -7705,11 +7088,11 @@ def create_order_with_price(username, product_name, product_price, payment_metho
     order_id = generate_order_id(product_type)
     anti_fake_code = generate_anti_fake_code()
     product_number = get_product_number(product_type)
-    
+
     price_info = get_price_info(product_price, username)
     effective_points = get_user_effective_points(username)
     multiplier = get_price_multiplier(username)
-    
+
     orders[order_id] = {
         'order_id': order_id,
         'username': username,
@@ -8072,15 +7455,14 @@ def create_order_api():
     if not check_user_code_limit(username)[0]:
         return jsonify({'error': '背包卡密已达上限(20/20)，请先使用或回收部分卡密'}), 400
 
-    # Apply tiered pricing to the order
     final_price = get_final_price(product_price, username)
 
     order_id = create_order_with_price(
-        username, 
-        product_name, 
-        final_price, 
-        payment_method, 
-        product_id, 
+        username,
+        product_name,
+        final_price,
+        payment_method,
+        product_id,
         product_type,
         points_price=final_price,
         original_price=product_price
@@ -8244,15 +7626,12 @@ def get_order_api(order_id):
 @app.route('/api/price-info', methods=['GET'])
 @login_required
 def get_price_info_api():
-    """
-    Get price multiplier information for the current user.
-    """
     username = session['user']['username']
     base_price = request.args.get('base_price', 0, type=float)
-    
+
     effective_points = get_user_effective_points(username)
     multiplier = get_price_multiplier(username)
-    
+
     result = {
         'effective_points': effective_points,
         'multiplier': multiplier,
@@ -8264,12 +7643,12 @@ def get_price_info_api():
             {'threshold': 500000, 'multiplier': 1.90}
         ]
     }
-    
+
     if base_price > 0:
         result['base_price'] = base_price
         result['final_price'] = get_final_price(base_price, username)
         result['price_info'] = get_price_info(base_price, username)
-    
+
     return jsonify(result)
 
 @app.route('/api/coupons/list', methods=['GET'])
@@ -8312,10 +7691,8 @@ def get_user_coupons():
 @limiter.limit(RATE_LIMITS['captcha_generate'])
 @login_required
 def generate_captcha():
-    import random
     import uuid
     import io
-    import os
 
     try:
         from PIL import Image, ImageDraw, ImageFont
@@ -8366,7 +7743,7 @@ def generate_captcha():
         try:
             font = ImageFont.truetype(path, font_size)
             break
-        except:
+        except Exception:
             continue
 
     if font is None:
@@ -8379,28 +7756,28 @@ def generate_captcha():
                         try:
                             font = ImageFont.truetype(line.strip(), font_size)
                             break
-                        except:
+                        except Exception:
                             continue
-        except:
+        except Exception:
             pass
 
     if font is None:
         try:
             font = ImageFont.truetype('/system/fonts/Roboto-Bold.ttf', font_size)
-        except:
+        except Exception:
             pass
 
     if font is None:
         try:
             font = ImageFont.truetype('arial.ttf', font_size)
-        except:
+        except Exception:
             pass
 
     if font is None:
         try:
             font = ImageFont.load_default()
             font_size = 30
-        except:
+        except Exception:
             font = ImageFont.load_default()
             font_size = 30
 
@@ -8410,7 +7787,7 @@ def generate_captcha():
         color = colors[i % len(colors)]
         try:
             draw.text((x, y), char, fill=color, font=font, anchor='mm')
-        except:
+        except Exception:
             draw.text((x, y), char, fill=color)
 
     for _ in range(15):
@@ -9748,35 +9125,35 @@ def cancel_account():
     start_time = time.time()
     username = session['user']['username']
     data = request.get_json()
-    
+
     email = data.get('email', '').strip().lower()
     verification_code = data.get('verification_code', '').strip()
     promise_agreed = data.get('promise_agreed', False)
-    
+
     if not email or not verification_code:
         return jsonify({'error': '请填写邮箱和验证码'}), 400
-    
+
     if not promise_agreed:
         return jsonify({'error': '请阅读并同意注销承诺书'}), 400
-    
+
     user_data = users.get(username)
     if not user_data:
         return jsonify({'error': '用户不存在'}), 400
-    
+
     if user_data.get('email') != email:
         return jsonify({'error': '邮箱与账号不匹配'}), 400
-    
+
     success, message = email_service.verify_code(email, verification_code)
     if not success:
         return jsonify({'error': message}), 400
-    
+
     delete_user_completely(username)
-    
+
     session.clear()
     response = make_response(jsonify({'success': True, 'message': '账号已成功注销'}))
     response.set_cookie('session', '', expires=0, path='/')
     response.set_cookie('session_expiration', '', expires=0, path='/')
-    
+
     response_time = int((time.time() - start_time) * 1000)
     response_data = jsonify({
         'success': True,
@@ -10337,7 +9714,7 @@ def get_inventory():
         try:
             created_at = datetime.fromisoformat(created_at_str)
             is_within_24h = (datetime.now() - created_at) <= timedelta(hours=24)
-        except:
+        except Exception:
             pass
     can_force_cancel = check_identity_verified(username) and is_within_24h
 
@@ -10476,25 +9853,25 @@ def reset_password():
 def forgot_password_send_code():
     start_time = time.time()
     data = request.get_json()
-    
+
     username = data.get('username', '').strip()
     email = data.get('email', '').strip().lower()
-    
+
     if not username or not email:
         return jsonify({'error': '请填写用户名和邮箱'}), 400
-    
+
     if username not in users:
         return jsonify({'error': '用户名不存在'}), 400
-    
+
     user_data = users[username]
     if user_data.get('email') != email:
         return jsonify({'error': '邮箱与用户名不匹配'}), 400
-    
+
     if not validate_email(email):
         return jsonify({'error': '邮箱格式不正确'}), 400
-    
+
     success, code, message = email_service.send_verification_code_with_limit(email, username, '重置密码')
-    
+
     if success:
         response_time = int((time.time() - start_time) * 1000)
         return jsonify({
@@ -10513,25 +9890,25 @@ def forgot_password_send_code():
 def forgot_password():
     start_time = time.time()
     data = request.get_json()
-    
+
     username = data.get('username', '').strip()
     email = data.get('email', '').strip().lower()
     new_password = data.get('newPassword', '')
     verification_code = data.get('verificationCode', '').strip()
-    
+
     if not username or not email or not new_password or not verification_code:
         return jsonify({'error': '请填写完整信息'}), 400
-    
+
     if username not in users:
         return jsonify({'error': '用户名不存在'}), 400
-    
+
     user_data = users[username]
     if user_data.get('email') != email:
         return jsonify({'error': '邮箱与用户名不匹配'}), 400
-    
+
     if not validate_password(new_password):
         return jsonify({'error': '密码至少8位，需包含至少两种类型（大小写字母/数字/特殊字符）'}), 400
-    
+
     reset_limits = load_reset_limits()
     today = time.strftime('%Y-%m-%d')
     if username not in reset_limits:
@@ -10540,22 +9917,22 @@ def forgot_password():
         reset_limits[username] = {'date': today, 'count': 0}
     if reset_limits[username]['count'] >= 2:
         return jsonify({'error': '今日重置密码次数已达上限（2次），请明日再试'}), 400
-    
+
     success, message = email_service.verify_code(email, verification_code)
     if not success:
         return jsonify({'error': message}), 400
-    
+
     total_points = user_data.get('totalPoints', 0)
     fund_balance = get_user_fund_balance(username)
     total_available = total_points + fund_balance
-    
+
     if total_available < 8.8:
         return jsonify({'error': '重置密码需要8.8积分（含理财账户），当前可用积分不足'}), 400
-    
+
     remaining_to_deduct = 8.8
     deducted_from_fund = 0
     deducted_from_main = 0
-    
+
     if total_points >= remaining_to_deduct:
         user_data['totalPoints'] = round(total_points - remaining_to_deduct, 2)
         deducted_from_main = remaining_to_deduct
@@ -10572,17 +9949,17 @@ def forgot_password():
             fund_data[username]['balance'] = 0
             deducted_from_fund = fund_balance
             remaining_to_deduct = remaining_to_deduct - fund_balance
-    
+
     save_users()
     save_fund_data()
-    
+
     reset_limits[username]['count'] += 1
     save_reset_limits(reset_limits)
-    
+
     hashed_password = bcrypt.generate_password_hash(new_password).decode('utf-8')
     users[username]['password'] = hashed_password
     save_users()
-    
+
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
@@ -11006,35 +10383,35 @@ def get_pool_status_api():
     try:
         settle_yesterday_pool_unclaimed()
         settle_pool_funds()
-        
+
         status = get_pool_status()
         today_reward = get_user_today_pool_reward(username)
         has_claimed = has_user_claimed_pool_today(username)
-        
+
         today = get_today_pool_date()
         allocated = pool_records.get(today, {}).get('allocated_from_system', 0)
         already_paid = pool_records.get(today, {}).get('total_payout', 0)
         remaining_pool = max(0, round(allocated - already_paid, 4))
-        
+
         cooldown_data = user_pool_claims.get(username, {}).get('last_claim_cooldown', {})
         last_claim_time = cooldown_data.get('timestamp', 0)
         cooldown_end_time = 0
         cooldown_remaining = False
-        
+
         if last_claim_time > 0:
             cooldown_end_time = last_claim_time + (COOLDOWN_HOURS * 3600 * 1000)
             if int(time.time() * 1000) < cooldown_end_time:
                 cooldown_remaining = True
-        
+
         user_data = users.get(username, {})
         total_days = user_data.get('attendanceTotalDays', 0)
         consecutive_days = user_data.get('attendanceConsecutiveDays', 0)
         is_verified = check_identity_verified(username)
         is_restricted = is_login_restricted(username)
-        
+
         total_points = get_user_fund_total_points(username)
         full_base = calculate_user_pool_base_without_decay(username)
-        
+
         if consecutive_days >= 7:
             cons_bonus = 1.0
         elif consecutive_days >= 4:
@@ -11043,27 +10420,27 @@ def get_pool_status_api():
             cons_bonus = 0.4
         else:
             cons_bonus = 0.0
-        
+
         current_base = get_user_today_pool_base(username)
-        
+
         now = datetime.now()
         next_midnight = now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
-        
+
         user_bases = build_user_bases()
-        
+
         theoretical_amount = pool_records.get(today, {}).get('theoretical_amount', status['pool_amount'])
         pool_limited_by_system = status['pool_amount'] < theoretical_amount
-        
+
         can_claim = (
-            total_days >= 7 and 
-            not has_claimed and 
+            total_days >= 7 and
+            not has_claimed and
             not cooldown_remaining and
-            today_reward > 0 and 
+            today_reward > 0 and
             remaining_pool > 0 and
-            is_verified and 
+            is_verified and
             not is_restricted
         )
-        
+
         return jsonify({
             'today': status['today'],
             'pool_amount': status['pool_amount'],
@@ -11108,28 +10485,28 @@ def claim_pool_reward():
     try:
         if has_user_claimed_pool_today(username):
             return jsonify({'error': '今日已领取瓜分奖励'}), 400
-        
+
         user_data = users.get(username)
         if not user_data:
             return jsonify({'error': '用户不存在'}), 400
-        
+
         total_days = user_data.get('attendanceTotalDays', 0)
         if total_days < 7:
             return jsonify({'error': f'需要累计签到7天才可瓜分，当前累计签到{total_days}天'}), 400
-        
+
         if is_login_restricted(username):
             return jsonify({'error': '账号已被限制，无法瓜分'}), 400
-        
+
         reward, error = process_pool_reward_for_user(username)
         if error:
             return jsonify({'error': error}), 400
-        
+
         return jsonify({
-            'success': True, 
+            'success': True,
             'reward': reward,
             'message': f'成功领取{reward}积分瓜分奖励'
         })
-        
+
     except Exception as e:
         log.error(f"Claim exception: {e}")
         import traceback
@@ -11188,10 +10565,10 @@ def get_mail_list():
 def get_yesterday_pool_details():
     username = session['user']['username']
     yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
-    
+
     details = pool_records.get(yesterday, {})
     payout_details = details.get('payout_details', {})
-    
+
     if not payout_details or not isinstance(payout_details, dict):
         return jsonify({
             'date': yesterday,
@@ -11201,18 +10578,18 @@ def get_yesterday_pool_details():
             'top_10': [],
             'has_record': False
         })
-    
+
     user_reward = payout_details.get(username, 0)
     total_payout = details.get('total_payout', 0)
-    
+
     if total_payout == 0:
         total_payout = sum(payout_details.values())
-    
+
     user_count = len([u for u, r in payout_details.items() if r > 0])
-    
+
     top_10 = sorted(payout_details.items(), key=lambda x: -x[1])[:10]
     top_10_list = [{'username': u, 'reward': round(r, 2)} for u, r in top_10 if r > 0]
-    
+
     return jsonify({
         'date': yesterday,
         'total_payout': round(total_payout, 2),
@@ -11227,7 +10604,7 @@ def get_yesterday_pool_details():
 def get_newbie_pool_status_api():
     username = session['user']['username']
     status = get_newbie_pool_status()
-    
+
     user_data = users.get(username, {})
     created_at_str = user_data.get('createdAt', '')
     days_old = -1
@@ -11237,16 +10614,16 @@ def get_newbie_pool_status_api():
             created_at = datetime.fromisoformat(created_at_str)
             days_old = (datetime.now() - created_at).days
             is_eligible = days_old <= 7 and check_identity_verified(username) and not is_login_restricted(username)
-        except:
+        except Exception:
             pass
-    
+
     today = datetime.now().strftime('%Y-%m-%d')
     has_attended = user_data.get('lastAttendanceDate', '') == today
     is_active = user_data.get('lastLoginDate', '') == today
-    
+
     reward = get_user_newbie_reward(username) if is_eligible else 0
     has_claimed = has_user_claimed_newbie_today(username)
-    
+
     return jsonify({
         'pool_amount': status['pool_amount'],
         'eligible_count': status['eligible_count'],
@@ -11520,7 +10897,7 @@ def do_claim_mail_attachment_with_message(attachment_id, username):
     if do_claim_mail_attachment(attachment_id, username):
         type_name = type_names.get(attachment_type, attachment_type)
         quantity = attachment.get('quantity', 1)
-        
+
         if quantity > 1:
             return True, f'成功领取{quantity}张{type_name}'
         return True, f'成功领取{type_name}'
@@ -11703,7 +11080,7 @@ def check_auth():
                 try:
                     created_at = datetime.fromisoformat(created_at_str)
                     is_within_24h = (datetime.now() - created_at) <= timedelta(hours=24)
-                except:
+                except Exception:
                     pass
             today = datetime.now().strftime('%Y-%m-%d')
             last_gamblers_purchase = user_data.get('last_gamblers_purchase_date', '')
@@ -12034,7 +11411,7 @@ def get_attendance_calendar():
             first_attendance_date = first_dt.strftime('%Y-%m-%d')
             user_data['firstAttendanceDate'] = first_attendance_date
             save_users()
-        except:
+        except Exception:
             pass
 
     calendar_data = []
@@ -12057,7 +11434,7 @@ def get_attendance_calendar():
                 check_date = last_date - timedelta(days=i)
                 if check_date.year == year and check_date.month == month:
                     signed_days.add(check_date.day)
-        except:
+        except Exception:
             pass
 
     for day in range(1, last_day_num + 1):
@@ -12075,7 +11452,7 @@ def get_attendance_calendar():
                 day_index = (date_obj.date() - first_date.date()).days
                 if day_index < 0:
                     day_index = -1
-            except:
+            except Exception:
                 pass
 
         calendar_data.append({
@@ -12237,7 +11614,7 @@ def calculate_age(id_number):
         if (today.month, today.day) < (birth_date.month, birth_date.day):
             age -= 1
         return age
-    except:
+    except Exception:
         return None
 
 def get_gender_from_id_number(id_number):
@@ -12246,7 +11623,7 @@ def get_gender_from_id_number(id_number):
     try:
         gender_digit = int(id_number[16])
         return '男' if gender_digit % 2 == 1 else '女'
-    except:
+    except Exception:
         return None
 
 @app.route('/api/check_identity_status', methods=['GET'])
@@ -12329,7 +11706,6 @@ def gateway_create_order():
     if base_price <= 0:
         return jsonify({'error': '当前时间无法购买天卡，请选择其他卡密'}), 400
 
-    # Apply tiered pricing to gateway cards
     final_price = get_final_price(base_price, username)
     price_info = get_price_info(base_price, username)
 
@@ -12554,7 +11930,7 @@ def get_fund_history():
     start = (page - 1) * per_page
     end = start + per_page
     response_time = int((time.time() - start_time) * 1000)
-    
+
     for record in records[start:end]:
         if record.get('type') == 'refund':
             record['display_sign'] = '+'
@@ -12571,7 +11947,7 @@ def get_fund_history():
         else:
             record['display_sign'] = '+' if record.get('amount', 0) >= 0 else '-'
             record['display_type'] = record.get('type', '')
-    
+
     return jsonify({
         'records': records[start:end],
         'total': total,
@@ -12667,47 +12043,47 @@ def nav_sell_single_api():
     data = request.get_json()
     index = data.get('index', -1)
     shares = float(data.get('shares', 0))
-    
+
     if index < 0:
         return jsonify({'error': '无效的持仓索引'}), 400
-    
+
     holdings = nav_holdings.get(username, [])
     if index >= len(holdings):
         return jsonify({'error': '持仓不存在'}), 400
-    
+
     holding = holdings[index]
     if holding.get('shares', 0) < shares:
         return jsonify({'error': '持有份额不足'}), 400
-    
+
     today_start = int(datetime.now().replace(hour=0, minute=0, second=0, microsecond=0).timestamp() * 1000)
     today_end = int(datetime.now().replace(hour=23, minute=59, second=59, microsecond=999999).timestamp() * 1000)
     buy_time = holding.get('buy_time', 0)
-    
+
     if today_start <= buy_time <= today_end:
         return jsonify({
             'error': '申购当天不得进行赎回操作，请于次日00:00后再试',
             'error_code': 'NAV_SELL_SAME_DAY'
         }), 400
-    
+
     current_nav = get_current_nav()
     total_amount = shares * current_nav
     total_cost = shares * holding.get('buy_nav', 0)
     profit = round(total_amount - total_cost, 4)
-    
+
     if shares >= holding.get('shares', 0):
         del holdings[index]
     else:
         holding['shares'] = round(holding['shares'] - shares, 2)
-    
+
     nav_holdings[username] = holdings
     save_nav_holdings()
-    
+
     user_data = users.get(username)
-    
+
     profit_fee = 0
     loss_amount = 0
     user_receive = total_amount
-    
+
     if user_data:
         if profit > 0:
             profit_fee = round(profit * 0.08, 4)
@@ -12723,7 +12099,7 @@ def nav_sell_single_api():
             user_receive = total_amount
             user_data['totalPoints'] = round(user_data['totalPoints'] + total_amount, 2)
         save_users()
-    
+
     record_id = f"nav_{int(time.time()*1000)}_{random.randint(1000,9999)}"
     nav_history[record_id] = {
         'id': record_id,
@@ -12739,16 +12115,16 @@ def nav_sell_single_api():
         'timestamp': int(time.time() * 1000)
     }
     save_nav_history()
-    
+
     response_time = int((time.time() - start_time) * 1000)
-    
+
     if profit > 0:
         msg = f'赎回成功！获得 {user_receive:.2f} 积分（收益 {profit:.2f}，其中8%即 {profit_fee:.2f} 积分已归入系统池）'
     elif profit < 0:
         msg = f'赎回成功！获得 {user_receive:.2f} 积分（亏损 {loss_amount:.2f}，已全额归入系统池）'
     else:
         msg = f'赎回成功！获得 {user_receive:.2f} 积分（持平）'
-    
+
     return jsonify({
         'success': True,
         'amount': total_amount,
@@ -12802,13 +12178,13 @@ def nav_sell_api():
             }), 400
         return jsonify({'error': error}), 400
     response_time = int((time.time() - start_time) * 1000)
-    
+
     message = f'赎回成功！获得 {result["user_receive"]:.2f} 积分'
     if result['profit'] > 0:
         message += f'（收益 {result["profit"]:.2f}，其中8%即 {result["profit_fee"]:.2f} 积分已归入系统池）'
     elif result['profit'] < 0:
         message += f'（亏损 {result["loss_amount"]:.2f}，已全额归入系统池）'
-    
+
     return jsonify({
         'success': True,
         'amount': result['amount'],
@@ -12859,20 +12235,20 @@ def generate_qr_token_api():
     data = request.get_json()
     order_id = data.get('order_id', '')
     product_number = data.get('product_number', '')
-    
+
     if not order_id:
         return jsonify({'error': '缺少订单号'}), 400
-    
+
     order = orders.get(order_id)
     if not order:
         return jsonify({'error': '订单不存在'}), 404
-    
+
     username = session['user']['username']
     if order.get('username') != username and order.get('owner') != username:
         return jsonify({'error': '无权操作此订单'}), 403
-    
+
     token, timestamp = generate_qr_token(order_id, product_number or order.get('product_number', ''))
-    
+
     return jsonify({
         'token': token,
         'timestamp': timestamp,
@@ -13291,10 +12667,10 @@ def refund_status(order_id):
 def search_order():
     username = session['user']['username']
     keyword = request.args.get('keyword', '').strip()
-    
+
     if not keyword:
         return jsonify({'error': '请输入查询关键词'}), 400
-    
+
     if re.match(r'^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$', keyword):
         for u, card in gateway_cards.items():
             if card.get('key') == keyword and u == username and not card.get('used', False):
@@ -13303,7 +12679,7 @@ def search_order():
                 card_expire = card.get('expire_at', 0)
                 created_at = card.get('created_at', 0)
                 current_time = int(time.time() * 1000)
-                
+
                 if card_expire > 0 and current_time > card_expire:
                     return jsonify({
                         'type': 'gateway',
@@ -13318,7 +12694,7 @@ def search_order():
                         'status': '已过期',
                         'username': username
                     }), 200
-                
+
                 original_order_id = None
                 original_order = None
                 for oid, order in orders.items():
@@ -13328,7 +12704,7 @@ def search_order():
                             original_order_id = oid
                             original_order = order
                             break
-                
+
                 if original_order_id and original_order:
                     if original_order.get('refunded', False):
                         return jsonify({
@@ -13346,7 +12722,7 @@ def search_order():
                             'order_id': original_order_id,
                             'is_refunded': True
                         }), 200
-                
+
                 if card_type == 'hour':
                     refund_amount = card_price
                     reason = '小时卡全额退款'
@@ -13380,9 +12756,9 @@ def search_order():
                 else:
                     refund_amount = card_price
                     reason = '未知类型，全额退款'
-                
+
                 virtual_order_id = f'GATEWAY_{keyword.replace("-", "")}'
-                
+
                 return jsonify({
                     'type': 'gateway',
                     'exists': True,
@@ -13402,17 +12778,17 @@ def search_order():
                     'original_order_id': original_order_id,
                     'is_refunded': False
                 }), 200
-        
+
         return jsonify({'type': 'gateway', 'exists': False, 'message': '通行卡密不存在或已被使用'}), 200
-    
+
     found_orders = []
     for order_id, order in orders.items():
         if order.get('username') != username:
             continue
-        
+
         order_number = order.get('product_number', '')
         anti_fake_code = order.get('anti_fake_code', '')
-        
+
         if keyword == order_id or keyword == order_number or keyword == anti_fake_code:
             found_orders.append({
                 'type': 'order',
@@ -13437,10 +12813,10 @@ def search_order():
                 'product_number': order_number,
                 'owner': order.get('owner', order.get('username', ''))
             })
-    
+
     if not found_orders:
         return jsonify({'type': 'order', 'orders': [], 'message': '未找到匹配订单'}), 200
-    
+
     return jsonify({'type': 'order', 'orders': found_orders}), 200
 
 @app.route('/qr/<token>')
@@ -13457,31 +12833,31 @@ def qr_redirect_page(token):
 @login_required
 def quick_verify_identity():
     username = session['user']['username']
-    
+
     if check_identity_verified(username):
         return jsonify({'error': '您已完成身份认证'}), 400
-    
+
     available = get_available_id_card()
     if not available:
         stats = get_id_cards_stats()
         if stats['total'] == 0:
             return jsonify({'error': '快速认证暂不可用，请手动认证'}), 400
         return jsonify({'error': '所有身份证已使用完毕，请手动认证'}), 400
-    
+
     real_name = available['name']
     id_number = available['id_number']
     key = available['key']
-    
+
     gender_digit = int(id_number[16])
     gender = '男' if gender_digit % 2 == 1 else '女'
-    
+
     age = calculate_age(id_number)
     if age is None or age < 10 or age > 80:
         return jsonify({'error': f'身份证年龄验证失败 (年龄: {age}岁，需10-80岁)'}), 400
-    
+
     id_hash = hash_id_number(id_number)
     id_masked = mask_id_number(id_number)
-    
+
     identity_verifications[username] = {
         'username': username,
         'real_name': real_name,
@@ -13494,14 +12870,14 @@ def quick_verify_identity():
         'id_card_key': key
     }
     save_identity_verifications()
-    
+
     used_data = load_id_cards_used()
     used_data[key] = True
     save_id_cards_used(used_data)
-    
+
     pl_amount = round(random.uniform(0.5, 3.0), 4)
     update_user_pl_balance(username, pl_amount, 'identity_verification_reward', 'id_verify_quick')
-    
+
     coupon_types = ['full_reduction', 'unconditional', 'product_specific']
     for _ in range(2):
         coupon_type = random.choice(coupon_types)
@@ -13532,9 +12908,9 @@ def quick_verify_identity():
             product_label = get_product_type_label(product_id)
             desc = f'指定{product_label}减{discount}'
             grant_coupon_to_user(username, coupon_type, discount, 0, random.randint(24, 168), product_id, desc)
-    
+
     stats = get_id_cards_stats()
-    
+
     return jsonify({
         'success': True,
         'message': f'快速认证成功！使用 {real_name} 完成认证，获得{pl_amount}PL和2张随机优惠券',
@@ -13549,17 +12925,17 @@ def quick_verify_identity():
 @login_required
 def quick_verify_status():
     username = session['user']['username']
-    
+
     if check_identity_verified(username):
         return jsonify({
             'available': False,
             'reason': 'already_verified',
             'message': '您已完成身份认证'
         })
-    
+
     stats = get_id_cards_stats()
     available = get_available_id_card()
-    
+
     if stats['total'] == 0:
         return jsonify({
             'available': False,
@@ -13567,7 +12943,7 @@ def quick_verify_status():
             'message': '暂无可用身份证数据，请手动认证',
             'stats': stats
         })
-    
+
     if stats['available'] == 0:
         return jsonify({
             'available': False,
@@ -13575,7 +12951,7 @@ def quick_verify_status():
             'message': '所有身份证已使用完毕，请手动认证',
             'stats': stats
         })
-    
+
     return jsonify({
         'available': True,
         'stats': stats,
@@ -13590,43 +12966,43 @@ def customer_service_search():
     data = request.get_json()
     query = data.get('query', '').strip()
     username = session['user']['username']
-    
+
     if not query:
         return jsonify({'error': '请输入您的问题'}), 400
-    
+
     knowledge_base_path = os.path.join(os.path.dirname(__file__), 'knowledge_base.json')
-    
+
     if not os.path.exists(knowledge_base_path):
         return jsonify({'error': '知识库暂不可用'}), 500
-    
+
     try:
         with open(knowledge_base_path, 'r', encoding='utf-8') as f:
             kb = json.load(f)
-    except:
+    except Exception:
         return jsonify({'error': '知识库加载失败'}), 500
-    
+
     topics = kb.get('topics', [])
     results = []
     query_lower = query.lower()
-    
+
     for topic in topics:
         keywords = topic.get('keywords', [])
         title = topic.get('title', '')
         content = topic.get('content', '')
         match_score = 0
         matched_keywords = []
-        
+
         for keyword in keywords:
             if keyword in query_lower:
                 match_score += 1
                 matched_keywords.append(keyword)
-        
+
         title_lower = title.lower()
         content_lower = content.lower()
         title_words = title_lower.split()
         content_words = content_lower.split()
         query_words = query_lower.split()
-        
+
         for qw in query_words:
             if len(qw) >= 2:
                 for tw in title_words:
@@ -13638,7 +13014,7 @@ def customer_service_search():
                     if cw in qw or qw in cw:
                         if len(cw) >= 2 and cw not in matched_keywords:
                             matched_keywords.append(cw)
-        
+
         if match_score > 0:
             results.append({
                 'id': topic.get('id', ''),
@@ -13647,10 +13023,10 @@ def customer_service_search():
                 'score': round(match_score, 1),
                 'matched_keywords': matched_keywords[:5]
             })
-    
+
     results.sort(key=lambda x: x['score'], reverse=True)
     top_results = results[:3]
-    
+
     user_data = users.get(username, {})
     today = datetime.now().strftime('%Y-%m-%d')
     response_data = {
@@ -13659,18 +13035,18 @@ def customer_service_search():
         'user_data': {},
         'responseTime': int((time.time() - start_time) * 1000)
     }
-    
+
     is_attendance_query = any(kw in query_lower for kw in ['签到', '打卡', '今日签到', '签到状态', '签到情况'])
-    
+
     if is_attendance_query:
         has_attended_today = user_data.get('lastAttendanceDate', '') == today
         total_days = user_data.get('attendanceTotalDays', 0)
         consecutive_days = user_data.get('attendanceConsecutiveDays', 0)
         daily_earned = user_data.get('dailyEarnedPoints', 0)
-        
+
         consecutive_rewards = get_consecutive_rewards(consecutive_days)
         total_rewards = get_total_rewards(total_days)
-        
+
         response_data['user_data']['attendance'] = {
             'has_attended_today': has_attended_today,
             'total_days': total_days,
@@ -13682,7 +13058,7 @@ def customer_service_search():
             'next_consecutive_milestone': get_next_milestone(consecutive_days, 'consecutive'),
             'next_total_milestone': get_next_milestone(total_days, 'total')
         }
-    
+
     is_points_query = any(kw in query_lower for kw in ['积分', '剩余积分', '积分余额', '多少积分'])
     if is_points_query:
         total_points = user_data.get('totalPoints', 0)
@@ -13696,7 +13072,7 @@ def customer_service_search():
             'daily_limit': 14,
             'remaining_today': max(0, 14 - daily_earned)
         }
-    
+
     is_pl_query = any(kw in query_lower for kw in ['pl', 'PL', 'pl余额', 'PL余额'])
     if is_pl_query:
         pl_balance = get_user_pl_balance(username)
@@ -13706,7 +13082,7 @@ def customer_service_search():
             'rate': pl_rate,
             'points_value': round(pl_balance / pl_rate, 2) if pl_rate > 0 else 0
         }
-    
+
     return jsonify(response_data)
 
 def get_consecutive_rewards(days):
@@ -13825,7 +13201,6 @@ def get_news():
 @limiter.limit('5 per day')
 def get_ip_signature():
     try:
-        from io import BytesIO
         import base64
 
         target_url = 'https://api.szfx.top/info-card/'
@@ -13898,8 +13273,6 @@ def get_ip_signature():
 @limiter.limit('3 per day')
 def get_earthquake_info():
     try:
-        import requests
-
         limit = request.args.get('limit', 3, type=int)
         if limit < 1:
             limit = 1
@@ -13946,7 +13319,7 @@ def get_earthquake_info():
 
             try:
                 time_str = datetime.fromtimestamp(time_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
-            except:
+            except Exception:
                 time_str = '未知'
 
             if magnitude >= 6.0:
@@ -14104,33 +13477,31 @@ def search_web():
     start_time = time.time()
     data = request.get_json()
     query = data.get('query', '').strip()
-    
+
     if not query:
         return jsonify({'error': '请输入搜索内容'}), 400
-    
+
     is_weather_query = any(kw in query for kw in ['天气', '气温', '温度', '降雨', '下雨', '晴天', '多云', '阴天', '风速'])
-    
+
     if is_weather_query:
-        import re
-        
         lat_lng_pattern = r'(-?\d+\.?\d*)\s*[,，\s]\s*(-?\d+\.?\d*)'
         lat_lng_match = re.search(lat_lng_pattern, query)
-        
+
         geo_result = None
         display_city = ''
-        
+
         if lat_lng_match:
             try:
                 latitude = float(lat_lng_match.group(1))
                 longitude = float(lat_lng_match.group(2))
-                
+
                 if -90 <= latitude <= 90 and -180 <= longitude <= 180:
                     log.info(f"Weather query by coordinates: lat={latitude}, lng={longitude}")
-                    
+
                     weather_data = fetch_weather_from_openmeteo(latitude, longitude)
                     if weather_data:
                         display_city = f'坐标 ({latitude}, {longitude})'
-                        
+
                         geo_result = {
                             'name': display_city,
                             'latitude': latitude,
@@ -14140,7 +13511,7 @@ def search_web():
                             'timezone': weather_data.get('timezone', 'auto'),
                             'matched_name': display_city
                         }
-                        
+
                         return jsonify({
                             'success': True,
                             'query': query,
@@ -14173,7 +13544,7 @@ def search_web():
                     log.warning(f"Invalid coordinates: {latitude}, {longitude}")
             except Exception as e:
                 log.error(f"Coordinate parse error: {e}")
-        
+
         if not geo_result:
             cleaned = query
             for prefix in ['搜索', '搜', '查询', '查找', '查']:
@@ -14183,14 +13554,14 @@ def search_web():
             cleaned = cleaned.replace('天气预报', '').replace('天气', '').replace('气温', '').replace('温度', '').replace('降雨', '').replace('下雨', '').replace('晴天', '').replace('多云', '').replace('阴天', '').replace('风速', '').strip()
             cleaned = cleaned.replace('的', '').replace('是', '').strip()
             cleaned = re.sub(r'[^\u4e00-\u9fa5]', '', cleaned)
-            
+
             if not cleaned or len(cleaned) < 2:
                 city = '北京'
             else:
                 city = cleaned
-            
+
             log.debug(f"Weather query detected: original={query}, extracted_city={city}")
-            
+
             region_result = lookup_region_coordinates(city)
             if region_result:
                 log.debug(f"Weather query matched in region.json: {city} -> {region_result['matched_name']} "
@@ -14208,7 +13579,7 @@ def search_web():
                 }
             else:
                 geo_result = geocode_city_openmeteo(city)
-            
+
             if geo_result:
                 weather_data = fetch_weather_from_openmeteo(geo_result['latitude'], geo_result['longitude'])
                 if weather_data:
@@ -14217,7 +13588,7 @@ def search_web():
                         city_display += ' · ' + geo_result['admin1']
                     if geo_result.get('country'):
                         city_display += ', ' + geo_result['country']
-                    
+
                     return jsonify({
                         'success': True,
                         'query': query,
@@ -14246,9 +13617,9 @@ def search_web():
                     })
             else:
                 log.warning(f"Geocode failed for city: {city}, falling back to search")
-    
+
     is_time_query = any(kw in query for kw in ['时间', '几点', '现在几点', '当前时间', '时区', '几点了', '什么时间'])
-    
+
     if is_time_query:
         time_result = fetch_time_info(query)
         if time_result:
@@ -14260,7 +13631,7 @@ def search_web():
                 'time_data': time_result,
                 'responseTime': int((time.time() - start_time) * 1000)
             })
-    
+
     search_engines = [
         {'name': 'Bing', 'url': f'https://www.bing.com/search?q={requests.utils.quote(query)}', 'parser': parse_bing},
         {'name': '搜狗', 'url': f'https://www.sogou.com/web?query={requests.utils.quote(query)}', 'parser': parse_sogou},
@@ -14268,7 +13639,7 @@ def search_web():
         {'name': 'DuckDuckGo', 'url': f'https://html.duckduckgo.com/html/?q={requests.utils.quote(query)}', 'parser': parse_duckduckgo},
         {'name': '百度', 'url': f'https://www.baidu.com/s?wd={requests.utils.quote(query)}', 'parser': parse_baidu}
     ]
-    
+
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -14276,7 +13647,7 @@ def search_web():
         'Accept-Encoding': 'gzip, deflate',
         'Connection': 'keep-alive',
     }
-    
+
     for engine in search_engines:
         try:
             response = requests.get(engine['url'], headers=headers, timeout=8)
@@ -14292,9 +13663,9 @@ def search_web():
                         'first_result': results[0] if results else None,
                         'responseTime': int((time.time() - start_time) * 1000)
                     })
-        except:
+        except Exception:
             continue
-    
+
     return jsonify({
         'success': False,
         'error': '未找到相关结果，请换个关键词试试',
@@ -14303,9 +13674,6 @@ def search_web():
 
 
 def fetch_time_info(query):
-    import re
-    from datetime import datetime
-    
     timezone_map = {
         '中国': 'Asia/Shanghai', '北京': 'Asia/Shanghai', '上海': 'Asia/Shanghai',
         '香港': 'Asia/Hong_Kong', '澳门': 'Asia/Macau', '台湾': 'Asia/Taipei', '台北': 'Asia/Taipei',
@@ -14339,32 +13707,32 @@ def fetch_time_info(query):
         '古巴': 'America/Havana', '哈瓦那': 'America/Havana',
         '智利': 'America/Santiago', '圣地亚哥': 'America/Santiago'
     }
-    
+
     try:
         import pytz
         pytz_available = True
-    except:
+    except Exception:
         pytz_available = False
-    
+
     city_match = re.search(r'([\u4e00-\u9fa5]{2,10})(?:时间|几点|现在|当前|时区)?', query)
-    
+
     location = '中国'
     timezone = 'Asia/Shanghai'
-    
+
     if city_match:
         location = city_match.group(1)
         for key, tz in timezone_map.items():
             if key in location:
                 timezone = tz
                 break
-    
+
     try:
         if pytz_available:
             tz = pytz.timezone(timezone)
             now = datetime.now(tz)
         else:
             now = datetime.utcnow()
-        
+
         time_str = now.strftime('%H:%M:%S')
         date_str = now.strftime('%Y年%m月%d日')
         weekday = now.strftime('%A')
@@ -14373,7 +13741,7 @@ def fetch_time_info(query):
             'Thursday': '星期四', 'Friday': '星期五', 'Saturday': '星期六',
             'Sunday': '星期日'
         }.get(weekday, weekday)
-        
+
         offset = ''
         if pytz_available and now.utcoffset():
             offset_seconds = now.utcoffset().total_seconds()
@@ -14385,7 +13753,7 @@ def fetch_time_info(query):
                 offset = f'UTC{offset_hours:02d}:{offset_minutes:02d}'
         else:
             offset = 'UTC'
-        
+
         return {
             'location': location,
             'timezone': timezone,
@@ -14395,7 +13763,7 @@ def fetch_time_info(query):
             'offset': offset,
             'timestamp': int(now.timestamp())
         }
-        
+
     except Exception as e:
         log.error(f"Time fetch error: {e}")
         return {
@@ -14410,7 +13778,6 @@ def fetch_time_info(query):
 
 
 def parse_bing(html):
-    import re
     results = []
     pattern = r'<li class="b_algo"[^>]*>.*?<h2[^>]*>.*?<a[^>]*href="([^"]*)"[^>]*>(.*?)</a>.*?<p[^>]*>(.*?)</p>'
     matches = re.findall(pattern, html, re.DOTALL)
@@ -14432,7 +13799,6 @@ def parse_bing(html):
 
 
 def parse_sogou(html):
-    import re
     results = []
     pattern = r'<a[^>]*href="([^"]*)"[^>]*>(.*?)</a>.*?<p[^>]*>(.*?)</p>'
     matches = re.findall(pattern, html, re.DOTALL)
@@ -14454,7 +13820,6 @@ def parse_sogou(html):
 
 
 def parse_duckduckgo(html):
-    import re
     results = []
     pattern = r'<a[^>]*rel="nofollow"[^>]*href="([^"]*)"[^>]*>.*?<span[^>]*>(.*?)</span>.*?<div[^>]*class="result__snippet"[^>]*>(.*?)</div>'
     matches = re.findall(pattern, html, re.DOTALL)
@@ -14476,7 +13841,6 @@ def parse_duckduckgo(html):
 
 
 def parse_360(html):
-    import re
     results = []
     pattern = r'<a[^>]*href="([^"]*)"[^>]*>(.*?)</a>.*?<p[^>]*class="[^"]*desc[^"]*"[^>]*>(.*?)</p>'
     matches = re.findall(pattern, html, re.DOTALL)
@@ -14498,7 +13862,6 @@ def parse_360(html):
 
 
 def parse_baidu(html):
-    import re
     results = []
     pattern = r'<a[^>]*href="([^"]*)"[^>]*>(.*?)</a>.*?<div[^>]*class="[^"]*abstract[^"]*"[^>]*>(.*?)</div>'
     matches = re.findall(pattern, html, re.DOTALL)
@@ -14566,11 +13929,11 @@ def verify_email_code_api():
 def check_email_verification_api():
     username = session['user']['username']
     user_data = users.get(username, {})
-    
+
     is_verified = user_data.get('email_verified', False)
     email = user_data.get('email', '')
     has_email = bool(email)
-    
+
     return jsonify({
         'verified': is_verified,
         'has_email': has_email,
@@ -14621,7 +13984,7 @@ def change_email_api():
     user_data['email_changed_at'] = int(time.time() * 1000)
     user_data['old_email'] = old_email
     user_data['email_verified'] = True
-    
+
     save_users()
 
     response_time = int((time.time() - start_time) * 1000)
@@ -14694,16 +14057,16 @@ def send_change_email_code_api():
 def send_verification_code_api():
     start_time = time.time()
     data = request.get_json() or {}
-    
+
     email = data.get('email', '').strip().lower()
     purpose = data.get('purpose', '验证')
-    
+
     if not email:
         return jsonify({'error': '请输入邮箱地址'}), 400
-    
+
     if not validate_email(email):
         return jsonify({'error': '邮箱格式不正确'}), 400
-    
+
     if purpose == '注册':
         for u, user_data in users.items():
             if user_data.get('email') == email:
@@ -14718,26 +14081,26 @@ def send_verification_code_api():
             })
         else:
             return jsonify({'error': message}), 500
-    
+
     if purpose == '验证':
         if 'user' not in session:
             return jsonify({'error': '请先登录'}), 401
-        
+
         username = session['user']['username']
         user_data = users.get(username)
         if not user_data:
             return jsonify({'error': '用户不存在'}), 400
-        
+
         bound_email = user_data.get('email', '')
         if not bound_email:
             return jsonify({'error': '用户未绑定邮箱'}), 400
-        
+
         if email != bound_email:
             return jsonify({'error': '输入的邮箱与绑定的邮箱不一致'}), 400
-        
+
         if user_data.get('email_verified', False):
             return jsonify({'error': '邮箱已验证，无需重复验证'}), 400
-        
+
         success, code, message = email_service.send_verification_code_with_limit(email, username, '验证')
         if success:
             return jsonify({
@@ -14748,30 +14111,30 @@ def send_verification_code_api():
             })
         else:
             return jsonify({'error': message}), 500
-    
+
     if purpose == '换绑':
         if 'user' not in session:
             return jsonify({'error': '请先登录'}), 401
-        
+
         username = session['user']['username']
         user_data = users.get(username)
         if not user_data:
             return jsonify({'error': '用户不存在'}), 400
-        
+
         old_email = user_data.get('email', '')
         if not old_email:
             return jsonify({'error': '用户未绑定邮箱'}), 400
-        
+
         if email == old_email:
             return jsonify({'error': '新邮箱与当前邮箱相同'}), 400
-        
+
         if user_data.get('email_changed', False):
             return jsonify({'error': '每个账号仅允许换绑一次'}), 400
-        
+
         for u, data in users.items():
             if data.get('email') == email and u != username:
                 return jsonify({'error': '该邮箱已被其他用户绑定'}), 400
-        
+
         success, code, message = email_service.send_verification_code_with_limit(email, username, '换绑')
         if success:
             return jsonify({
@@ -14782,25 +14145,25 @@ def send_verification_code_api():
             })
         else:
             return jsonify({'error': message}), 500
-    
+
     if purpose == '重置密码':
         if 'user' not in session:
             username = None
         else:
             username = session['user']['username']
-        
+
         found_user = None
         for u, user_data in users.items():
             if user_data.get('email') == email:
                 found_user = u
                 break
-        
+
         if not found_user:
             return jsonify({'error': '该邮箱未注册'}), 400
-        
+
         if username and found_user != username:
             return jsonify({'error': '该邮箱不属于当前登录用户'}), 400
-        
+
         success, code, message = email_service.send_verification_code_with_limit(email, found_user, '重置密码')
         if success:
             return jsonify({
@@ -14811,23 +14174,23 @@ def send_verification_code_api():
             })
         else:
             return jsonify({'error': message}), 500
-    
+
     if purpose == '注销':
         if 'user' not in session:
             return jsonify({'error': '请先登录'}), 401
-        
+
         username = session['user']['username']
         user_data = users.get(username)
         if not user_data:
             return jsonify({'error': '用户不存在'}), 400
-        
+
         bound_email = user_data.get('email', '')
         if not bound_email:
             return jsonify({'error': '用户未绑定邮箱'}), 400
-        
+
         if email != bound_email:
             return jsonify({'error': '输入的邮箱与绑定的邮箱不一致'}), 400
-        
+
         success, code, message = email_service.send_verification_code_with_limit(email, username, '注销')
         if success:
             return jsonify({
@@ -14838,7 +14201,7 @@ def send_verification_code_api():
             })
         else:
             return jsonify({'error': message}), 500
-    
+
     return jsonify({'error': '无效的操作类型'}), 400
 
 @app.route('/api/announcements', methods=['GET'])
@@ -15299,11 +14662,11 @@ def admin_membership_expiring_list():
 def get_auction_list_api():
     admin_token = request.headers.get('X-Admin-Token', '')
     is_admin = admin_token and admin_token in admin_sessions and admin_sessions[admin_token] > time.time()
-    
+
     if not is_admin:
         if 'user' not in session:
             return jsonify({'error': '请先登录'}), 401
-    
+
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
     sort_by = request.args.get('sort', 'ending').strip()
@@ -16677,10 +16040,10 @@ def get_weather_current():
         city = request.args.get('city', '').strip()
         latitude = request.args.get('latitude', type=float)
         longitude = request.args.get('longitude', type=float)
-        
+
         if not city and (latitude is None or longitude is None):
             return jsonify({'error': '请提供城市名称或经纬度'}), 400
-        
+
         if city and (latitude is None or longitude is None):
             region_result = lookup_region_coordinates(city)
             if region_result:
@@ -16699,11 +16062,11 @@ def get_weather_current():
         else:
             location_name = f'{latitude}, {longitude}'
             country = ''
-        
+
         weather_data = fetch_weather_from_openmeteo(latitude, longitude)
         if not weather_data:
             return jsonify({'error': '天气数据获取失败'}), 500
-        
+
         return jsonify({
             'success': True,
             'location': {
@@ -16719,7 +16082,7 @@ def get_weather_current():
             'data_source': 'Open-Meteo',
             'attribution': 'Weather data by Open-Meteo.com (CC BY 4.0)'
         })
-        
+
     except Exception as e:
         log.error(f"Weather API error: {e}")
         return jsonify({'error': '服务器错误: ' + str(e)}), 500
@@ -16731,15 +16094,15 @@ def get_weather_forecast():
     try:
         city = request.args.get('city', '').strip()
         days = request.args.get('days', 7, type=int)
-        
+
         if not city:
             return jsonify({'error': '请提供城市名称'}), 400
-        
+
         if days < 1:
             days = 1
         if days > 16:
             days = 16
-        
+
         region_result = lookup_region_coordinates(city)
         if region_result:
             latitude = region_result['latitude']
@@ -16754,11 +16117,11 @@ def get_weather_forecast():
             longitude = geo_result['longitude']
             location_name = geo_result['name']
             country = geo_result.get('country', '')
-        
+
         weather_data = fetch_weather_from_openmeteo(latitude, longitude)
         if not weather_data:
             return jsonify({'error': '天气数据获取失败'}), 500
-        
+
         return jsonify({
             'success': True,
             'location': {
@@ -16771,7 +16134,7 @@ def get_weather_forecast():
             'data_source': 'Open-Meteo',
             'attribution': 'Weather data by Open-Meteo.com (CC BY 4.0)'
         })
-        
+
     except Exception as e:
         log.error(f"Weather forecast API error: {e}")
         return jsonify({'error': '服务器错误: ' + str(e)}), 500
@@ -16859,7 +16222,6 @@ def request_log_download():
     }
     log_request_cooldown[username] = fresh_cooldown[username]
     save_data(LOG_REQUEST_COOLDOWN_FILE, fresh_cooldown)
-    FILE_MODIFICATION_TIMES['log_request_cooldown'] = get_file_mtime(LOG_REQUEST_COOLDOWN_FILE)
 
     stats = get_ip_log_stats(ip, username)
     return jsonify({
@@ -16933,7 +16295,7 @@ def log_request_info(response):
         ip = get_client_ip()
         if ip and ip != 'unknown':
             if request.path.startswith('/api/') or request.path.startswith('/admin'):
-                if request.path not in ['/api/logs/download', '/api/logs/status']:
+                if request.path not in ['/api/logs/download', '/api/logs/status', '/api/logs/request']:
                     level = 'INFO'
                     if response.status_code >= 500:
                         level = 'ERROR'
@@ -16952,9 +16314,7 @@ def log_request_info(response):
                     else:
                         extra['username'] = ''
                     append_ip_log(ip, level, message, extra)
-                    if random.random() < 0.01:
-                        save_ip_logs()
-    except Exception as e:
+    except Exception:
         pass
     return response
 
@@ -17061,68 +16421,21 @@ def static_files(path):
 
     try:
         return send_from_directory('public', path)
-    except:
+    except Exception:
         return send_from_directory('public', 'index.html')
 
 def signal_handler(signum, frame):
-    print('\n正在优雅关闭服务器...')
+    log.info('正在优雅关闭服务器...')
     try:
         cleanup_all_expired_data()
         enforce_phone_record_limit()
-        save_users()
-        save_phone_records()
-        save_auth_codes()
-        save_reset_codes()
-        save_feedbacks()
-        save_point_codes()
-        save_premium_point_codes()
-        save_boost_codes()
-        save_special_point_codes()
-        save_makeup_codes()
-        save_gamblers_codes()
-        save_box_codes()
-        save_plcard_codes()
-        save_premium_boost_codes()
-        save_user_boosts()
-        save_identity_verifications()
-        save_cancellation_codes()
-        save_restricted_users()
-        save_cdk_packages()
-        save_user_cdk_records()
-        save_announcements()
-        save_pl_exchange_records()
-        save_pl_rate_data()
-        save_user_pl_balances()
-        save_system_total_points(system_total_points)
-        save_orders()
-        save_user_pay_passwords()
-        save_user_code_limits()
-        save_coupons()
-        save_user_coupons()
-        save_coupon_grants()
-        save_pl_transfers()
-        save_mail_attachments()
-        save_mail_read_receipts()
-        save_pool_records()
-        save_user_pool_claims()
-        save_fund_data()
-        save_fund_history()
-        save_fund_rate()
-        save_analytics_cache()
-        save_nav_data()
-        save_nav_holdings()
-        save_nav_history()
-        save_gateway_stock()
-        save_ip_logs()
-        save_log_request_cooldown()
-        print('数据已保存并清理，服务器关闭完成')
+        store.flush_all()
+        log.info('内存数据已全部落盘，服务器关闭完成')
     except Exception as e:
-        print(f'保存数据时出错: {e}')
+        log.error(f'保存数据时出错: {e}')
     sys.exit(0)
 
 def start_verification_cleanup():
-    """启动验证码清理线程"""
-    import threading
     cleanup_thread = threading.Thread(target=email_service.cleanup_verification_codes_loop, daemon=True)
     cleanup_thread.start()
     log.info("验证码清理线程已启动")
@@ -17134,25 +16447,25 @@ if __name__ == '__main__':
     cleanup_all_expired_data()
     enforce_phone_record_limit()
     cleanup_expired_feedbacks()
-    
+
     migrate_restricted_users()
     migrate_first_attendance_date()
     migrate_user_data()
     log.info("用户数据迁移完成")
-    
+
     game.migrate_game_membership_data(users, save_users)
-gm_init = game.get_game_manager()
-if gm_init:
-    migrated = 0
-    for _uname in list(users.keys()):
-        try:
-            if gm_init.migrate_game_stats(_uname):
-                migrated += 1
-        except Exception as _e:
-            log.error(f"migrate_game_stats startup error for {_uname}: {_e}")
-    if migrated > 0:
-        save_users()
-        log.info(f"游戏统计数据迁移完成，共处理 {migrated} 个用户")
+    gm_init = game.get_game_manager()
+    if gm_init:
+        migrated = 0
+        for _uname in list(users.keys()):
+            try:
+                if gm_init.migrate_game_stats(_uname):
+                    migrated += 1
+            except Exception as _e:
+                log.error(f"migrate_game_stats startup error for {_uname}: {_e}")
+        if migrated > 0:
+            save_users()
+            log.info(f"游戏统计数据迁移完成，共处理 {migrated} 个用户")
 
     if not os.getenv('ADMIN_PASSWORD_HASH'):
         print("\n" + "="*60)
@@ -17174,10 +16487,8 @@ if gm_init:
         print(f"密码: 已从环境变量加载")
         print(f"{'='*60}\n")
 
-    import socket
     try:
         print(f"Server running on {SERVER_BASE_URL}")
-        print(f"Also available on https://localhost:3000")
         print(f"Also available on https://localhost:3000")
         print("按 Ctrl+C 优雅关闭服务器")
     except Exception as e:
