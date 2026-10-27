@@ -128,6 +128,11 @@ var pendingVerificationData = null;
 var currentCancelMethod = 'card';
 var cancelEmailCodeTimer = null;
 var cancelEmailCountdownValue = 0;
+var attendanceToken = null;
+var attendanceTokenNonce = null;
+var attendanceTokenExpiresAt = 0;
+var attendanceTokenTimer = null;
+var attendanceSubmitting = false;
 
 function updateGenerateButtonState(dailyEarned) {
     var generateBtn = document.getElementById('generateBtn');
@@ -453,6 +458,7 @@ async function loadAttendanceInfo() {
             if (btnWrapper) {
                 btnWrapper.style.display = 'none';
             }
+            clearAttendanceToken();
         } else {
             if (btnWrapper) {
                 btnWrapper.style.display = 'flex';
@@ -461,9 +467,13 @@ async function loadAttendanceInfo() {
                 if (dailyEarned < 3) {
                     attendanceBtn.disabled = true;
                     attendanceBtn.textContent = '⏳ 需达到3积分才可签到 (' + dailyEarned.toFixed(1) + '/3)';
+                    clearAttendanceToken();
                 } else {
                     attendanceBtn.disabled = false;
                     attendanceBtn.textContent = '✅ 每日签到 (+0.3积分)';
+                    if (!attendanceToken || Date.now() >= attendanceTokenExpiresAt) {
+                        requestAttendanceToken();
+                    }
                 }
             }
         }
@@ -473,21 +483,86 @@ async function loadAttendanceInfo() {
     }
 }
 
+function clearAttendanceToken() {
+    attendanceToken = null;
+    attendanceTokenNonce = null;
+    attendanceTokenExpiresAt = 0;
+    if (attendanceTokenTimer) {
+        clearInterval(attendanceTokenTimer);
+        attendanceTokenTimer = null;
+    }
+}
+
+async function requestAttendanceToken() {
+    try {
+        var data = await apiRequest('/api/attendance/token', { method: 'POST' });
+        if (data.success && data.token && data.nonce) {
+            attendanceToken = data.token;
+            attendanceTokenNonce = data.nonce;
+            attendanceTokenExpiresAt = Date.now() + (data.expires_in || 90) * 1000;
+            if (attendanceTokenTimer) clearInterval(attendanceTokenTimer);
+            attendanceTokenTimer = setInterval(function() {
+                if (!attendanceToken) {
+                    clearInterval(attendanceTokenTimer);
+                    attendanceTokenTimer = null;
+                    return;
+                }
+                if (Date.now() >= attendanceTokenExpiresAt) {
+                    var attendanceBtn = document.getElementById('attendanceBtn');
+                    if (attendanceBtn && !attendanceBtn.disabled) {
+                        requestAttendanceToken();
+                    } else {
+                        clearAttendanceToken();
+                    }
+                }
+            }, 15000);
+            return true;
+        }
+        return false;
+    } catch (error) {
+        if (error.message && !error.message.includes('今日已签到')) {
+            console.warn('Request attendance token failed:', error.message);
+        }
+        return false;
+    }
+}
+
 async function doAttendance() {
     var attendanceBtn = document.getElementById('attendanceBtn');
-    if (!attendanceBtn || attendanceBtn.disabled) return;
+    if (!attendanceBtn || attendanceBtn.disabled || attendanceSubmitting) return;
+
+    if (!attendanceToken || Date.now() >= attendanceTokenExpiresAt) {
+        var ok = await requestAttendanceToken();
+        if (!ok) {
+            toastMessage('签到令牌获取失败，请刷新页面重试', 'error');
+            return;
+        }
+    }
+
+    attendanceSubmitting = true;
     attendanceBtn.disabled = true;
     attendanceBtn.textContent = '签到中...';
+
     try {
-        var data = await apiRequest('/api/attendance', { method: 'POST' });
+        var data = await apiRequest('/api/attendance', {
+            method: 'POST',
+            body: JSON.stringify({
+                attendance_token: attendanceToken,
+                nonce: attendanceTokenNonce
+            })
+        });
+
+        clearAttendanceToken();
         await updatePointsDisplay();
         await loadAttendanceInfo();
         await updateMailBadge();
+
         var toast = document.createElement('div');
         toast.textContent = '✅ 签到成功！获得 ' + data.pointsEarned + ' 积分 | 累计签到: ' + data.totalDays + '天 | 连续签到: ' + data.consecutiveDays + '天';
         toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#27ae60;color:white;padding:10px 20px;border-radius:40px;font-size:14px;z-index:2000;animation:fadeInOut 2s;';
         document.body.appendChild(toast);
         setTimeout(function() { toast.remove(); }, 3000);
+
         if (data.rewards && data.rewards.length > 0) {
             var rewardList = document.getElementById('rewardList');
             if (rewardList) {
@@ -512,7 +587,14 @@ async function doAttendance() {
         }
     } catch (error) {
         toastMessage(error.message, 'error');
+        clearAttendanceToken();
         await loadAttendanceInfo();
+    } finally {
+        attendanceSubmitting = false;
+        var btnNow = document.getElementById('attendanceBtn');
+        if (btnNow) {
+            btnNow.disabled = false;
+        }
     }
 }
 
@@ -565,6 +647,7 @@ if (logoutBtn) {
         try {
             await apiRequest('/api/logout', { method: 'POST' });
             if (boostTimerInterval) clearInterval(boostTimerInterval);
+            clearAttendanceToken();
             document.cookie.split(';').forEach(function(c) {
                 document.cookie = c.replace(/^ +/, '').replace(/=.*/, '=;expires=' + new Date().toUTCString() + ';path=/');
             });

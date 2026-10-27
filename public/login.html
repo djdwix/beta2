@@ -669,8 +669,17 @@
                     return;
                 }
 
-                setTimeout(function() {
-                    window.location.href = '/';
+                setTimeout(async function() {
+                    try {
+                        var splashStatus = await apiRequest('/api/user/splash-status');
+                        if (splashStatus.should_show) {
+                            window.location.href = '/splash.html';
+                        } else {
+                            window.location.href = '/';
+                        }
+                    } catch (e) {
+                        window.location.href = '/';
+                    }
                 }, 500);
             } catch (error) {
                 msg.textContent = error.message || '登录失败';
@@ -769,8 +778,17 @@
                 msg.textContent = response.message || '注册成功，正在跳转...';
                 msg.className = 'message success';
 
-                setTimeout(function() {
-                    window.location.href = '/';
+                setTimeout(async function() {
+                    try {
+                        var splashStatus = await apiRequest('/api/user/splash-status');
+                        if (splashStatus.should_show) {
+                            window.location.href = '/splash.html';
+                        } else {
+                            window.location.href = '/';
+                        }
+                    } catch (e) {
+                        window.location.href = '/';
+                    }
                 }, 800);
             } catch (error) {
                 msg.textContent = error.message || '注册失败';

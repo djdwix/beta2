@@ -123,6 +123,8 @@ RATE_LIMITS = {
 
 LOCK_TIMEOUT = 15
 
+ATTENDANCE_TOKEN_TTL = 90
+
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
 
 LRC_TS = re.compile(r"\[(\d{1,2}):(\d{1,2})(?:\.(\d+))?\]")
@@ -256,6 +258,7 @@ FEEDBACKS_FILE = os.path.join(DATA_DIR, 'feedbacks.enc')
 ACCESS_LOG_FILE = os.path.join(LOG_DIR, 'access.log')
 IP_LOGS_FILE = os.path.join(DATA_DIR, 'ip_logs.enc')
 LOG_REQUEST_COOLDOWN_FILE = os.path.join(DATA_DIR, 'log_request_cooldown.enc')
+ATTENDANCE_TOKEN_STORAGE_FILE = os.path.join(DATA_DIR, 'attendance_tokens.enc')
 
 COUPON_TYPE_MAP = {
     'full_reduction': '满减券',
@@ -639,6 +642,7 @@ feedbacks = load_data(FEEDBACKS_FILE, {})
 ip_logs = load_data(IP_LOGS_FILE, {})
 log_request_cooldown = load_data(LOG_REQUEST_COOLDOWN_FILE, {})
 log_download_tickets = {}
+attendance_tokens = load_data(ATTENDANCE_TOKEN_STORAGE_FILE, {})
 
 FILE_MODIFICATION_TIMES['users'] = get_file_mtime(USERS_FILE)
 FILE_MODIFICATION_TIMES['phone'] = get_file_mtime(PHONE_RECORDS_FILE)
@@ -815,6 +819,9 @@ def save_nav_history():
 def save_gateway_stock():
     mark_dirty(GATEWAY_STOCK_FILE)
 
+def save_attendance_tokens():
+    mark_dirty(ATTENDANCE_TOKEN_STORAGE_FILE)
+
 def migrate_user_data():
     modified = False
     for username, user_data in users.items():
@@ -883,6 +890,9 @@ def migrate_user_data():
             if 'expires_at' not in membership:
                 membership['expires_at'] = 0
                 modified = True
+        if 'lastSplashShown' not in user_data:
+            user_data['lastSplashShown'] = int(time.time() * 1000)
+            modified = True
     if modified:
         save_users()
 
@@ -1898,6 +1908,101 @@ def deduct_user_points(username, points_to_deduct):
     user_data['totalPoints'] = round(current_total - points_to_deduct, 2)
     save_users()
     return True
+
+def _attendance_ip_fingerprint(ip):
+    if not ip or ip == 'unknown':
+        return 'unknown'
+    parts = ip.split('.')
+    if len(parts) == 4:
+        return f"{parts[0]}.{parts[1]}.{parts[2]}"
+    return ip[:12]
+
+
+def _attendance_hmac(data_str):
+    return hmac.new(QR_SECRET, data_str.encode('utf-8'), hashlib.sha256).hexdigest()
+
+
+def _cleanup_expired_attendance_tokens():
+    now = int(time.time())
+    expired = []
+    for tid, t in list(attendance_tokens.items()):
+        if t.get('used', False):
+            expired.append(tid)
+        elif now - t.get('created_at', 0) > ATTENDANCE_TOKEN_TTL * 2:
+            expired.append(tid)
+    for tid in expired:
+        attendance_tokens.pop(tid, None)
+    if expired:
+        save_attendance_tokens()
+
+
+def _validate_attendance_state(username):
+    user_data = users.get(username)
+    if not user_data:
+        return False, '用户不存在', None
+
+    today = datetime.now().strftime('%Y-%m-%d')
+    yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+
+    total_days = int(user_data.get('attendanceTotalDays', 0) or 0)
+    consecutive = int(user_data.get('attendanceConsecutiveDays', 0) or 0)
+    last_date = user_data.get('lastAttendanceDate', '') or ''
+    last_ts = int(user_data.get('lastAttendanceTimestamp', 0) or 0)
+    first_date = user_data.get('firstAttendanceDate', '') or ''
+
+    if total_days < 0 or consecutive < 0:
+        return False, '签到数据异常', None
+    if consecutive > total_days:
+        return False, '签到数据异常：连续天数大于累计天数', None
+    if total_days > 36500:
+        return False, '签到数据异常：累计天数超出合理范围', None
+
+    if last_ts > 0:
+        now_ts = int(time.time())
+        if last_ts > now_ts + 300:
+            return False, '签到数据异常：时间戳在未来', None
+        if last_ts < 1577836800:
+            return False, '签到数据异常：时间戳过早', None
+
+    if last_date:
+        try:
+            last_dt = datetime.strptime(last_date, '%Y-%m-%d').date()
+            today_dt = datetime.now().date()
+            if last_dt > today_dt:
+                return False, '签到数据异常：签到日期在未来', None
+            if (today_dt - last_dt).days > 365:
+                if total_days > 0 and consecutive > 0:
+                    return False, '签到数据异常：签到日期与连续天数不匹配', None
+        except Exception:
+            return False, '签到数据异常：签到日期格式错误', None
+
+    if first_date:
+        try:
+            first_dt = datetime.strptime(first_date, '%Y-%m-%d').date()
+            today_dt = datetime.now().date()
+            if first_dt > today_dt:
+                return False, '签到数据异常：首次签到日期在未来', None
+        except Exception:
+            return False, '签到数据异常：首次签到日期格式错误', None
+
+    if total_days > 0:
+        expected_consecutive = consecutive
+        if last_date == today:
+            return False, '今日已签到', None
+        if last_date == yesterday:
+            expected_consecutive = consecutive + 1
+        else:
+            expected_consecutive = 1
+
+    return True, None, {
+        'today': today,
+        'yesterday': yesterday,
+        'total_days': total_days,
+        'consecutive': consecutive,
+        'last_date': last_date,
+        'last_ts': last_ts,
+        'first_date': first_date,
+    }
 
 def check_and_award_attendance_rewards(username):
     user_data = users.get(username)
@@ -11042,6 +11147,7 @@ def register():
         'box_code_purchase_count': 0,
         'last_box_purchase_date': '',
         'plcard_code_purchase_count': 0,
+        'lastSplashShown': 0,
         'last_plcard_purchase_date': ''
     }
     save_users()
@@ -11334,6 +11440,71 @@ def verify_authcode():
         'responseTime': response_time
     })
 
+@app.route('/api/attendance/token', methods=['POST'])
+@csrf_protect
+@limiter.limit('4 per minute')
+@login_required
+@identity_required
+def issue_attendance_token():
+    username = session['user']['username']
+
+    if is_login_restricted(username):
+        return jsonify({'error': '账号已被限制登录'}), 403
+
+    _cleanup_expired_attendance_tokens()
+
+    ok, err, state = _validate_attendance_state(username)
+    if not ok:
+        return jsonify({'error': err}), 400
+
+    today = state['today']
+    last_date = state['last_date']
+
+    if last_date == today:
+        return jsonify({'error': '今日已签到'}), 400
+
+    daily_earned = users.get(username, {}).get('dailyEarnedPoints', 0)
+    if daily_earned < 3:
+        return jsonify({'error': f'今日获取积分需达到3积分才可签到，当前{daily_earned:.2f}/14'}), 400
+
+    for tid, t in list(attendance_tokens.items()):
+        if t.get('username') == username and not t.get('used', False):
+            if int(time.time()) - t.get('created_at', 0) < ATTENDANCE_TOKEN_TTL:
+                return jsonify({
+                    'success': True,
+                    'token': t['token'],
+                    'expires_in': ATTENDANCE_TOKEN_TTL - (int(time.time()) - t['created_at']),
+                    'nonce': t['nonce']
+                })
+
+    nonce = secrets.token_hex(16)
+    issued_at = int(time.time())
+    ip_fp = _attendance_ip_fingerprint(get_client_ip())
+    sign_base = f"att|{username}|{today}|{nonce}|{issued_at}|{ip_fp}"
+    signature = _attendance_hmac(sign_base)
+    token_id = hashlib.sha256(f"{sign_base}|{signature}".encode()).hexdigest()[:32]
+    token_payload = {
+        'token_id': token_id,
+        'username': username,
+        'date': today,
+        'nonce': nonce,
+        'issued_at': issued_at,
+        'ip_fp': ip_fp,
+        'signature': signature,
+        'token': f"{token_id}.{signature}",
+        'created_at': issued_at,
+        'used': False,
+    }
+    attendance_tokens[token_id] = token_payload
+    save_attendance_tokens()
+
+    return jsonify({
+        'success': True,
+        'token': token_payload['token'],
+        'expires_in': ATTENDANCE_TOKEN_TTL,
+        'nonce': nonce,
+    })
+
 @app.route('/api/attendance', methods=['POST'])
 @csrf_protect
 @limiter.limit(RATE_LIMITS['attendance'])
@@ -11342,141 +11513,142 @@ def verify_authcode():
 def attendance():
     start_time = time.time()
     username = session['user']['username']
+
+    if is_login_restricted(username):
+        return jsonify({'error': '账号已被限制登录'}), 403
+
+    data = request.get_json(silent=True) or {}
+    token = (data.get('attendance_token') or '').strip()
+    nonce = (data.get('nonce') or '').strip()
+
+    if not token or not nonce:
+        return jsonify({'error': '签到令牌缺失，请刷新页面后重试'}), 400
+
+    _cleanup_expired_attendance_tokens()
+
+    if '.' not in token:
+        return jsonify({'error': '签到令牌格式错误'}), 400
+
+    token_id, signature = token.split('.', 1)
+    record = attendance_tokens.get(token_id)
+
+    if not record:
+        return jsonify({'error': '签到令牌无效或已过期'}), 400
+
+    if record.get('used', False):
+        attendance_tokens.pop(token_id, None)
+        save_attendance_tokens()
+        return jsonify({'error': '签到令牌已被使用'}), 400
+
+    if record.get('username') != username:
+        return jsonify({'error': '签到令牌不属于当前用户'}), 400
+
+    now_ts = int(time.time())
+    if now_ts - record.get('issued_at', 0) > ATTENDANCE_TOKEN_TTL:
+        attendance_tokens.pop(token_id, None)
+        save_attendance_tokens()
+        return jsonify({'error': '签到令牌已过期，请刷新页面重新获取'}), 400
+
+    if record.get('nonce') != nonce:
+        return jsonify({'error': '签到令牌校验失败'}), 400
+
+    ip_fp = _attendance_ip_fingerprint(get_client_ip())
+    if record.get('ip_fp') != ip_fp:
+        return jsonify({'error': '签到环境异常，请使用原网络环境重试'}), 400
+
+    sign_base = f"att|{username}|{record.get('date')}|{nonce}|{record.get('issued_at')}|{ip_fp}"
+    expected_sig = _attendance_hmac(sign_base)
+    if not hmac.compare_digest(expected_sig, signature):
+        return jsonify({'error': '签到令牌签名校验失败'}), 400
+
     user_data = users.get(username)
     if not user_data:
         return jsonify({'error': '用户不存在'}), 400
-    today = datetime.now().strftime('%Y-%m-%d')
-    last_attendance_date = user_data.get('lastAttendanceDate', '')
-    if last_attendance_date == today:
+
+    ok, err, state = _validate_attendance_state(username)
+    if not ok:
+        return jsonify({'error': err}), 400
+
+    today = state['today']
+    yesterday = state['yesterday']
+    last_date = state['last_date']
+    total_days = state['total_days']
+    consecutive = state['consecutive']
+
+    if last_date == today:
+        attendance_tokens.pop(token_id, None)
+        save_attendance_tokens()
         return jsonify({'error': '今日已签到'}), 400
+
     daily_earned = user_data.get('dailyEarnedPoints', 0)
     if daily_earned < 3:
-        return jsonify({'error': f'今日获取积分需达到3积分才可签到，当前{daily_earned}/14'}), 400
+        return jsonify({'error': f'今日获取积分需达到3积分才可签到，当前{daily_earned:.2f}/14'}), 400
+
+    record['used'] = True
+    record['used_at'] = now_ts
+    save_attendance_tokens()
+    attendance_tokens.pop(token_id, None)
+
     points_earned = 0.3
     user_data['dailyEarnedPoints'] = round(user_data.get('dailyEarnedPoints', 0), 2)
+
     if 'totalPoints' not in user_data:
         user_data['totalPoints'] = 0
-    user_data['totalPoints'] = round(user_data['totalPoints'] + points_earned, 2)
-    yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
-    if last_attendance_date == yesterday:
-        user_data['attendanceConsecutiveDays'] = user_data.get('attendanceConsecutiveDays', 0) + 1
+
+    new_total = total_days + 1
+    if last_date == yesterday:
+        new_consecutive = consecutive + 1
     else:
-        user_data['attendanceConsecutiveDays'] = 1
-    user_data['attendanceTotalDays'] = user_data.get('attendanceTotalDays', 0) + 1
-    if 'firstAttendanceDate' not in user_data or not user_data['firstAttendanceDate']:
+        new_consecutive = 1
+
+    if new_consecutive > new_total:
+        new_consecutive = new_total
+
+    if new_total - total_days != 1:
+        return jsonify({'error': '签到状态异常'}), 400
+
+    user_data['totalPoints'] = round(user_data['totalPoints'] + points_earned, 2)
+    user_data['attendanceConsecutiveDays'] = new_consecutive
+    user_data['attendanceTotalDays'] = new_total
+
+    if not user_data.get('firstAttendanceDate'):
         user_data['firstAttendanceDate'] = today
+
     user_data['lastAttendanceDate'] = today
-    user_data['lastAttendanceTimestamp'] = int(time.time())
+    user_data['lastAttendanceTimestamp'] = now_ts
 
     added_points = add_random_system_points(username)
 
     save_users()
+
+    try:
+        user_email = user_data.get('email', '')
+        if user_email:
+            attendance_time_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            ip_prefix = _attendance_ip_fingerprint(get_client_ip())
+            email_service.send_attendance_log_email(
+                username=username,
+                user_email=user_email,
+                total_days=new_total,
+                consecutive_days=new_consecutive,
+                attendance_time=attendance_time_str,
+                ip_prefix=ip_prefix,
+                attendance_token=token
+            )
+    except Exception as _log_err:
+        log.error(f"签到日志邮件发送异常: {_log_err}")
+    
     rewards = check_and_award_attendance_rewards(username)
+
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
         'pointsEarned': points_earned,
-        'totalDays': user_data['attendanceTotalDays'],
-        'consecutiveDays': user_data['attendanceConsecutiveDays'],
+        'totalDays': new_total,
+        'consecutiveDays': new_consecutive,
         'systemPoolAdded': added_points,
         'rewards': rewards,
         'responseTime': response_time
-    })
-
-@app.route('/api/attendance/calendar', methods=['GET'])
-@login_required
-def get_attendance_calendar():
-    username = session['user']['username']
-    year = request.args.get('year', type=int)
-    month = request.args.get('month', type=int)
-
-    if not year or not month:
-        now = datetime.now()
-        year = now.year
-        month = now.month
-
-    if month < 1 or month > 12:
-        return jsonify({'error': '月份无效'}), 400
-
-    user_data = users.get(username, {})
-    consecutive_days = user_data.get('attendanceConsecutiveDays', 0)
-    last_attendance_date = user_data.get('lastAttendanceDate', '')
-    total_days = user_data.get('attendanceTotalDays', 0)
-    first_attendance_date = user_data.get('firstAttendanceDate', '')
-
-    if not first_attendance_date and last_attendance_date and total_days > 0:
-        try:
-            last_dt = datetime.strptime(last_attendance_date, '%Y-%m-%d')
-            first_dt = last_dt - timedelta(days=total_days - 1)
-            first_attendance_date = first_dt.strftime('%Y-%m-%d')
-            user_data['firstAttendanceDate'] = first_attendance_date
-            save_users()
-        except Exception:
-            pass
-
-    calendar_data = []
-    first_day = datetime(year, month, 1)
-    if month == 12:
-        last_day = datetime(year, 12, 31)
-    else:
-        last_day = datetime(year, month + 1, 1) - timedelta(days=1)
-    last_day_num = last_day.day
-
-    py_weekday = first_day.weekday()
-    first_weekday = (py_weekday + 1) % 7
-
-    signed_days = set()
-
-    if last_attendance_date and consecutive_days > 0:
-        try:
-            last_date = datetime.strptime(last_attendance_date, '%Y-%m-%d')
-            for i in range(consecutive_days):
-                check_date = last_date - timedelta(days=i)
-                if check_date.year == year and check_date.month == month:
-                    signed_days.add(check_date.day)
-        except Exception:
-            pass
-
-    for day in range(1, last_day_num + 1):
-        date_obj = datetime(year, month, day)
-        is_today = date_obj.date() == datetime.now().date()
-        is_signed = day in signed_days
-        py_wd = date_obj.weekday()
-        weekday = (py_wd + 1) % 7
-        is_weekend = weekday == 0 or weekday == 6
-
-        day_index = -1
-        if first_attendance_date:
-            try:
-                first_date = datetime.strptime(first_attendance_date, '%Y-%m-%d')
-                day_index = (date_obj.date() - first_date.date()).days
-                if day_index < 0:
-                    day_index = -1
-            except Exception:
-                pass
-
-        calendar_data.append({
-            'day': day,
-            'is_today': is_today,
-            'is_signed': is_signed,
-            'is_weekend': is_weekend,
-            'weekday': weekday,
-            'date': date_obj.strftime('%Y-%m-%d'),
-            'day_index': day_index
-        })
-
-    return jsonify({
-        'year': year,
-        'month': month,
-        'month_name': first_day.strftime('%B'),
-        'first_weekday': first_weekday,
-        'days': calendar_data,
-        'total_signed_days': len(signed_days),
-        'total_days': len(calendar_data),
-        'consecutive_days': consecutive_days,
-        'total_attendance_days': total_days,
-        'last_attendance_date': last_attendance_date,
-        'first_attendance_date': first_attendance_date
     })
 
 @app.route('/api/attendance-info', methods=['GET'])
@@ -16318,6 +16490,44 @@ def log_request_info(response):
         pass
     return response
 
+@app.route('/api/user/splash-status', methods=['GET'])
+@login_required
+def get_splash_status():
+    username = session['user']['username']
+    user_data = users.get(username, {})
+    current_time = int(time.time() * 1000)
+    seven_days_ms = 1 * 24 * 3600 * 1000
+
+    last_splash = user_data.get('lastSplashShown')
+
+    if last_splash is None:
+        user_data['lastSplashShown'] = current_time
+        save_users()
+        should_show = False
+        last_splash = current_time
+    else:
+        should_show = (current_time - last_splash) > seven_days_ms
+
+    return jsonify({
+        'should_show': should_show,
+        'last_splash': last_splash,
+        'cooldown_days': 1,
+        'username': username
+    })
+
+
+@app.route('/api/user/splash-shown', methods=['POST'])
+@csrf_protect
+@login_required
+def mark_splash_shown():
+    username = session['user']['username']
+    user_data = users.get(username)
+    if not user_data:
+        return jsonify({'error': '用户不存在'}), 400
+    user_data['lastSplashShown'] = int(time.time() * 1000)
+    save_users()
+    return jsonify({'success': True})
+
 @app.route('/')
 def index():
     return send_from_directory('public', 'index.html')
@@ -16341,6 +16551,10 @@ def login_page():
 @app.route('/mall.html')
 def mall_page():
     return send_from_directory('public', 'mall.html')
+
+@app.route('/splash.html')
+def splash_page():
+    return send_from_directory('public', 'splash.html')
 
 @app.route('/refund.html')
 def refund_page():
