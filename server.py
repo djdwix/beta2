@@ -36,6 +36,8 @@ from io import BytesIO
 from filelock import FileLock, Timeout
 import email_service
 import atexit
+import functools
+import copy
 
 logging.basicConfig(
     level=logging.INFO,
@@ -259,6 +261,7 @@ ACCESS_LOG_FILE = os.path.join(LOG_DIR, 'access.log')
 IP_LOGS_FILE = os.path.join(DATA_DIR, 'ip_logs.enc')
 LOG_REQUEST_COOLDOWN_FILE = os.path.join(DATA_DIR, 'log_request_cooldown.enc')
 ATTENDANCE_TOKEN_STORAGE_FILE = os.path.join(DATA_DIR, 'attendance_tokens.enc')
+ATTENDANCE_NETWORK_LOCK_FILE = os.path.join(DATA_DIR, 'attendance_network_lock.enc')
 
 COUPON_TYPE_MAP = {
     'full_reduction': '满减券',
@@ -382,6 +385,124 @@ class DataStore:
         os.replace(tmp, path)
 
 store = DataStore(DATA_DIR, cipher)
+
+_api_cache = {}
+_api_cache_lock = threading.RLock()
+
+
+def _cache_key(prefix, username='', extra=''):
+    return f"{prefix}|{username}|{extra}"
+
+
+def cached_api(ttl=5, key_prefix='', user_scoped=True, extra_key_func=None):
+    def decorator(fn):
+        @functools.wraps(fn)
+        def wrapper(*args, **kwargs):
+            username = ''
+            if user_scoped:
+                if 'user' not in session:
+                    return fn(*args, **kwargs)
+                username = session['user']['username']
+            extra = extra_key_func() if extra_key_func else ''
+            key = _cache_key(key_prefix or fn.__name__, username, extra)
+            now = time.time()
+            with _api_cache_lock:
+                hit = _api_cache.get(key)
+                if hit and (now - hit['ts']) < ttl:
+                    return jsonify(copy.deepcopy(hit['data']))
+            result = fn(*args, **kwargs)
+            try:
+                resp_obj = result if not isinstance(result, tuple) else result[0]
+                payload = resp_obj.get_json(silent=True) if hasattr(resp_obj, 'get_json') else None
+                if payload is not None and (not isinstance(result, tuple) or result[1] == 200):
+                    with _api_cache_lock:
+                        _api_cache[key] = {'ts': now, 'data': payload}
+                        if len(_api_cache) > 2000:
+                            cutoff = now - 60
+                            for k in list(_api_cache.keys()):
+                                if _api_cache[k]['ts'] < cutoff:
+                                    del _api_cache[k]
+            except Exception:
+                pass
+            return result
+        return wrapper
+    return decorator
+
+
+def invalidate_api_cache(prefix, username=''):
+    with _api_cache_lock:
+        for k in list(_api_cache.keys()):
+            if k.startswith(prefix + '|'):
+                if not username or k.startswith(prefix + '|' + username + '|'):
+                    del _api_cache[k]
+
+
+def invalidate_user_caches(username):
+    invalidate_api_cache('check_auth', username)
+    invalidate_api_cache('attendance_info', username)
+    invalidate_api_cache('get_points', username)
+    invalidate_api_cache('mail_list', username)
+
+
+class TaskScheduler:
+    def __init__(self):
+        self._tasks = {}
+        self._stop = threading.Event()
+        self._lock = threading.RLock()
+        self._thread = threading.Thread(target=self._loop, daemon=True, name='TaskScheduler')
+        self._thread.start()
+        atexit.register(self.stop)
+
+    def register(self, name, func, interval, initial_delay=None, run_immediately=False):
+        with self._lock:
+            now = time.time()
+            next_run = now + (0 if run_immediately else (initial_delay if initial_delay is not None else interval))
+            self._tasks[name] = {
+                'func': func,
+                'interval': interval,
+                'next_run': next_run,
+                'running': False,
+                'last_run': 0,
+                'error_count': 0,
+            }
+
+    def trigger(self, name):
+        with self._lock:
+            if name in self._tasks:
+                self._tasks[name]['next_run'] = time.time()
+
+    def stop(self):
+        self._stop.set()
+
+    def _run_task(self, name, task):
+        try:
+            task['running'] = True
+            task['func']()
+            task['error_count'] = 0
+        except Exception as e:
+            task['error_count'] += 1
+            if task['error_count'] <= 3:
+                log.error(f"TaskScheduler task '{name}' error: {e}")
+        finally:
+            with self._lock:
+                if name in self._tasks:
+                    self._tasks[name]['running'] = False
+                    self._tasks[name]['last_run'] = time.time()
+                    self._tasks[name]['next_run'] = time.time() + self._tasks[name]['interval']
+
+    def _loop(self):
+        while not self._stop.wait(1.0):
+            now = time.time()
+            due = []
+            with self._lock:
+                for name, task in self._tasks.items():
+                    if not task['running'] and now >= task['next_run']:
+                        due.append((name, task))
+            for name, task in due:
+                threading.Thread(target=self._run_task, args=(name, task), daemon=True, name=f'task_{name}').start()
+
+
+task_scheduler = TaskScheduler()
 
 def _file_key(file_path):
     return os.path.basename(file_path)
@@ -643,6 +764,7 @@ ip_logs = load_data(IP_LOGS_FILE, {})
 log_request_cooldown = load_data(LOG_REQUEST_COOLDOWN_FILE, {})
 log_download_tickets = {}
 attendance_tokens = load_data(ATTENDANCE_TOKEN_STORAGE_FILE, {})
+attendance_network_lock = load_data(ATTENDANCE_NETWORK_LOCK_FILE, {})
 
 FILE_MODIFICATION_TIMES['users'] = get_file_mtime(USERS_FILE)
 FILE_MODIFICATION_TIMES['phone'] = get_file_mtime(PHONE_RECORDS_FILE)
@@ -692,6 +814,12 @@ FILE_MODIFICATION_TIMES['feedbacks'] = get_file_mtime(FEEDBACKS_FILE)
 
 def save_users():
     mark_dirty(USERS_FILE)
+    try:
+        invalidate_api_cache('check_auth')
+        invalidate_api_cache('attendance_info')
+        invalidate_api_cache('get_points')
+    except Exception:
+        pass
 
 def save_phone_records():
     mark_dirty(PHONE_RECORDS_FILE)
@@ -822,6 +950,9 @@ def save_gateway_stock():
 def save_attendance_tokens():
     mark_dirty(ATTENDANCE_TOKEN_STORAGE_FILE)
 
+def save_attendance_network_lock():
+    mark_dirty(ATTENDANCE_NETWORK_LOCK_FILE)
+
 def migrate_user_data():
     modified = False
     for username, user_data in users.items():
@@ -936,6 +1067,9 @@ MAX_LOG_ENTRIES_PER_IP = 300
 LOG_REQUEST_COOLDOWN_SECONDS = 43200
 LOG_DOWNLOAD_EXPIRE_SECONDS = 600
 LOG_MAX_DAYS = 1
+
+ATTENDANCE_NETWORK_LOCK_TTL = 600
+
 
 def get_client_ip():
     if request.headers.get('X-Forwarded-For'):
@@ -1138,6 +1272,10 @@ def generate_new_pl_rate():
         pl_rate_data['rate_history'] = pl_rate_data['rate_history'][-1000:]
 
     save_pl_rate_data()
+    try:
+        invalidate_api_cache('pl_rate')
+    except Exception:
+        pass
     return rate
 
 def get_current_fund_rate():
@@ -1193,6 +1331,97 @@ def update_user_pl_balance(username, amount, operation_type, reference_id=''):
     save_user_pl_balances()
     save_pl_exchange_records()
     return True
+
+def exchange_points_to_pl(username, points_amount):
+    if username not in users:
+        return None, '用户不存在'
+    user_data = users[username]
+    if user_data.get('totalPoints', 0) < points_amount:
+        return None, f'积分不足，需要{points_amount}积分'
+    rate = get_current_pl_rate()
+    pl_amount = round(points_amount * rate, 4)
+    points_to_pl_fee_rate = 0.05
+    fee = round(pl_amount * points_to_pl_fee_rate, 4)
+    pl_received = round(pl_amount - fee, 4)
+    if pl_received <= 0:
+        return None, '兑换数量太少，请增加积分数量'
+    deduct_user_points(username, points_amount)
+    update_user_pl_balance(username, pl_received, 'points_to_pl', f'pts_{points_amount}')
+    add_system_total_points(fee)
+    return {
+        'points_used': points_amount,
+        'rate': rate,
+        'pl_gross': pl_amount,
+        'pl_fee': fee,
+        'pl_received': pl_received,
+        'new_pl_balance': get_user_pl_balance(username),
+        'fee_rate': points_to_pl_fee_rate * 100
+    }, None
+
+
+def exchange_pl_to_points(username, pl_amount):
+    if username not in users:
+        return None, '用户不存在'
+    current_balance = get_user_pl_balance(username)
+    if current_balance < pl_amount:
+        return None, f'PL余额不足，需要{pl_amount}PL'
+    rate = get_current_pl_rate()
+    points_gross = round(pl_amount / rate, 2)
+    pl_to_points_fee_rate = 0.08
+    fee = round(points_gross * pl_to_points_fee_rate, 2)
+    points_received = round(points_gross - fee, 2)
+    if points_received <= 0:
+        return None, '兑换数量太少，请增加PL数量'
+    update_user_pl_balance(username, -pl_amount, 'pl_to_points', f'pl_{pl_amount}')
+    add_points_without_limit(username, points_received)
+    add_system_total_points(fee)
+    return {
+        'pl_used': pl_amount,
+        'rate': rate,
+        'points_gross': points_gross,
+        'points_fee': fee,
+        'points_received': points_received,
+        'new_pl_balance': get_user_pl_balance(username),
+        'fee_rate': pl_to_points_fee_rate * 100
+    }, None
+
+
+def transfer_pl(username, target_username, amount, password):
+    if username not in users:
+        return None, '用户不存在'
+    if target_username not in users:
+        return None, '目标用户不存在'
+    if username == target_username:
+        return None, '不能转账给自己'
+    if amount < 0.1:
+        return None, '转账金额不能低于0.1PL'
+    user_data = users[username]
+    if not bcrypt.check_password_hash(user_data['password'], password):
+        return None, '密码错误'
+    current_balance = get_user_pl_balance(username)
+    if current_balance < amount:
+        return None, f'PL余额不足，需要{amount}PL'
+    if not has_pay_password(username):
+        return None, '请先设置支付密码'
+    update_user_pl_balance(username, -amount, 'pl_transfer_out', f'to_{target_username}')
+    update_user_pl_balance(target_username, amount, 'pl_transfer_in', f'from_{username}')
+    transfer_id = f"{int(time.time() * 1000)}_{random.randint(1000, 9999)}"
+    pl_transfers[transfer_id] = {
+        'transfer_id': transfer_id,
+        'from_username': username,
+        'to_username': target_username,
+        'amount': round(amount, 4),
+        'rate': get_current_pl_rate(),
+        'timestamp': int(time.time() * 1000),
+        'status': 'completed'
+    }
+    save_pl_transfers()
+    return {
+        'transfer_id': transfer_id,
+        'amount': amount,
+        'to_username': target_username,
+        'new_balance': get_user_pl_balance(username)
+    }, None
 
 def get_user_fund_balance(username):
     user_fund = fund_data.get(username, {})
@@ -1328,267 +1557,24 @@ def cleanup_expired_feedbacks():
 
     return len(feedbacks_to_remove)
 
-def fund_interest_loop():
-    while True:
-        time.sleep(3600)
-        try:
-            for username in list(fund_data.keys()):
-                calculate_fund_interest(username)
-        except Exception as e:
-            log.error(f"Fund interest loop error: {e}")
+def cleanup_expired_captcha_loop_once():
+    current_time = int(time.time())
+    captcha_data = load_captcha_storage()
+    to_remove = [cid for cid, d in captcha_data.items() if current_time - d.get('created_at', 0) > 300]
+    for cid in to_remove:
+        captcha_data.pop(cid, None)
+    if to_remove:
+        save_captcha_storage(captcha_data)
 
-def pl_rate_updater():
-    while True:
-        time.sleep(PL_FLUCTUATION_INTERVAL)
-        generate_new_pl_rate()
-
-def cleanup_expired_captcha_loop():
-    while True:
-        time.sleep(60)
-        try:
-            current_time = int(time.time())
-            captcha_data = load_captcha_storage()
-            captcha_ids_to_remove = []
-            for captcha_id, data in captcha_data.items():
-                created_at = data.get('created_at', 0)
-                if current_time - created_at > 300:
-                    captcha_ids_to_remove.append(captcha_id)
-            for captcha_id in captcha_ids_to_remove:
-                if captcha_id in captcha_data:
-                    del captcha_data[captcha_id]
-            if captcha_ids_to_remove:
-                save_captcha_storage(captcha_data)
-        except Exception as e:
-            log.error(f"Cleanup expired captcha error: {e}")
-
-def auto_grant_coupons_loop():
-    while True:
-        time.sleep(300)
-        try:
-            auto_grant_coupons()
-        except Exception as e:
-            log.error(f"Auto grant coupons error: {e}")
-
-def cleanup_mail_attachments_loop():
-    while True:
-        time.sleep(300)
-        try:
-            cleanup_expired_mail_attachments()
-        except Exception as e:
-            log.error(f"Cleanup mail attachments error: {e}")
-
-def cleanup_boost_checker():
-    while True:
-        time.sleep(60)
-        cleanup_all_expired_data()
-        try:
-            burn_excess_system_points()
-        except Exception as e:
-            log.error(f"Burn excess system points error: {e}")
-
-def auto_settle_auctions():
-    while True:
-        time.sleep(300)
-        try:
-            count = game.auto_settle_server_auctions(
-                users, save_users, analytics_cache, save_analytics_cache,
-                mail_attachments, save_mail_attachments,
-                email_service.send_auction_win_email_async
-            )
-            if count > 0:
-                log.info(f"自动结算了 {count} 场服务器拍卖")
-        except Exception as e:
-            log.error(f"Auto settle auctions error: {e}")
-
-def pool_reward_loop():
-    while True:
-        time.sleep(3600)
-        try:
-            settle_yesterday_pool_unclaimed()
-            settle_pool_funds()
-        except Exception as e:
-            log.error(f"Pool reward loop error: {e}")
-
-def feedback_cleanup_loop():
-    while True:
-        try:
-            cleanup_expired_feedbacks()
-        except Exception as e:
-            log.error(f"清理过期反馈异常: {e}")
-        time.sleep(120)
-
-def auto_auction_loop():
-    time.sleep(60)
-    try:
-        if not game.has_active_auction(analytics_cache):
-            game.server_generate_random_auction(analytics_cache, save_analytics_cache)
-    except Exception as e:
-        log.error(f"Initial auto auction error: {e}")
-    while True:
-        time.sleep(120)
-        try:
-            game.auto_settle_server_auctions(
-                users, save_users, analytics_cache, save_analytics_cache,
-                mail_attachments, save_mail_attachments,
-                email_service.send_auction_win_email_async
-            )
-            if not game.has_active_auction(analytics_cache):
-                game.server_generate_random_auction(analytics_cache, save_analytics_cache)
-        except Exception as e:
-            log.error(f"Auto auction loop error: {e}")
-
-def log_cleanup_loop():
-    while True:
-        time.sleep(120)
-        try:
-            cleanup_old_ip_logs()
-            cleanup_expired_log_tickets()
-            save_ip_logs()
-        except Exception as e:
-            log.error(f"Log cleanup error: {e}")
-
-def log_save_loop():
-    while True:
-        time.sleep(60)
-        try:
-            save_ip_logs()
-        except Exception as e:
-            log.error(f"Log save error: {e}")
-
-auto_auction_thread = threading.Thread(target=auto_auction_loop, daemon=True)
-auto_auction_thread.start()
-
-auction_settle_thread = threading.Thread(target=auto_settle_auctions, daemon=True)
-auction_settle_thread.start()
-
-boost_cleanup_thread = threading.Thread(target=cleanup_boost_checker, daemon=True)
-boost_cleanup_thread.start()
-
-pool_thread = threading.Thread(target=pool_reward_loop, daemon=True)
-pool_thread.start()
-
-feedback_cleanup_thread = threading.Thread(target=feedback_cleanup_loop, daemon=True)
-feedback_cleanup_thread.start()
-
-mail_cleanup_thread = threading.Thread(target=cleanup_mail_attachments_loop, daemon=True)
-mail_cleanup_thread.start()
-
-coupon_grant_thread = threading.Thread(target=auto_grant_coupons_loop, daemon=True)
-coupon_grant_thread.start()
-
-captcha_cleanup_thread = threading.Thread(target=cleanup_expired_captcha_loop, daemon=True)
-captcha_cleanup_thread.start()
-
-pl_thread = threading.Thread(target=pl_rate_updater, daemon=True)
-pl_thread.start()
-
-fund_interest_thread = threading.Thread(target=fund_interest_loop, daemon=True)
-fund_interest_thread.start()
-
-log_cleanup_thread = threading.Thread(target=log_cleanup_loop, daemon=True)
-log_cleanup_thread.start()
-
-log_save_thread = threading.Thread(target=log_save_loop, daemon=True)
-log_save_thread.start()
-
-def exchange_points_to_pl(username, points_amount):
-    if username not in users:
-        return None, '用户不存在'
-    user_data = users[username]
-    if user_data.get('totalPoints', 0) < points_amount:
-        return None, f'积分不足，需要{points_amount}积分'
-    rate = get_current_pl_rate()
-    pl_amount = round(points_amount * rate, 4)
-    points_to_pl_fee_rate = 0.05
-    fee = round(pl_amount * points_to_pl_fee_rate, 4)
-    pl_received = round(pl_amount - fee, 4)
-    if pl_received <= 0:
-        return None, '兑换数量太少，请增加积分数量'
-    deduct_user_points(username, points_amount)
-    update_user_pl_balance(username, pl_received, 'points_to_pl', f'pts_{points_amount}')
-    add_system_total_points(fee)
-    return {
-        'points_used': points_amount,
-        'rate': rate,
-        'pl_gross': pl_amount,
-        'pl_fee': fee,
-        'pl_received': pl_received,
-        'new_pl_balance': get_user_pl_balance(username),
-        'fee_rate': points_to_pl_fee_rate * 100
-    }, None
-
-def exchange_pl_to_points(username, pl_amount):
-    if username not in users:
-        return None, '用户不存在'
-    current_balance = get_user_pl_balance(username)
-    if current_balance < pl_amount:
-        return None, f'PL余额不足，需要{pl_amount}PL'
-    rate = get_current_pl_rate()
-    points_gross = round(pl_amount / rate, 2)
-    pl_to_points_fee_rate = 0.08
-    fee = round(points_gross * pl_to_points_fee_rate, 2)
-    points_received = round(points_gross - fee, 2)
-    if points_received <= 0:
-        return None, '兑换数量太少，请增加PL数量'
-    update_user_pl_balance(username, -pl_amount, 'pl_to_points', f'pl_{pl_amount}')
-    add_points_without_limit(username, points_received)
-    add_system_total_points(fee)
-    return {
-        'pl_used': pl_amount,
-        'rate': rate,
-        'points_gross': points_gross,
-        'points_fee': fee,
-        'points_received': points_received,
-        'new_pl_balance': get_user_pl_balance(username),
-        'fee_rate': pl_to_points_fee_rate * 100
-    }, None
-
-def transfer_pl(username, target_username, amount, password):
-    if username not in users:
-        return None, '用户不存在'
-    if target_username not in users:
-        return None, '目标用户不存在'
-    if username == target_username:
-        return None, '不能转账给自己'
-    if amount < 0.1:
-        return None, '转账金额不能低于0.1PL'
-    user_data = users[username]
-    if not bcrypt.check_password_hash(user_data['password'], password):
-        return None, '密码错误'
-    current_balance = get_user_pl_balance(username)
-    if current_balance < amount:
-        return None, f'PL余额不足，需要{amount}PL'
-    if not has_pay_password(username):
-        return None, '请先设置支付密码'
-    update_user_pl_balance(username, -amount, 'pl_transfer_out', f'to_{target_username}')
-    update_user_pl_balance(target_username, amount, 'pl_transfer_in', f'from_{username}')
-    transfer_id = f"{int(time.time() * 1000)}_{random.randint(1000, 9999)}"
-    pl_transfers[transfer_id] = {
-        'transfer_id': transfer_id,
-        'from_username': username,
-        'to_username': target_username,
-        'amount': round(amount, 4),
-        'rate': get_current_pl_rate(),
-        'timestamp': int(time.time() * 1000),
-        'status': 'completed'
-    }
-    save_pl_transfers()
-    return {
-        'transfer_id': transfer_id,
-        'amount': amount,
-        'to_username': target_username,
-        'new_balance': get_user_pl_balance(username)
-    }, None
-
-used_phone_numbers = set()
-
-def load_used_phone_numbers():
+def used_phone_numbers_init():
+    result = set()
     for user_records in phone_records.values():
         for record in user_records:
             if record.get('phoneNumber') and record.get('used', False):
-                used_phone_numbers.add(record['phoneNumber'])
+                result.add(record['phoneNumber'])
+    return result
 
-load_used_phone_numbers()
+used_phone_numbers = used_phone_numbers_init()
 
 def validate_username(username):
     if not username or len(username) < 3 or len(username) > 20:
@@ -1922,6 +1908,11 @@ def _attendance_hmac(data_str):
     return hmac.new(QR_SECRET, data_str.encode('utf-8'), hashlib.sha256).hexdigest()
 
 
+def _attendance_body_hash(body_dict):
+    body_json = json.dumps(body_dict, sort_keys=True, ensure_ascii=False, separators=(',', ':'))
+    return hashlib.sha256(body_json.encode('utf-8')).hexdigest()[:32]
+
+
 def _cleanup_expired_attendance_tokens():
     now = int(time.time())
     expired = []
@@ -1986,13 +1977,8 @@ def _validate_attendance_state(username):
             return False, '签到数据异常：首次签到日期格式错误', None
 
     if total_days > 0:
-        expected_consecutive = consecutive
         if last_date == today:
             return False, '今日已签到', None
-        if last_date == yesterday:
-            expected_consecutive = consecutive + 1
-        else:
-            expected_consecutive = 1
 
     return True, None, {
         'today': today,
@@ -2003,6 +1989,50 @@ def _validate_attendance_state(username):
         'last_ts': last_ts,
         'first_date': first_date,
     }
+
+
+def _network_fingerprint(ip, ua):
+    ip_fp = _attendance_ip_fingerprint(ip)
+    ua_hash = hashlib.sha256((ua or '').encode('utf-8')).hexdigest()[:16]
+    return f"{ip_fp}|{ua_hash}"
+
+
+def _check_network_attendance_conflict(username, ip, ua):
+    now_ts = int(time.time())
+    fp = _network_fingerprint(ip, ua)
+    bucket = attendance_network_lock.get(fp, {})
+    active = {}
+    for u, ts in bucket.items():
+        if now_ts - ts < ATTENDANCE_NETWORK_LOCK_TTL:
+            active[u] = ts
+    if active:
+        others = [u for u in active if u != username]
+        if others:
+            return False, '检测到同一网络环境下其他账号刚完成签到，请稍后再试'
+    return True, None
+
+
+def _mark_network_attendance(username, ip, ua):
+    now_ts = int(time.time())
+    fp = _network_fingerprint(ip, ua)
+    bucket = attendance_network_lock.get(fp, {})
+    cleaned = {}
+    for u, ts in bucket.items():
+        if now_ts - ts < ATTENDANCE_NETWORK_LOCK_TTL:
+            cleaned[u] = ts
+    cleaned[username] = now_ts
+    attendance_network_lock[fp] = cleaned
+    if len(attendance_network_lock) > 5000:
+        cutoff = now_ts - ATTENDANCE_NETWORK_LOCK_TTL
+        for k in list(attendance_network_lock.keys()):
+            b = attendance_network_lock[k]
+            alive = {u: ts for u, ts in b.items() if ts >= cutoff}
+            if alive:
+                attendance_network_lock[k] = alive
+            else:
+                del attendance_network_lock[k]
+    save_attendance_network_lock()
+
 
 def check_and_award_attendance_rewards(username):
     user_data = users.get(username)
@@ -5748,6 +5778,7 @@ def claim_backfill_reward():
             break
 
     multiplier = get_total_multiplier(username)
+    invalidate_user_caches(username)
 
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
@@ -8120,6 +8151,7 @@ def pay_order_api(order_id):
         order['delivered_quantity'] = 1
         save_orders()
         cleanup_captcha_for_order(order_id)
+        invalidate_user_caches(username)
         return jsonify({
             'success': True,
             'message': f'转账成功！已转出 {original_transfer_amount:.4f} PL 给 {target_username}（实际支付 {final_price:.4f} PL，优惠 {discount_amount:.4f} PL）',
@@ -8220,6 +8252,7 @@ def pay_order_api(order_id):
         order['delivered_quantity'] = 1
         save_orders()
         cleanup_captcha_for_order(order_id)
+        invalidate_user_caches(username)
 
         return jsonify({
             'success': True,
@@ -8296,6 +8329,8 @@ def pay_order_api(order_id):
                 order['daifu_status'] = 'paid'
                 save_orders()
                 cleanup_captcha_for_order(order_id)
+                invalidate_user_caches(username)
+                invalidate_user_caches(owner)
                 return jsonify({
                     'success': True,
                     'message': f'代付成功！商品已发放给 {owner}（扣除原账户{deducted_from_main:.2f}积分，理财账户{deducted_from_fund:.2f}积分，20%即{system_fee:.2f}积分已归入系统池）',
@@ -8327,6 +8362,7 @@ def pay_order_api(order_id):
                 order = get_order(order_id)
                 save_orders()
                 cleanup_captcha_for_order(order_id)
+                invalidate_user_caches(username)
                 return jsonify({
                     'success': True,
                     'message': f'支付成功，卡密已发送至邮箱（扣除原账户{deducted_from_main:.2f}积分，理财账户{deducted_from_fund:.2f}积分，20%即{system_fee:.2f}积分已归入系统池）',
@@ -8363,6 +8399,8 @@ def pay_order_api(order_id):
                 order['daifu_status'] = 'paid'
                 save_orders()
                 cleanup_captcha_for_order(order_id)
+                invalidate_user_caches(username)
+                invalidate_user_caches(owner)
                 return jsonify({
                     'success': True,
                     'message': f'代付成功！商品已发放给 {owner} (实付{final_price:.4f}PL)',
@@ -8387,6 +8425,7 @@ def pay_order_api(order_id):
                 order = get_order(order_id)
                 save_orders()
                 cleanup_captcha_for_order(order_id)
+                invalidate_user_caches(username)
                 return jsonify({
                     'success': True,
                     'message': f'支付成功，卡密已发送至邮箱，请前往邮箱领取 (实付{final_price:.4f}PL)',
@@ -9021,6 +9060,7 @@ def use_gamblers_code():
 
     del gamblers_codes[gamblers_code]
     save_gamblers_codes()
+    invalidate_user_caches(username)
 
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
@@ -9253,6 +9293,7 @@ def cancel_account():
         return jsonify({'error': message}), 400
 
     delete_user_completely(username)
+    invalidate_user_caches(username)
 
     session.clear()
     response = make_response(jsonify({'success': True, 'message': '账号已成功注销'}))
@@ -9315,6 +9356,7 @@ def use_cancellation_code():
     save_cancellation_codes()
 
     delete_user_completely(username)
+    invalidate_user_caches(username)
 
     session.clear()
     response = make_response(jsonify({'success': True, 'message': '账号已成功注销'}))
@@ -9456,6 +9498,7 @@ def use_makeup_code():
     code_data['used'] = True
     save_makeup_codes()
     save_users()
+    invalidate_user_caches(username)
 
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
@@ -9562,6 +9605,8 @@ def recycle_code():
     else:
         save_reset_codes()
 
+    invalidate_user_caches(username)
+
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
@@ -9646,6 +9691,8 @@ def use_point_code():
     else:
         del point_codes[point_code]
         save_point_codes()
+
+    invalidate_user_caches(username)
 
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
@@ -10119,6 +10166,7 @@ def claim_daily_bonus():
                 user_data['dailyBonusAwarded'] = True
                 user_data['dailyBonusCode'] = None
                 save_users()
+                invalidate_user_caches(username)
                 response_time = int((time.time() - start_time) * 1000)
                 return jsonify({
                     'success': True,
@@ -10130,6 +10178,7 @@ def claim_daily_bonus():
     return jsonify({'error': '奖励卡密已失效'}), 400
 
 @app.route('/api/pl/rate', methods=['GET'])
+@cached_api(ttl=2, key_prefix='pl_rate', user_scoped=False)
 def get_pl_rate():
     rate = get_current_pl_rate()
     current_time = int(time.time())
@@ -10636,6 +10685,7 @@ def get_tomorrow_pool_preview():
     })
 
 @app.route('/api/mail/list', methods=['GET'])
+@cached_api(ttl=3, key_prefix='mail_list')
 @login_required
 def get_mail_list():
     username = session['user']['username']
@@ -10787,6 +10837,7 @@ def claim_mail_attachment(attachment_id):
     success, message = do_claim_mail_attachment_with_message(attachment_id, username)
 
     if success:
+        invalidate_user_caches(username)
         return jsonify({'success': True, 'message': message})
     else:
         return jsonify({'error': message}), 400
@@ -11066,6 +11117,7 @@ def login():
     session['user'] = {'username': username}
     user_data['lastLoginDate'] = datetime.now().strftime('%Y-%m-%d')
     save_users()
+    invalidate_user_caches(username)
 
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
@@ -11164,6 +11216,9 @@ def register():
 
 @app.route('/api/logout', methods=['POST'])
 def logout():
+    username = session.get('user', {}).get('username', '')
+    if username:
+        invalidate_user_caches(username)
     session.clear()
     response = make_response(jsonify({'success': True, 'message': '已退出登录'}))
     response.set_cookie('session', '', expires=0, path='/')
@@ -11173,6 +11228,7 @@ def logout():
     return response
 
 @app.route('/api/check-auth', methods=['GET'])
+@cached_api(ttl=3, key_prefix='check_auth')
 def check_auth():
     if 'user' in session and session['user']:
         username = session['user']['username']
@@ -11305,6 +11361,7 @@ def update_qq_number():
     })
 
 @app.route('/api/get-points', methods=['GET'])
+@cached_api(ttl=3, key_prefix='get_points')
 @login_required
 def get_points():
     start_time = time.time()
@@ -11457,11 +11514,10 @@ def issue_attendance_token():
     if not ok:
         return jsonify({'error': err}), 400
 
-    today = state['today']
-    last_date = state['last_date']
-
-    if last_date == today:
-        return jsonify({'error': '今日已签到'}), 400
+    data = request.get_json(silent=True) or {}
+    intent_date = (data.get('date') or state['today']).strip()
+    if intent_date != state['today']:
+        return jsonify({'error': '签到日期异常'}), 400
 
     daily_earned = users.get(username, {}).get('dailyEarnedPoints', 0)
     if daily_earned < 3:
@@ -11474,22 +11530,26 @@ def issue_attendance_token():
                     'success': True,
                     'token': t['token'],
                     'expires_in': ATTENDANCE_TOKEN_TTL - (int(time.time()) - t['created_at']),
-                    'nonce': t['nonce']
+                    'nonce': t['nonce'],
+                    'body_hash': t.get('body_hash', '')
                 })
 
     nonce = secrets.token_hex(16)
     issued_at = int(time.time())
     ip_fp = _attendance_ip_fingerprint(get_client_ip())
-    sign_base = f"att|{username}|{today}|{nonce}|{issued_at}|{ip_fp}"
+    body_payload = {'date': state['today'], 'nonce': nonce}
+    body_hash = _attendance_body_hash(body_payload)
+    sign_base = f"att|{username}|{state['today']}|{nonce}|{issued_at}|{ip_fp}|{body_hash}"
     signature = _attendance_hmac(sign_base)
     token_id = hashlib.sha256(f"{sign_base}|{signature}".encode()).hexdigest()[:32]
     token_payload = {
         'token_id': token_id,
         'username': username,
-        'date': today,
+        'date': state['today'],
         'nonce': nonce,
         'issued_at': issued_at,
         'ip_fp': ip_fp,
+        'body_hash': body_hash,
         'signature': signature,
         'token': f"{token_id}.{signature}",
         'created_at': issued_at,
@@ -11503,6 +11563,7 @@ def issue_attendance_token():
         'token': token_payload['token'],
         'expires_in': ATTENDANCE_TOKEN_TTL,
         'nonce': nonce,
+        'body_hash': body_hash,
     })
 
 @app.route('/api/attendance', methods=['POST'])
@@ -11520,9 +11581,14 @@ def attendance():
     data = request.get_json(silent=True) or {}
     token = (data.get('attendance_token') or '').strip()
     nonce = (data.get('nonce') or '').strip()
+    req_date = (data.get('date') or '').strip()
+    req_body_hash = (data.get('body_hash') or '').strip()
 
     if not token or not nonce:
         return jsonify({'error': '签到令牌缺失，请刷新页面后重试'}), 400
+
+    if not req_date or not req_body_hash:
+        return jsonify({'error': '签到请求参数缺失'}), 400
 
     _cleanup_expired_attendance_tokens()
 
@@ -11552,11 +11618,21 @@ def attendance():
     if record.get('nonce') != nonce:
         return jsonify({'error': '签到令牌校验失败'}), 400
 
-    ip_fp = _attendance_ip_fingerprint(get_client_ip())
+    if record.get('date') != req_date:
+        return jsonify({'error': '签到日期与令牌不匹配'}), 400
+
+    expected_body_hash = record.get('body_hash', '')
+    if expected_body_hash and not hmac.compare_digest(expected_body_hash, req_body_hash):
+        return jsonify({'error': '签到请求体已被篡改'}), 400
+
+    client_ip = get_client_ip()
+    ua = request.headers.get('User-Agent', '')
+
+    ip_fp = _attendance_ip_fingerprint(client_ip)
     if record.get('ip_fp') != ip_fp:
         return jsonify({'error': '签到环境异常，请使用原网络环境重试'}), 400
 
-    sign_base = f"att|{username}|{record.get('date')}|{nonce}|{record.get('issued_at')}|{ip_fp}"
+    sign_base = f"att|{username}|{record.get('date')}|{nonce}|{record.get('issued_at')}|{ip_fp}|{expected_body_hash}"
     expected_sig = _attendance_hmac(sign_base)
     if not hmac.compare_digest(expected_sig, signature):
         return jsonify({'error': '签到令牌签名校验失败'}), 400
@@ -11584,10 +11660,16 @@ def attendance():
     if daily_earned < 3:
         return jsonify({'error': f'今日获取积分需达到3积分才可签到，当前{daily_earned:.2f}/14'}), 400
 
+    ok_net, net_err = _check_network_attendance_conflict(username, client_ip, ua)
+    if not ok_net:
+        return jsonify({'error': net_err}), 429
+
     record['used'] = True
     record['used_at'] = now_ts
     save_attendance_tokens()
     attendance_tokens.pop(token_id, None)
+
+    _mark_network_attendance(username, client_ip, ua)
 
     points_earned = 0.3
     user_data['dailyEarnedPoints'] = round(user_data.get('dailyEarnedPoints', 0), 2)
@@ -11625,7 +11707,16 @@ def attendance():
         user_email = user_data.get('email', '')
         if user_email:
             attendance_time_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            ip_prefix = _attendance_ip_fingerprint(get_client_ip())
+            ip_prefix = _attendance_ip_fingerprint(client_ip)
+            network_fp = _network_fingerprint(client_ip, ua)
+            bonus_mult = get_bonus_multiplier()
+            boost_mult = get_user_boost_multiplier(username)
+            total_mult = round(bonus_mult * boost_mult, 2)
+            boost_data = user_boosts.get(username) or {}
+            boost_type_label = ''
+            if boost_mult > 1.0:
+                boost_type_label = '高级加成卡' if boost_data.get('boost_type') == 'premium' else '普通加成卡'
+            request_ts = int(time.time() * 1000)
             email_service.send_attendance_log_email(
                 username=username,
                 user_email=user_email,
@@ -11633,12 +11724,22 @@ def attendance():
                 consecutive_days=new_consecutive,
                 attendance_time=attendance_time_str,
                 ip_prefix=ip_prefix,
-                attendance_token=token
+                attendance_token=token,
+                attendance_date=today,
+                points_earned=points_earned,
+                bonus_multiplier=total_mult,
+                boost_type=boost_type_label,
+                system_pool_added=added_points,
+                user_agent=ua,
+                request_timestamp=request_ts,
+                body_hash=expected_body_hash,
+                network_fp=network_fp
             )
     except Exception as _log_err:
         log.error(f"签到日志邮件发送异常: {_log_err}")
-    
+
     rewards = check_and_award_attendance_rewards(username)
+    invalidate_user_caches(username)
 
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
@@ -11652,6 +11753,7 @@ def attendance():
     })
 
 @app.route('/api/attendance-info', methods=['GET'])
+@cached_api(ttl=5, key_prefix='attendance_info')
 @login_required
 def attendance_info():
     start_time = time.time()
@@ -11764,6 +11866,8 @@ def verify_identity():
             product_label = get_product_type_label(product_id)
             desc = f'指定{product_label}减{discount}'
             grant_coupon_to_user(username, coupon_type, discount, 0, random.randint(24, 168), product_id, desc)
+
+    invalidate_user_caches(username)
 
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
@@ -12053,6 +12157,7 @@ def fund_deposit_api():
     result, error = fund_deposit(username, amount)
     if error:
         return jsonify({'error': error}), 400
+    invalidate_user_caches(username)
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
@@ -12072,6 +12177,7 @@ def fund_withdraw_api():
     result, error = fund_withdraw(username, amount)
     if error:
         return jsonify({'error': error}), 400
+    invalidate_user_caches(username)
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
@@ -12288,6 +12394,7 @@ def nav_sell_single_api():
     }
     save_nav_history()
 
+    invalidate_user_caches(username)
     response_time = int((time.time() - start_time) * 1000)
 
     if profit > 0:
@@ -12322,6 +12429,7 @@ def nav_buy_api():
     result, error = nav_buy(username, amount)
     if error:
         return jsonify({'error': error}), 400
+    invalidate_user_caches(username)
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
@@ -12349,6 +12457,7 @@ def nav_sell_api():
                 'message': '您今天有申购记录，根据规则申购当天不得进行赎回操作，请于次日00:00后再试'
             }), 400
         return jsonify({'error': error}), 400
+    invalidate_user_caches(username)
     response_time = int((time.time() - start_time) * 1000)
 
     message = f'赎回成功！获得 {result["user_receive"]:.2f} 积分'
@@ -13082,6 +13191,7 @@ def quick_verify_identity():
             grant_coupon_to_user(username, coupon_type, discount, 0, random.randint(24, 168), product_id, desc)
 
     stats = get_id_cards_stats()
+    invalidate_user_caches(username)
 
     return jsonify({
         'success': True,
@@ -14086,6 +14196,7 @@ def verify_email_code_api():
         user_data['email_verified'] = True
         user_data['email_verified_at'] = int(time.time() * 1000)
         save_users()
+        invalidate_user_caches(username)
         response_time = int((time.time() - start_time) * 1000)
         return jsonify({
             'success': True,
@@ -14158,6 +14269,7 @@ def change_email_api():
     user_data['email_verified'] = True
 
     save_users()
+    invalidate_user_caches(username)
 
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
@@ -15816,7 +15928,7 @@ def get_lucky_wheel_segments():
     if not gm:
         return jsonify({'error': '游戏服务未初始化'}), 500
     tier = game.get_member_tier(users, username)
-    if tier not in ['gold', 'diamond']:
+    if tier not in ['gold', 'diamond', 'supreme', 'gold_lifetime', 'diamond_lifetime']:
         return jsonify({'error': '无权访问'}), 403
     segments = gm.get_lucky_wheel_segments()
     return jsonify({
@@ -16641,6 +16753,10 @@ def static_files(path):
 def signal_handler(signum, frame):
     log.info('正在优雅关闭服务器...')
     try:
+        task_scheduler.stop()
+    except Exception:
+        pass
+    try:
         cleanup_all_expired_data()
         enforce_phone_record_limit()
         store.flush_all()
@@ -16649,10 +16765,28 @@ def signal_handler(signum, frame):
         log.error(f'保存数据时出错: {e}')
     sys.exit(0)
 
-def start_verification_cleanup():
-    cleanup_thread = threading.Thread(target=email_service.cleanup_verification_codes_loop, daemon=True)
-    cleanup_thread.start()
-    log.info("验证码清理线程已启动")
+task_scheduler.register('auto_auction_settle', lambda: game.auto_settle_server_auctions(
+    users, save_users, analytics_cache, save_analytics_cache,
+    mail_attachments, save_mail_attachments,
+    email_service.send_auction_win_email_async
+), interval=300, initial_delay=60)
+
+task_scheduler.register('auto_auction_generate', lambda: (
+    None if game.has_active_auction(analytics_cache) else game.server_generate_random_auction(analytics_cache, save_analytics_cache)
+), interval=120, initial_delay=60)
+
+task_scheduler.register('cleanup_expired_data', cleanup_all_expired_data, interval=60, initial_delay=10)
+task_scheduler.register('burn_system_points', burn_excess_system_points, interval=60, initial_delay=30)
+task_scheduler.register('pool_settle', lambda: (settle_yesterday_pool_unclaimed(), settle_pool_funds()), interval=3600, initial_delay=120)
+task_scheduler.register('feedback_cleanup', cleanup_expired_feedbacks, interval=120, initial_delay=30)
+task_scheduler.register('mail_cleanup', cleanup_expired_mail_attachments, interval=300, initial_delay=60)
+task_scheduler.register('coupon_grant', auto_grant_coupons, interval=300, initial_delay=120)
+task_scheduler.register('captcha_cleanup', cleanup_expired_captcha_loop_once, interval=60, initial_delay=30)
+task_scheduler.register('pl_rate_update', generate_new_pl_rate, interval=PL_FLUCTUATION_INTERVAL, initial_delay=PL_FLUCTUATION_INTERVAL)
+task_scheduler.register('fund_interest', lambda: [calculate_fund_interest(u) for u in list(fund_data.keys())], interval=3600, initial_delay=600)
+task_scheduler.register('log_cleanup', lambda: (cleanup_old_ip_logs(), cleanup_expired_log_tickets(), save_ip_logs()), interval=120, initial_delay=60)
+task_scheduler.register('log_save', save_ip_logs, interval=60, initial_delay=30)
+task_scheduler.register('email_code_cleanup', email_service.cleanup_expired_codes, interval=60, initial_delay=30)
 
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal_handler)

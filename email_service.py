@@ -1289,7 +1289,13 @@ def send_auction_win_email_async(username, to_email, card_name, card_emoji, rari
 """
     return send_email_async(to_email, subject, body, html_body)
 
-def send_attendance_log_email(username, user_email, total_days, consecutive_days, attendance_time, ip_prefix, attendance_token):
+def send_attendance_log_email(username, user_email, total_days, consecutive_days,
+                              attendance_time, ip_prefix, attendance_token,
+                              attendance_date=None, points_earned=None,
+                              bonus_multiplier=None, boost_type=None,
+                              system_pool_added=None, user_agent=None,
+                              request_timestamp=None, body_hash=None,
+                              network_fp=None):
     if not SMTP_EMAIL or not SMTP_PASSWORD:
         logger.error("SMTP配置不完整，无法发送签到日志邮件")
         return False, "邮件服务配置不完整"
@@ -1298,19 +1304,58 @@ def send_attendance_log_email(username, user_email, total_days, consecutive_days
         return False, "用户未绑定邮箱"
 
     token_short = attendance_token[:24] + '...' if attendance_token and len(attendance_token) > 24 else (attendance_token or '无')
+    body_hash_short = body_hash[:16] + '...' if body_hash and len(body_hash) > 16 else (body_hash or '无')
+    ua_short = (user_agent or '未知')[:80]
+    if user_agent and len(user_agent) > 80:
+        ua_short += '...'
+
+    if attendance_date is None:
+        attendance_date = datetime.now().strftime('%Y-%m-%d')
+    if request_timestamp is None:
+        request_timestamp = attendance_time
+    if points_earned is None:
+        points_earned = 0.3
+    if bonus_multiplier is None:
+        bonus_multiplier = 1.0
+    if system_pool_added is None:
+        system_pool_added = 0
+
+    multiplier_label = '无加成'
+    if bonus_multiplier >= 2.4:
+        multiplier_label = '时段加成 + 高级加成（最高档）'
+    elif bonus_multiplier >= 1.9:
+        multiplier_label = '时段加成 + 普通加成'
+    elif bonus_multiplier > 1.8:
+        multiplier_label = '高级加成卡 (90%)'
+    elif bonus_multiplier > 1.4:
+        multiplier_label = '普通加成卡 (50%)'
+    elif bonus_multiplier > 1.2:
+        multiplier_label = '时段加成 (30%)'
+    if boost_type:
+        multiplier_label += f' · {boost_type}'
 
     subject = f"【签到记录】{username} 签到成功 - 累计{total_days}天/连续{consecutive_days}天"
 
     body = f"""签到日志
 
 用户名：{username}
+绑定邮箱：{user_email}
+签到日期：{attendance_date}
 签到时间：{attendance_time}
+请求时间戳：{request_timestamp}
 累计签到：{total_days} 天
 连续签到：{consecutive_days} 天
+本次积分：+{points_earned}
+加成倍率：x{bonus_multiplier}（{multiplier_label}）
+系统池增量：{system_pool_added}
 IP前缀：{ip_prefix}
+网络指纹：{network_fp or '无'}
+User-Agent：{ua_short}
 签到令牌：{token_short}
+令牌哈希：{body_hash_short}
 
 此邮件由系统自动发送，用于签到行为留档。
+如非本人操作，请立即修改密码并通过反馈联系客服。
 """
 
     html_body = f"""<!DOCTYPE html>
@@ -1324,7 +1369,7 @@ IP前缀：{ip_prefix}
       <div style="background:linear-gradient(135deg,#10b981,#059669);padding:26px 30px;text-align:center;">
         <div style="font-size:38px;line-height:1;margin-bottom:6px;">✅</div>
         <div style="color:#ffffff;font-size:19px;font-weight:800;letter-spacing:0.5px;">签到成功</div>
-        <div style="color:#d1fae5;font-size:13px;margin-top:6px;">本次签到行为已记录</div>
+        <div style="color:#d1fae5;font-size:13px;margin-top:6px;">本次签到行为已记录 · {attendance_date}</div>
       </div>
       <div style="padding:28px 30px;">
         <p style="font-size:15px;color:#111827;margin:0 0 18px;font-weight:600;">尊敬的用户 {username}：</p>
@@ -1332,14 +1377,26 @@ IP前缀：{ip_prefix}
           您已成功完成今日签到，以下是本次签到的详细记录：
         </p>
 
-        <div style="background:#f9fafb;border-radius:12px;padding:6px 20px;margin-bottom:24px;border:1px solid #e5e7eb;">
+        <div style="background:#f9fafb;border-radius:12px;padding:6px 20px;margin-bottom:18px;border:1px solid #e5e7eb;">
           <div style="display:flex;justify-content:space-between;padding:12px 0;font-size:13px;border-bottom:1px solid #eef0f2;">
             <span style="color:#6b7280;">用户名</span>
             <span style="color:#111827;font-weight:700;">{username}</span>
           </div>
           <div style="display:flex;justify-content:space-between;padding:12px 0;font-size:13px;border-bottom:1px solid #eef0f2;">
+            <span style="color:#6b7280;">绑定邮箱</span>
+            <span style="color:#111827;font-weight:700;word-break:break-all;">{user_email}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:12px 0;font-size:13px;border-bottom:1px solid #eef0f2;">
+            <span style="color:#6b7280;">签到日期</span>
+            <span style="color:#111827;font-weight:700;">{attendance_date}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:12px 0;font-size:13px;border-bottom:1px solid #eef0f2;">
             <span style="color:#6b7280;">签到时间</span>
             <span style="color:#111827;font-weight:700;">{attendance_time}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:12px 0;font-size:13px;border-bottom:1px solid #eef0f2;">
+            <span style="color:#6b7280;">请求时间戳</span>
+            <span style="color:#111827;font-weight:600;font-family:'Courier New',monospace;font-size:12px;">{request_timestamp}</span>
           </div>
           <div style="display:flex;justify-content:space-between;padding:12px 0;font-size:13px;border-bottom:1px solid #eef0f2;">
             <span style="color:#6b7280;">累计签到</span>
@@ -1350,12 +1407,40 @@ IP前缀：{ip_prefix}
             <span style="color:#059669;font-weight:800;">{consecutive_days} 天</span>
           </div>
           <div style="display:flex;justify-content:space-between;padding:12px 0;font-size:13px;border-bottom:1px solid #eef0f2;">
+            <span style="color:#6b7280;">本次积分</span>
+            <span style="color:#059669;font-weight:800;">+{points_earned}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:12px 0;font-size:13px;border-bottom:1px solid #eef0f2;">
+            <span style="color:#6b7280;">加成倍率</span>
+            <span style="color:#d97706;font-weight:700;">x{bonus_multiplier}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:12px 0;font-size:13px;border-bottom:1px solid #eef0f2;">
+            <span style="color:#6b7280;">加成说明</span>
+            <span style="color:#111827;font-weight:600;text-align:right;max-width:65%;">{multiplier_label}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:12px 0;font-size:13px;border-bottom:1px solid #eef0f2;">
+            <span style="color:#6b7280;">系统池增量</span>
+            <span style="color:#111827;font-weight:700;">{system_pool_added}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:12px 0;font-size:13px;border-bottom:1px solid #eef0f2;">
             <span style="color:#6b7280;">IP前缀</span>
             <span style="color:#111827;font-weight:700;font-family:'Courier New',monospace;">{ip_prefix}</span>
           </div>
+          <div style="display:flex;justify-content:space-between;padding:12px 0;font-size:13px;border-bottom:1px solid #eef0f2;">
+            <span style="color:#6b7280;">网络指纹</span>
+            <span style="color:#6b7280;font-weight:600;font-family:'Courier New',monospace;font-size:11px;word-break:break-all;text-align:right;max-width:65%;">{network_fp or '无'}</span>
+          </div>
           <div style="display:flex;justify-content:space-between;padding:12px 0;font-size:13px;">
-            <span style="color:#6b7280;">签到令牌</span>
-            <span style="color:#6b7280;font-weight:600;font-family:'Courier New',monospace;font-size:11px;word-break:break-all;text-align:right;max-width:65%;">{token_short}</span>
+            <span style="color:#6b7280;">User-Agent</span>
+            <span style="color:#6b7280;font-weight:600;font-size:11px;word-break:break-all;text-align:right;max-width:65%;">{ua_short}</span>
+          </div>
+        </div>
+
+        <div style="background:#fff7ed;border-radius:12px;padding:14px 18px;margin-bottom:18px;border:1px solid #fed7aa;">
+          <div style="font-size:12px;color:#92400e;font-weight:700;margin-bottom:8px;">🔐 令牌与防篡改信息</div>
+          <div style="font-size:11px;color:#78350f;line-height:1.9;font-family:'Courier New',monospace;word-break:break-all;">
+            签到令牌：{token_short}<br>
+            令牌哈希：{body_hash_short}
           </div>
         </div>
 

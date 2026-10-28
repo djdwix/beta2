@@ -13,7 +13,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#05070d;font-family:
 .bg-aurora{position:absolute;inset:-20%;background:radial-gradient(ellipse 60% 50% at 30% 20%,rgba(99,102,241,.35),transparent 60%),radial-gradient(ellipse 50% 60% at 75% 80%,rgba(168,85,247,.3),transparent 60%),radial-gradient(ellipse 40% 40% at 50% 50%,rgba(236,72,153,.2),transparent 70%);filter:blur(40px);animation:auroraMove 12s ease-in-out infinite;will-change:transform}
 @keyframes auroraMove{0%,100%{transform:translate(0,0) scale(1) rotate(0)}33%{transform:translate(4%,-3%) scale(1.1) rotate(5deg)}66%{transform:translate(-3%,4%) scale(1.05) rotate(-4deg)}}
 
-.bg-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(99,102,241,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,.06) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse at center,#000 20%,transparent 75%);-webkit-mask-image:radial-gradient(ellipse at center,#000 20%,transparent 75%);animation:gridPulse 4s ease-in-out infinite;opacity:0;animation:fadeIn .6s .2s ease-out forwards,gridPulse 4s 1s ease-in-out infinite}
+.bg-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(99,102,241,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,.06) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse at center,#000 20%,transparent 75%);-webkit-mask-image:radial-gradient(ellipse at center,#000 20%,transparent 75%);opacity:0;animation:fadeIn .6s .2s ease-out forwards,gridPulse 4s 1s ease-in-out infinite}
 @keyframes gridPulse{0%,100%{opacity:.5;background-size:60px 60px}50%{opacity:.9;background-size:64px 64px}}
 
 .bg-noise{position:absolute;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");opacity:.06;mix-blend-mode:overlay;pointer-events:none}
@@ -104,8 +104,34 @@ html,body{width:100%;height:100%;overflow:hidden;background:#05070d;font-family:
 #splash.fade-out{animation:splashOut .6s cubic-bezier(.4,0,.2,1) forwards}
 @keyframes splashOut{0%{opacity:1;transform:scale(1);filter:blur(0)}100%{opacity:0;transform:scale(1.15);filter:blur(8px)}}
 
+/* 右下角 "不再显示" 勾选框 */
+.no-show-toggle{
+    position:absolute;
+    bottom:calc(20px + env(safe-area-inset-bottom));
+    right:calc(20px + env(safe-area-inset-right));
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 14px;
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:40px;
+    cursor:pointer;
+    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+    opacity:0;
+    animation:fadeIn .6s 4.5s ease-out forwards;
+    z-index:30;
+    transition:all .25s;
+    user-select:none;
+}
+.no-show-toggle:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.22)}
+.no-show-toggle input[type="checkbox"]{width:14px;height:14px;accent-color:#c084fc;cursor:pointer;margin:0}
+.no-show-text{font-size:12px;color:#8890b5;font-weight:500;letter-spacing:.3px;white-space:nowrap}
+
 @media (max-height:650px){.orbit-wrap{width:min(45vw,180px);height:min(45vw,180px);margin-bottom:3vh}.greeting{margin-top:2.5vh}.loading-bar{margin-top:2.5vh}}
-@media (max-height:480px){.orbit-wrap{width:min(38vw,150px);height:min(38vw,150px);margin-bottom:2vh}.title{font-size:16px;letter-spacing:2px}.subtitle{font-size:9px;letter-spacing:4px}.greeting{margin-top:1.5vh;font-size:11px}.loading-bar{margin-top:1.5vh;width:min(50vw,180px)}.skip-btn{padding:6px 14px;font-size:11px}}
+@media (max-height:480px){.orbit-wrap{width:min(38vw,150px);height:min(38vw,150px);margin-bottom:2vh}.title{font-size:16px;letter-spacing:2px}.subtitle{font-size:9px;letter-spacing:4px}.greeting{margin-top:1.5vh;font-size:11px}.loading-bar{margin-top:1.5vh;width:min(50vw,180px)}.skip-btn{padding:6px 14px;font-size:11px}.no-show-toggle{padding:6px 10px}.no-show-text{font-size:11px}}
+@media (max-width:360px){.no-show-text{font-size:11px}.no-show-toggle{padding:6px 10px;gap:6px}}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 </style>
 </head>
@@ -150,11 +176,15 @@ html,body{width:100%;height:100%;overflow:hidden;background:#05070d;font-family:
     <div class="core-shine"></div>
     </div>
     <div class="title-wrap">
-        <div class="title">虚拟手机号生成器</div>
-        <div class="subtitle"><span class="dot"></span><span>SAFE · SMART · SECURE</span><span class="dot"></span></div>
+        <div class="title" id="splashTitle">虚拟手机号生成器</div>
+        <div class="subtitle"><span class="dot"></span><span id="splashSubtitle">SAFE · SMART · SECURE</span><span class="dot"></span></div>
     </div>
     <div class="greeting" id="greeting">欢迎回来，<span class="name" id="userName">用户</span></div>
     <div class="loading-bar"><div class="loading-fill"></div></div>
+    <label class="no-show-toggle" id="noShowToggle">
+        <input type="checkbox" id="noShowCheckbox">
+        <span class="no-show-text">不再显示开屏</span>
+    </label>
 </div>
 <div class="exit-layer" id="exitLayer"></div>
 <script>
@@ -163,16 +193,64 @@ html,body{width:100%;height:100%;overflow:hidden;background:#05070d;font-family:
     var splash = document.getElementById('splash');
     var exitLayer = document.getElementById('exitLayer');
     var skipBtn = document.getElementById('skipBtn');
-    var core = document.getElementById('core');
     var orbitWrap = document.getElementById('orbitWrap');
     var starsBox = document.getElementById('stars');
     var userName = document.getElementById('userName');
+    var noShowCheckbox = document.getElementById('noShowCheckbox');
+    var noShowToggle = document.getElementById('noShowToggle');
+    var splashTitle = document.getElementById('splashTitle');
+    var splashSubtitle = document.getElementById('splashSubtitle');
     var finished = false;
     var exitTimer = null;
     var meteorTimer = null;
     var rafId = null;
+    var preloadPromise = null;
+    var NO_SHOW_KEY = 'splash_no_show';
     var TOTAL_DURATION = 6000;
     var isLowPerf = (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2) || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function readNoShow(){
+        try{ return localStorage.getItem(NO_SHOW_KEY) === '1'; }catch(e){ return false; }
+    }
+    function writeNoShow(v){
+        try{
+            if(v){ localStorage.setItem(NO_SHOW_KEY,'1'); }
+            else{ localStorage.removeItem(NO_SHOW_KEY); }
+        }catch(e){}
+    }
+
+    if(readNoShow()){
+        window.location.replace('/');
+        return;
+    }
+
+    if(noShowCheckbox){
+        noShowCheckbox.addEventListener('change', function(){
+            writeNoShow(this.checked);
+        });
+    }
+
+    function getFestivalTheme(){
+        var now = new Date();
+        var m = now.getMonth() + 1;
+        var d = now.getDate();
+        if(m === 1 && d === 1) return {title:'新年快乐', subtitle:'HAPPY NEW YEAR', colors:['#fbbf24','#ef4444','#f97316']};
+        if(m === 2 && d >= 10 && d <= 17) return {title:'新春快乐', subtitle:'春节 · 团圆 · 喜庆', colors:['#ef4444','#fbbf24','#dc2626']};
+        if(m === 8 && d >= 14 && d <= 16) return {title:'中秋快乐', subtitle:'但愿人长久 · 千里共婵娟', colors:['#fbbf24','#f59e0b','#fcd34d']};
+        if(m === 10 && d === 1) return {title:'国庆快乐', subtitle:'祝福祖国 · 繁荣昌盛', colors:['#ef4444','#dc2626','#fbbf24']};
+        if(m === 12 && d >= 24 && d <= 26) return {title:'圣诞快乐', subtitle:'MERRY CHRISTMAS', colors:['#10b981','#ef4444','#fbbf24']};
+        return null;
+    }
+
+    function applyFestival(){
+        var theme = getFestivalTheme();
+        if(!theme) return;
+        if(splashTitle) splashTitle.textContent = theme.title;
+        if(splashSubtitle) splashSubtitle.textContent = theme.subtitle;
+        var styleEl = document.createElement('style');
+        styleEl.textContent = '.bg-aurora{background:radial-gradient(ellipse 60% 50% at 30% 20%,' + theme.colors[0] + '59,transparent 60%),radial-gradient(ellipse 50% 60% at 75% 80%,' + theme.colors[1] + '4d,transparent 60%),radial-gradient(ellipse 40% 40% at 50% 50%,' + theme.colors[2] + '33,transparent 70%)!important}.title{background:linear-gradient(135deg,' + theme.colors[0] + ' 0%,' + theme.colors[1] + ' 50%,' + theme.colors[2] + ' 100%)!important;-webkit-background-clip:text!important;background-clip:text!important;color:transparent!important}';
+        document.head.appendChild(styleEl);
+    }
 
     function createStars(){
         var count = isLowPerf ? 40 : Math.min(90, Math.floor(window.innerWidth / 11));
@@ -282,6 +360,29 @@ html,body{width:100%;height:100%;overflow:hidden;background:#05070d;font-family:
         try{ return localStorage.getItem('splash_user'); }catch(e){ return null; }
     }
 
+    function preloadDashboard(){
+        if(preloadPromise) return preloadPromise;
+        preloadPromise = Promise.all([
+            fetch('/api/check-auth',{credentials:'include',headers:{'Accept':'application/json'}}).then(function(r){return r.json()}).catch(function(){return null}),
+            fetch('/api/attendance-info',{credentials:'include',headers:{'Accept':'application/json'}}).then(function(r){return r.json()}).catch(function(){return null}),
+            fetch('/api/get-points',{credentials:'include',headers:{'Accept':'application/json'}}).then(function(r){return r.json()}).catch(function(){return null}),
+            fetch('/api/mail/list',{credentials:'include',headers:{'Accept':'application/json'}}).then(function(r){return r.json()}).catch(function(){return null})
+        ]).then(function(results){
+            try{
+                var cache = {
+                    auth: results[0],
+                    attendance: results[1],
+                    points: results[2],
+                    mail: results[3],
+                    ts: Date.now()
+                };
+                sessionStorage.setItem('splash_preload', JSON.stringify(cache));
+            }catch(e){}
+            return results;
+        });
+        return preloadPromise;
+    }
+
     function loadUser(){
         var cached = getCachedUser();
         if(cached) userName.textContent = cached;
@@ -320,9 +421,16 @@ html,body{width:100%;height:100%;overflow:hidden;background:#05070d;font-family:
         try{ markShown(); }catch(e){}
         exitLayer.classList.add('active');
         splash.classList.add('fade-out');
-        setTimeout(function(){
+        var nav = function(){
             window.location.replace('/');
-        }, 680);
+        };
+        if(preloadPromise){
+            Promise.race([preloadPromise, new Promise(function(r){setTimeout(r,800)})]).then(function(){
+                setTimeout(nav, 680);
+            });
+        } else {
+            setTimeout(nav, 680);
+        }
     }
 
     function skip(){ goToMain(); }
@@ -338,7 +446,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#05070d;font-family:
     var clickCount = 0;
     var clickTimer = null;
     splash.addEventListener('click', function(e){
-        if(e.target === skipBtn) return;
+        if(e.target === skipBtn || e.target === noShowCheckbox) return;
+        if(noShowToggle && noShowToggle.contains(e.target)) return;
         clickCount++;
         if(clickCount >= 2){
             clearTimeout(clickTimer);
@@ -372,12 +481,14 @@ html,body{width:100%;height:100%;overflow:hidden;background:#05070d;font-family:
         setTimeout(function(){ rafId = requestAnimationFrame(parallaxLoop); }, 2000);
     }
 
+    applyFestival();
     createStars();
     createParticles();
     createOrbitParticles();
     setTimeout(createSparks, 2400);
     setTimeout(scheduleMeteors, 1200);
     loadUser();
+    preloadDashboard();
 
     exitTimer = setTimeout(goToMain, TOTAL_DURATION);
 })();
