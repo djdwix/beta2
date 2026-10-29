@@ -279,15 +279,15 @@
             if (total >= 3 && total % 30 === 3) { rewards.push({ icon: '⭐', name: '累计签到3天', desc: '每30天周期第3天', value: '1.0 积分' }); }
             if (total >= 7 && total % 30 === 7) { rewards.push({ icon: '⭐', name: '累计签到7天', desc: '每30天周期第7天', value: '1.8 积分' }); }
             if (total >= 15 && total % 30 === 15) { rewards.push({ icon: '⭐', name: '累计签到15天', desc: '每30天周期第15天', value: '3.0 积分' }); }
-            if (total >= 28 && total % 30 === 28) { rewards.push({ icon: '⭐', name: '累计签到28天', desc: '每30天周期第28天', value: '8.8 积分 + 加成卡' }); }
-            if (total >= 30 && total % 30 === 0) { rewards.push({ icon: '🎯', name: '累计签到30天', desc: '每30天周期第30天', value: '8.8 积分 + 加成卡' }); }
-            if (total >= 59 && total % 30 === 29) { rewards.push({ icon: '🏆', name: '累计签到59天', desc: '每30天周期第29天', value: '20.0 积分 + 2加成卡' }); }
-            if (total >= 99 && total % 30 === 9) { rewards.push({ icon: '👑', name: '累计签到99天', desc: '每30天周期第9天', value: '38.0 积分 + 3加成卡' }); }
+            if (total >= 28 && total % 30 === 28) { rewards.push({ icon: '⭐', name: '累计签到28天', desc: '每30天周期第28天', value: '8.8 积分 + 高级加成卡' }); }
+            if (total >= 30 && total % 30 === 0) { rewards.push({ icon: '🎯', name: '累计签到30天', desc: '每30天周期第30天', value: '8.8 积分 + 高级加成卡' }); }
+            if (total >= 59 && total % 30 === 29) { rewards.push({ icon: '🏆', name: '累计签到59天', desc: '每30天周期第29天', value: '20.0 积分 + 2高级加成卡' }); }
+            if (total >= 99 && total % 30 === 9) { rewards.push({ icon: '👑', name: '累计签到99天', desc: '每30天周期第9天', value: '38.0 积分 + 3高级加成卡' }); }
             if (consec >= 4 && consec % 30 === 4) { rewards.push({ icon: '🔥', name: '连续签到4天', desc: '每30天周期第4天', value: '高级积分卡密 x1' }); }
             if (consec >= 6 && consec % 30 === 6) { rewards.push({ icon: '🔥', name: '连续签到6天', desc: '每30天周期第6天', value: '高级积分卡密 x2' }); }
             if (consec >= 14 && consec % 30 === 14) { rewards.push({ icon: '🔥', name: '连续签到14天', desc: '每30天周期第14天', value: '高级积分卡密 x3' }); }
-            if (consec >= 29 && consec % 30 === 29) { rewards.push({ icon: '🔥', name: '连续签到29天', desc: '每30天周期第29天', value: '高级卡密 x3 + 加成卡 x2 + 重置卡' }); }
-            if (consec >= 30 && consec % 30 === 0) { rewards.push({ icon: '🔥', name: '连续签到30天', desc: '每30天周期第30天', value: '高级卡密 x3 + 加成卡 x2 + 重置卡' }); }
+            if (consec >= 29 && consec % 30 === 29) { rewards.push({ icon: '🔥', name: '连续签到29天', desc: '每30天周期第29天', value: '高级卡密 x3 + 高级加成卡 x2' }); }
+            if (consec >= 30 && consec % 30 === 0) { rewards.push({ icon: '🔥', name: '连续签到30天', desc: '每30天周期第30天', value: '高级卡密 x3 + 高级加成卡 x2' }); }
             return rewards;
         }
 

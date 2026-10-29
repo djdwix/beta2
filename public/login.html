@@ -253,39 +253,20 @@
     <div id="forgotModal" class="modal">
         <div class="modal-content">
             <h3>🔐 重置密码</h3>
-            <div class="forgot-tabs">
-                <button id="forgotTabCode" class="active">卡密重置</button>
-                <button id="forgotTabEmail">邮箱验证重置</button>
+            <p style="color:#78909c;font-size:13px;margin-bottom:12px;line-height:1.6">验证码将发送至您绑定的邮箱，重置将扣除8.8积分（含理财账户）</p>
+            <input type="text" id="forgotEmailUsername" placeholder="用户名" autocomplete="off">
+            <input type="email" id="forgotEmailAddr" placeholder="绑定的邮箱地址" autocomplete="off">
+            <div class="code-group-row">
+                <input type="text" id="forgotVerificationCode" placeholder="邮箱验证码" maxlength="6" autocomplete="off">
+                <button type="button" id="forgotSendCodeBtn">发送验证码</button>
             </div>
-
-            <div id="forgotCodeMethod">
-                <input type="text" id="forgotUsername" placeholder="用户名" autocomplete="off">
-                <input type="email" id="forgotEmail" placeholder="邮箱地址" autocomplete="off">
-                <input type="password" id="forgotNewPassword" placeholder="新密码">
-                <input type="text" id="forgotResetCode" placeholder="重置卡密 (格式: XXXX-XXXX-XXXX-XXXX)" autocomplete="off">
-                <div>
-                    <button id="resetPasswordBtn">确认重置</button>
-                    <button id="closeForgotModal" class="close-modal">取消</button>
-                </div>
+            <div class="hint-text" id="forgotCodeCountdown"></div>
+            <input type="password" id="forgotEmailNewPassword" placeholder="新密码（至少8位）">
+            <div style="font-size:12px;color:#78909c;margin-bottom:8px;padding-left:4px;line-height:1.5">密码需包含至少两种类型（大小写字母/数字/特殊字符）</div>
+            <div>
+                <button id="forgotEmailResetBtn">确认重置</button>
+                <button id="closeForgotModal" class="close-modal">取消</button>
             </div>
-
-            <div id="forgotEmailMethod" style="display:none;">
-                <p style="color:#78909c;font-size:13px;margin-bottom:12px;line-height:1.6">验证码将发送至您绑定的邮箱，重置将扣除8.8积分（含理财账户）</p>
-                <input type="text" id="forgotEmailUsername" placeholder="用户名" autocomplete="off">
-                <input type="email" id="forgotEmailAddr" placeholder="绑定的邮箱地址" autocomplete="off">
-                <div class="code-group-row">
-                    <input type="text" id="forgotVerificationCode" placeholder="邮箱验证码" maxlength="6" autocomplete="off">
-                    <button type="button" id="forgotSendCodeBtn">发送验证码</button>
-                </div>
-                <div class="hint-text" id="forgotCodeCountdown"></div>
-                <input type="password" id="forgotEmailNewPassword" placeholder="新密码（至少8位）">
-                <div style="font-size:12px;color:#78909c;margin-bottom:8px;padding-left:4px;line-height:1.5">密码需包含至少两种类型（大小写字母/数字/特殊字符）</div>
-                <div>
-                    <button id="forgotEmailResetBtn">确认重置</button>
-                    <button id="closeForgotModal2" class="close-modal">取消</button>
-                </div>
-            </div>
-
             <div id="forgotMessage" class="message" style="margin-top:12px;"></div>
         </div>
     </div>
@@ -822,21 +803,11 @@
         var forgotModal = document.getElementById('forgotModal');
         var forgotPasswordLink = document.getElementById('forgotPasswordLink');
         var closeForgotModal = document.getElementById('closeForgotModal');
-        var closeForgotModal2 = document.getElementById('closeForgotModal2');
-        var resetPasswordBtn = document.getElementById('resetPasswordBtn');
         var forgotSendCodeBtn = document.getElementById('forgotSendCodeBtn');
         var forgotEmailResetBtn = document.getElementById('forgotEmailResetBtn');
-        var forgotTabCode = document.getElementById('forgotTabCode');
-        var forgotTabEmail = document.getElementById('forgotTabEmail');
-        var forgotCodeMethod = document.getElementById('forgotCodeMethod');
-        var forgotEmailMethod = document.getElementById('forgotEmailMethod');
         var forgotCodeCountdownEl = document.getElementById('forgotCodeCountdown');
 
         function resetForgotForm() {
-            document.getElementById('forgotUsername').value = '';
-            document.getElementById('forgotEmail').value = '';
-            document.getElementById('forgotNewPassword').value = '';
-            document.getElementById('forgotResetCode').value = '';
             document.getElementById('forgotEmailUsername').value = '';
             document.getElementById('forgotEmailAddr').value = '';
             document.getElementById('forgotVerificationCode').value = '';
@@ -862,10 +833,6 @@
             }
             forgotModal.style.display = 'flex';
             resetForgotForm();
-            forgotTabCode.classList.add('active');
-            forgotTabEmail.classList.remove('active');
-            forgotCodeMethod.style.display = 'block';
-            forgotEmailMethod.style.display = 'none';
         });
 
         closeForgotModal.addEventListener('click', function() {
@@ -880,117 +847,6 @@
                 forgotSendCodeBtn.textContent = '发送验证码';
             }
             if (forgotCodeCountdownEl) forgotCodeCountdownEl.textContent = '';
-        });
-
-        closeForgotModal2.addEventListener('click', function() {
-            forgotModal.style.display = 'none';
-            if (forgotCodeTimer) {
-                clearInterval(forgotCodeTimer);
-                forgotCodeTimer = null;
-                forgotCodeCountdown = 0;
-            }
-            if (forgotSendCodeBtn) {
-                forgotSendCodeBtn.disabled = false;
-                forgotSendCodeBtn.textContent = '发送验证码';
-            }
-            if (forgotCodeCountdownEl) forgotCodeCountdownEl.textContent = '';
-        });
-
-        forgotTabCode.addEventListener('click', function() {
-            forgotTabCode.classList.add('active');
-            forgotTabEmail.classList.remove('active');
-            forgotCodeMethod.style.display = 'block';
-            forgotEmailMethod.style.display = 'none';
-            document.getElementById('forgotMessage').textContent = '';
-            document.getElementById('forgotMessage').className = 'message';
-        });
-
-        forgotTabEmail.addEventListener('click', function() {
-            forgotTabEmail.classList.add('active');
-            forgotTabCode.classList.remove('active');
-            forgotCodeMethod.style.display = 'none';
-            forgotEmailMethod.style.display = 'block';
-            document.getElementById('forgotMessage').textContent = '';
-            document.getElementById('forgotMessage').className = 'message';
-            if (forgotSendCodeBtn) {
-                forgotSendCodeBtn.disabled = false;
-                forgotSendCodeBtn.textContent = '发送验证码';
-            }
-            if (forgotCodeCountdownEl) forgotCodeCountdownEl.textContent = '';
-            if (forgotCodeTimer) {
-                clearInterval(forgotCodeTimer);
-                forgotCodeTimer = null;
-                forgotCodeCountdown = 0;
-            }
-        });
-
-        resetPasswordBtn.addEventListener('click', async function() {
-            if (!cookieEnabled) {
-                showToastMessage('⚠️ 请先启用 Cookie', 'error');
-                return;
-            }
-
-            var username = document.getElementById('forgotUsername').value.trim();
-            var email = document.getElementById('forgotEmail').value.trim();
-            var newPassword = document.getElementById('forgotNewPassword').value;
-            var resetCode = document.getElementById('forgotResetCode').value.trim().toUpperCase();
-            var msg = document.getElementById('forgotMessage');
-
-            if (!username || !email || !newPassword || !resetCode) {
-                msg.textContent = '请填写所有字段';
-                msg.className = 'message error';
-                return;
-            }
-
-            if (!/^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(resetCode)) {
-                msg.textContent = '卡密格式不正确，应为 XXXX-XXXX-XXXX-XXXX';
-                msg.className = 'message error';
-                return;
-            }
-
-            if (newPassword.length < 8) {
-                msg.textContent = '新密码长度至少8位';
-                msg.className = 'message error';
-                return;
-            }
-
-            var hasUpper = /[A-Z]/.test(newPassword);
-            var hasLower = /[a-z]/.test(newPassword);
-            var hasDigit = /[0-9]/.test(newPassword);
-            var hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(newPassword);
-            var typeCount = [hasUpper, hasLower, hasDigit, hasSpecial].filter(Boolean).length;
-            if (typeCount < 2) {
-                msg.textContent = '密码需包含至少两种类型（大小写字母/数字/特殊字符）';
-                msg.className = 'message error';
-                return;
-            }
-
-            msg.textContent = '重置中...';
-            msg.className = 'message info';
-            this.disabled = true;
-
-            try {
-                var response = await apiRequest('/api/reset-password', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        username: username,
-                        email: email,
-                        newPassword: newPassword,
-                        resetCode: resetCode
-                    })
-                });
-
-                msg.textContent = response.message || '密码重置成功';
-                msg.className = 'message success';
-                setTimeout(function() {
-                    forgotModal.style.display = 'none';
-                    resetPasswordBtn.disabled = false;
-                }, 2000);
-            } catch (error) {
-                msg.textContent = error.message || '重置失败';
-                msg.className = 'message error';
-                this.disabled = false;
-            }
         });
 
         forgotSendCodeBtn.addEventListener('click', async function() {
@@ -1175,30 +1031,17 @@
             }
         };
 
-        document.getElementById('forgotResetCode').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') resetPasswordBtn.click();
-        });
-        document.getElementById('forgotNewPassword').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') resetPasswordBtn.click();
-        });
-        document.getElementById('forgotEmail').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') resetPasswordBtn.click();
-        });
-        document.getElementById('forgotUsername').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') resetPasswordBtn.click();
-        });
-
-        document.getElementById('forgotVerificationCode').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') forgotEmailResetBtn.click();
-        });
-        document.getElementById('forgotEmailNewPassword').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') forgotEmailResetBtn.click();
-        });
         document.getElementById('forgotEmailAddr').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') forgotSendCodeBtn.click();
         });
         document.getElementById('forgotEmailUsername').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') forgotSendCodeBtn.click();
+        });
+        document.getElementById('forgotVerificationCode').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') forgotEmailResetBtn.click();
+        });
+        document.getElementById('forgotEmailNewPassword').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') forgotEmailResetBtn.click();
         });
 
         function init() {
@@ -1217,7 +1060,6 @@
                 console.warn('CSRF pre-fetch failed:', e);
             });
             checkAuthAndRedirect();
-            console.log('✅ Login page initialized successfully');
         }
 
         if (document.readyState === 'loading') {

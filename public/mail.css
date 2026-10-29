@@ -295,12 +295,6 @@ body::after {
     border: 1px solid rgba(52, 211, 153, 0.25);
 }
 
-.mail-item .mail-title .badge.cancellation {
-    background: rgba(248, 113, 113, 0.15);
-    color: #fca5a5;
-    border: 1px solid rgba(248, 113, 113, 0.25);
-}
-
 .mail-item .mail-title .badge.box {
     background: rgba(168, 85, 247, 0.15);
     color: #c084fc;

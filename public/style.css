@@ -634,26 +634,6 @@ button:disabled {
     letter-spacing: 1px;
 }
 
-.copy-full-btn {
-    width: 100%;
-    padding: 15px;
-    background: linear-gradient(135deg, #10b981, #34d399);
-    color: white;
-    border: none;
-    border-radius: 60px;
-    font-size: 16px;
-    font-weight: 800;
-    cursor: pointer;
-    transition: all 0.3s;
-    box-shadow: 0 8px 24px rgba(16,185,129,0.3);
-    letter-spacing: 0.3px;
-}
-
-.copy-full-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 30px rgba(16, 185, 129, 0.4);
-}
-
 .performance-badge {
     position: fixed;
     bottom: 20px;
@@ -673,7 +653,7 @@ button:disabled {
 }
 
 #boostIndicator {
-    background: linear-gradient(135deg, #f59e0b, #e67e22);
+    background: linear-gradient(135deg, #a855f7, #8b5cf6);
     color: white;
     padding: 5px 14px;
     border-radius: 40px;
@@ -683,7 +663,7 @@ button:disabled {
     align-items: center;
     gap: 5px;
     animation: boostPulse 1s infinite;
-    box-shadow: 0 4px 12px rgba(245,158,11,0.3);
+    box-shadow: 0 4px 12px rgba(168,85,247,0.3);
 }
 
 .new-user-badge {
@@ -695,28 +675,6 @@ button:disabled {
     margin-left: 8px;
     font-weight: 800;
     box-shadow: 0 2px 6px rgba(239,68,68,0.3);
-}
-
-.cancellation-badge {
-    background: #ef4444;
-    color: white;
-    font-size: 10px;
-    padding: 3px 8px;
-    border-radius: 20px;
-    margin-left: 8px;
-    font-weight: 800;
-    box-shadow: 0 2px 6px rgba(239,68,68,0.3);
-}
-
-.force-cancel-badge {
-    background: #f59e0b;
-    color: white;
-    font-size: 10px;
-    padding: 3px 8px;
-    border-radius: 20px;
-    margin-left: 8px;
-    font-weight: 800;
-    box-shadow: 0 2px 6px rgba(245,158,11,0.3);
 }
 
 .modal {

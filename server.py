@@ -12,7 +12,6 @@ import time
 import random
 import hashlib
 import requests
-import requests as http_requests
 import re
 import socket
 from decimal import Decimal, ROUND_HALF_UP
@@ -33,7 +32,6 @@ import csv
 import game
 import qrcode
 from io import BytesIO
-from filelock import FileLock, Timeout
 import email_service
 import atexit
 import functools
@@ -63,10 +61,8 @@ def detect_server_base_url():
     env_url = os.getenv('SITE_BASE_URL', '').strip()
     if env_url:
         return env_url.rstrip('/')
-
     port = os.getenv('SITE_PORT', '3000')
     scheme = os.getenv('SITE_SCHEME', 'https')
-
     host = None
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -76,18 +72,14 @@ def detect_server_base_url():
         s.close()
     except Exception:
         pass
-
     if not host or host.startswith('127.'):
         try:
             host = socket.gethostbyname(socket.gethostname())
         except Exception:
             pass
-
     if not host or host.startswith('127.'):
         host = 'localhost'
-
     return f'{scheme}://{host}:{port}'
-
 
 SERVER_BASE_URL = detect_server_base_url()
 log.info(f"Server base URL: {SERVER_BASE_URL}")
@@ -120,11 +112,11 @@ RATE_LIMITS = {
     'refund': '5 per minute',
     'mail_claim': '10 per minute',
     'pool_claim': '2 per minute',
-    'admin_login': '18 per minute'
+    'admin_login': '18 per minute',
+    'pay_password_reset': '3 per minute'
 }
 
 LOCK_TIMEOUT = 15
-
 ATTENDANCE_TOKEN_TTL = 90
 
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
@@ -207,10 +199,8 @@ USERS_FILE = os.path.join(DATA_DIR, 'users.enc')
 PHONE_RECORDS_FILE = os.path.join(DATA_DIR, 'phone_records.enc')
 CAPTCHA_STORAGE_FILE = os.path.join(DATA_DIR, 'captcha_storage.enc')
 AUTH_CODES_FILE = os.path.join(DATA_DIR, 'auth_codes.enc')
-RESET_CODES_FILE = os.path.join(DATA_DIR, 'reset_codes.enc')
 POINT_CODES_FILE = os.path.join(DATA_DIR, 'point_codes.enc')
 PREMIUM_POINT_CODES_FILE = os.path.join(DATA_DIR, 'premium_point_codes.enc')
-BOOST_CODES_FILE = os.path.join(DATA_DIR, 'boost_codes.enc')
 SPECIAL_POINT_CODES_FILE = os.path.join(DATA_DIR, 'special_point_codes.enc')
 MAKEUP_CODES_FILE = os.path.join(DATA_DIR, 'makeup_codes.enc')
 GAMBLERS_CODES_FILE = os.path.join(DATA_DIR, 'gamblers_codes.enc')
@@ -219,7 +209,6 @@ PLCARD_CODES_FILE = os.path.join(DATA_DIR, 'plcard_codes.enc')
 PREMIUM_BOOST_CODES_FILE = os.path.join(DATA_DIR, 'premium_boost_codes.enc')
 USER_BOOSTS_FILE = os.path.join(DATA_DIR, 'user_boosts.enc')
 IDENTITY_VERIFICATIONS_FILE = os.path.join(DATA_DIR, 'identity_verifications.enc')
-CANCELLATION_CODES_FILE = os.path.join(DATA_DIR, 'cancellation_codes.enc')
 RESTRICTED_USERS_FILE = os.path.join(DATA_DIR, 'restricted_users.enc')
 CDK_PACKAGES_FILE = os.path.join(DATA_DIR, 'cdk_packages.enc')
 USER_CDK_RECORDS_FILE = os.path.join(DATA_DIR, 'user_cdk_records.enc')
@@ -262,14 +251,13 @@ IP_LOGS_FILE = os.path.join(DATA_DIR, 'ip_logs.enc')
 LOG_REQUEST_COOLDOWN_FILE = os.path.join(DATA_DIR, 'log_request_cooldown.enc')
 ATTENDANCE_TOKEN_STORAGE_FILE = os.path.join(DATA_DIR, 'attendance_tokens.enc')
 ATTENDANCE_NETWORK_LOCK_FILE = os.path.join(DATA_DIR, 'attendance_network_lock.enc')
+PAY_PASSWORD_RESET_FILE = os.path.join(DATA_DIR, 'pay_password_reset.enc')
 
 COUPON_TYPE_MAP = {
     'full_reduction': '满减券',
     'unconditional': '无门槛券',
     'product_specific': '指定商品券',
-    'pl_discount': 'PL立减金',
-    'makeup_specific': '指定补签卡券',
-    'gamblers_specific': '赌神卡券'
+    'pl_discount': 'PL立减金'
 }
 
 FILE_MODIFICATION_TIMES = {}
@@ -389,10 +377,8 @@ store = DataStore(DATA_DIR, cipher)
 _api_cache = {}
 _api_cache_lock = threading.RLock()
 
-
 def _cache_key(prefix, username='', extra=''):
     return f"{prefix}|{username}|{extra}"
-
 
 def cached_api(ttl=5, key_prefix='', user_scoped=True, extra_key_func=None):
     def decorator(fn):
@@ -428,7 +414,6 @@ def cached_api(ttl=5, key_prefix='', user_scoped=True, extra_key_func=None):
         return wrapper
     return decorator
 
-
 def invalidate_api_cache(prefix, username=''):
     with _api_cache_lock:
         for k in list(_api_cache.keys()):
@@ -436,13 +421,11 @@ def invalidate_api_cache(prefix, username=''):
                 if not username or k.startswith(prefix + '|' + username + '|'):
                     del _api_cache[k]
 
-
 def invalidate_user_caches(username):
     invalidate_api_cache('check_auth', username)
     invalidate_api_cache('attendance_info', username)
     invalidate_api_cache('get_points', username)
     invalidate_api_cache('mail_list', username)
-
 
 class TaskScheduler:
     def __init__(self):
@@ -501,7 +484,6 @@ class TaskScheduler:
             for name, task in due:
                 threading.Thread(target=self._run_task, args=(name, task), daemon=True, name=f'task_{name}').start()
 
-
 task_scheduler = TaskScheduler()
 
 def _file_key(file_path):
@@ -547,7 +529,6 @@ def get_user_effective_points(username):
     fund_balance = get_user_fund_balance(username)
     return regular_points + fund_balance
 
-
 def get_price_multiplier(username):
     effective_points = get_user_effective_points(username)
     if effective_points >= 500000:
@@ -563,7 +544,6 @@ def get_price_multiplier(username):
     else:
         return 1.00
 
-
 def get_final_price(original_price, username):
     if is_new_user(username):
         discounted_price = round(original_price * 0.8, 2)
@@ -573,12 +553,10 @@ def get_final_price(original_price, username):
     final_price = round(discounted_price * multiplier, 2)
     return final_price
 
-
 def get_price_info(original_price, username):
     is_new = is_new_user(username)
     effective_points = get_user_effective_points(username)
     multiplier = get_price_multiplier(username)
-
     if is_new:
         discounted_price = round(original_price * 0.8, 2)
         discount_amount = round(original_price - discounted_price, 2)
@@ -587,10 +565,8 @@ def get_price_info(original_price, username):
         discounted_price = original_price
         discount_amount = 0
         discount_type = 'none'
-
     final_price = round(discounted_price * multiplier, 2)
     multiplier_amount = round(final_price - discounted_price, 2)
-
     return {
         'original_price': original_price,
         'discounted_price': discounted_price,
@@ -635,7 +611,6 @@ def save_system_total_points(points):
     store.set(_file_key(SYSTEM_POINTS_FILE), {'total_points': points})
 
 system_total_points = load_system_total_points()
-
 
 def burn_excess_system_points():
     global system_total_points
@@ -715,10 +690,8 @@ def reload_if_changed():
 users = load_data(USERS_FILE, {})
 phone_records = load_data(PHONE_RECORDS_FILE, {})
 auth_codes = load_data(AUTH_CODES_FILE, {})
-reset_codes = load_data(RESET_CODES_FILE, {})
 point_codes = load_data(POINT_CODES_FILE, {})
 premium_point_codes = load_data(PREMIUM_POINT_CODES_FILE, {})
-boost_codes = load_data(BOOST_CODES_FILE, {})
 special_point_codes = load_data(SPECIAL_POINT_CODES_FILE, {})
 makeup_codes = load_data(MAKEUP_CODES_FILE, {})
 gamblers_codes = load_data(GAMBLERS_CODES_FILE, {})
@@ -727,7 +700,6 @@ plcard_codes = load_data(PLCARD_CODES_FILE, {})
 premium_boost_codes = load_data(PREMIUM_BOOST_CODES_FILE, {})
 user_boosts = load_data(USER_BOOSTS_FILE, {})
 identity_verifications = load_data(IDENTITY_VERIFICATIONS_FILE, {})
-cancellation_codes = load_data(CANCELLATION_CODES_FILE, {})
 restricted_users = load_data(RESTRICTED_USERS_FILE, {})
 cdk_packages = load_data(CDK_PACKAGES_FILE, {})
 user_cdk_records = load_data(USER_CDK_RECORDS_FILE, {})
@@ -765,14 +737,13 @@ log_request_cooldown = load_data(LOG_REQUEST_COOLDOWN_FILE, {})
 log_download_tickets = {}
 attendance_tokens = load_data(ATTENDANCE_TOKEN_STORAGE_FILE, {})
 attendance_network_lock = load_data(ATTENDANCE_NETWORK_LOCK_FILE, {})
+pay_password_reset_tokens = load_data(PAY_PASSWORD_RESET_FILE, {})
 
 FILE_MODIFICATION_TIMES['users'] = get_file_mtime(USERS_FILE)
 FILE_MODIFICATION_TIMES['phone'] = get_file_mtime(PHONE_RECORDS_FILE)
 FILE_MODIFICATION_TIMES['auth'] = get_file_mtime(AUTH_CODES_FILE)
-FILE_MODIFICATION_TIMES['reset'] = get_file_mtime(RESET_CODES_FILE)
 FILE_MODIFICATION_TIMES['point'] = get_file_mtime(POINT_CODES_FILE)
 FILE_MODIFICATION_TIMES['premium_point'] = get_file_mtime(PREMIUM_POINT_CODES_FILE)
-FILE_MODIFICATION_TIMES['boost'] = get_file_mtime(BOOST_CODES_FILE)
 FILE_MODIFICATION_TIMES['special_point'] = get_file_mtime(SPECIAL_POINT_CODES_FILE)
 FILE_MODIFICATION_TIMES['makeup'] = get_file_mtime(MAKEUP_CODES_FILE)
 FILE_MODIFICATION_TIMES['gamblers'] = get_file_mtime(GAMBLERS_CODES_FILE)
@@ -781,7 +752,6 @@ FILE_MODIFICATION_TIMES['plcard'] = get_file_mtime(PLCARD_CODES_FILE)
 FILE_MODIFICATION_TIMES['premium_boost'] = get_file_mtime(PREMIUM_BOOST_CODES_FILE)
 FILE_MODIFICATION_TIMES['user_boost'] = get_file_mtime(USER_BOOSTS_FILE)
 FILE_MODIFICATION_TIMES['identity'] = get_file_mtime(IDENTITY_VERIFICATIONS_FILE)
-FILE_MODIFICATION_TIMES['cancellation'] = get_file_mtime(CANCELLATION_CODES_FILE)
 FILE_MODIFICATION_TIMES['restricted'] = get_file_mtime(RESTRICTED_USERS_FILE)
 FILE_MODIFICATION_TIMES['cdk'] = get_file_mtime(CDK_PACKAGES_FILE)
 FILE_MODIFICATION_TIMES['user_cdk'] = get_file_mtime(USER_CDK_RECORDS_FILE)
@@ -830,17 +800,11 @@ def save_feedbacks():
 def save_auth_codes():
     mark_dirty(AUTH_CODES_FILE)
 
-def save_reset_codes():
-    mark_dirty(RESET_CODES_FILE)
-
 def save_point_codes():
     mark_dirty(POINT_CODES_FILE)
 
 def save_premium_point_codes():
     mark_dirty(PREMIUM_POINT_CODES_FILE)
-
-def save_boost_codes():
-    mark_dirty(BOOST_CODES_FILE)
 
 def save_special_point_codes():
     mark_dirty(SPECIAL_POINT_CODES_FILE)
@@ -865,9 +829,6 @@ def save_user_boosts():
 
 def save_identity_verifications():
     mark_dirty(IDENTITY_VERIFICATIONS_FILE)
-
-def save_cancellation_codes():
-    mark_dirty(CANCELLATION_CODES_FILE)
 
 def save_activities():
     mark_dirty(ACTIVITIES_FILE)
@@ -953,6 +914,9 @@ def save_attendance_tokens():
 def save_attendance_network_lock():
     mark_dirty(ATTENDANCE_NETWORK_LOCK_FILE)
 
+def save_pay_password_reset_tokens():
+    mark_dirty(PAY_PASSWORD_RESET_FILE)
+
 def migrate_user_data():
     modified = False
     for username, user_data in users.items():
@@ -1024,6 +988,9 @@ def migrate_user_data():
         if 'lastSplashShown' not in user_data:
             user_data['lastSplashShown'] = int(time.time() * 1000)
             modified = True
+        if 'cancellationCodePurchased' in user_data:
+            del user_data['cancellationCodePurchased']
+            modified = True
     if modified:
         save_users()
 
@@ -1070,6 +1037,7 @@ LOG_MAX_DAYS = 1
 
 ATTENDANCE_NETWORK_LOCK_TTL = 600
 
+PAY_PASSWORD_RESET_TTL = 600
 
 def get_client_ip():
     if request.headers.get('X-Forwarded-For'):
@@ -1116,7 +1084,6 @@ def cleanup_old_ip_logs():
         del ip_logs[ip]
     if ips_to_remove:
         save_ip_logs()
-
     current_time_sec = int(time.time())
     cooldown_to_remove = []
     for username, data in list(log_request_cooldown.items()):
@@ -1138,6 +1105,19 @@ def cleanup_expired_log_tickets():
             expired.append(tid)
     for tid in expired:
         del log_download_tickets[tid]
+
+def cleanup_expired_pay_password_reset_tokens():
+    current_time = int(time.time())
+    expired = []
+    for tid, token in pay_password_reset_tokens.items():
+        if current_time - token.get('created_at', 0) > PAY_PASSWORD_RESET_TTL:
+            expired.append(tid)
+        elif token.get('used', False):
+            expired.append(tid)
+    for tid in expired:
+        del pay_password_reset_tokens[tid]
+    if expired:
+        save_pay_password_reset_tokens()
 
 def generate_log_token(username, ip):
     timestamp = int(time.time())
@@ -1258,19 +1238,15 @@ def generate_new_pl_rate():
     raw_rate = random.uniform(PL_MIN_RATE, PL_MAX_RATE)
     random.seed()
     rate = round(raw_rate, 4)
-
     if 'rate_history' not in pl_rate_data:
         pl_rate_data['rate_history'] = []
-
     pl_rate_data['rate_history'].append({
         'timestamp': current_time,
         'rate': rate,
         'period': period
     })
-
     if len(pl_rate_data['rate_history']) > 1000:
         pl_rate_data['rate_history'] = pl_rate_data['rate_history'][-1000:]
-
     save_pl_rate_data()
     try:
         invalidate_api_cache('pl_rate')
@@ -1358,7 +1334,6 @@ def exchange_points_to_pl(username, points_amount):
         'fee_rate': points_to_pl_fee_rate * 100
     }, None
 
-
 def exchange_pl_to_points(username, pl_amount):
     if username not in users:
         return None, '用户不存在'
@@ -1384,7 +1359,6 @@ def exchange_pl_to_points(username, pl_amount):
         'new_pl_balance': get_user_pl_balance(username),
         'fee_rate': pl_to_points_fee_rate * 100
     }, None
-
 
 def transfer_pl(username, target_username, amount, password):
     if username not in users:
@@ -1534,27 +1508,21 @@ def cleanup_expired_feedbacks():
     current_time = int(time.time() * 1000)
     expire_ms = 12 * 60 * 60 * 1000
     feedbacks_to_remove = []
-
     for fid, fb in feedbacks.items():
         status = fb.get('status', 'pending')
         if status not in ['replied', 'closed']:
             continue
-
         if status == 'closed':
             base_time = fb.get('closed_at', 0) or fb.get('replied_at', 0) or fb.get('created_at', 0)
         else:
             base_time = fb.get('replied_at', 0) or fb.get('created_at', 0)
-
         if base_time > 0 and current_time - base_time >= expire_ms:
             feedbacks_to_remove.append(fid)
-
     for fid in feedbacks_to_remove:
         del feedbacks[fid]
-
     if feedbacks_to_remove:
         save_feedbacks()
         log.info(f"清理了 {len(feedbacks_to_remove)} 条过期反馈记录")
-
     return len(feedbacks_to_remove)
 
 def cleanup_expired_captcha_loop_once():
@@ -1616,9 +1584,9 @@ def mask_id_number(id_number):
     return id_number[:3] + '*****' + id_number[14:]
 
 def _existing_codes_set():
-    return (set(reset_codes.keys()) | set(point_codes.keys()) | set(premium_point_codes.keys()) |
-            set(boost_codes.keys()) | set(cancellation_codes.keys()) | set(special_point_codes.keys()) |
-            set(makeup_codes.keys()) | set(gamblers_codes.keys()) | set(box_codes.keys()) |
+    return (set(point_codes.keys()) | set(premium_point_codes.keys()) |
+            set(special_point_codes.keys()) | set(makeup_codes.keys()) |
+            set(gamblers_codes.keys()) | set(box_codes.keys()) |
             set(plcard_codes.keys()) | set(premium_boost_codes.keys()))
 
 def _generate_code():
@@ -1631,9 +1599,6 @@ def _generate_code():
         code = '-'.join(parts)
         if code not in _existing_codes_set():
             return code
-
-def generate_reset_code():
-    return _generate_code()
 
 def generate_point_code():
     return _generate_code()
@@ -1650,12 +1615,6 @@ def generate_gateway_key():
             return key
 
 def generate_premium_point_code():
-    return _generate_code()
-
-def generate_boost_code():
-    return _generate_code()
-
-def generate_cancellation_code():
     return _generate_code()
 
 def generate_special_point_code():
@@ -1686,23 +1645,19 @@ def generate_phone_number():
                 '150', '151', '152', '153', '155', '156', '157', '158', '159',
                 '180', '181', '182', '183', '184', '185', '186', '187', '188', '189']
     max_attempts = 100
-
     for _ in range(max_attempts):
         random_prefix = random.choice(prefixes)
         suffix = str(random.randint(0, 99999999)).zfill(8)
         phone_number = random_prefix + suffix
-
         if phone_number not in used_phone_numbers:
             used_phone_numbers.add(phone_number)
             return phone_number
-
     timestamp = str(int(time.time() * 1000))[-8:]
     random_suffix = str(random.randint(0, 9999)).zfill(4)
     fallback_phone = f'139{timestamp}{random_suffix}'
     if fallback_phone not in used_phone_numbers:
         used_phone_numbers.add(fallback_phone)
         return fallback_phone
-
     return f'155{str(int(time.time() * 1000))[-8:]}'
 
 def generate_auth_code(phone_number):
@@ -1729,12 +1684,10 @@ def is_bonus_period():
     now = datetime.now()
     current_hour = now.hour
     current_minute = now.minute
-
     if current_hour == 13 and 0 <= current_minute <= 39:
         return True
     if current_hour == 0 and 0 <= current_minute <= 39:
         return True
-
     return False
 
 def get_bonus_multiplier():
@@ -1746,10 +1699,7 @@ def get_user_boost_multiplier(username):
     current_time = int(time.time())
     boost_data = user_boosts.get(username)
     if boost_data and boost_data.get('expiresAt', 0) > current_time:
-        boost_type = boost_data.get('boost_type', 'normal')
-        if boost_type == 'premium':
-            return 1.9
-        return 1.5
+        return 1.9
     if boost_data:
         del user_boosts[username]
         save_user_boosts()
@@ -1796,7 +1746,6 @@ def reset_daily_points_if_needed(username):
         return False
     last_login_date = user_data.get('lastLoginDate', '')
     last_earned_date = user_data.get('lastEarnedDate', '')
-
     if last_login_date != today:
         if user_data.get('dailyEarnedPoints', 0) > 0:
             user_data['dailyEarnedPoints'] = 0
@@ -1806,7 +1755,6 @@ def reset_daily_points_if_needed(username):
         user_data['lastLoginDate'] = today
         save_users()
         return True
-
     if last_earned_date != today:
         user_data['dailyEarnedPoints'] = 0
         user_data['lastEarnedDate'] = today
@@ -1815,7 +1763,6 @@ def reset_daily_points_if_needed(username):
             user_data['dailyBonusCode'] = None
         save_users()
         return True
-
     return False
 
 def update_earned_points(username, points_to_add, bypass_limit=False):
@@ -1903,15 +1850,12 @@ def _attendance_ip_fingerprint(ip):
         return f"{parts[0]}.{parts[1]}.{parts[2]}"
     return ip[:12]
 
-
 def _attendance_hmac(data_str):
     return hmac.new(QR_SECRET, data_str.encode('utf-8'), hashlib.sha256).hexdigest()
-
 
 def _attendance_body_hash(body_dict):
     body_json = json.dumps(body_dict, sort_keys=True, ensure_ascii=False, separators=(',', ':'))
     return hashlib.sha256(body_json.encode('utf-8')).hexdigest()[:32]
-
 
 def _cleanup_expired_attendance_tokens():
     now = int(time.time())
@@ -1926,35 +1870,29 @@ def _cleanup_expired_attendance_tokens():
     if expired:
         save_attendance_tokens()
 
-
 def _validate_attendance_state(username):
     user_data = users.get(username)
     if not user_data:
         return False, '用户不存在', None
-
     today = datetime.now().strftime('%Y-%m-%d')
     yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
-
     total_days = int(user_data.get('attendanceTotalDays', 0) or 0)
     consecutive = int(user_data.get('attendanceConsecutiveDays', 0) or 0)
     last_date = user_data.get('lastAttendanceDate', '') or ''
     last_ts = int(user_data.get('lastAttendanceTimestamp', 0) or 0)
     first_date = user_data.get('firstAttendanceDate', '') or ''
-
     if total_days < 0 or consecutive < 0:
         return False, '签到数据异常', None
     if consecutive > total_days:
         return False, '签到数据异常：连续天数大于累计天数', None
     if total_days > 36500:
         return False, '签到数据异常：累计天数超出合理范围', None
-
     if last_ts > 0:
         now_ts = int(time.time())
         if last_ts > now_ts + 300:
             return False, '签到数据异常：时间戳在未来', None
         if last_ts < 1577836800:
             return False, '签到数据异常：时间戳过早', None
-
     if last_date:
         try:
             last_dt = datetime.strptime(last_date, '%Y-%m-%d').date()
@@ -1966,7 +1904,6 @@ def _validate_attendance_state(username):
                     return False, '签到数据异常：签到日期与连续天数不匹配', None
         except Exception:
             return False, '签到数据异常：签到日期格式错误', None
-
     if first_date:
         try:
             first_dt = datetime.strptime(first_date, '%Y-%m-%d').date()
@@ -1975,11 +1912,9 @@ def _validate_attendance_state(username):
                 return False, '签到数据异常：首次签到日期在未来', None
         except Exception:
             return False, '签到数据异常：首次签到日期格式错误', None
-
     if total_days > 0:
         if last_date == today:
             return False, '今日已签到', None
-
     return True, None, {
         'today': today,
         'yesterday': yesterday,
@@ -1990,12 +1925,10 @@ def _validate_attendance_state(username):
         'first_date': first_date,
     }
 
-
 def _network_fingerprint(ip, ua):
     ip_fp = _attendance_ip_fingerprint(ip)
     ua_hash = hashlib.sha256((ua or '').encode('utf-8')).hexdigest()[:16]
     return f"{ip_fp}|{ua_hash}"
-
 
 def _check_network_attendance_conflict(username, ip, ua):
     now_ts = int(time.time())
@@ -2010,7 +1943,6 @@ def _check_network_attendance_conflict(username, ip, ua):
         if others:
             return False, '检测到同一网络环境下其他账号刚完成签到，请稍后再试'
     return True, None
-
 
 def _mark_network_attendance(username, ip, ua):
     now_ts = int(time.time())
@@ -2033,20 +1965,16 @@ def _mark_network_attendance(username, ip, ua):
                 del attendance_network_lock[k]
     save_attendance_network_lock()
 
-
 def check_and_award_attendance_rewards(username):
     user_data = users.get(username)
     if not user_data:
         return None
-
     total_days = user_data.get('attendanceTotalDays', 0)
     consecutive_days = user_data.get('attendanceConsecutiveDays', 0)
     rewards = []
     claimed_total_cycles = user_data.get('attendanceClaimedTotalCycles', {})
     claimed_consecutive_cycles = user_data.get('attendanceClaimedConsecutiveCycles', {})
-
     pending_attachments = []
-
     if total_days >= 3 and total_days % 30 == 3:
         cycle = (total_days - 3) // 30 + 1
         cycle_key = f'total_3_cycle_{cycle}'
@@ -2054,7 +1982,6 @@ def check_and_award_attendance_rewards(username):
             add_points_without_limit(username, 1.0)
             rewards.append({'type': 'points', 'value': 1.0, 'message': f'累计签到{total_days}天，获得1.0积分'})
             claimed_total_cycles[cycle_key] = True
-
     if total_days >= 7 and total_days % 30 == 7:
         cycle = (total_days - 7) // 30 + 1
         cycle_key = f'total_7_cycle_{cycle}'
@@ -2062,7 +1989,6 @@ def check_and_award_attendance_rewards(username):
             add_points_without_limit(username, 1.8)
             rewards.append({'type': 'points', 'value': 1.8, 'message': f'累计签到{total_days}天，获得1.8积分'})
             claimed_total_cycles[cycle_key] = True
-
     if total_days >= 15 and total_days % 30 == 15:
         cycle = (total_days - 15) // 30 + 1
         cycle_key = f'total_15_cycle_{cycle}'
@@ -2070,23 +1996,21 @@ def check_and_award_attendance_rewards(username):
             add_points_without_limit(username, 3.0)
             rewards.append({'type': 'points', 'value': 3.0, 'message': f'累计签到{total_days}天，获得3.0积分'})
             claimed_total_cycles[cycle_key] = True
-
     if total_days >= 28 and total_days % 30 == 28:
         cycle = (total_days - 28) // 30 + 1
         cycle_key = f'total_28_cycle_{cycle}'
         if not claimed_total_cycles.get(cycle_key):
             add_points_without_limit(username, 8.8)
             rewards.append({'type': 'points', 'value': 8.8, 'message': f'累计签到{total_days}天，获得8.8积分'})
-            boost_code = generate_boost_code()
+            boost_code = generate_premium_boost_code()
             pending_attachments.append({
-                'type': 'boost_code',
+                'type': 'premium_boost_code',
                 'code': boost_code,
-                'title': '签到奖励-积分加成卡密',
-                'description': f'累计签到{total_days}天，获得积分加成卡密1张'
+                'title': '签到奖励-高级加成卡密',
+                'description': f'累计签到{total_days}天，获得高级加成卡密1张'
             })
-            rewards.append({'type': 'boost_code', 'code': boost_code, 'message': f'累计签到{total_days}天，获得积分加成卡密1张(已发送至邮箱)'})
+            rewards.append({'type': 'premium_boost_code', 'code': boost_code, 'message': f'累计签到{total_days}天，获得高级加成卡密1张(已发送至邮箱)'})
             claimed_total_cycles[cycle_key] = True
-
     if total_days >= 30 and total_days % 30 == 0:
         cycle = total_days // 30
         cycle_key = f'total_30_cycle_{cycle}'
@@ -2094,16 +2018,15 @@ def check_and_award_attendance_rewards(username):
             add_points_without_limit(username, 8.8)
             rewards.append({'type': 'points', 'value': 8.8, 'message': f'累计签到{total_days}天，获得8.8积分'})
             for _ in range(cycle):
-                boost_code = generate_boost_code()
+                boost_code = generate_premium_boost_code()
                 pending_attachments.append({
-                    'type': 'boost_code',
+                    'type': 'premium_boost_code',
                     'code': boost_code,
-                    'title': '签到奖励-积分加成卡密',
-                    'description': f'累计签到{total_days}天，获得积分加成卡密1张'
+                    'title': '签到奖励-高级加成卡密',
+                    'description': f'累计签到{total_days}天，获得高级加成卡密1张'
                 })
-                rewards.append({'type': 'boost_code', 'code': boost_code, 'message': f'累计签到{total_days}天，获得积分加成卡密{cycle}张(已发送至邮箱)'})
+                rewards.append({'type': 'premium_boost_code', 'code': boost_code, 'message': f'累计签到{total_days}天，获得高级加成卡密{cycle}张(已发送至邮箱)'})
             claimed_total_cycles[cycle_key] = True
-
     if total_days >= 59 and total_days % 30 == 29:
         cycle = (total_days - 29) // 30 + 1
         cycle_key = f'total_59_cycle_{cycle}'
@@ -2111,16 +2034,15 @@ def check_and_award_attendance_rewards(username):
             add_points_without_limit(username, 20.0)
             rewards.append({'type': 'points', 'value': 20.0, 'message': f'累计签到{total_days}天，获得20.0积分'})
             for _ in range(2):
-                boost_code = generate_boost_code()
+                boost_code = generate_premium_boost_code()
                 pending_attachments.append({
-                    'type': 'boost_code',
+                    'type': 'premium_boost_code',
                     'code': boost_code,
-                    'title': '签到奖励-积分加成卡密',
-                    'description': f'累计签到{total_days}天，获得积分加成卡密1张'
+                    'title': '签到奖励-高级加成卡密',
+                    'description': f'累计签到{total_days}天，获得高级加成卡密1张'
                 })
-                rewards.append({'type': 'boost_code', 'code': boost_code, 'message': f'累计签到{total_days}天，获得积分加成卡密2张(已发送至邮箱)'})
+                rewards.append({'type': 'premium_boost_code', 'code': boost_code, 'message': f'累计签到{total_days}天，获得高级加成卡密2张(已发送至邮箱)'})
             claimed_total_cycles[cycle_key] = True
-
     if total_days >= 99 and total_days % 30 == 9:
         cycle = (total_days - 9) // 30 + 1
         cycle_key = f'total_99_cycle_{cycle}'
@@ -2128,16 +2050,15 @@ def check_and_award_attendance_rewards(username):
             add_points_without_limit(username, 38.0)
             rewards.append({'type': 'points', 'value': 38.0, 'message': f'累计签到{total_days}天，获得38.0积分'})
             for _ in range(3):
-                boost_code = generate_boost_code()
+                boost_code = generate_premium_boost_code()
                 pending_attachments.append({
-                    'type': 'boost_code',
+                    'type': 'premium_boost_code',
                     'code': boost_code,
-                    'title': '签到奖励-积分加成卡密',
-                    'description': f'累计签到{total_days}天，获得积分加成卡密1张'
+                    'title': '签到奖励-高级加成卡密',
+                    'description': f'累计签到{total_days}天，获得高级加成卡密1张'
                 })
-                rewards.append({'type': 'boost_code', 'code': boost_code, 'message': f'累计签到{total_days}天，获得积分加成卡密3张(已发送至邮箱)'})
+                rewards.append({'type': 'premium_boost_code', 'code': boost_code, 'message': f'累计签到{total_days}天，获得高级加成卡密3张(已发送至邮箱)'})
             claimed_total_cycles[cycle_key] = True
-
     if consecutive_days >= 4 and consecutive_days % 30 == 4:
         cycle = (consecutive_days - 4) // 30 + 1
         cycle_key = f'consecutive_4_cycle_{cycle}'
@@ -2151,7 +2072,6 @@ def check_and_award_attendance_rewards(username):
             })
             rewards.append({'type': 'premium_code', 'code': premium_code, 'message': f'连续签到{consecutive_days}天，获得高级积分卡密1张(已发送至邮箱)'})
             claimed_consecutive_cycles[cycle_key] = True
-
     if consecutive_days >= 6 and consecutive_days % 30 == 6:
         cycle = (consecutive_days - 6) // 30 + 1
         cycle_key = f'consecutive_6_cycle_{cycle}'
@@ -2166,7 +2086,6 @@ def check_and_award_attendance_rewards(username):
                 })
                 rewards.append({'type': 'premium_code', 'code': premium_code, 'message': f'连续签到{consecutive_days}天，获得高级积分卡密2张(已发送至邮箱)'})
             claimed_consecutive_cycles[cycle_key] = True
-
     if consecutive_days >= 14 and consecutive_days % 30 == 14:
         cycle = (consecutive_days - 14) // 30 + 1
         cycle_key = f'consecutive_14_cycle_{cycle}'
@@ -2181,7 +2100,6 @@ def check_and_award_attendance_rewards(username):
                 })
                 rewards.append({'type': 'premium_code', 'code': premium_code, 'message': f'连续签到{consecutive_days}天，获得高级积分卡密3张(已发送至邮箱)'})
             claimed_consecutive_cycles[cycle_key] = True
-
     if consecutive_days >= 29 and consecutive_days % 30 == 29:
         cycle = (consecutive_days - 29) // 30 + 1
         cycle_key = f'consecutive_29_cycle_{cycle}'
@@ -2196,24 +2114,15 @@ def check_and_award_attendance_rewards(username):
                 })
                 rewards.append({'type': 'premium_code', 'code': premium_code, 'message': f'连续签到{consecutive_days}天，获得高级积分卡密3张(已发送至邮箱)'})
             for _ in range(2):
-                boost_code = generate_boost_code()
+                boost_code = generate_premium_boost_code()
                 pending_attachments.append({
-                    'type': 'boost_code',
+                    'type': 'premium_boost_code',
                     'code': boost_code,
-                    'title': '签到奖励-积分加成卡密',
-                    'description': f'连续签到{consecutive_days}天，获得积分加成卡密1张'
+                    'title': '签到奖励-高级加成卡密',
+                    'description': f'连续签到{consecutive_days}天，获得高级加成卡密1张'
                 })
-                rewards.append({'type': 'boost_code', 'code': boost_code, 'message': f'连续签到{consecutive_days}天，获得积分加成卡密2张(已发送至邮箱)'})
-            reset_code = generate_reset_code()
-            pending_attachments.append({
-                'type': 'reset_code',
-                'code': reset_code,
-                'title': '签到奖励-重置密码卡密',
-                'description': f'连续签到{consecutive_days}天，获得重置密码卡密1张'
-            })
-            rewards.append({'type': 'reset_code', 'code': reset_code, 'message': f'连续签到{consecutive_days}天，获得重置密码卡密1张(已发送至邮箱)'})
+                rewards.append({'type': 'premium_boost_code', 'code': boost_code, 'message': f'连续签到{consecutive_days}天，获得高级加成卡密2张(已发送至邮箱)'})
             claimed_consecutive_cycles[cycle_key] = True
-
     if consecutive_days >= 30 and consecutive_days % 30 == 0:
         cycle = consecutive_days // 30
         cycle_key = f'consecutive_30_cycle_{cycle}'
@@ -2228,24 +2137,15 @@ def check_and_award_attendance_rewards(username):
                 })
                 rewards.append({'type': 'premium_code', 'code': premium_code, 'message': f'连续签到{consecutive_days}天，获得高级积分卡密3张(已发送至邮箱)'})
             for _ in range(2):
-                boost_code = generate_boost_code()
+                boost_code = generate_premium_boost_code()
                 pending_attachments.append({
-                    'type': 'boost_code',
+                    'type': 'premium_boost_code',
                     'code': boost_code,
-                    'title': '签到奖励-积分加成卡密',
-                    'description': f'连续签到{consecutive_days}天，获得积分加成卡密1张'
+                    'title': '签到奖励-高级加成卡密',
+                    'description': f'连续签到{consecutive_days}天，获得高级加成卡密1张'
                 })
-                rewards.append({'type': 'boost_code', 'code': boost_code, 'message': f'连续签到{consecutive_days}天，获得积分加成卡密2张(已发送至邮箱)'})
-            reset_code = generate_reset_code()
-            pending_attachments.append({
-                'type': 'reset_code',
-                'code': reset_code,
-                'title': '签到奖励-重置密码卡密',
-                'description': f'连续签到{consecutive_days}天，获得重置密码卡密1张'
-            })
-            rewards.append({'type': 'reset_code', 'code': reset_code, 'message': f'连续签到{consecutive_days}天，获得重置密码卡密1张(已发送至邮箱)'})
+                rewards.append({'type': 'premium_boost_code', 'code': boost_code, 'message': f'连续签到{consecutive_days}天，获得高级加成卡密2张(已发送至邮箱)'})
             claimed_consecutive_cycles[cycle_key] = True
-
     if pending_attachments:
         if len(pending_attachments) == 1:
             att = pending_attachments[0]
@@ -2275,18 +2175,14 @@ def check_and_award_attendance_rewards(username):
                 if att_type not in codes_by_type:
                     codes_by_type[att_type] = []
                 codes_by_type[att_type].append(att['code'])
-
             type_names = {
-                'boost_code': '积分加成卡密',
+                'premium_boost_code': '高级加成卡密',
                 'premium_point_code': '高级积分卡密',
-                'reset_code': '重置密码卡密',
                 'point_code': '普通积分卡密',
                 'special_point_code': '特殊积分卡密',
                 'makeup_code': '补签卡',
-                'gamblers_code': '赌神积分卡密',
-                'cancellation_code': '注销卡密'
+                'gamblers_code': '赌神积分卡密'
             }
-
             all_codes = []
             desc_lines = []
             for att_type, codes in codes_by_type.items():
@@ -2295,7 +2191,6 @@ def check_and_award_attendance_rewards(username):
                 desc_lines.append(f'{type_name} x{len(codes)}')
                 for code in codes:
                     desc_lines.append(f'  {code}')
-
             first_att = pending_attachments[0]
             mail_attachment_id = f"mail_{int(time.time()*1000)}_{random.randint(1000,9999)}"
             mail_attachments[mail_attachment_id] = {
@@ -2317,12 +2212,10 @@ def check_and_award_attendance_rewards(username):
                 'combined_types': list(codes_by_type.keys())
             }
             save_mail_attachments()
-
     if rewards:
         user_data['attendanceClaimedTotalCycles'] = claimed_total_cycles
         user_data['attendanceClaimedConsecutiveCycles'] = claimed_consecutive_cycles
         save_users()
-
     return rewards if rewards else None
 
 def migrate_first_attendance_date():
@@ -2397,7 +2290,6 @@ def is_feedback_restricted(username):
     restrictions = get_user_restrictions(username)
     return restrictions.get('feedback', False)
 
-
 def feedback_access_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -2467,16 +2359,6 @@ def delete_user_completely(username):
         del phone_records[username]
         save_phone_records()
         save_auth_codes()
-
-    codes_to_remove = []
-    for code, data in reset_codes.items():
-        if data.get('username') == username:
-            codes_to_remove.append(code)
-    for code in codes_to_remove:
-        del reset_codes[code]
-    if codes_to_remove:
-        save_reset_codes()
-
     codes_to_remove = []
     for code, data in point_codes.items():
         if data.get('username') == username:
@@ -2485,7 +2367,6 @@ def delete_user_completely(username):
         del point_codes[code]
     if codes_to_remove:
         save_point_codes()
-
     codes_to_remove = []
     for code, data in premium_point_codes.items():
         if data.get('username') == username:
@@ -2494,16 +2375,6 @@ def delete_user_completely(username):
         del premium_point_codes[code]
     if codes_to_remove:
         save_premium_point_codes()
-
-    codes_to_remove = []
-    for code, data in boost_codes.items():
-        if data.get('username') == username:
-            codes_to_remove.append(code)
-    for code in codes_to_remove:
-        del boost_codes[code]
-    if codes_to_remove:
-        save_boost_codes()
-
     codes_to_remove = []
     for code, data in special_point_codes.items():
         if data.get('username') == username:
@@ -2512,7 +2383,6 @@ def delete_user_completely(username):
         del special_point_codes[code]
     if codes_to_remove:
         save_special_point_codes()
-
     codes_to_remove = []
     for code, data in makeup_codes.items():
         if data.get('username') == username:
@@ -2521,7 +2391,6 @@ def delete_user_completely(username):
         del makeup_codes[code]
     if codes_to_remove:
         save_makeup_codes()
-
     codes_to_remove = []
     for code, data in gamblers_codes.items():
         if data.get('username') == username:
@@ -2530,7 +2399,6 @@ def delete_user_completely(username):
         del gamblers_codes[code]
     if codes_to_remove:
         save_gamblers_codes()
-
     codes_to_remove = []
     for code, data in box_codes.items():
         if data.get('username') == username:
@@ -2539,7 +2407,6 @@ def delete_user_completely(username):
         del box_codes[code]
     if codes_to_remove:
         save_box_codes()
-
     codes_to_remove = []
     for code, data in plcard_codes.items():
         if data.get('username') == username:
@@ -2548,7 +2415,6 @@ def delete_user_completely(username):
         del plcard_codes[code]
     if codes_to_remove:
         save_plcard_codes()
-
     codes_to_remove = []
     for code, data in premium_boost_codes.items():
         if data.get('username') == username:
@@ -2557,20 +2423,9 @@ def delete_user_completely(username):
         del premium_boost_codes[code]
     if codes_to_remove:
         save_premium_boost_codes()
-
-    codes_to_remove = []
-    for code, data in cancellation_codes.items():
-        if data.get('username') == username:
-            codes_to_remove.append(code)
-    for code in codes_to_remove:
-        del cancellation_codes[code]
-    if codes_to_remove:
-        save_cancellation_codes()
-
     if username in user_boosts:
         del user_boosts[username]
         save_user_boosts()
-
     if username in identity_verifications:
         verification = identity_verifications[username]
         id_card_key = verification.get('id_card_key')
@@ -2579,10 +2434,12 @@ def delete_user_completely(username):
             if id_card_key in used_data and used_data[id_card_key] == True:
                 used_data[id_card_key] = False
                 save_id_cards_used(used_data)
-                log.info(f"Released ID card {id_card_key} for user {username} (manual or quick verify)")
+                log.info(f"Released ID card {id_card_key} for user {username}")
         del identity_verifications[username]
         save_identity_verifications()
-
+    if username in gateway_cards:
+        del gateway_cards[username]
+        save_gateway_cards()
     if username in users:
         pl_balance = get_user_pl_balance(username)
         if pl_balance > 0:
@@ -2592,11 +2449,9 @@ def delete_user_completely(username):
                 add_system_total_points(points_from_pl)
         del users[username]
         save_users()
-
     if username in user_code_limits:
         del user_code_limits[username]
         save_user_code_limits()
-
     records_to_remove = []
     for code, record in user_cdk_records.items():
         if record.get('username') == username:
@@ -2605,7 +2460,6 @@ def delete_user_completely(username):
         del user_cdk_records[code]
     if records_to_remove:
         save_user_cdk_records()
-
     coupons_to_remove = []
     for cid, coupon in user_coupons.items():
         if coupon.get('username') == username:
@@ -2614,7 +2468,6 @@ def delete_user_completely(username):
         del user_coupons[cid]
     if coupons_to_remove:
         save_user_coupons()
-
     transfers_to_remove = []
     for tid, transfer in pl_transfers.items():
         if transfer.get('from_username') == username or transfer.get('to_username') == username:
@@ -2623,15 +2476,12 @@ def delete_user_completely(username):
         del pl_transfers[tid]
     if transfers_to_remove:
         save_pl_transfers()
-
     if username in user_pl_balances:
         del user_pl_balances[username]
         save_user_pl_balances()
-
     if username in user_pay_passwords:
         del user_pay_passwords[username]
         save_user_pay_passwords()
-
     attachments_to_remove = []
     for aid, attachment in mail_attachments.items():
         if attachment.get('username') == username:
@@ -2640,7 +2490,6 @@ def delete_user_completely(username):
         del mail_attachments[aid]
     if attachments_to_remove:
         save_mail_attachments()
-
     receipts_to_remove = []
     for rid, receipt in mail_read_receipts.items():
         if receipt.get('username') == username:
@@ -2649,15 +2498,12 @@ def delete_user_completely(username):
         del mail_read_receipts[rid]
     if receipts_to_remove:
         save_mail_read_receipts()
-
     if username in user_pool_claims:
         del user_pool_claims[username]
         save_user_pool_claims()
-
     if username in fund_data:
         del fund_data[username]
         save_fund_data()
-
     history_to_remove = []
     for hid, history in fund_history.items():
         if history.get('username') == username:
@@ -2666,11 +2512,9 @@ def delete_user_completely(username):
         del fund_history[hid]
     if history_to_remove:
         save_fund_history()
-
     if username in nav_holdings:
         del nav_holdings[username]
         save_nav_holdings()
-
     nav_history_to_remove = []
     for rid, record in nav_history.items():
         if record.get('username') == username:
@@ -2679,6 +2523,14 @@ def delete_user_completely(username):
         del nav_history[rid]
     if nav_history_to_remove:
         save_nav_history()
+    reset_tokens_to_remove = []
+    for tid, token in pay_password_reset_tokens.items():
+        if token.get('username') == username:
+            reset_tokens_to_remove.append(tid)
+    for tid in reset_tokens_to_remove:
+        del pay_password_reset_tokens[tid]
+    if reset_tokens_to_remove:
+        save_pay_password_reset_tokens()
 
 def cleanup_unverified_users():
     current_time = datetime.now()
@@ -2745,7 +2597,6 @@ def get_daily_pool_amount():
     for username, claims in user_pool_claims.items():
         if yesterday in claims:
             yesterday_payout += pool_records.get(yesterday, {}).get('total_payout', 0)
-
     eligible_users = 0
     for username, user_data in users.items():
         if check_identity_verified(username) and not is_login_restricted(username):
@@ -2753,30 +2604,22 @@ def get_daily_pool_amount():
                 base = calculate_user_pool_base(username)
                 if base > 0:
                     eligible_users += 1
-
     min_per_user = 50
     max_per_user = 200
-
     dynamic_min = max(10000, eligible_users * min_per_user)
     dynamic_max = max(50000, eligible_users * max_per_user)
     dynamic_max = min(dynamic_max, 500000)
-
     base = max(dynamic_min, yesterday_payout * POOL_GROWTH_FACTOR)
     return min(base, dynamic_max)
-
 
 def settle_pool_funds():
     global system_total_points
     today = get_today_pool_date()
-
     if today in pool_records and pool_records[today].get('settled', False):
         return pool_records[today].get('pool_amount', 0)
-
     theoretical_amount = get_daily_pool_amount()
-
     max_allocatable = round(system_total_points * 0.8, 4)
     pool_amount = min(theoretical_amount, max_allocatable)
-
     if pool_amount <= 0:
         if today not in pool_records:
             pool_records[today] = {'total_payout': 0, 'payout_details': {}}
@@ -2787,12 +2630,9 @@ def settle_pool_funds():
         pool_records[today]['settled_at'] = int(time.time() * 1000)
         save_pool_records()
         return 0
-
     deduct_system_total_points(pool_amount)
-
     if today not in pool_records:
         pool_records[today] = {'total_payout': 0, 'payout_details': {}}
-
     pool_records[today]['pool_amount'] = pool_amount
     pool_records[today]['theoretical_amount'] = theoretical_amount
     pool_records[today]['allocated_from_system'] = pool_amount
@@ -2800,46 +2640,34 @@ def settle_pool_funds():
     pool_records[today]['settled_at'] = int(time.time() * 1000)
     pool_records[today]['remaining_unclaimed'] = pool_amount
     save_pool_records()
-
     log.debug(f"Pool fund allocated: {pool_amount} from system pool (theoretical={theoretical_amount}), remaining system: {system_total_points}")
     return pool_amount
-
 
 def settle_yesterday_pool_unclaimed():
     global system_total_points
     yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
-
     if yesterday not in pool_records:
         return
-
     record = pool_records[yesterday]
-
     if record.get('unclaimed_settled', False):
         return
-
     pool_amount = record.get('pool_amount', 0)
     total_payout = record.get('total_payout', 0)
-
     if pool_amount <= 0:
         record['unclaimed_settled'] = True
         record['unclaimed_settled_at'] = int(time.time() * 1000)
         save_pool_records()
         return
-
     unclaimed = max(0, round(pool_amount - total_payout, 4))
-
     if unclaimed > 0:
         refund_to_system = round(unclaimed * 0.2, 4)
         burned = round(unclaimed * 0.8, 4)
-
         if refund_to_system > 0:
             add_system_total_points(refund_to_system)
-
         record['unclaimed_amount'] = unclaimed
         record['refunded_to_system'] = refund_to_system
         record['burned_amount'] = burned
         log.debug(f"Pool unclaimed settled for {yesterday}: unclaimed={unclaimed}, refunded={refund_to_system}, burned={burned}")
-
     record['unclaimed_settled'] = True
     record['unclaimed_settled_at'] = int(time.time() * 1000)
     save_pool_records()
@@ -2914,16 +2742,13 @@ def normalize_user_bases_with_bonus(user_bases):
         username = list(user_bases.keys())[0]
         single_cap = int(pool_amount * 0.3)
         return {username: single_cap}
-
     main_pool = pool_amount * 0.8
     bonus_pool = pool_amount * 0.2
-
     total_base = sum(d['base'] for d in user_bases.values())
     main_result = {}
     if total_base > 0:
         for username, data in user_bases.items():
             main_result[username] = main_pool * (data['base'] / total_base)
-
     bonus_result = {}
     bonus_users = [u for u, d in user_bases.items() if d.get('consecutive_days', 0) >= 7]
     if bonus_users:
@@ -2931,11 +2756,9 @@ def normalize_user_bases_with_bonus(user_bases):
         if total_cons > 0:
             for u in bonus_users:
                 bonus_result[u] = bonus_pool * (user_bases[u].get('consecutive_days', 0) / total_cons)
-
     result = {}
     for username in user_bases:
         result[username] = round(main_result.get(username, 0) + bonus_result.get(username, 0), 4)
-
     return result
 
 def normalize_cdk_rewards(package):
@@ -3020,54 +2843,40 @@ def process_pool_reward_for_user(username):
     try:
         if has_user_claimed_pool_today(username):
             return None, '今日已领取'
-
         if has_cooldown_remaining(username):
             return None, '领取冷却中，请稍后再试'
-
         user_data = users.get(username)
         if not user_data:
             return None, '用户不存在'
-
         total_days = user_data.get('attendanceTotalDays', 0)
         if total_days < 7:
             return None, f'需要累计签到7天才可瓜分，当前累计签到{total_days}天'
-
         if is_login_restricted(username):
             return None, '账号已被限制，无法瓜分'
-
         if not check_identity_verified(username):
             return None, '请先完成身份认证'
-
         settle_pool_funds()
-
         today = get_today_pool_date()
         if today not in pool_records:
             pool_records[today] = {'total_payout': 0, 'payout_details': {}}
-
         allocated = pool_records[today].get('allocated_from_system', 0)
         already_paid = pool_records[today].get('total_payout', 0)
         remaining = max(0, round(allocated - already_paid, 4))
-
         if remaining <= 0:
             return None, '今日瓜分池已被领完，请明日再试'
-
         reward = get_user_today_pool_reward(username)
         if reward <= 0:
             return None, '积分基数为0，无法瓜分'
-
         if reward > remaining:
             reward = remaining
-
         reward = round(reward, 4)
         if reward <= 0:
             return None, '今日瓜分池已被领完，请明日再试'
-
         mail_attachment_id = f"mail_{int(time.time()*1000)}_{random.randint(1000,9999)}"
         pool_amount = pool_records[today].get('pool_amount', 0)
         user_bases = build_user_bases()
         normalized = normalize_user_bases_with_bonus(user_bases)
         base = normalized.get(username, 0)
-
         mail_attachments[mail_attachment_id] = {
             'id': mail_attachment_id,
             'username': username,
@@ -3085,29 +2894,21 @@ def process_pool_reward_for_user(username):
         save_mail_attachments()
         mark_user_pool_claimed(username)
         mark_cooldown(username)
-
         if 'payout_details' not in pool_records[today]:
             pool_records[today]['payout_details'] = {}
-
         pool_records[today]['total_payout'] = round(pool_records[today].get('total_payout', 0) + reward, 4)
         pool_records[today]['payout_details'][username] = round(pool_records[today]['payout_details'].get(username, 0) + reward, 4)
         pool_records[today]['remaining_unclaimed'] = max(0, round(allocated - pool_records[today]['total_payout'], 4))
         save_pool_records()
-
         return reward, None
-
     except Exception as e:
         log.error(f"Error in process_pool_reward_for_user: {e}")
-        import traceback
-        traceback.print_exc()
         return None, f'处理失败: {str(e)}'
 
 def get_newbie_pool_status():
     today = datetime.now().strftime('%Y-%m-%d')
     system_total = load_system_total_points()
-
     pool_amount = newbie_pool_data.get(today, {}).get('pool_amount', 0)
-
     if pool_amount == 0:
         pool_amount = min(system_total * 0.05, 10000)
         if today not in newbie_pool_data:
@@ -3115,7 +2916,6 @@ def get_newbie_pool_status():
         newbie_pool_data[today]['pool_amount'] = pool_amount
         newbie_pool_data[today]['updated_at'] = int(time.time() * 1000)
         save_newbie_pool_data(newbie_pool_data)
-
     eligible_users = []
     for username, user_data in users.items():
         created_at_str = user_data.get('createdAt', '')
@@ -3136,10 +2936,8 @@ def get_newbie_pool_status():
                 })
         except Exception:
             pass
-
     total_eligible = len(eligible_users)
     max_reward = min(pool_amount * 0.01, 100)
-
     return {
         'today': today,
         'pool_amount': round(pool_amount, 2),
@@ -3152,11 +2950,9 @@ def get_user_newbie_reward(username):
     user_data = users.get(username)
     if not user_data:
         return 0
-
     created_at_str = user_data.get('createdAt', '')
     if not created_at_str:
         return 0
-
     try:
         created_at = datetime.fromisoformat(created_at_str)
         days_old = (datetime.now() - created_at).days
@@ -3164,35 +2960,28 @@ def get_user_newbie_reward(username):
             return 0
     except Exception:
         return 0
-
     if is_login_restricted(username) or not check_identity_verified(username):
         return 0
-
     today = datetime.now().strftime('%Y-%m-%d')
     has_attended = user_data.get('lastAttendanceDate', '') == today
     is_active = user_data.get('lastLoginDate', '') == today
-
     base_multiplier = 1.0
     if has_attended:
         base_multiplier += 1.0
     if is_active:
         base_multiplier += 1.0
-
     days_factor = 1.0 - (days_old / 7) * 0.5
     base_multiplier = base_multiplier * max(0.5, days_factor)
     base_multiplier = min(base_multiplier, 3.0)
-
     status = get_newbie_pool_status()
     max_reward = status.get('max_reward', 10)
     base_reward = max_reward * 0.3
     reward = base_reward * base_multiplier
     reward = min(reward, max_reward)
-
     eligible_count = status.get('eligible_count', 1)
     if eligible_count > 0:
         per_user_limit = status.get('pool_amount', 1000) / eligible_count
         reward = min(reward, per_user_limit * 0.1)
-
     return round(reward, 2)
 
 def has_user_claimed_newbie_today(username):
@@ -3210,18 +2999,14 @@ def mark_user_newbie_claimed(username):
 def claim_newbie_reward(username):
     if not check_identity_verified(username):
         return None, '请先完成身份认证'
-
     if is_login_restricted(username):
         return None, '账号已被限制'
-
     user_data = users.get(username)
     if not user_data:
         return None, '用户不存在'
-
     created_at_str = user_data.get('createdAt', '')
     if not created_at_str:
         return None, '无法验证注册时间'
-
     try:
         created_at = datetime.fromisoformat(created_at_str)
         days_old = (datetime.now() - created_at).days
@@ -3229,28 +3014,21 @@ def claim_newbie_reward(username):
             return None, f'注册已超过7天（已{days_old}天），无法领取新人奖励'
     except Exception:
         return None, '无法验证注册时间'
-
     if has_user_claimed_newbie_today(username):
         return None, '今日已领取新人奖励'
-
     reward = get_user_newbie_reward(username)
     if reward <= 0:
         return None, '当前奖励为0，无法领取'
-
     global system_total_points
     if system_total_points < reward:
         return None, f'系统积分池不足，当前池子{system_total_points:.2f}积分'
-
     add_points_without_limit(username, reward)
     deduct_system_total_points(reward)
-
     mark_user_newbie_claimed(username)
-
     today = datetime.now().strftime('%Y-%m-%d')
     if today in newbie_pool_data:
         newbie_pool_data[today]['pool_amount'] = max(0, newbie_pool_data[today].get('pool_amount', 0) - reward)
         save_newbie_pool_data(newbie_pool_data)
-
     mail_attachment_id = f"mail_{int(time.time()*1000)}_{random.randint(1000,9999)}"
     mail_attachments[mail_attachment_id] = {
         'id': mail_attachment_id,
@@ -3267,7 +3045,6 @@ def claim_newbie_reward(username):
         'source': 'newbie_pool'
     }
     save_mail_attachments()
-
     return reward, None
 
 def get_nav_profit_tax_rate(profit, cost):
@@ -3287,7 +3064,6 @@ def get_nav_profit_tax_rate(profit, cost):
     else:
         return 0.20
 
-
 def calculate_high_balance_tax(username, points_earned):
     if username not in users:
         return points_earned, 0
@@ -3300,7 +3076,6 @@ def calculate_high_balance_tax(username, points_earned):
         net_points = round(points_earned - tax, 4)
         return net_points, tax
     return points_earned, 0
-
 
 def add_game_points(username, points):
     if username in users:
@@ -3317,7 +3092,6 @@ def add_game_points(username, points):
 
 def cleanup_all_expired_data():
     current_time = int(time.time() * 1000)
-
     auth_codes_to_remove = []
     for code, data in auth_codes.items():
         if data.get('used', False):
@@ -3328,20 +3102,6 @@ def cleanup_all_expired_data():
         del auth_codes[code]
     if auth_codes_to_remove:
         save_auth_codes()
-
-    reset_codes_to_remove = []
-    for code, data in reset_codes.items():
-        if data.get('used', False):
-            reset_codes_to_remove.append(code)
-        elif data.get('recycled', False):
-            reset_codes_to_remove.append(code)
-        elif (current_time - data.get('createdAt', 0)) > 86400000:
-            reset_codes_to_remove.append(code)
-    for code in reset_codes_to_remove:
-        del reset_codes[code]
-    if reset_codes_to_remove:
-        save_reset_codes()
-
     point_codes_to_remove = []
     for code, data in point_codes.items():
         if data.get('used', False):
@@ -3354,7 +3114,6 @@ def cleanup_all_expired_data():
         del point_codes[code]
     if point_codes_to_remove:
         save_point_codes()
-
     premium_codes_to_remove = []
     for code, data in premium_point_codes.items():
         if data.get('used', False):
@@ -3367,20 +3126,6 @@ def cleanup_all_expired_data():
         del premium_point_codes[code]
     if premium_codes_to_remove:
         save_premium_point_codes()
-
-    boost_codes_to_remove = []
-    for code, data in boost_codes.items():
-        if data.get('used', False):
-            boost_codes_to_remove.append(code)
-        elif data.get('recycled', False):
-            boost_codes_to_remove.append(code)
-        elif (current_time - data.get('createdAt', 0)) > 259200000:
-            boost_codes_to_remove.append(code)
-    for code in boost_codes_to_remove:
-        del boost_codes[code]
-    if boost_codes_to_remove:
-        save_boost_codes()
-
     special_codes_to_remove = []
     for code, data in special_point_codes.items():
         if data.get('used', False):
@@ -3393,7 +3138,6 @@ def cleanup_all_expired_data():
         del special_point_codes[code]
     if special_codes_to_remove:
         save_special_point_codes()
-
     makeup_codes_to_remove = []
     for code, data in makeup_codes.items():
         if data.get('used', False):
@@ -3406,7 +3150,6 @@ def cleanup_all_expired_data():
         del makeup_codes[code]
     if makeup_codes_to_remove:
         save_makeup_codes()
-
     gamblers_codes_to_remove = []
     for code, data in gamblers_codes.items():
         if data.get('used', False):
@@ -3419,7 +3162,6 @@ def cleanup_all_expired_data():
         del gamblers_codes[code]
     if gamblers_codes_to_remove:
         save_gamblers_codes()
-
     box_codes_to_remove = []
     for code, data in box_codes.items():
         if data.get('used', False):
@@ -3432,7 +3174,6 @@ def cleanup_all_expired_data():
         del box_codes[code]
     if box_codes_to_remove:
         save_box_codes()
-
     plcard_codes_to_remove = []
     for code, data in plcard_codes.items():
         if data.get('used', False):
@@ -3445,7 +3186,6 @@ def cleanup_all_expired_data():
         del plcard_codes[code]
     if plcard_codes_to_remove:
         save_plcard_codes()
-
     premium_boost_codes_to_remove = []
     for code, data in premium_boost_codes.items():
         if data.get('used', False):
@@ -3458,18 +3198,6 @@ def cleanup_all_expired_data():
         del premium_boost_codes[code]
     if premium_boost_codes_to_remove:
         save_premium_boost_codes()
-
-    cancellation_codes_to_remove = []
-    for code, data in cancellation_codes.items():
-        if data.get('used', False):
-            cancellation_codes_to_remove.append(code)
-        elif data.get('recycled', False):
-            cancellation_codes_to_remove.append(code)
-    for code in cancellation_codes_to_remove:
-        del cancellation_codes[code]
-    if cancellation_codes_to_remove:
-        save_cancellation_codes()
-
     current_time_sec = int(time.time())
     boosts_to_remove = []
     for username, boost_data in user_boosts.items():
@@ -3479,7 +3207,6 @@ def cleanup_all_expired_data():
         del user_boosts[username]
     if boosts_to_remove:
         save_user_boosts()
-
     cdk_packages_to_remove = []
     for code, package in cdk_packages.items():
         if package.get('used', False):
@@ -3496,7 +3223,6 @@ def cleanup_all_expired_data():
         del cdk_packages[code]
     if cdk_packages_to_remove:
         save_cdk_packages()
-
     announcements_to_disable = []
     for aid, ann in announcements.items():
         end_time_ms = ann.get('end_time', 0)
@@ -3506,10 +3232,8 @@ def cleanup_all_expired_data():
         announcements[aid]['is_active'] = False
     if announcements_to_disable:
         save_announcements()
-
     cleanup_unverified_users()
     cleanup_inactive_users()
-
     orders_to_remove = []
     for order_id, order in orders.items():
         created_at = order.get('created_at', 0)
@@ -3518,22 +3242,18 @@ def cleanup_all_expired_data():
                 created_at = int(created_at)
             except Exception:
                 created_at = 0
-
         status = order.get('status', 'pending')
-
         if status == 'pending':
             if current_time - created_at > 300000:
                 orders_to_remove.append(order_id)
         else:
             if current_time - created_at > 21600000:
                 orders_to_remove.append(order_id)
-
     for order_id in orders_to_remove:
         if order_id in orders:
             del orders[order_id]
     if orders_to_remove:
         save_orders()
-
     code_limits_to_clean = []
     for username, limits in user_code_limits.items():
         for code_type, data in limits.items():
@@ -3546,7 +3266,6 @@ def cleanup_all_expired_data():
                 del user_code_limits[username]
     if code_limits_to_clean:
         save_user_code_limits()
-
     coupons_to_remove = []
     for cid, coupon in user_coupons.items():
         if coupon.get('used', False):
@@ -3557,11 +3276,10 @@ def cleanup_all_expired_data():
         del user_coupons[cid]
     if coupons_to_remove:
         save_user_coupons()
-
     cleanup_expired_gateway_cards()
     cleanup_expired_mail_attachments()
     cleanup_expired_pool_claims()
-
+    cleanup_expired_pay_password_reset_tokens()
     fund_data_to_clean = []
     for username in list(fund_data.keys()):
         if username not in users:
@@ -3570,7 +3288,6 @@ def cleanup_all_expired_data():
         del fund_data[username]
     if fund_data_to_clean:
         save_fund_data()
-
     nav_holdings_to_clean = []
     for username in list(nav_holdings.keys()):
         if username not in users:
@@ -3579,7 +3296,6 @@ def cleanup_all_expired_data():
         del nav_holdings[username]
     if nav_holdings_to_clean:
         save_nav_holdings()
-
     nav_history_to_remove = []
     for rid, record in nav_history.items():
         if record.get('username') not in users:
@@ -3588,14 +3304,12 @@ def cleanup_all_expired_data():
         del nav_history[rid]
     if nav_history_to_remove:
         save_nav_history()
-
     today = datetime.now().strftime('%Y-%m-%d')
     if today in gateway_stock:
         stock = gateway_stock[today]
         if stock.get('hour', 0) == 0 and stock.get('day', 0) == 0 and stock.get('week', 0) == 0 and stock.get('permanent', 0) == 0:
             del gateway_stock[today]
             save_gateway_stock()
-
     try:
         email_service.cleanup_expired_codes()
     except Exception:
@@ -3646,10 +3360,8 @@ def get_available_id_card():
     for id_num, used in used_data.items():
         if used:
             used_id_numbers.add(id_num)
-
     if not os.path.exists(ID_CARDS_CSV):
         return None
-
     try:
         with open(ID_CARDS_CSV, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
@@ -3675,13 +3387,11 @@ def get_available_id_card():
 def get_id_cards_stats():
     if not os.path.exists(ID_CARDS_CSV):
         return {'total': 0, 'used': 0, 'available': 0}
-
     used_data = load_id_cards_used()
     used_id_numbers = set()
     for id_num, used in used_data.items():
         if used:
             used_id_numbers.add(id_num)
-
     total = 0
     unique_id_numbers = set()
     try:
@@ -3695,10 +3405,8 @@ def get_id_cards_stats():
     except Exception as e:
         log.error(f"Error reading id cards CSV: {e}")
         return {'total': 0, 'used': 0, 'available': 0}
-
     unique_total = len(unique_id_numbers)
     used_count = len([x for x in used_id_numbers if x in unique_id_numbers])
-
     return {
         'total': total,
         'unique_total': unique_total,
@@ -3732,13 +3440,10 @@ def fetch_weather_from_openmeteo(latitude, longitude):
             f'&timezone=auto'
             f'&forecast_days=7'
         )
-
         response = requests.get(url, timeout=10)
         if response.status_code != 200:
             return None
-
         data = response.json()
-
         weather_codes = {
             0: '☀️ 晴天', 1: '🌤️ 主要晴朗', 2: '⛅ 部分多云', 3: '☁️ 阴天',
             45: '🌫️ 雾', 48: '🌫️ 雾凇',
@@ -3751,14 +3456,11 @@ def fetch_weather_from_openmeteo(latitude, longitude):
             85: '🌨️ 小阵雪', 86: '🌨️ 大阵雪',
             95: '⛈️ 雷暴', 96: '⛈️ 雷暴', 99: '⛈️ 强雷暴'
         }
-
         current = data.get('current', {})
         daily = data.get('daily', {})
         hourly = data.get('hourly', {})
-
         current_code = current.get('weather_code', 0)
         current_condition = weather_codes.get(current_code, '☁️ 阴天')
-
         forecast = []
         if daily.get('time'):
             for i in range(min(7, len(daily['time']))):
@@ -3770,13 +3472,11 @@ def fetch_weather_from_openmeteo(latitude, longitude):
                     'low': str(round(daily['temperature_2m_min'][i])) if i < len(daily.get('temperature_2m_min', [])) else '--',
                     'precipitation': str(daily['precipitation_sum'][i]) if i < len(daily.get('precipitation_sum', [])) else '0'
                 })
-
         hourly_data = []
         if hourly.get('time'):
             now = datetime.now()
             now_hour = now.hour
             target_index = -1
-
             for i, t in enumerate(hourly['time']):
                 try:
                     dt = datetime.fromisoformat(t)
@@ -3785,7 +3485,6 @@ def fetch_weather_from_openmeteo(latitude, longitude):
                         break
                 except Exception:
                     continue
-
             if target_index == -1:
                 for i, t in enumerate(hourly['time']):
                     try:
@@ -3795,7 +3494,6 @@ def fetch_weather_from_openmeteo(latitude, longitude):
                             break
                     except Exception:
                         continue
-
             if target_index != -1:
                 for i in range(min(8, len(hourly['time']) - target_index)):
                     idx = target_index + i
@@ -3813,7 +3511,6 @@ def fetch_weather_from_openmeteo(latitude, longitude):
                             })
                     except Exception:
                         continue
-
         return {
             'latitude': data.get('latitude'),
             'longitude': data.get('longitude'),
@@ -3834,7 +3531,6 @@ def fetch_weather_from_openmeteo(latitude, longitude):
             'hourly': hourly_data,
             'daily': forecast
         }
-
     except Exception as e:
         log.error(f"Open-Meteo weather fetch error: {e}")
         return None
@@ -3846,19 +3542,16 @@ def build_region_index():
     global _region_index
     if _region_index is not None:
         return _region_index
-
     _region_index = {}
     if not os.path.exists(REGION_FILE):
         log.warning(f"region.json not found at {REGION_FILE}")
         return _region_index
-
     try:
         with open(REGION_FILE, 'r', encoding='utf-8') as f:
             region_data = json.load(f)
     except Exception as e:
         log.error(f"Failed to load region.json: {e}")
         return _region_index
-
     def walk(node, path):
         name = node.get('name', '')
         level = node.get('level', '')
@@ -3886,21 +3579,17 @@ def build_region_index():
                     }
         for child in node.get('districts', []) or []:
             walk(child, path + [name] if name else path)
-
     walk(region_data, [])
     log.info(f"Region index built: {len(_region_index)} entries")
     return _region_index
-
 
 def lookup_region_coordinates(city_name):
     index = build_region_index()
     if not index:
         return None
-
     name = (city_name or '').strip()
     if not name:
         return None
-
     if name in index:
         info = index[name]
         return {
@@ -3910,7 +3599,6 @@ def lookup_region_coordinates(city_name):
             'full_path': info['full_path'],
             'matched_name': name,
         }
-
     suffixes = ['特别行政区', '自治区', '自治州', '自治县', '省', '市', '区', '县', '镇', '乡', '盟', '地区']
     core = name
     for suf in suffixes:
@@ -3926,7 +3614,6 @@ def lookup_region_coordinates(city_name):
             'full_path': info['full_path'],
             'matched_name': core,
         }
-
     if core:
         for suf in ['区', '市', '县', '镇', '乡', '省', '自治县', '自治州', '盟', '地区']:
             candidate = core + suf
@@ -3939,7 +3626,6 @@ def lookup_region_coordinates(city_name):
                     'full_path': info['full_path'],
                     'matched_name': candidate,
                 }
-
     for key, info in index.items():
         if key and key in name:
             return {
@@ -3949,9 +3635,7 @@ def lookup_region_coordinates(city_name):
                 'full_path': info['full_path'],
                 'matched_name': key,
             }
-
     return None
-
 
 def geocode_city_openmeteo(city_name):
     try:
@@ -3968,7 +3652,6 @@ def geocode_city_openmeteo(city_name):
             except Exception as e:
                 log.error(f"Geocode query error for {name}: {e}")
                 return None
-
         def is_match(user_input, result_name, result_admin1='', result_country=''):
             if not result_name:
                 return False
@@ -3994,7 +3677,6 @@ def geocode_city_openmeteo(city_name):
             if result_name in core:
                 return True
             return False
-
         def pick_best(results, user_input):
             if not results:
                 return None
@@ -4007,7 +3689,6 @@ def geocode_city_openmeteo(city_name):
                     valid.append(r)
             if not valid:
                 return None
-
             def score(r):
                 s = 0
                 rname = r.get('name', '')
@@ -4026,21 +3707,16 @@ def geocode_city_openmeteo(city_name):
                 if user_input.endswith('区') and rname.endswith('区'):
                     s += 20
                 return s
-
             valid.sort(key=score, reverse=True)
             return valid[0]
-
         def try_query(name):
             results = query_geocode(name)
             return pick_best(results, city_name)
-
         result = None
         matched_name = city_name
-
         result = try_query(city_name)
         if result:
             log.info(f"Found city by original name: {city_name} -> {result.get('name')}")
-
         if not result and len(city_name) > 2:
             suffixes = ['县', '区', '镇', '乡']
             for suffix in suffixes:
@@ -4058,7 +3734,6 @@ def geocode_city_openmeteo(city_name):
                         if result:
                             matched_name = core
                             break
-
         if not result and len(city_name) > 2:
             suffixes = ['市', '省']
             for suffix in suffixes:
@@ -4070,7 +3745,6 @@ def geocode_city_openmeteo(city_name):
                         if result:
                             matched_name = core
                             break
-
         if not result and len(city_name) > 3:
             for i in range(len(city_name) - 1, 2, -1):
                 prefix = city_name[:i]
@@ -4080,17 +3754,13 @@ def geocode_city_openmeteo(city_name):
                     if result:
                         matched_name = prefix
                         break
-
         if not result:
             log.warning(f"All geocode attempts failed for {city_name}")
             return None
-
         display_name = result.get('name', city_name)
         country = result.get('country', '')
         admin1 = result.get('admin1', '')
-
         log.info(f"Geocode success: {city_name} -> {display_name} ({country}, {admin1}) [{matched_name}]")
-
         return {
             'name': display_name,
             'latitude': result['latitude'],
@@ -4101,7 +3771,6 @@ def geocode_city_openmeteo(city_name):
             'matched_name': matched_name,
             'original_name': city_name
         }
-
     except Exception as e:
         log.error(f"Open-Meteo geocoding error: {e}")
         return None
@@ -4113,19 +3782,15 @@ def calc_refund_amount(order, username):
     final_price = order.get('final_price', order.get('product_price', 0))
     current_rate = get_current_pl_rate()
     is_pl_payment = payment_method == 'pl'
-
     if is_pl_payment:
         points_price = round(final_price / current_rate, 2) if current_rate > 0 else final_price
     else:
         points_price = final_price
-
     refund_amount = 0
     refund_points = 0
     reason = ''
     detail = ''
-
-    if product_type in ['point', 'premium_point', 'reset', 'boost', 'special_point',
-                        'makeup', 'gamblers', 'cancellation', 'box', 'plcard', 'premium_boost']:
+    if product_type in ['point', 'premium_point', 'special_point', 'makeup', 'gamblers', 'box', 'plcard', 'premium_boost']:
         if not delivered_codes:
             refund_amount = final_price
             refund_points = points_price
@@ -4152,7 +3817,6 @@ def calc_refund_amount(order, username):
                 refund_points = round(per_points * unused_count + per_points * used_count * 0.2, 2)
                 reason = f'卡密 {unused_count}张未使用全额退款，{used_count}张已使用退款20%'
                 detail = f'未使用: {unused_count}张, 已使用: {used_count}张'
-
     elif product_type == 'gateway':
         card = gateway_cards.get(username, {})
         card_type = card.get('type', '')
@@ -4202,16 +3866,13 @@ def calc_refund_amount(order, username):
         refund_amount = final_price
         refund_points = points_price
         reason = '普通订单全额退款'
-
     if is_pl_payment:
         reason += f' (PL支付，汇率 {current_rate:.4f}，折合 {refund_points:.2f} 积分)'
-
     return round(refund_amount, 2), round(refund_points, 2), reason, detail
 
 def calc_gateway_refund_amount(username, card_key):
     current_time = int(time.time() * 1000)
     current_rate = get_current_pl_rate()
-
     card_data = None
     found_username = None
     for u, card in gateway_cards.items():
@@ -4219,20 +3880,16 @@ def calc_gateway_refund_amount(username, card_key):
             found_username = u
             card_data = card
             break
-
     if not card_data:
         return None, None, '通行卡密不存在或已失效', False, None, None
     if found_username != username:
         return None, None, '该卡密不属于当前账号', False, None, None
-
     card_type = card_data.get('type', '')
     card_price = card_data.get('price', 0)
     card_expire = card_data.get('expire_at', 0)
     created_at = card_data.get('created_at', 0)
-
     if card_expire > 0 and current_time > card_expire:
         return None, None, '通行卡密已过期，无法退款', False, None, None
-
     original_order_id = None
     original_order = None
     for oid, order in orders.items():
@@ -4245,7 +3902,6 @@ def calc_gateway_refund_amount(username, card_key):
             original_order_id = oid
             original_order = order
             break
-
     is_pl_payment = False
     rate_used = None
     if original_order:
@@ -4258,11 +3914,9 @@ def calc_gateway_refund_amount(username, card_key):
             points_price = card_price
     else:
         points_price = card_price
-
     refund_amount = 0
     refund_points = 0
     reason = ''
-
     if card_type == 'hour':
         refund_amount = card_price
         refund_points = points_price
@@ -4299,10 +3953,8 @@ def calc_gateway_refund_amount(username, card_key):
         refund_amount = card_price
         refund_points = points_price
         reason = '未知类型，全额退款'
-
     if is_pl_payment:
         reason += f' (PL支付，汇率 {rate_used:.4f}，折合 {refund_points:.2f} 积分)'
-
     return (
         round(refund_amount, 2),
         round(refund_points, 2),
@@ -4322,10 +3974,8 @@ def _do_refund(username, order_id, refund_points, refund_amount, reason):
             raise ValueError('订单已退款')
         if order.get('username') != username:
             raise ValueError('订单不属于当前用户')
-
         product_type = order.get('product_type', '')
         delivered_codes = order.get('delivered_codes', [])
-
         mail_to_remove = []
         for aid, attachment in mail_attachments.items():
             if attachment.get('username') != username:
@@ -4341,17 +3991,13 @@ def _do_refund(username, order_id, refund_points, refund_amount, reason):
                 del mail_attachments[aid]
         if mail_to_remove:
             save_mail_attachments()
-
         if order.get('delivered', False):
             code_type_map = {
                 'point': (point_codes, save_point_codes),
                 'premium_point': (premium_point_codes, save_premium_point_codes),
-                'reset': (reset_codes, save_reset_codes),
-                'boost': (boost_codes, save_boost_codes),
                 'special_point': (special_point_codes, save_special_point_codes),
                 'makeup': (makeup_codes, save_makeup_codes),
                 'gamblers': (gamblers_codes, save_gamblers_codes),
-                'cancellation': (cancellation_codes, save_cancellation_codes),
                 'box': (box_codes, save_box_codes),
                 'plcard': (plcard_codes, save_plcard_codes),
                 'premium_boost': (premium_boost_codes, save_premium_boost_codes)
@@ -4362,11 +4008,9 @@ def _do_refund(username, order_id, refund_points, refund_amount, reason):
                     if code in codes and not codes[code].get('used', False):
                         del codes[code]
                 save_func()
-
         if product_type == 'gateway' and username in gateway_cards:
             del gateway_cards[username]
             save_gateway_cards()
-
         if username not in fund_data:
             fund_data[username] = {
                 'balance': 0, 'total_interest': 0,
@@ -4375,7 +4019,6 @@ def _do_refund(username, order_id, refund_points, refund_amount, reason):
         old_balance = fund_data[username]['balance']
         fund_data[username]['balance'] = round(old_balance + refund_points, 2)
         save_fund_data()
-
         refund_timestamp = int(time.time() * 1000)
         fund_history_id = f"fund_refund_{refund_timestamp}_{random.randint(1000, 9999)}"
         fund_history[fund_history_id] = {
@@ -4388,7 +4031,6 @@ def _do_refund(username, order_id, refund_points, refund_amount, reason):
             'timestamp': refund_timestamp
         }
         save_fund_history()
-
         order['refunded'] = True
         order['refunded_at'] = refund_timestamp
         order['status'] = 'refunded'
@@ -4396,7 +4038,6 @@ def _do_refund(username, order_id, refund_points, refund_amount, reason):
         order['refund_points'] = refund_points
         order['refund_reason'] = reason
         save_orders()
-
         return {
             'refund_points': refund_points,
             'refund_amount': refund_amount,
@@ -4413,11 +4054,9 @@ def _do_refund_gateway(username, card_key, refund_points, refund_amount, reason,
             raise ValueError('通行卡密不存在或已被使用')
         if card_data.get('used', False):
             raise ValueError('通行卡密已被使用')
-
         if username in gateway_cards:
             del gateway_cards[username]
             save_gateway_cards()
-
         if original_order_id and original_order_id in orders:
             order = orders[original_order_id]
             if order.get('refunded', False):
@@ -4429,7 +4068,6 @@ def _do_refund_gateway(username, card_key, refund_points, refund_amount, reason,
             order['refund_points'] = refund_points
             order['refund_reason'] = reason
             save_orders()
-
         if username not in fund_data:
             fund_data[username] = {
                 'balance': 0, 'total_interest': 0,
@@ -4438,7 +4076,6 @@ def _do_refund_gateway(username, card_key, refund_points, refund_amount, reason,
         old_balance = fund_data[username]['balance']
         fund_data[username]['balance'] = round(old_balance + refund_points, 2)
         save_fund_data()
-
         refund_timestamp = int(time.time() * 1000)
         fund_history_id = f"fund_refund_gateway_{refund_timestamp}_{random.randint(1000, 9999)}"
         fund_history[fund_history_id] = {
@@ -4451,7 +4088,6 @@ def _do_refund_gateway(username, card_key, refund_points, refund_amount, reason,
             'timestamp': refund_timestamp
         }
         save_fund_history()
-
         return {
             'refund_points': refund_points,
             'refund_amount': refund_amount,
@@ -4464,12 +4100,9 @@ def _do_refund_gateway(username, card_key, refund_points, refund_amount, reason,
 def _refund_init_gateway(username, card_key):
     refund_amount, refund_points, reason, is_pl_payment, rate_used, original_order_id = \
         calc_gateway_refund_amount(username, card_key)
-
     if refund_points is None or refund_points <= 0:
         return jsonify({'error': reason or '退款金额为0，无法退款'}), 400
-
     risk_passed, risk_msg, risk_score, risk_details = perform_refund_risk_check(username, refund_points)
-
     if not risk_passed:
         return jsonify({
             'error': risk_msg,
@@ -4477,7 +4110,6 @@ def _refund_init_gateway(username, card_key):
             'risk_details': risk_details,
             'risk_check_failed': True
         }), 403
-
     if refund_points < REFUND_EMAIL_THRESHOLD:
         try:
             result = _do_refund_gateway(
@@ -4501,16 +4133,13 @@ def _refund_init_gateway(username, card_key):
             'rate_used': rate_used,
             **result
         })
-
     for tid, t in list(refund_tickets.items()):
         if t.get('card_key') == card_key and not t['used']:
             if int(time.time()) - t['created_at'] < 60:
                 return jsonify({'error': '验证邮件已发送，请稍后再试'}), 429
             del refund_tickets[tid]
-
     ticket_id = f"rt_{int(time.time()*1000)}_{random.randint(1000, 9999)}"
     token, ts = generate_refund_token(card_key, ticket_id)
-
     refund_tickets[ticket_id] = {
         'ticket_id': ticket_id,
         'username': username,
@@ -4533,17 +4162,14 @@ def _refund_init_gateway(username, card_key):
         'refund_result': None,
         'refunded_at': 0
     }
-
     user_email = users.get(username, {}).get('email', '')
     if not user_email:
         del refund_tickets[ticket_id]
         return jsonify({'error': '您的账号未绑定邮箱，无法进行大额退款验证'}), 400
-
     fake_order = {
         'order_id': original_order_id or '通行卡密',
         'product_name': f'通行卡密-{card_key[:8]}...',
     }
-
     try:
         email_service.send_refund_verification_email(
             username, user_email, fake_order, refund_points, token
@@ -4552,7 +4178,6 @@ def _refund_init_gateway(username, card_key):
         log.error(f"发送退款验证邮件失败: {e}")
         del refund_tickets[ticket_id]
         return jsonify({'error': '验证邮件发送失败，请稍后重试'}), 500
-
     return jsonify({
         'success': True,
         'auto_refunded': False,
@@ -4579,7 +4204,6 @@ def generate_refund_token(order_id, ticket_id):
     combined = f"{data}|{signature}"
     token = base64.urlsafe_b64encode(combined.encode()).decode().replace('=', '')
     return token, timestamp
-
 
 def decode_refund_token(token):
     try:
@@ -4622,7 +4246,6 @@ def csrf_protect(f):
             session_token = session.get('_csrf_token')
             if not session_token:
                 return jsonify({'error': '会话已过期，请刷新页面'}), 403
-
             token = request.headers.get('X-CSRF-Token')
             if not token or token != session_token:
                 return jsonify({'error': 'CSRF验证失败，请刷新页面重试'}), 403
@@ -4637,11 +4260,9 @@ def csrf_token_endpoint():
 @limiter.limit('5 per day')
 def health_check():
     import shutil
-
     start_time = time.time()
     status = 'ok'
     checks = {}
-
     try:
         disk = shutil.disk_usage(DATA_DIR)
         disk_free_mb = round(disk.free / (1024 * 1024), 2)
@@ -4660,7 +4281,6 @@ def health_check():
     except Exception as e:
         checks['disk'] = {'status': 'error', 'message': str(e)}
         status = 'error'
-
     try:
         data_files = {
             'users': USERS_FILE,
@@ -4682,7 +4302,6 @@ def health_check():
     except Exception as e:
         checks['data_files'] = {'status': 'error', 'message': str(e)}
         status = 'error'
-
     try:
         checks['users'] = {
             'status': 'ok',
@@ -4691,7 +4310,6 @@ def health_check():
         }
     except Exception as e:
         checks['users'] = {'status': 'error', 'message': str(e)}
-
     try:
         checks['system_points'] = {
             'status': 'ok',
@@ -4699,7 +4317,6 @@ def health_check():
         }
     except Exception as e:
         checks['system_points'] = {'status': 'error', 'message': str(e)}
-
     try:
         checks['feedback'] = {
             'status': 'ok',
@@ -4708,7 +4325,6 @@ def health_check():
         }
     except Exception as e:
         checks['feedback'] = {'status': 'error', 'message': str(e)}
-
     try:
         smtp_configured = bool(email_service.SMTP_EMAIL and email_service.SMTP_PASSWORD)
         checks['smtp'] = {
@@ -4719,13 +4335,10 @@ def health_check():
         }
     except Exception as e:
         checks['smtp'] = {'status': 'error', 'message': str(e)}
-
     response_time_ms = int((time.time() - start_time) * 1000)
-
     http_code = 200
     if status == 'error':
         http_code = 503
-
     return jsonify({
         'status': status,
         'timestamp': int(time.time() * 1000),
@@ -4741,19 +4354,14 @@ def admin_login():
     data = request.get_json()
     username = data.get('username', '').strip()
     password = data.get('password', '')
-
     if not username or not password:
         return jsonify({'error': '请提供用户名和密码'}), 400
-
     if username != ADMIN_USERNAME:
         return jsonify({'error': '用户名或密码错误'}), 401
-
     if not bcrypt.check_password_hash(ADMIN_PASSWORD_HASH, password):
         return jsonify({'error': '用户名或密码错误'}), 401
-
     session_token = secrets.token_urlsafe(32)
     admin_sessions[session_token] = time.time() + ADMIN_SESSION_TIMEOUT
-
     return jsonify({
         'success': True,
         'token': session_token,
@@ -4781,15 +4389,6 @@ def get_user_owned_code_count(username):
         if data.get('username') == username and not data.get('used', False) and not data.get('recycled', False):
             count += 1
     for code, data in premium_point_codes.items():
-        if data.get('username') == username and not data.get('used', False) and not data.get('recycled', False):
-            count += 1
-    for code, data in reset_codes.items():
-        if data.get('username') == username and not data.get('used', False) and not data.get('recycled', False):
-            count += 1
-    for code, data in boost_codes.items():
-        if data.get('username') == username and not data.get('used', False) and not data.get('recycled', False):
-            count += 1
-    for code, data in cancellation_codes.items():
         if data.get('username') == username and not data.get('used', False) and not data.get('recycled', False):
             count += 1
     for code, data in special_point_codes.items():
@@ -4825,11 +4424,8 @@ def get_product_number(product_type):
 
 def generate_order_id(product_type):
     prefix_map = {
-        'reset': 'RST',
         'point': 'PNT',
         'premium_point': 'PMP',
-        'boost': 'BST',
-        'cancellation': 'CAN',
         'special_point': 'SPT',
         'makeup': 'MUP',
         'gamblers': 'GBS',
@@ -4859,9 +4455,7 @@ def get_coupon_type_label(coupon_type):
         'full_reduction': '满减券',
         'unconditional': '无门槛券',
         'product_specific': '指定商品券',
-        'pl_discount': 'PL立减金',
-        'makeup_specific': '指定补签卡券',
-        'gamblers_specific': '赌神卡券'
+        'pl_discount': 'PL立减金'
     }
     return type_map.get(coupon_type, coupon_type)
 
@@ -4869,8 +4463,6 @@ def get_product_type_label(product_id):
     type_map = {
         'point_code': '普通积分卡密',
         'premium_point_code': '高级积分卡密',
-        'reset_code': '重置密码卡密',
-        'boost_code': '积分加成卡密',
         'special_point_code': '特殊积分卡密',
         'makeup_code': '补签卡',
         'gamblers_code': '赌神积分卡',
@@ -4906,7 +4498,7 @@ def grant_coupon_to_user(username, coupon_type, discount, threshold=0, duration_
             discount = 7
         description = description or f'无门槛减{discount}'
     elif coupon_type == 'product_specific':
-        price_map = {'point_code': 1.2, 'premium_point_code': 3.5, 'reset_code': 8, 'boost_code': 8.8, 'special_point_code': 20, 'gamblers_code': 100, 'box_code': 28.8, 'plcard_code': 35.8, 'premium_boost_code': 15.6}
+        price_map = {'point_code': 1.2, 'premium_point_code': 3.5, 'special_point_code': 20, 'gamblers_code': 100, 'box_code': 28.8, 'plcard_code': 35.8, 'premium_boost_code': 15.6}
         base_price = price_map.get(product_id, 0)
         if base_price <= 0:
             return False, '无效的商品ID'
@@ -4915,17 +4507,11 @@ def grant_coupon_to_user(username, coupon_type, discount, threshold=0, duration_
             return False, f'指定商品券优惠金额不能超过原价{base_price}积分的80%，即{max_discount:.2f}积分'
         product_label = get_product_type_label(product_id) if product_id else ''
         description = description or f'指定{product_label}减{discount}'
-    elif coupon_type == 'makeup_specific':
-        return False, '补签卡券已移除'
-    elif coupon_type == 'gamblers_specific':
-        return False, '赌神卡券已移除'
     else:
         return False, '无效的优惠券类型'
-
     mail_attachment_id = f"mail_{int(time.time()*1000)}_{random.randint(1000,9999)}"
     coupon_id = generate_coupon_id()
     expire_at = int((time.time() + duration_hours * 3600) * 1000)
-
     mail_attachments[mail_attachment_id] = {
         'id': mail_attachment_id,
         'username': username,
@@ -4953,7 +4539,6 @@ def grant_coupon_to_user(username, coupon_type, discount, threshold=0, duration_
         'source': 'admin_grant'
     }
     save_mail_attachments()
-
     if username not in coupon_grants:
         coupon_grants[username] = []
     coupon_grants[username].append({
@@ -4980,12 +4565,7 @@ def auto_grant_coupons():
         if current_time - last_grant_check < 600000:
             continue
         user_data['last_coupon_grant_check'] = current_time
-
         makeup_used_count = user_data.get('makeup_code_used_count', 0)
-        makeup_remaining = 3 - makeup_used_count
-
-        cancellation_purchased = user_data.get('cancellationCodePurchased', False)
-
         rand_val = random.random()
         if rand_val < 0.01:
             coupon_type = 'pl_discount'
@@ -5001,11 +4581,9 @@ def auto_grant_coupons():
             grant_coupon_to_user(username, coupon_type, discount, 0, random.randint(24, 72), '', desc)
         elif rand_val < 0.22:
             coupon_type = 'product_specific'
-            product_ids = ['point_code', 'premium_point_code', 'reset_code', 'boost_code', 'special_point_code']
-            if not cancellation_purchased:
-                product_ids.append('cancellation_code')
+            product_ids = ['point_code', 'premium_point_code', 'special_point_code']
             product_id = random.choice(product_ids)
-            price_map = {'point_code': 1.2, 'premium_point_code': 3.5, 'reset_code': 8, 'boost_code': 8.8, 'special_point_code': 20, 'cancellation_code': 9.9, 'gamblers_code': 100, 'box_code': 28.8, 'plcard_code': 35.8, 'premium_boost_code': 15.6}
+            price_map = {'point_code': 1.2, 'premium_point_code': 3.5, 'special_point_code': 20, 'gamblers_code': 100, 'box_code': 28.8, 'plcard_code': 35.8, 'premium_boost_code': 15.6}
             base_price = price_map.get(product_id, 0)
             max_discount = base_price * 0.8
             discount = round(random.uniform(0.3, max_discount), 1)
@@ -5073,21 +4651,6 @@ def get_user_active_card(username):
         save_gateway_cards()
         return None
     return card_data
-
-def refund_gateway_card(username):
-    if username in gateway_cards:
-        card_data = gateway_cards[username]
-        if not card_data.get('used', False):
-            points_to_refund = card_data.get('price', 0)
-            if points_to_refund > 0:
-                user_data = users.get(username)
-                if user_data:
-                    user_data['totalPoints'] = round(user_data.get('totalPoints', 0) + points_to_refund, 2)
-                    save_users()
-            del gateway_cards[username]
-            save_gateway_cards()
-            return True
-    return False
 
 def cleanup_expired_gateway_cards():
     current_time = int(time.time() * 1000)
@@ -5162,10 +4725,8 @@ def generate_new_nav():
     random.seed(seed_int)
     nav = round(random.uniform(NAV_MIN, NAV_MAX), 4)
     random.seed()
-
     yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
     yesterday_nav = nav_data.get(yesterday, {}).get('nav', None)
-
     if yesterday_nav is not None:
         change_percent = abs(nav - yesterday_nav) / yesterday_nav if yesterday_nav > 0 else 0
         if change_percent > 0.15:
@@ -5173,7 +4734,6 @@ def generate_new_nav():
                 nav = round(yesterday_nav * 1.15, 4)
             else:
                 nav = round(yesterday_nav * 0.85, 4)
-
     nav_data[today] = {
         'nav': nav,
         'date': today,
@@ -5223,18 +4783,14 @@ def nav_buy(username, amount):
         return None, '用户不存在'
     if user_data.get('totalPoints', 0) < amount:
         return None, f'积分不足，需要{amount}积分，当前{user_data.get("totalPoints", 0):.2f}积分'
-
     current_nav = get_current_nav()
     shares = round(amount / current_nav, 2)
     if shares <= 0:
         return None, '申购金额太少，无法获得有效份额'
-
     user_data['totalPoints'] = round(user_data['totalPoints'] - amount, 2)
     save_users()
-
     if username not in nav_holdings:
         nav_holdings[username] = []
-
     nav_holdings[username].append({
         'shares': shares,
         'buy_nav': current_nav,
@@ -5242,7 +4798,6 @@ def nav_buy(username, amount):
         'buy_time': int(time.time() * 1000)
     })
     save_nav_holdings()
-
     record_id = f"nav_{int(time.time()*1000)}_{random.randint(1000,9999)}"
     nav_history[record_id] = {
         'id': record_id,
@@ -5254,7 +4809,6 @@ def nav_buy(username, amount):
         'timestamp': int(time.time() * 1000)
     }
     save_nav_history()
-
     return {'shares': shares, 'nav': current_nav, 'amount': amount}, None
 
 def nav_sell(username, shares_to_sell):
@@ -5416,24 +4970,19 @@ def force_recalculate_first_attendance_date():
         total_days = user_data.get('attendanceTotalDays', 0)
         consecutive_days = user_data.get('attendanceConsecutiveDays', 0)
         last_date = user_data.get('lastAttendanceDate', '')
-
         if not last_date:
             continue
-
         if total_days == 0:
             continue
-
         try:
             last_dt = datetime.strptime(last_date, '%Y-%m-%d')
             first_dt = last_dt - timedelta(days=total_days - 1)
             first_date_str = first_dt.strftime('%Y-%m-%d')
-
             if user_data.get('firstAttendanceDate') != first_date_str:
                 user_data['firstAttendanceDate'] = first_date_str
                 modified = True
         except Exception:
             pass
-
     if modified:
         save_users()
 
@@ -5455,13 +5004,10 @@ def decode_qr_token(token):
         product_number = parts[1]
         timestamp = int(parts[2])
         received_signature = parts[3]
-
         data = f"{order_id}|{product_number}|{timestamp}"
         expected_signature = hmac.new(QR_SECRET, data.encode(), hashlib.sha256).hexdigest()[:16]
-
         if not hmac.compare_digest(received_signature, expected_signature):
             return None, None, None, '签名验证失败'
-
         return order_id, product_number, timestamp, None
     except Exception as e:
         return None, None, None, str(e)
@@ -5470,12 +5016,9 @@ def get_card_usage_status(code, product_type):
     code_type_map = {
         'point': point_codes,
         'premium_point': premium_point_codes,
-        'reset': reset_codes,
-        'boost': boost_codes,
         'special_point': special_point_codes,
         'makeup': makeup_codes,
         'gamblers': gamblers_codes,
-        'cancellation': cancellation_codes,
         'box': box_codes,
         'plcard': plcard_codes,
         'premium_boost': premium_boost_codes
@@ -5493,37 +5036,30 @@ def get_card_usage_status(code, product_type):
 def perform_refund_risk_check(username, refund_points):
     if refund_points < 100:
         return True, None, 0, []
-
     user_data = users.get(username, {})
     if not user_data:
         return False, "用户不存在，无法进行风控审查", 100, [{'text': '用户不存在', 'score': 100}]
-
     risk_score = 0
     risk_details = []
-
     total_days = user_data.get('attendanceTotalDays', 0)
     consecutive_days = user_data.get('attendanceConsecutiveDays', 0)
     today = datetime.now().strftime('%Y-%m-%d')
     has_attended_today = user_data.get('lastAttendanceDate', '') == today
-
     if total_days < 7:
         risk_score += 15
         risk_details.append({'text': '注册天数不足7天', 'score': 15})
     elif total_days < 14:
         risk_score += 8
         risk_details.append({'text': '注册天数不足14天', 'score': 8})
-
     if consecutive_days < 3:
         risk_score += 10
         risk_details.append({'text': '连续签到天数不足3天', 'score': 10})
     elif consecutive_days < 7:
         risk_score += 5
         risk_details.append({'text': '连续签到天数不足7天', 'score': 5})
-
     if not has_attended_today:
         risk_score += 12
         risk_details.append({'text': '今日未签到', 'score': 12})
-
     restrictions = get_user_restrictions(username)
     if restrictions.get('login', False):
         risk_score += 30
@@ -5537,27 +5073,22 @@ def perform_refund_risk_check(username, refund_points):
     if restrictions.get('feedback', False):
         risk_score += 15
         risk_details.append({'text': '账号已被限制反馈功能', 'score': 15})
-
     if not check_identity_verified(username):
         risk_score += 25
         risk_details.append({'text': '未完成身份认证', 'score': 25})
-
     total_points = user_data.get('totalPoints', 0)
     fund_balance = get_user_fund_balance(username)
     total_assets = total_points + fund_balance
-
     if total_assets > 0 and refund_points > total_assets * 0.8:
         risk_score += 20
         risk_details.append({'text': '退款金额超过总资产的80%', 'score': 20})
     elif total_assets > 0 and refund_points > total_assets * 0.5:
         risk_score += 8
         risk_details.append({'text': '退款金额超过总资产的50%', 'score': 8})
-
     daily_earned = user_data.get('dailyEarnedPoints', 0)
     if daily_earned < 3 and total_points < 100:
         risk_score += 15
         risk_details.append({'text': '今日获取积分不足3分且总积分低于100', 'score': 15})
-
     created_at_str = user_data.get('createdAt', '')
     if created_at_str:
         try:
@@ -5568,36 +5099,29 @@ def perform_refund_risk_check(username, refund_points):
                 risk_details.append({'text': '注册不足24小时', 'score': 20})
         except Exception:
             pass
-
     email = user_data.get('email', '')
     if not email:
         risk_score += 10
         risk_details.append({'text': '未绑定邮箱', 'score': 10})
-
     if not user_data.get('email_verified', False):
         risk_score += 8
         risk_details.append({'text': '邮箱未验证', 'score': 8})
-
     qq_number = user_data.get('qq_number', '')
     if not qq_number:
         risk_score += 5
         risk_details.append({'text': '未绑定QQ号', 'score': 5})
-
     pl_balance = get_user_pl_balance(username)
     if pl_balance < 1 and total_points < 50:
         risk_score += 10
         risk_details.append({'text': 'PL余额不足1且总积分低于50', 'score': 10})
-
     makeup_used_count = user_data.get('makeup_code_used_count', 0)
     if makeup_used_count >= 3:
         risk_score += 5
         risk_details.append({'text': '补签卡已使用完3次', 'score': 5})
-
     gamblers_purchase_count = user_data.get('gamblers_code_purchase_count', 0)
     if gamblers_purchase_count >= 3:
         risk_score += 5
         risk_details.append({'text': '当日赌神卡购买已达上限', 'score': 5})
-
     now = datetime.now()
     current_hour = now.hour
     if current_hour >= 0 and current_hour <= 5:
@@ -5606,7 +5130,6 @@ def perform_refund_risk_check(username, refund_points):
     elif current_hour >= 23:
         risk_score += 5
         risk_details.append({'text': '深夜时段操作 (23-24点)', 'score': 5})
-
     user_orders = []
     for oid, order in orders.items():
         if order.get('username') == username and order.get('status') == 'paid' and not order.get('refunded', False):
@@ -5614,7 +5137,6 @@ def perform_refund_risk_check(username, refund_points):
     if len(user_orders) < 3:
         risk_score += 6
         risk_details.append({'text': '历史订单数不足3笔', 'score': 6})
-
     refund_history_count = 0
     for oid, order in orders.items():
         if order.get('username') == username and order.get('refunded', False):
@@ -5625,7 +5147,6 @@ def perform_refund_risk_check(username, refund_points):
     elif refund_history_count > 1:
         risk_score += 5
         risk_details.append({'text': '历史有退款记录', 'score': 5})
-
     recent_refund_count = 0
     for oid, order in orders.items():
         if order.get('username') == username and order.get('refunded', False):
@@ -5635,7 +5156,6 @@ def perform_refund_risk_check(username, refund_points):
     if recent_refund_count > 0:
         risk_score += 25
         risk_details.append({'text': '1小时内有过退款记录', 'score': 25})
-
     pl_exchange_count = 0
     for rid, record in pl_exchange_records.items():
         if record.get('username') == username and record.get('operation_type') == 'pl_to_points':
@@ -5643,7 +5163,6 @@ def perform_refund_risk_check(username, refund_points):
     if pl_exchange_count > 0:
         risk_score += 5
         risk_details.append({'text': '近期有PL兑换积分记录', 'score': 5})
-
     today_pool_claimed = False
     pool_today = datetime.now().strftime('%Y-%m-%d')
     if username in user_pool_claims and pool_today in user_pool_claims[username]:
@@ -5651,7 +5170,6 @@ def perform_refund_risk_check(username, refund_points):
     if today_pool_claimed:
         risk_score += 5
         risk_details.append({'text': '今日已领取积分瓜分', 'score': 5})
-
     fund_deposit_count = 0
     for rid, record in fund_history.items():
         if record.get('username') == username and record.get('type') == 'deposit':
@@ -5659,25 +5177,16 @@ def perform_refund_risk_check(username, refund_points):
     if fund_deposit_count == 0:
         risk_score += 2
         risk_details.append({'text': '从未使用过理财存入功能', 'score': 2})
-
     has_pay_pwd = has_pay_password(username)
     if not has_pay_pwd:
         risk_score += 8
         risk_details.append({'text': '未设置支付密码', 'score': 8})
-
-    if not user_data.get('cancellationCodePurchased', False):
-        risk_score += 3
-        risk_details.append({'text': '未购买过注销卡密', 'score': 3})
-
     mail_count = sum(1 for a in mail_attachments.values() if a.get('username') == username and not a.get('claimed', False))
     if mail_count > 3:
         risk_score += 5
         risk_details.append({'text': '邮箱有大量未领取附件', 'score': 5})
-
     risk_score = min(risk_score, 100)
-
     log.debug(f"Refund risk check for {username}: score={risk_score}, details={risk_details}")
-
     if risk_score < 15:
         return True, None, risk_score, risk_details
     elif risk_score < 35:
@@ -5716,92 +5225,16 @@ def before_request():
             log.error(f"periodic cleanup error: {e}")
         _last_cleanup_time[0] = now
 
-@app.route('/api/claim-backfill-reward', methods=['POST'])
-@csrf_protect
-@login_required
-@identity_required
-def claim_backfill_reward():
-    start_time = time.time()
-    username = session['user']['username']
-    data = request.get_json()
-    phone_number = data.get('phoneNumber', '').strip()
-    auth_code = data.get('authCode', '').strip().upper()
-
-    if not phone_number or not auth_code:
-        return jsonify({'error': '请提供完整号码和授权码'}), 400
-
-    if len(phone_number) != 11 or not phone_number.isdigit():
-        return jsonify({'error': '无效的手机号码格式'}), 400
-
-    if auth_code not in auth_codes:
-        return jsonify({'error': '授权码无效或已过期'}), 400
-
-    code_data = auth_codes[auth_code]
-
-    if code_data.get('used'):
-        return jsonify({'error': '授权码已被使用'}), 400
-
-    if not code_data.get('verified', False):
-        return jsonify({'error': '请先验证授权码'}), 400
-
-    code_username = code_data.get('username')
-    if code_username != username:
-        return jsonify({'error': '授权码不属于当前用户'}), 400
-
-    stored_phone = code_data.get('phoneNumber')
-    if stored_phone != phone_number:
-        return jsonify({'error': '完整号码与授权码不匹配'}), 400
-
-    current_time = int(time.time() * 1000)
-    if (current_time - code_data.get('createdAt', 0)) > 180000:
-        del auth_codes[auth_code]
-        save_auth_codes()
-        return jsonify({'error': '授权码已过期（3分钟有效）'}), 400
-
-    if code_data.get('reward_claimed', False):
-        return jsonify({'error': '该授权码的积分奖励已被领取'}), 400
-
-    points_earned = round(random.uniform(0.1, 0.5), 2)
-    points_added = update_earned_points(username, points_earned, False)
-
-    if not points_added:
-        return jsonify({'error': '今日获取积分已达上限14分'}), 400
-
-    code_data['used'] = True
-    code_data['reward_claimed'] = True
-    save_auth_codes()
-
-    for record in phone_records.get(username, []):
-        if record.get('authCode') == auth_code:
-            record['used'] = True
-            save_phone_records()
-            break
-
-    multiplier = get_total_multiplier(username)
-    invalidate_user_caches(username)
-
-    response_time = int((time.time() - start_time) * 1000)
-    return jsonify({
-        'success': True,
-        'pointsEarned': points_earned,
-        'phoneNumber': phone_number,
-        'responseTime': response_time,
-        'bonusMultiplier': multiplier,
-        'originalPoints': points_earned
-    })
-
 @app.route('/api/admin/users', methods=['GET'])
 @admin_login_required
 def admin_get_users():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
     search = request.args.get('search', '').strip()
-
     user_list = []
     for username, user_data in users.items():
         if search and search.lower() not in username.lower() and search.lower() not in user_data.get('email', '').lower():
             continue
-
         is_verified = check_identity_verified(username)
         restrictions = get_user_restrictions(username)
         created_at = user_data.get('createdAt', '')
@@ -5812,9 +5245,7 @@ def admin_get_users():
                 days_since_reg = (datetime.now() - created).days
             except Exception:
                 pass
-
         member_tier = game.get_member_tier(users, username)
-
         user_list.append({
             'username': username,
             'email': user_data.get('email', ''),
@@ -5829,15 +5260,12 @@ def admin_get_users():
             'daysSinceReg': days_since_reg,
             'attendanceTotalDays': user_data.get('attendanceTotalDays', 0),
             'attendanceConsecutiveDays': user_data.get('attendanceConsecutiveDays', 0),
-            'hasCancellationCode': user_data.get('cancellationCodePurchased', False),
             'memberTier': member_tier
         })
-
     total = len(user_list)
     start = (page - 1) * per_page
     end = start + per_page
     user_list = user_list[start:end]
-
     return jsonify({
         'users': user_list,
         'total': total,
@@ -5851,9 +5279,7 @@ def admin_get_users():
 def admin_get_codes():
     code_type = request.args.get('type', '')
     username = request.args.get('username', '').strip()
-
     result_codes = []
-
     def add_codes(storage, ctype):
         for code, data in storage.items():
             if username and data.get('username') != username:
@@ -5867,17 +5293,10 @@ def admin_get_codes():
                 'createdAt': data.get('createdAt', 0),
                 'adminGranted': data.get('adminGranted', False)
             })
-
-    if not code_type or code_type == 'reset':
-        add_codes(reset_codes, 'reset')
     if not code_type or code_type == 'point':
         add_codes(point_codes, 'point')
     if not code_type or code_type == 'premium_point':
         add_codes(premium_point_codes, 'premium_point')
-    if not code_type or code_type == 'boost':
-        add_codes(boost_codes, 'boost')
-    if not code_type or code_type == 'cancellation':
-        add_codes(cancellation_codes, 'cancellation')
     if not code_type or code_type == 'special_point':
         add_codes(special_point_codes, 'special_point')
     if not code_type or code_type == 'makeup':
@@ -5890,102 +5309,12 @@ def admin_get_codes():
         add_codes(plcard_codes, 'plcard')
     if not code_type or code_type == 'premium_boost':
         add_codes(premium_boost_codes, 'premium_boost')
-
     result_codes.sort(key=lambda x: x.get('createdAt', 0), reverse=True)
-
     return jsonify({'codes': result_codes})
-
-@app.route('/api/admin/reissue-cancellation', methods=['POST'])
-@csrf_protect
-def admin_reissue_cancellation():
-    data = request.get_json()
-    username = data.get('username', '').strip()
-    from_ai = data.get('from_ai', False)
-
-    if from_ai:
-        if 'user' not in session:
-            return jsonify({'error': '请先登录'}), 401
-        if session['user']['username'] != username:
-            return jsonify({'error': '只能操作自己的账号'}), 403
-    else:
-        admin_token = request.headers.get('X-Admin-Token', '')
-        if not admin_token or admin_token not in admin_sessions:
-            return jsonify({'error': '请先登录管理员账户'}), 401
-        if admin_sessions[admin_token] < time.time():
-            del admin_sessions[admin_token]
-            return jsonify({'error': '管理员会话已过期，请重新登录'}), 401
-        admin_sessions[admin_token] = time.time() + ADMIN_SESSION_TIMEOUT
-
-    if not username or username not in users:
-        return jsonify({'error': '用户不存在'}), 400
-
-    user_data = users[username]
-
-    if not user_data.get('cancellationCodePurchased', False):
-        if from_ai:
-            return jsonify({
-                'success': True,
-                'status': 'not_purchased',
-                'icon': '❌',
-                'title': '未购买注销卡密',
-                'message': '您尚未购买注销卡密',
-                'detail': '购买条件：需连续签到 ≥ 4 天，价格 9.9 积分',
-                'suggestion': '前往商城购买',
-                'suggestion_url': '/mall.html'
-            })
-        return jsonify({'error': '该用户未购买过注销卡密，无法补发'}), 400
-
-    for code, cdata in cancellation_codes.items():
-        if cdata.get('username') == username and not cdata.get('used', False) and not cdata.get('recycled', False):
-            if from_ai:
-                return jsonify({
-                    'success': True,
-                    'status': 'has_card',
-                    'icon': '✅',
-                    'title': '已有有效注销卡密',
-                    'message': '您已持有有效的注销卡密',
-                    'detail': '卡密: ' + code,
-                    'suggestion': '查看背包使用',
-                    'suggestion_url': '/'
-                })
-            return jsonify({'error': '用户背包中已有有效的注销卡密，无需补发'}), 400
-
-    cancellation_code = generate_cancellation_code()
-
-    cancellation_codes[cancellation_code] = {
-        'code': cancellation_code,
-        'username': username,
-        'used': False,
-        'recycled': False,
-        'createdAt': int(time.time() * 1000),
-        'type': 'cancellation',
-        'adminGranted': True,
-        'source': 'ai_reissue' if from_ai else 'admin_reissue'
-    }
-    save_cancellation_codes()
-
-    if from_ai:
-        return jsonify({
-            'success': True,
-            'status': 'reissued',
-            'icon': '🔄',
-            'title': '注销卡密已补发',
-            'message': '注销卡密已成功补发至您的背包',
-            'detail': '卡密: ' + cancellation_code + '\n请前往背包查看使用',
-            'card_code': cancellation_code,
-            'suggestion': '查看背包',
-            'suggestion_url': '/'
-        })
-
-    return jsonify({
-        'success': True,
-        'message': f'成功为用户{username}补发注销卡密'
-    })
 
 @app.route('/api/admin/cdk/list', methods=['GET'])
 def admin_cdk_list():
     from_ai = request.args.get('from_ai', 'false').lower() == 'true'
-
     if from_ai:
         if 'user' not in session:
             return jsonify({'error': '请先登录'}), 401
@@ -5997,41 +5326,30 @@ def admin_cdk_list():
             del admin_sessions[admin_token]
             return jsonify({'error': '管理员会话已过期，请重新登录'}), 401
         admin_sessions[admin_token] = time.time() + ADMIN_SESSION_TIMEOUT
-
     try:
         available_cdks = []
         current_time = int(time.time() * 1000)
-
         reward_type_map = {
             'points': '积分',
             'point_code': '普通积分卡密',
             'premium_point_code': '高级积分卡密',
-            'reset_code': '重置密码卡密',
-            'boost_code': '积分加成卡',
             'special_point_code': '特殊积分卡密',
             'makeup_code': '补签卡',
             'gamblers_code': '赌神积分卡',
             'box_code': '盲盒卡',
             'plcard_code': '普通PL随机卡',
-            'premium_boost_code': '高级加成卡',
-            'cancellation_code': '注销卡密'
+            'premium_boost_code': '高级加成卡'
         }
-
         for code, package in cdk_packages.items():
             if package.get('used', False):
                 continue
-
             start_time_ms = package.get('start_time', 0)
             expiry_time_ms = package.get('expiry_time', 0)
-
             if start_time_ms > 0 and current_time < start_time_ms:
                 continue
-
             if expiry_time_ms > 0 and current_time > expiry_time_ms:
                 continue
-
             rewards = normalize_cdk_rewards(package)
-
             reward_summary_list = []
             for r in rewards:
                 label = reward_type_map.get(r.get('type', ''), r.get('type', ''))
@@ -6041,7 +5359,6 @@ def admin_cdk_list():
                 else:
                     reward_summary_list.append(f"{label} x{qty}")
             reward_summary = '、'.join(reward_summary_list) if reward_summary_list else '无奖励'
-
             available_cdks.append({
                 'code': code,
                 'name': package.get('name', ''),
@@ -6054,9 +5371,7 @@ def admin_cdk_list():
                 'expiry_time': expiry_time_ms,
                 'created_at': package.get('created_at', 0)
             })
-
         available_cdks.sort(key=lambda x: x.get('created_at', 0), reverse=True)
-
         if from_ai:
             if not available_cdks:
                 return jsonify({
@@ -6067,7 +5382,6 @@ def admin_cdk_list():
                     'message': '当前没有可用的CDK礼包码',
                     'cdks': []
                 })
-
             return jsonify({
                 'success': True,
                 'status': 'available',
@@ -6076,13 +5390,9 @@ def admin_cdk_list():
                 'message': f'当前有 {len(available_cdks)} 个可用的CDK礼包码',
                 'cdks': available_cdks[:10]
             })
-
         return jsonify({'success': True, 'cdks': available_cdks})
-
     except Exception as e:
         log.error(f"list cdk error: {e}")
-        import traceback
-        traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/admin/restrict-batch', methods=['POST'])
@@ -6094,18 +5404,14 @@ def admin_restrict_batch():
     restrict_types = data.get('restrict_types', [])
     duration_hours = data.get('duration_hours', 0)
     reason = data.get('reason', '').strip()
-
     if not username or username not in users:
         return jsonify({'error': '用户不存在'}), 400
-
     if not isinstance(restrict_types, list) or len(restrict_types) == 0:
         return jsonify({'error': '请至少选择一种限制类型'}), 400
-
     valid_types = ['login', 'mall', 'generate_phone', 'feedback']
     for rt in restrict_types:
         if rt not in valid_types:
             return jsonify({'error': f'无效的限制类型: {rt}'}), 400
-
     try:
         duration_hours = float(duration_hours)
     except Exception:
@@ -6114,7 +5420,6 @@ def admin_restrict_batch():
         duration_hours = 0
     if duration_hours > 24 * 365:
         duration_hours = 24 * 365
-
     if username not in restricted_users:
         restricted_users[username] = {
             'username': username,
@@ -6123,7 +5428,6 @@ def admin_restrict_batch():
             'restricted_at': datetime.now().isoformat(),
             'restricted_by': 'admin'
         }
-
     data_rec = restricted_users[username]
     if 'restrictions' not in data_rec:
         data_rec['restrictions'] = {'login': False, 'mall': False, 'generate_phone': False, 'feedback': False}
@@ -6134,10 +5438,8 @@ def admin_restrict_batch():
             data_rec['restriction_details'][rtype] = {
                 'expires_at': 0, 'reason': '', 'restricted_at': 0, 'restricted_by': 'admin'
             }
-
     current_time_ms = int(time.time() * 1000)
     expires_at = current_time_ms + int(duration_hours * 3600 * 1000) if duration_hours > 0 else 0
-
     applied_types = []
     already_restricted = []
     for rtype in restrict_types:
@@ -6152,24 +5454,20 @@ def admin_restrict_batch():
                 'restricted_by': 'admin'
             }
             applied_types.append(rtype)
-
     if not applied_types:
         return jsonify({
             'success': False,
             'error': '所选限制类型均已处于限制状态',
             'already_restricted': already_restricted
         }), 400
-
     data_rec['restricted_at'] = datetime.now().isoformat()
     save_restricted_users()
-
     type_names = {
         'login': '登录',
         'mall': '积分商城',
         'generate_phone': '生成手机号',
         'feedback': '反馈'
     }
-
     user_email = users.get(username, {}).get('email', '')
     email_sent = False
     email_msg = ''
@@ -6183,14 +5481,12 @@ def admin_restrict_batch():
             email_msg = str(e)
     else:
         email_msg = '用户未绑定邮箱，未发送通知'
-
     applied_labels = [type_names[t] for t in applied_types]
     if expires_at > 0:
         expire_str = datetime.fromtimestamp(expires_at / 1000).strftime('%Y-%m-%d %H:%M:%S')
         msg = f'已对用户{username}限制：{"、".join(applied_labels)}，截止 {expire_str} 自动解除'
     else:
         msg = f'已对用户{username}永久限制：{"、".join(applied_labels)}'
-
     return jsonify({
         'success': True,
         'message': msg,
@@ -6209,13 +5505,10 @@ def admin_toggle_restrict():
     data = request.get_json()
     username = data.get('username', '').strip()
     restrict_type = data.get('restrict_type', 'login')
-
     if not username or username not in users:
         return jsonify({'error': '用户不存在'}), 400
-
     if restrict_type not in ['login', 'mall', 'generate_phone', 'feedback']:
         return jsonify({'error': '无效的限制类型'}), 400
-
     if username not in restricted_users:
         restricted_users[username] = {
             'username': username,
@@ -6224,7 +5517,6 @@ def admin_toggle_restrict():
             'restricted_at': datetime.now().isoformat(),
             'restricted_by': 'admin'
         }
-
     data_rec = restricted_users[username]
     if 'restrictions' not in data_rec:
         data_rec['restrictions'] = {'login': False, 'mall': False, 'generate_phone': False, 'feedback': False}
@@ -6235,7 +5527,6 @@ def admin_toggle_restrict():
             data_rec['restriction_details'][rtype] = {
                 'expires_at': 0, 'reason': '', 'restricted_at': 0, 'restricted_by': 'admin'
             }
-
     type_names = {
         'login': '登录',
         'mall': '积分商城',
@@ -6243,9 +5534,7 @@ def admin_toggle_restrict():
         'feedback': '反馈'
     }
     type_name = type_names[restrict_type]
-
     current_value = data_rec['restrictions'].get(restrict_type, False)
-
     if current_value:
         data_rec['restrictions'][restrict_type] = False
         data_rec['restriction_details'][restrict_type] = {
@@ -6270,7 +5559,6 @@ def admin_toggle_restrict():
         }
         data_rec['restricted_at'] = datetime.now().isoformat()
         save_restricted_users()
-
         user_email = users.get(username, {}).get('email', '')
         email_sent = False
         email_msg = ''
@@ -6284,7 +5572,6 @@ def admin_toggle_restrict():
                 email_msg = str(e)
         else:
             email_msg = '用户未绑定邮箱，未发送通知'
-
         return jsonify({
             'success': True,
             'message': f'用户{username}的{type_name}功能已被永久限制',
@@ -6321,23 +5608,18 @@ def admin_get_stats():
     mall_restricted = sum(1 for u in users if get_user_restrictions(u).get('mall', False))
     feedback_restricted = sum(1 for u in users if get_user_restrictions(u).get('feedback', False))
     generate_phone_restricted = sum(1 for u in users if get_user_restrictions(u).get('generate_phone', False))
-
     total_points_all_users = sum(u.get('totalPoints', 0) for u in users.values())
     system_total = load_system_total_points()
-
     total_mail_attachments = len(mail_attachments)
     unclaimed_mail = sum(1 for a in mail_attachments.values() if not a.get('claimed', False))
-
     member_count = 0
     for uname in users:
         if game.is_game_member(users, uname):
             member_count += 1
-
     gm = game.get_game_manager()
     expiring_count = 0
     if gm:
         expiring_count = len(gm.check_expiring_memberships())
-
     return jsonify({
         'users': {
             'total': total_users,
@@ -6395,26 +5677,18 @@ def admin_create_cdk_package():
     expiry_time_str = data.get('expiry_time', '')
     min_total_days = int(data.get('min_total_days', 0))
     min_consecutive_days = int(data.get('min_consecutive_days', 0))
-
     if not name:
         return jsonify({'error': '请填写CDK名称'}), 400
-
     if not validate_cdk_name(name):
         return jsonify({'error': 'CDK名称仅限小写字母和数字，长度3-32位'}), 400
-
     if name in cdk_packages:
         return jsonify({'error': 'CDK名称已存在'}), 400
-
     if not isinstance(rewards, list) or len(rewards) == 0:
         return jsonify({'error': '请至少添加一项奖励'}), 400
-
     if len(rewards) > 10:
         return jsonify({'error': '奖励项不能超过10项'}), 400
-
-    valid_types = ['points', 'point_code', 'premium_point_code', 'reset_code',
-                   'boost_code', 'special_point_code', 'makeup_code', 'gamblers_code',
-                   'box_code', 'plcard_code', 'premium_boost_code', 'cancellation_code']
-
+    valid_types = ['points', 'point_code', 'premium_point_code', 'special_point_code',
+                   'makeup_code', 'gamblers_code', 'box_code', 'plcard_code', 'premium_boost_code']
     normalized_rewards = []
     for idx, r in enumerate(rewards):
         r_type = r.get('type', '').strip()
@@ -6423,13 +5697,10 @@ def admin_create_cdk_package():
             r_qty = int(r.get('quantity', 1))
         except Exception:
             return jsonify({'error': f'第{idx+1}项奖励数量无效'}), 400
-
         if r_type not in valid_types:
             return jsonify({'error': f'第{idx+1}项奖励类型无效'}), 400
-
         if r_qty < 1 or r_qty > 100:
             return jsonify({'error': f'第{idx+1}项奖励数量必须在1-100之间'}), 400
-
         if r_type == 'points':
             try:
                 val = float(r_value)
@@ -6437,40 +5708,32 @@ def admin_create_cdk_package():
                     return jsonify({'error': f'第{idx+1}项积分数量必须在1-100000之间'}), 400
             except Exception:
                 return jsonify({'error': f'第{idx+1}项积分数量必须是数字'}), 400
-
         normalized_rewards.append({
             'type': r_type,
             'value': r_value,
             'quantity': r_qty
         })
-
     start_time_ms = 0
     expiry_time_ms = 0
-
     if start_time_str:
         try:
             start_dt = datetime.strptime(start_time_str, '%Y-%m-%dT%H:%M')
             start_time_ms = int(start_dt.timestamp() * 1000)
         except Exception:
             return jsonify({'error': '起始时间格式错误'}), 400
-
     if expiry_time_str:
         try:
             expiry_dt = datetime.strptime(expiry_time_str, '%Y-%m-%dT%H:%M')
             expiry_time_ms = int(expiry_dt.timestamp() * 1000)
         except Exception:
             return jsonify({'error': '截止时间格式错误'}), 400
-
     if expiry_time_ms > 0 and start_time_ms > 0:
         max_12_years_ms = 12 * 365 * 24 * 3600 * 1000
         if expiry_time_ms - start_time_ms > max_12_years_ms:
             return jsonify({'error': '起止时间范围不能超过12年'}), 400
-
     if expiry_time_ms > 0 and start_time_ms > 0 and expiry_time_ms <= start_time_ms:
         return jsonify({'error': '截止时间必须大于起始时间'}), 400
-
     current_time = int(time.time() * 1000)
-
     cdk_packages[name] = {
         'code': name,
         'name': name,
@@ -6486,7 +5749,6 @@ def admin_create_cdk_package():
         'min_consecutive_days': min_consecutive_days
     }
     save_cdk_packages()
-
     return jsonify({
         'success': True,
         'message': f'CDK礼包码创建成功，共 {len(normalized_rewards)} 项奖励',
@@ -6500,13 +5762,10 @@ def admin_create_cdk_package():
 def admin_delete_cdk_package():
     data = request.get_json()
     code = data.get('code', '').strip().lower()
-
     if not code or code not in cdk_packages:
         return jsonify({'error': 'CDK礼包码不存在'}), 400
-
     del cdk_packages[code]
     save_cdk_packages()
-
     return jsonify({'success': True, 'message': 'CDK礼包码已删除'})
 
 @app.route('/api/cdk/exchange', methods=['POST'])
@@ -6519,42 +5778,31 @@ def exchange_cdk():
     data = request.get_json()
     username = session['user']['username']
     cdk_code = data.get('cdkCode', '').strip().lower()
-
     if not cdk_code:
         return jsonify({'error': '请输入CDK礼包码'}), 400
-
     cleanup_all_expired_data()
-
     package = cdk_packages.get(cdk_code)
     if not package:
         return jsonify({'error': 'CDK礼包码无效'}), 400
-
     if package.get('used', False):
         return jsonify({'error': 'CDK礼包码已被使用'}), 400
-
     current_time = int(time.time() * 1000)
     start_time_ms = package.get('start_time', 0)
     expiry_time_ms = package.get('expiry_time', 0)
-
     if start_time_ms > 0 and current_time < start_time_ms:
         start_dt = datetime.fromtimestamp(start_time_ms / 1000)
         return jsonify({'error': f'CDK礼包码尚未开始生效，生效时间: {start_dt.strftime("%Y-%m-%d %H:%M")}'}), 400
-
     if expiry_time_ms > 0 and current_time > expiry_time_ms:
         return jsonify({'error': 'CDK礼包码已过期'}), 400
-
     min_total_days = package.get('min_total_days', 0)
     min_consecutive_days = package.get('min_consecutive_days', 0)
     user_data = users.get(username, {})
     user_total_days = user_data.get('attendanceTotalDays', 0)
     user_consecutive_days = user_data.get('attendanceConsecutiveDays', 0)
-
     if min_total_days > 0 and user_total_days < min_total_days:
         return jsonify({'error': f'需要累计签到{min_total_days}天，当前累计签到{user_total_days}天'}), 400
-
     if min_consecutive_days > 0 and user_consecutive_days < min_consecutive_days:
         return jsonify({'error': f'需要连续签到{min_consecutive_days}天，当前连续签到{user_consecutive_days}天'}), 400
-
     if not package.get('is_universal', False):
         package['used'] = True
         package['used_by'] = username
@@ -6564,28 +5812,21 @@ def exchange_cdk():
         user_records = user_cdk_records.get(username, {})
         if cdk_code in user_records:
             return jsonify({'error': '您已经兑换过此CDK礼包码'}), 400
-
     rewards = normalize_cdk_rewards(package)
     if not rewards:
         return jsonify({'error': 'CDK奖励配置异常'}), 400
-
     code_storage_map = {
         'point_code': (generate_point_code, '普通积分卡密', 'point_code'),
         'premium_point_code': (generate_premium_point_code, '高级积分卡密', 'premium_point_code'),
-        'reset_code': (generate_reset_code, '重置密码卡密', 'reset_code'),
-        'boost_code': (generate_boost_code, '积分加成卡密', 'boost_code'),
         'special_point_code': (generate_special_point_code, '特殊积分卡密', 'special_point_code'),
         'makeup_code': (generate_makeup_code, '补签卡', 'makeup_code'),
         'gamblers_code': (generate_gamblers_code, '赌神积分卡密', 'gamblers_code'),
-        'cancellation_code': (generate_cancellation_code, '注销卡密', 'cancellation_code'),
         'box_code': (generate_box_code, '盲盒卡', 'box_code'),
         'plcard_code': (generate_plcard_code, '普通PL随机卡', 'plcard_code'),
         'premium_boost_code': (generate_premium_boost_code, '高级加成卡', 'premium_boost_code')
     }
-
     reward_descriptions = []
     mail_attachment_ids = []
-
     for reward in rewards:
         r_type = reward.get('type', '')
         r_value = str(reward.get('value', '')).strip()
@@ -6593,12 +5834,10 @@ def exchange_cdk():
             r_qty = int(reward.get('quantity', 1))
         except Exception:
             r_qty = 1
-
         if r_qty < 1:
             r_qty = 1
         if r_qty > 100:
             r_qty = 100
-
         if r_type == 'points':
             try:
                 points_to_add = float(r_value) * r_qty
@@ -6606,7 +5845,6 @@ def exchange_cdk():
                 continue
             if points_to_add <= 0:
                 continue
-
             mail_attachment_id = f"mail_{int(time.time()*1000)}_{random.randint(1000,9999)}"
             mail_attachments[mail_attachment_id] = {
                 'id': mail_attachment_id,
@@ -6624,14 +5862,12 @@ def exchange_cdk():
             }
             mail_attachment_ids.append(mail_attachment_id)
             reward_descriptions.append(f'{points_to_add}积分')
-
         elif r_type in code_storage_map:
             generate_func, type_label, storage_type = code_storage_map[r_type]
             generated_codes = []
             for _ in range(r_qty):
                 code = generate_func()
                 generated_codes.append(code)
-
             mail_attachment_id = f"mail_{int(time.time()*1000)}_{random.randint(1000,9999)}"
             if len(generated_codes) == 1:
                 mail_attachments[mail_attachment_id] = {
@@ -6672,14 +5908,10 @@ def exchange_cdk():
                 }
             mail_attachment_ids.append(mail_attachment_id)
             reward_descriptions.append(f'{type_label} x{r_qty}')
-
     if not reward_descriptions:
         return jsonify({'error': 'CDK奖励配置异常，无可发放奖励'}), 400
-
     save_mail_attachments()
-
     reward_description = ' + '.join(reward_descriptions)
-
     if package.get('is_universal', False):
         if username not in user_cdk_records:
             user_cdk_records[username] = {}
@@ -6690,7 +5922,6 @@ def exchange_cdk():
             'reward_description': reward_description
         }
         save_user_cdk_records()
-
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
@@ -6730,35 +5961,27 @@ def admin_create_announcement():
     is_sticky = data.get('is_sticky', False)
     start_time_str = data.get('start_time', '')
     end_time_str = data.get('end_time', '')
-
     if not title or not content:
         return jsonify({'error': '请填写标题和内容'}), 400
-
     if ann_type not in ['info', 'warning', 'success', 'danger']:
         ann_type = 'info'
-
     start_time_ms = 0
     end_time_ms = 0
-
     if start_time_str:
         try:
             start_dt = datetime.strptime(start_time_str, '%Y-%m-%dT%H:%M')
             start_time_ms = int(start_dt.timestamp() * 1000)
         except Exception:
             return jsonify({'error': '起始时间格式错误'}), 400
-
     if end_time_str:
         try:
             end_dt = datetime.strptime(end_time_str, '%Y-%m-%dT%H:%M')
             end_time_ms = int(end_dt.timestamp() * 1000)
         except Exception:
             return jsonify({'error': '截止时间格式错误'}), 400
-
     if end_time_ms > 0 and start_time_ms > 0 and end_time_ms <= start_time_ms:
         return jsonify({'error': '截止时间必须大于起始时间'}), 400
-
     announcement_id = str(int(time.time() * 1000)) + '_' + str(random.randint(1000, 9999))
-
     announcements[announcement_id] = {
         'id': announcement_id,
         'title': title,
@@ -6772,7 +5995,6 @@ def admin_create_announcement():
         'created_by': session.get('user', {}).get('username', 'admin')
     }
     save_announcements()
-
     return jsonify({
         'success': True,
         'message': '公告创建成功',
@@ -6792,36 +6014,28 @@ def admin_update_announcement():
     is_active = data.get('is_active', True)
     start_time_str = data.get('start_time', '')
     end_time_str = data.get('end_time', '')
-
     if not announcement_id or announcement_id not in announcements:
         return jsonify({'error': '公告不存在'}), 400
-
     if not title or not content:
         return jsonify({'error': '请填写标题和内容'}), 400
-
     if ann_type not in ['info', 'warning', 'success', 'danger']:
         ann_type = 'info'
-
     start_time_ms = 0
     end_time_ms = 0
-
     if start_time_str:
         try:
             start_dt = datetime.strptime(start_time_str, '%Y-%m-%dT%H:%M')
             start_time_ms = int(start_dt.timestamp() * 1000)
         except Exception:
             return jsonify({'error': '起始时间格式错误'}), 400
-
     if end_time_str:
         try:
             end_dt = datetime.strptime(end_time_str, '%Y-%m-%dT%H:%M')
             end_time_ms = int(end_dt.timestamp() * 1000)
         except Exception:
             return jsonify({'error': '截止时间格式错误'}), 400
-
     if end_time_ms > 0 and start_time_ms > 0 and end_time_ms <= start_time_ms:
         return jsonify({'error': '截止时间必须大于起始时间'}), 400
-
     announcements[announcement_id]['title'] = title
     announcements[announcement_id]['content'] = content
     announcements[announcement_id]['type'] = ann_type
@@ -6831,7 +6045,6 @@ def admin_update_announcement():
     announcements[announcement_id]['end_time'] = end_time_ms
     announcements[announcement_id]['updated_at'] = int(time.time() * 1000)
     save_announcements()
-
     return jsonify({'success': True, 'message': '公告更新成功'})
 
 @app.route('/api/admin/announcements/delete', methods=['POST'])
@@ -6840,13 +6053,10 @@ def admin_update_announcement():
 def admin_delete_announcement():
     data = request.get_json()
     announcement_id = data.get('id', '')
-
     if not announcement_id or announcement_id not in announcements:
         return jsonify({'error': '公告不存在'}), 400
-
     del announcements[announcement_id]
     save_announcements()
-
     return jsonify({'success': True, 'message': '公告删除成功'})
 
 @app.route('/api/admin/knowledge', methods=['GET'])
@@ -6863,7 +6073,6 @@ def admin_get_knowledge():
         log.error(f"Error loading knowledge base: {e}")
         return jsonify({'error': '加载知识库失败'}), 500
 
-
 @app.route('/api/admin/knowledge/add', methods=['POST'])
 @csrf_protect
 @admin_login_required
@@ -6872,25 +6081,21 @@ def admin_add_knowledge():
     title = data.get('title', '').strip()
     keywords = data.get('keywords', [])
     content = data.get('content', '').strip()
-
     if not title:
         return jsonify({'error': '请输入标题'}), 400
     if not keywords or len(keywords) == 0:
         return jsonify({'error': '请至少输入一个关键词'}), 400
     if not content:
         return jsonify({'error': '请输入内容'}), 400
-
     keywords = [k.strip() for k in keywords if k.strip()]
     if not keywords:
         return jsonify({'error': '请至少输入一个有效关键词'}), 400
-
     knowledge_base_path = os.path.join(os.path.dirname(__file__), 'knowledge_base.json')
     if os.path.exists(knowledge_base_path):
         with open(knowledge_base_path, 'r', encoding='utf-8') as f:
             kb = json.load(f)
     else:
         kb = {'topics': []}
-
     new_id = f"kb_{int(time.time()*1000)}_{random.randint(1000,9999)}"
     kb['topics'].append({
         'id': new_id,
@@ -6898,12 +6103,9 @@ def admin_add_knowledge():
         'title': title,
         'content': content
     })
-
     with open(knowledge_base_path, 'w', encoding='utf-8') as f:
         json.dump(kb, f, ensure_ascii=False, indent=2)
-
     return jsonify({'success': True, 'message': '知识条目添加成功', 'id': new_id})
-
 
 @app.route('/api/admin/knowledge/update', methods=['POST'])
 @csrf_protect
@@ -6914,7 +6116,6 @@ def admin_update_knowledge():
     title = data.get('title', '').strip()
     keywords = data.get('keywords', [])
     content = data.get('content', '').strip()
-
     if not item_id:
         return jsonify({'error': '请提供知识ID'}), 400
     if not title:
@@ -6923,18 +6124,14 @@ def admin_update_knowledge():
         return jsonify({'error': '请至少输入一个关键词'}), 400
     if not content:
         return jsonify({'error': '请输入内容'}), 400
-
     keywords = [k.strip() for k in keywords if k.strip()]
     if not keywords:
         return jsonify({'error': '请至少输入一个有效关键词'}), 400
-
     knowledge_base_path = os.path.join(os.path.dirname(__file__), 'knowledge_base.json')
     if not os.path.exists(knowledge_base_path):
         return jsonify({'error': '知识库不存在'}), 400
-
     with open(knowledge_base_path, 'r', encoding='utf-8') as f:
         kb = json.load(f)
-
     found = False
     for topic in kb.get('topics', []):
         if topic.get('id') == item_id:
@@ -6943,15 +6140,11 @@ def admin_update_knowledge():
             topic['content'] = content
             found = True
             break
-
     if not found:
         return jsonify({'error': '知识条目不存在'}), 400
-
     with open(knowledge_base_path, 'w', encoding='utf-8') as f:
         json.dump(kb, f, ensure_ascii=False, indent=2)
-
     return jsonify({'success': True, 'message': '知识更新成功'})
-
 
 @app.route('/api/admin/knowledge/delete', methods=['POST'])
 @csrf_protect
@@ -6959,26 +6152,19 @@ def admin_update_knowledge():
 def admin_delete_knowledge():
     data = request.get_json()
     item_id = data.get('id', '').strip()
-
     if not item_id:
         return jsonify({'error': '请提供知识ID'}), 400
-
     knowledge_base_path = os.path.join(os.path.dirname(__file__), 'knowledge_base.json')
     if not os.path.exists(knowledge_base_path):
         return jsonify({'error': '知识库不存在'}), 400
-
     with open(knowledge_base_path, 'r', encoding='utf-8') as f:
         kb = json.load(f)
-
     original_len = len(kb.get('topics', []))
     kb['topics'] = [t for t in kb.get('topics', []) if t.get('id') != item_id]
-
     if len(kb.get('topics', [])) == original_len:
         return jsonify({'error': '知识条目不存在'}), 400
-
     with open(knowledge_base_path, 'w', encoding='utf-8') as f:
         json.dump(kb, f, ensure_ascii=False, indent=2)
-
     return jsonify({'success': True, 'message': '知识删除成功'})
 
 @app.route('/api/order/create-batch', methods=['POST'])
@@ -6995,16 +6181,11 @@ def create_batch_order():
     quantity = int(data.get('quantity', 1))
     use_pl = data.get('use_pl', False)
     is_daifu = data.get('is_daifu', False)
-
     if quantity < 1 or quantity > 5:
         return jsonify({'error': '购买数量必须在1-5之间'}), 400
-
     product_map = {
-        'reset': {'name': '重置密码卡密', 'price': 8, 'type': 'reset'},
         'point': {'name': '普通积分卡密', 'price': 1.2, 'type': 'point'},
         'premium_point': {'name': '高级积分卡密', 'price': 3.5, 'type': 'premium_point'},
-        'boost': {'name': '积分加成卡', 'price': 8.8, 'type': 'boost'},
-        'cancellation': {'name': '注销账号卡密', 'price': 9.9, 'type': 'cancellation'},
         'special_point': {'name': '特殊积分卡密', 'price': 20, 'type': 'special_point'},
         'makeup': {'name': '补签卡', 'price': 200, 'type': 'makeup'},
         'gamblers': {'name': '赌神积分卡', 'price': 100, 'type': 'gamblers'},
@@ -7012,33 +6193,14 @@ def create_batch_order():
         'plcard': {'name': '普通PL随机卡', 'price': 35.8, 'type': 'plcard'},
         'premium_boost': {'name': '高级加成卡', 'price': 15.6, 'type': 'premium_boost'}
     }
-
     if product_type not in product_map:
         return jsonify({'error': '无效的商品类型'}), 400
-
-    if product_type == 'cancellation' and quantity > 1:
-        return jsonify({'error': '注销卡密每个账号仅限购买一次'}), 400
-
     product_info = product_map[product_type]
-
     price_info = get_price_info(product_info['price'], username)
     original_price = price_info['original_price']
     final_price = price_info['final_price']
-
     total_points_price = round(final_price * quantity, 2)
     total_original = round(original_price * quantity, 2)
-
-    if use_pl and product_type == 'cancellation':
-        return jsonify({'error': '注销卡密仅支持积分支付'}), 400
-
-    if product_type == 'cancellation':
-        user_data = users.get(username, {})
-        if user_data.get('cancellationCodePurchased', False):
-            return jsonify({'error': '每个账号仅限购买一次注销卡密'}), 400
-        consecutive_days = user_data.get('attendanceConsecutiveDays', 0)
-        if consecutive_days < 4:
-            return jsonify({'error': f'需要连续签到4天才可购买注销卡密，当前连续签到{consecutive_days}天'}), 400
-
     if product_type == 'makeup':
         user_data = users.get(username, {})
         makeup_used_count = user_data.get('makeup_code_used_count', 0)
@@ -7046,7 +6208,6 @@ def create_batch_order():
             return jsonify({'error': '补签卡永久限购3次，您已使用完所有次数'}), 400
         if quantity > (3 - makeup_used_count):
             return jsonify({'error': f'补签卡剩余购买次数为{3 - makeup_used_count}次'}), 400
-
     if product_type == 'gamblers':
         user_data = users.get(username, {})
         today = datetime.now().strftime('%Y-%m-%d')
@@ -7059,7 +6220,6 @@ def create_batch_order():
             save_users()
         if purchase_count + quantity > 3:
             return jsonify({'error': f'赌神卡单日限购3次，今日已购买{purchase_count}次'}), 400
-
     if product_type == 'box':
         user_data = users.get(username, {})
         today = datetime.now().strftime('%Y-%m-%d')
@@ -7072,7 +6232,6 @@ def create_batch_order():
             save_users()
         if purchase_count + quantity > 5:
             return jsonify({'error': f'盲盒卡单日限购5次，今日已购买{purchase_count}次'}), 400
-
     if product_type == 'plcard':
         user_data = users.get(username, {})
         today = datetime.now().strftime('%Y-%m-%d')
@@ -7085,23 +6244,18 @@ def create_batch_order():
             save_users()
         if purchase_count + quantity > 10:
             return jsonify({'error': f'普通PL随机卡单日限购10次，今日已购买{purchase_count}次'}), 400
-
     can_add, msg = check_user_code_limit(username)
     if not can_add:
         return jsonify({'error': msg}), 400
-
     if get_user_owned_code_count(username) + quantity > 20 and not is_daifu:
         return jsonify({'error': f'购买{quantity}张卡密后背包将超出上限(20/20)，请先使用或回收部分卡密'}), 400
-
     payment_method = 'pl' if use_pl else 'points'
-
     if payment_method == 'pl':
         current_rate = get_current_pl_rate()
         pl_price = round(total_points_price / current_rate, 4)
         order_price = pl_price
     else:
         order_price = total_points_price
-
     order_id = create_order(
         username,
         f'{product_info["name"]} x{quantity}',
@@ -7112,7 +6266,6 @@ def create_batch_order():
         quantity,
         is_daifu
     )
-
     if is_daifu:
         product_number = get_product_number(product_type)
         token, _ = generate_qr_token(order_id, product_number)
@@ -7128,7 +6281,6 @@ def create_batch_order():
             'message': '代付订单已创建，请让朋友扫码支付',
             'redirect_url': qr_url
         })
-
     return jsonify({
         'success': True,
         'order_id': order_id,
@@ -7149,11 +6301,9 @@ def create_order(username, product_name, product_price, payment_method, product_
     is_pl = payment_method == 'pl'
     current_rate = get_current_pl_rate()
     points_price = product_price if not is_pl else product_price * current_rate if current_rate > 0 else product_price
-
     price_info = get_price_info(product_price, username)
     effective_points = get_user_effective_points(username)
     multiplier = get_price_multiplier(username)
-
     if is_daifu:
         orders[order_id] = {
             'order_id': order_id,
@@ -7216,7 +6366,6 @@ def create_order(username, product_name, product_price, payment_method, product_
             'discount_amount': price_info['discount_amount'],
             'discount_type': price_info['discount_type']
         }
-
     save_orders()
     return order_id
 
@@ -7224,11 +6373,9 @@ def create_order_with_price(username, product_name, product_price, payment_metho
     order_id = generate_order_id(product_type)
     anti_fake_code = generate_anti_fake_code()
     product_number = get_product_number(product_type)
-
     price_info = get_price_info(product_price, username)
     effective_points = get_user_effective_points(username)
     multiplier = get_price_multiplier(username)
-
     orders[order_id] = {
         'order_id': order_id,
         'username': username,
@@ -7273,35 +6420,26 @@ def deliver_order(order_id):
     order = orders.get(order_id)
     if not order or order.get('status') != 'paid':
         return False
-
     product_type = order.get('product_type')
     username = order.get('username')
     quantity = order.get('quantity', 1)
-
     if not username or username not in users:
         return False
-
     if product_type == 'gateway':
         gateway_card_type = order.get('gateway_card_type')
         if not gateway_card_type:
             return False
-
         cleanup_expired_gateway_cards()
-
         active_card = get_user_active_card(username)
         if active_card:
             return False
-
         if not check_gateway_stock(gateway_card_type):
             return False
-
         if not consume_gateway_stock(gateway_card_type):
             return False
-
         card_key = generate_gateway_key()
         expire_at = get_card_expire_time(gateway_card_type)
         price = order.get('product_price', 0)
-
         gateway_cards[username] = {
             'username': username,
             'type': gateway_card_type,
@@ -7312,20 +6450,15 @@ def deliver_order(order_id):
             'used': False
         }
         save_gateway_cards()
-
         order['delivered'] = True
         order['delivered_code'] = card_key
         order['delivered_codes'] = [card_key]
         order['delivered_quantity'] = 1
         save_orders()
         return True
-
     product_type_map = {
-        'reset': {'type': 'reset_code', 'generate': generate_reset_code, 'title': '重置密码卡密'},
         'point': {'type': 'point_code', 'generate': generate_point_code, 'title': '普通积分卡密'},
         'premium_point': {'type': 'premium_point_code', 'generate': generate_premium_point_code, 'title': '高级积分卡密'},
-        'boost': {'type': 'boost_code', 'generate': generate_boost_code, 'title': '积分加成卡密'},
-        'cancellation': {'type': 'cancellation_code', 'generate': generate_cancellation_code, 'title': '注销卡密'},
         'special_point': {'type': 'special_point_code', 'generate': generate_special_point_code, 'title': '特殊积分卡密'},
         'makeup': {'type': 'makeup_code', 'generate': generate_makeup_code, 'title': '补签卡'},
         'gamblers': {'type': 'gamblers_code', 'generate': generate_gamblers_code, 'title': '赌神积分卡密'},
@@ -7333,26 +6466,14 @@ def deliver_order(order_id):
         'plcard': {'type': 'plcard_code', 'generate': generate_plcard_code, 'title': '普通PL随机卡'},
         'premium_boost': {'type': 'premium_boost_code', 'generate': generate_premium_boost_code, 'title': '高级加成卡'}
     }
-
     if product_type not in product_type_map:
         return False
-
     product_info = product_type_map[product_type]
-
-    if product_type == 'cancellation':
-        if quantity > 1:
-            return False
-        if users[username].get('cancellationCodePurchased', False):
-            return False
-        users[username]['cancellationCodePurchased'] = True
-        save_users()
-
     if product_type == 'makeup':
         user_data = users.get(username, {})
         makeup_used_count = user_data.get('makeup_code_used_count', 0)
         if makeup_used_count + quantity > 3:
             return False
-
     if product_type == 'gamblers':
         user_data = users.get(username, {})
         today = datetime.now().strftime('%Y-%m-%d')
@@ -7368,7 +6489,6 @@ def deliver_order(order_id):
         user_data['gamblers_code_purchase_count'] = purchase_count + quantity
         user_data['last_gamblers_purchase_date'] = today
         save_users()
-
     if product_type == 'box':
         user_data = users.get(username, {})
         today = datetime.now().strftime('%Y-%m-%d')
@@ -7384,7 +6504,6 @@ def deliver_order(order_id):
         user_data['box_code_purchase_count'] = purchase_count + quantity
         user_data['last_box_purchase_date'] = today
         save_users()
-
     if product_type == 'plcard':
         user_data = users.get(username, {})
         today = datetime.now().strftime('%Y-%m-%d')
@@ -7400,12 +6519,10 @@ def deliver_order(order_id):
         user_data['plcard_code_purchase_count'] = purchase_count + quantity
         user_data['last_plcard_purchase_date'] = today
         save_users()
-
     generated_codes = []
     for _ in range(quantity):
         code = product_info['generate']()
         generated_codes.append(code)
-
     if quantity == 1:
         mail_attachment_id = f"mail_{int(time.time()*1000)}_{random.randint(1000,9999)}"
         mail_attachments[mail_attachment_id] = {
@@ -7447,7 +6564,6 @@ def deliver_order(order_id):
             'is_batch': True
         }
         save_mail_attachments()
-
     order['delivered'] = True
     order['delivered_code'] = generated_codes[0] if len(generated_codes) == 1 else generated_codes
     order['delivered_codes'] = generated_codes
@@ -7460,19 +6576,13 @@ def deliver_order_to_user(order_id, target_username):
     order = orders.get(order_id)
     if not order or order.get('status') != 'paid':
         return False
-
     product_type = order.get('product_type')
     quantity = order.get('quantity', 1)
-
     if not target_username or target_username not in users:
         return False
-
     product_type_map = {
-        'reset': {'type': 'reset_code', 'generate': generate_reset_code, 'title': '重置密码卡密'},
         'point': {'type': 'point_code', 'generate': generate_point_code, 'title': '普通积分卡密'},
         'premium_point': {'type': 'premium_point_code', 'generate': generate_premium_point_code, 'title': '高级积分卡密'},
-        'boost': {'type': 'boost_code', 'generate': generate_boost_code, 'title': '积分加成卡密'},
-        'cancellation': {'type': 'cancellation_code', 'generate': generate_cancellation_code, 'title': '注销卡密'},
         'special_point': {'type': 'special_point_code', 'generate': generate_special_point_code, 'title': '特殊积分卡密'},
         'makeup': {'type': 'makeup_code', 'generate': generate_makeup_code, 'title': '补签卡'},
         'gamblers': {'type': 'gamblers_code', 'generate': generate_gamblers_code, 'title': '赌神积分卡密'},
@@ -7480,17 +6590,13 @@ def deliver_order_to_user(order_id, target_username):
         'plcard': {'type': 'plcard_code', 'generate': generate_plcard_code, 'title': '普通PL随机卡'},
         'premium_boost': {'type': 'premium_boost_code', 'generate': generate_premium_boost_code, 'title': '高级加成卡'}
     }
-
     if product_type not in product_type_map:
         return False
-
     product_info = product_type_map[product_type]
     generated_codes = []
-
     for _ in range(quantity):
         code = product_info['generate']()
         generated_codes.append(code)
-
     if quantity == 1:
         mail_attachment_id = f"mail_{int(time.time()*1000)}_{random.randint(1000,9999)}"
         mail_attachments[mail_attachment_id] = {
@@ -7534,7 +6640,6 @@ def deliver_order_to_user(order_id, target_username):
             'daifu_payer': order.get('payer', '未知')
         }
         save_mail_attachments()
-
     order['delivered'] = True
     order['delivered_code'] = generated_codes[0] if len(generated_codes) == 1 else generated_codes
     order['delivered_codes'] = generated_codes
@@ -7581,18 +6686,13 @@ def create_order_api():
     payment_method = data.get('payment_method', 'points')
     product_id = data.get('product_id', '')
     product_type = data.get('product_type', '')
-
     if not product_name or product_price <= 0:
         return jsonify({'error': '商品信息不完整'}), 400
-
     if payment_method not in ['points', 'pl']:
         return jsonify({'error': '不支持的支付方式'}), 400
-
     if not check_user_code_limit(username)[0]:
         return jsonify({'error': '背包卡密已达上限(20/20)，请先使用或回收部分卡密'}), 400
-
     final_price = get_final_price(product_price, username)
-
     order_id = create_order_with_price(
         username,
         product_name,
@@ -7603,7 +6703,6 @@ def create_order_api():
         points_price=final_price,
         original_price=product_price
     )
-
     return jsonify({
         'success': True,
         'order_id': order_id,
@@ -7617,12 +6716,9 @@ def get_order_api(order_id):
     username = session['user']['username']
     cleanup_all_expired_data()
     order = get_order(order_id)
-
     if not order:
         return jsonify({'error': '订单不存在'}), 400
-
     is_daifu = order.get('is_daifu', False)
-
     if is_daifu:
         if order.get('daifu_status') == 'paid':
             if order.get('username') != username and order.get('owner') != username:
@@ -7630,21 +6726,17 @@ def get_order_api(order_id):
     else:
         if order.get('username') != username:
             return jsonify({'error': '无权查看此订单'}), 403
-
     current_rate = get_current_pl_rate()
     is_pl = order.get('payment_method') == 'pl' or order.get('order_type') == 'pl_transfer'
     is_gateway = order.get('order_type') == 'gateway'
-
     user_data = users.get(username, {})
     main_points = user_data.get('totalPoints', 0)
     fund_balance = get_user_fund_balance(username)
     total_available_points = main_points + fund_balance
     effective_points = get_user_effective_points(username)
     current_multiplier = get_price_multiplier(username)
-
     next_update = (int(time.time()) // PL_FLUCTUATION_INTERVAL + 1) * PL_FLUCTUATION_INTERVAL
     next_update_in = max(0, next_update - int(time.time()))
-
     if is_pl:
         points_price = order.get('points_price', order.get('product_price', 0) * current_rate if current_rate > 0 else order.get('product_price', 0))
         order['points_price'] = points_price
@@ -7654,16 +6746,13 @@ def get_order_api(order_id):
     else:
         order['product_price_points'] = order.get('product_price', 0)
         order['points_price'] = order.get('product_price', 0)
-
     if order.get('delivered_codes'):
         order['delivered_codes'] = order.get('delivered_codes')
     elif order.get('delivered_code'):
         order['delivered_codes'] = [order.get('delivered_code')]
-
     if is_gateway:
         order['is_gateway'] = True
         order['gateway_card_type'] = order.get('gateway_card_type', '')
-
     used_coupon_types = set()
     if order.get('used_coupon_ids'):
         for cid in order.get('used_coupon_ids', []):
@@ -7672,7 +6761,6 @@ def get_order_api(order_id):
                 coupon_type = coupon.get('type')
                 if coupon_type:
                     used_coupon_types.add(coupon_type)
-
     def is_product_match(coupon_product_id, order_product_id, order_product_type):
         if not coupon_product_id:
             return False
@@ -7687,7 +6775,6 @@ def get_order_api(order_id):
             coupon_product_type == order_product_type or
             coupon_product_type == order_product_id
         )
-
     available_coupons = []
     for cid, coupon in user_coupons.items():
         if coupon.get('username') == username and not coupon.get('used', False) and coupon.get('expire_at', 0) > int(time.time() * 1000):
@@ -7738,12 +6825,10 @@ def get_order_api(order_id):
                         'expire_at': coupon.get('expire_at', 0),
                         'description': coupon.get('description', '')
                     })
-
     created_at = order.get('created_at', 0)
     is_expired = False
     if order.get('status') == 'pending' and int(time.time() * 1000) - created_at > 300000:
         is_expired = True
-
     return jsonify({
         'order': order,
         'has_pay_password': has_pay_password(username),
@@ -7764,10 +6849,8 @@ def get_order_api(order_id):
 def get_price_info_api():
     username = session['user']['username']
     base_price = request.args.get('base_price', 0, type=float)
-
     effective_points = get_user_effective_points(username)
     multiplier = get_price_multiplier(username)
-
     result = {
         'effective_points': effective_points,
         'multiplier': multiplier,
@@ -7779,12 +6862,10 @@ def get_price_info_api():
             {'threshold': 500000, 'multiplier': 1.90}
         ]
     }
-
     if base_price > 0:
         result['base_price'] = base_price
         result['final_price'] = get_final_price(base_price, username)
         result['price_info'] = get_price_info(base_price, username)
-
     return jsonify(result)
 
 @app.route('/api/coupons/list', methods=['GET'])
@@ -7792,7 +6873,6 @@ def get_price_info_api():
 def get_user_coupons():
     username = session['user']['username']
     cleanup_all_expired_data()
-
     coupon_list = []
     for cid, coupon in user_coupons.items():
         if coupon.get('username') == username and not coupon.get('used', False):
@@ -7803,9 +6883,6 @@ def get_user_coupons():
                 display_desc = f'指定{product_label}减{coupon.get("discount", 0)}'
             elif coupon.get('type') == 'pl_discount':
                 display_desc = f'PL立减{coupon.get("discount", 0)}PL'
-            elif coupon.get('type') == 'gamblers_specific':
-                product_label = get_product_type_label(coupon.get('product_id', ''))
-                display_desc = f'指定{product_label}减{coupon.get("discount", 0)}'
             coupon_list.append({
                 'id': cid,
                 'type': coupon.get('type', 'full_reduction'),
@@ -7818,7 +6895,6 @@ def get_user_coupons():
                 'created_at': coupon.get('created_at', 0),
                 'description': display_desc or coupon.get('description', '')
             })
-
     coupon_list.sort(key=lambda x: (x.get('used', False), x.get('expire_at', 0)))
     return jsonify({'coupons': coupon_list})
 
@@ -7829,20 +6905,16 @@ def get_user_coupons():
 def generate_captcha():
     import uuid
     import io
-
     try:
         from PIL import Image, ImageDraw, ImageFont
     except ImportError:
         return jsonify({'error': 'PIL not installed'}), 500
-
     captcha_id = str(uuid.uuid4())
     username = session['user']['username']
     data = request.get_json() or {}
     order_id = data.get('order_id', '')
-
     chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
     code = ''.join(random.choice(chars) for _ in range(6))
-
     captcha_data = load_captcha_storage()
     captcha_data[captcha_id] = {
         'code': code,
@@ -7851,13 +6923,10 @@ def generate_captcha():
         'order_id': order_id
     }
     save_captcha_storage(captcha_data)
-
     width, height = 400, 160
     image = Image.new('RGB', (width, height), (11, 14, 26))
     draw = ImageDraw.Draw(image)
-
     colors = [(102, 126, 234), (124, 140, 255), (167, 139, 250), (74, 222, 128), (247, 201, 72), (248, 113, 113)]
-
     font_size = 30
     font = None
     font_paths = [
@@ -7874,14 +6943,12 @@ def generate_captcha():
         '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf',
         '/usr/share/fonts/truetype/ubuntu/Ubuntu-B.ttf'
     ]
-
     for path in font_paths:
         try:
             font = ImageFont.truetype(path, font_size)
             break
         except Exception:
             continue
-
     if font is None:
         try:
             import subprocess
@@ -7896,19 +6963,16 @@ def generate_captcha():
                             continue
         except Exception:
             pass
-
     if font is None:
         try:
             font = ImageFont.truetype('/system/fonts/Roboto-Bold.ttf', font_size)
         except Exception:
             pass
-
     if font is None:
         try:
             font = ImageFont.truetype('arial.ttf', font_size)
         except Exception:
             pass
-
     if font is None:
         try:
             font = ImageFont.load_default()
@@ -7916,7 +6980,6 @@ def generate_captcha():
         except Exception:
             font = ImageFont.load_default()
             font_size = 30
-
     for i, char in enumerate(code):
         x = 50 + i * 58 + random.randint(-6, 6)
         y = 80 + random.randint(-14, 14)
@@ -7925,30 +6988,25 @@ def generate_captcha():
             draw.text((x, y), char, fill=color, font=font, anchor='mm')
         except Exception:
             draw.text((x, y), char, fill=color)
-
     for _ in range(15):
         x1 = random.randint(0, width)
         y1 = random.randint(0, height)
         x2 = random.randint(0, width)
         y2 = random.randint(0, height)
         draw.line([(x1, y1), (x2, y2)], fill=(124, 140, 255, 60), width=2)
-
     for _ in range(80):
         x = random.randint(0, width)
         y = random.randint(0, height)
         draw.point((x, y), fill=(124, 140, 255, random.randint(30, 70)))
-
     img_byte_arr = io.BytesIO()
     image.save(img_byte_arr, format='PNG')
     img_byte_arr = img_byte_arr.getvalue()
-
     response = make_response(img_byte_arr)
     response.headers['Content-Type'] = 'image/png'
     response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '0'
     response.headers['X-Captcha-Id'] = captcha_id
-
     return response
 
 @app.route('/api/order/<order_id>/pay', methods=['POST'])
@@ -7963,51 +7021,38 @@ def pay_order_api(order_id):
     coupon_ids = data.get('coupon_ids', [])
     captcha_id = data.get('captcha_id', '')
     captcha_code = data.get('captcha_code', '').strip().upper()
-
     if not pay_password:
         return jsonify({'error': '请输入支付密码'}), 400
-
     if not captcha_id or not captcha_code:
         return jsonify({'error': '请完成图形验证码验证'}), 400
-
     captcha_data = load_captcha_storage()
-
     if captcha_id not in captcha_data:
         return jsonify({'error': '验证码已过期，请刷新重试'}), 400
-
     stored = captcha_data[captcha_id]
-
     if stored.get('username') != username:
         cleanup_captcha_by_id(captcha_id)
         cleanup_captcha_for_order(order_id)
         return jsonify({'error': '验证码不属于当前用户'}), 400
-
     if stored.get('order_id') and stored.get('order_id') != order_id:
         cleanup_captcha_by_id(captcha_id)
         cleanup_captcha_for_order(order_id)
         return jsonify({'error': '验证码与订单不匹配，请重新获取'}), 400
-
     if int(time.time()) - stored.get('created_at', 0) > 300:
         cleanup_captcha_by_id(captcha_id)
         cleanup_captcha_for_order(order_id)
         return jsonify({'error': '验证码已过期（超过5分钟），请刷新重试'}), 400
-
     if captcha_code != stored.get('code', ''):
         cleanup_captcha_by_id(captcha_id)
         cleanup_captcha_for_order(order_id)
         return jsonify({'error': '验证码错误，请重新输入'}), 400
-
     cleanup_captcha_by_id(captcha_id)
     cleanup_captcha_for_order(order_id)
-
     cleanup_all_expired_data()
     order = get_order(order_id)
     if not order:
         return jsonify({'error': '订单不存在'}), 400
-
     is_daifu = order.get('is_daifu', False)
     owner = order.get('owner', order.get('username'))
-
     if is_daifu:
         if username == owner:
             return jsonify({'error': '这是代付订单，请让朋友扫码支付，您不能自己支付'}), 400
@@ -8018,34 +7063,27 @@ def pay_order_api(order_id):
     else:
         if order.get('username') != username:
             return jsonify({'error': '无权支付此订单'}), 403
-
     if order.get('status') != 'pending':
         return jsonify({'error': '订单状态异常'}), 400
-
     if (int(time.time() * 1000) - order.get('created_at', 0)) > 300000:
         if order_id in orders:
             del orders[order_id]
             save_orders()
         return jsonify({'error': '订单已过期（超过5分钟），请重新下单'}), 400
-
     if not verify_pay_password(username, pay_password):
         return jsonify({'error': '支付密码错误'}), 400
-
     payment_method = order.get('payment_method')
     order_type = order.get('order_type', 'mall')
     current_rate = get_current_pl_rate()
     is_pl = payment_method == 'pl' or order_type == 'pl_transfer'
-
     points_price = order.get('points_price', order.get('product_price', 0))
     if is_pl:
         pl_price = order.get('product_price', 0)
     else:
         pl_price = points_price / current_rate if current_rate > 0 else points_price
-
     used_coupon_ids = []
     applied_discount_points = 0
     applied_discount_pl = 0
-
     def is_product_match(coupon_product_id, order_product_id, order_product_type):
         if not coupon_product_id:
             return False
@@ -8060,7 +7098,6 @@ def pay_order_api(order_id):
             coupon_product_type == order_product_type or
             coupon_product_type == order_product_id
         )
-
     if coupon_ids:
         used_coupons = []
         for cid in coupon_ids:
@@ -8071,7 +7108,6 @@ def pay_order_api(order_id):
                     discount = coupon.get('discount', 0)
                     order_product_id = order.get('product_id', '')
                     order_product_type = order.get('product_type', '')
-
                     if coupon_type == 'pl_discount':
                         if is_pl and discount < pl_price:
                             used_coupons.append((cid, discount, 'pl'))
@@ -8088,20 +7124,16 @@ def pay_order_api(order_id):
                         if is_product_match(coupon_product_id, order_product_id, order_product_type):
                             used_coupons.append((cid, discount, 'points'))
                             applied_discount_points += discount
-
         if used_coupons:
             for cid, discount, discount_type in used_coupons:
                 user_coupons[cid]['used'] = True
                 used_coupon_ids.append(cid)
             save_user_coupons()
-
             if 'original_price' not in order:
                 order['original_price'] = pl_price if is_pl else points_price
-
             order['applied_coupon_discount_points'] = applied_discount_points
             order['applied_coupon_discount_pl'] = applied_discount_pl
             order['used_coupon_ids'] = used_coupon_ids
-
             if is_pl:
                 points_discount_pl = applied_discount_points / current_rate if current_rate > 0 else 0
                 total_discount_pl = applied_discount_pl + points_discount_pl
@@ -8114,22 +7146,16 @@ def pay_order_api(order_id):
                 final_points_price = max(0, points_price - total_discount_points)
                 order['product_price'] = final_points_price
                 order['final_price'] = final_points_price
-
             save_orders()
-
     final_price = order.get('product_price', 0)
-
     if order_type == 'pl_transfer':
         target_username = order.get('transfer_target')
         original_transfer_amount = order.get('transfer_amount', final_price)
-
         current_pl = get_user_pl_balance(username)
         if current_pl < final_price:
             return jsonify({'error': f'PL余额不足，需要{final_price:.4f}PL，当前余额{current_pl:.4f}PL'}), 400
-
         update_user_pl_balance(username, -final_price, 'pl_transfer_out', f'to_{target_username}')
         update_user_pl_balance(target_username, original_transfer_amount, 'pl_transfer_in', f'from_{username}')
-
         discount_amount = round(original_transfer_amount - final_price, 4)
         transfer_id = f"{int(time.time() * 1000)}_{random.randint(1000, 9999)}"
         pl_transfers[transfer_id] = {
@@ -8166,21 +7192,16 @@ def pay_order_api(order_id):
             'original_amount': original_transfer_amount,
             'discount_amount': discount_amount
         })
-
     if order_type == 'gateway':
         gateway_card_type = order.get('gateway_card_type')
         if not gateway_card_type:
             return jsonify({'error': '网关卡密类型无效'}), 400
-
         cleanup_expired_gateway_cards()
-
         active_card = get_user_active_card(username)
         if active_card:
             return jsonify({'error': '您已拥有有效的通行卡密，无需重复购买'}), 400
-
         if not check_gateway_stock(gateway_card_type):
             return jsonify({'error': f'{gateway_card_type}卡库存已用完，请明日再试'}), 400
-
         if payment_method == 'points':
             if username not in users:
                 return jsonify({'error': '用户不存在'}), 400
@@ -8190,11 +7211,9 @@ def pay_order_api(order_id):
             total_available = total_points + fund_balance
             if total_available < final_price:
                 return jsonify({'error': f'积分不足（含理财账户），需要{final_price:.2f}积分，当前总可用{total_available:.2f}积分'}), 400
-
             remaining_to_deduct = final_price
             deducted_from_fund = 0
             deducted_from_main = 0
-
             if total_points >= remaining_to_deduct:
                 user_data['totalPoints'] = round(total_points - remaining_to_deduct, 2)
                 deducted_from_main = remaining_to_deduct
@@ -8211,13 +7230,10 @@ def pay_order_api(order_id):
                     fund_data[username]['balance'] = 0
                     deducted_from_fund = fund_balance
                     remaining_to_deduct = remaining_to_deduct - fund_balance
-
             save_users()
             save_fund_data()
-
             system_fee = round(final_price * 0.2, 2)
             add_system_total_points(system_fee)
-
         elif payment_method == 'pl':
             current_pl = get_user_pl_balance(username)
             if current_pl < final_price:
@@ -8225,16 +7241,12 @@ def pay_order_api(order_id):
             update_user_pl_balance(username, -final_price, 'gateway_purchase', order_id)
         else:
             return jsonify({'error': '不支持的支付方式'}), 400
-
         update_order_status(order_id, 'paid', int(time.time() * 1000))
-
         if not consume_gateway_stock(gateway_card_type):
             return jsonify({'error': '库存已被抢完，请稍后重试'}), 400
-
         card_key = generate_gateway_key()
         expire_at = get_card_expire_time(gateway_card_type)
         price = order.get('product_price', 0)
-
         gateway_cards[username] = {
             'username': username,
             'type': gateway_card_type,
@@ -8245,7 +7257,6 @@ def pay_order_api(order_id):
             'used': False
         }
         save_gateway_cards()
-
         order['delivered'] = True
         order['delivered_code'] = card_key
         order['delivered_codes'] = [card_key]
@@ -8253,7 +7264,6 @@ def pay_order_api(order_id):
         save_orders()
         cleanup_captcha_for_order(order_id)
         invalidate_user_caches(username)
-
         return jsonify({
             'success': True,
             'message': f'通行卡密购买成功！卡密: {card_key}（20%即{system_fee:.2f}积分已归入系统池）',
@@ -8270,23 +7280,18 @@ def pay_order_api(order_id):
             'expire_at': expire_at,
             'system_fee': system_fee
         })
-
     if payment_method == 'points':
         if username not in users:
             return jsonify({'error': '用户不存在'}), 400
-
         user_data = users[username]
         total_points = user_data.get('totalPoints', 0)
         fund_balance = get_user_fund_balance(username)
         total_available = total_points + fund_balance
-
         if total_available < final_price:
             return jsonify({'error': f'积分不足（含理财账户），需要{final_price:.2f}积分，当前总可用{total_available:.2f}积分（原账户{total_points:.2f}，理财账户{fund_balance:.2f}）'}), 400
-
         remaining_to_deduct = final_price
         deducted_from_fund = 0
         deducted_from_main = 0
-
         if total_points >= remaining_to_deduct:
             user_data['totalPoints'] = round(total_points - remaining_to_deduct, 2)
             deducted_from_main = remaining_to_deduct
@@ -8295,7 +7300,6 @@ def pay_order_api(order_id):
             deducted_from_main = total_points
             remaining_to_deduct = remaining_to_deduct - total_points
             user_data['totalPoints'] = 0
-
             if fund_balance >= remaining_to_deduct:
                 fund_data[username]['balance'] = round(fund_balance - remaining_to_deduct, 2)
                 deducted_from_fund = remaining_to_deduct
@@ -8304,15 +7308,11 @@ def pay_order_api(order_id):
                 fund_data[username]['balance'] = 0
                 deducted_from_fund = fund_balance
                 remaining_to_deduct = remaining_to_deduct - fund_balance
-
         save_users()
         save_fund_data()
-
         system_fee = round(final_price * 0.2, 2)
         add_system_total_points(system_fee)
-
         update_order_status(order_id, 'paid', int(time.time() * 1000))
-
         fund_record_id = f"fund_pay_{int(time.time()*1000)}_{random.randint(1000,9999)}"
         if deducted_from_fund > 0:
             fund_history[fund_record_id] = {
@@ -8323,7 +7323,6 @@ def pay_order_api(order_id):
                 'timestamp': int(time.time() * 1000)
             }
             save_fund_history()
-
         if is_daifu:
             if deliver_order_to_user(order_id, owner):
                 order['daifu_status'] = 'paid'
@@ -8386,14 +7385,12 @@ def pay_order_api(order_id):
                 save_fund_data()
                 deduct_system_total_points(system_fee)
                 return jsonify({'error': '发货失败，请稍后重试'}), 500
-
     elif payment_method == 'pl':
         current_pl = get_user_pl_balance(username)
         if current_pl < final_price:
             return jsonify({'error': f'PL余额不足，需要{final_price:.4f}PL，当前{current_pl:.4f}PL'}), 400
         update_user_pl_balance(username, -final_price, 'mall_purchase', order_id)
         update_order_status(order_id, 'paid', int(time.time() * 1000))
-
         if is_daifu:
             if deliver_order_to_user(order_id, owner):
                 order['daifu_status'] = 'paid'
@@ -8442,7 +7439,6 @@ def pay_order_api(order_id):
             else:
                 update_user_pl_balance(username, final_price, 'mall_purchase_refund', order_id)
                 return jsonify({'error': '发货失败，请稍后重试'}), 500
-
     return jsonify({'error': '不支持的支付方式'}), 400
 
 @app.route('/api/order/<order_id>/status', methods=['GET'])
@@ -8450,17 +7446,13 @@ def pay_order_api(order_id):
 def get_order_status_api(order_id):
     username = session['user']['username']
     order = get_order(order_id)
-
     if not order:
         return jsonify({'error': '订单不存在'}), 400
-
     if order.get('username') != username:
         return jsonify({'error': '无权查看此订单'}), 403
-
     current_time = int(time.time() * 1000)
     created_at = order.get('created_at', 0)
     is_expired = order.get('status') == 'pending' and (current_time - created_at) > 14400000
-
     return jsonify({
         'order_id': order_id,
         'status': order.get('status', 'pending'),
@@ -8476,12 +7468,9 @@ def delete_captcha():
     data = request.get_json()
     captcha_id = data.get('captcha_id', '')
     username = session['user']['username']
-
     if not captcha_id:
         return jsonify({'success': False, 'error': '缺少验证码ID'}), 400
-
     captcha_data = load_captcha_storage()
-
     if captcha_id in captcha_data:
         stored = captcha_data[captcha_id]
         if stored.get('username') == username:
@@ -8490,7 +7479,6 @@ def delete_captcha():
             save_captcha_storage(captcha_data)
             if order_id:
                 cleanup_captcha_for_order(order_id)
-
     return jsonify({'success': True})
 
 @app.route('/api/order/<order_id>/cancel', methods=['POST'])
@@ -8499,22 +7487,16 @@ def delete_captcha():
 def cancel_order_api(order_id):
     username = session['user']['username']
     order = get_order(order_id)
-
     if not order:
         return jsonify({'error': '订单不存在'}), 400
-
     if order.get('username') != username:
         return jsonify({'error': '无权操作此订单'}), 403
-
     if order.get('status') != 'pending':
         return jsonify({'error': '订单状态异常，无法取消'}), 400
-
     cleanup_captcha_for_order(order_id)
-
     if order_id in orders:
         del orders[order_id]
         save_orders()
-
     return jsonify({'success': True, 'message': '订单已取消'})
 
 @app.route('/api/order/<order_id>/set-password', methods=['POST'])
@@ -8526,26 +7508,19 @@ def set_pay_password_api(order_id):
     data = request.get_json()
     new_password = data.get('pay_password', '')
     qq_number = data.get('qq_number', '').strip()
-
     if len(new_password) != 6 or not new_password.isdigit():
         return jsonify({'error': '支付密码必须为6位数字'}), 400
-
     if has_pay_password(username):
         return jsonify({'error': '您已设置过支付密码，请使用已有密码'}), 400
-
     user_data = users.get(username, {})
     bound_qq = user_data.get('qq_number', '')
-
     if not bound_qq:
         return jsonify({'error': '您尚未绑定QQ号，请先在玩家中心绑定QQ号后再设置支付密码'}), 400
-
     if qq_number != bound_qq:
         return jsonify({'error': 'QQ号验证失败，请输入绑定的QQ号'}), 400
-
     order = get_order(order_id)
     if not order or order.get('username') != username:
         return jsonify({'error': '订单无效'}), 400
-
     if set_pay_password(username, new_password):
         return jsonify({
             'success': True,
@@ -8561,80 +7536,75 @@ def check_pay_password_api():
         'has_pay_password': has_pay_password(username)
     })
 
-@app.route('/api/debug/clear-pay-password', methods=['POST'])
+@app.route('/api/pay-password/send-reset-code', methods=['POST'])
 @csrf_protect
+@limiter.limit(RATE_LIMITS['pay_password_reset'])
 @login_required
-def debug_clear_pay_password():
+def send_pay_password_reset_code():
+    username = session['user']['username']
+    user_data = users.get(username, {})
+    if not user_data:
+        return jsonify({'error': '用户不存在'}), 400
+    user_email = user_data.get('email', '')
+    if not user_email:
+        return jsonify({'error': '您尚未绑定邮箱，无法通过邮箱重置支付密码'}), 400
+    if not user_data.get('email_verified', False):
+        return jsonify({'error': '您的邮箱尚未验证，请先完成邮箱验证'}), 400
+    success, code, message = email_service.send_verification_code_with_limit(
+        user_email, username, '重置支付密码'
+    )
+    if not success:
+        return jsonify({'error': message}), 500
+    cleanup_expired_pay_password_reset_tokens()
+    token_id = f"ppr_{int(time.time()*1000)}_{random.randint(1000,9999)}"
+    pay_password_reset_tokens[token_id] = {
+        'token_id': token_id,
+        'username': username,
+        'email': user_email,
+        'created_at': int(time.time()),
+        'used': False,
+        'verified': False
+    }
+    save_pay_password_reset_tokens()
+    return jsonify({
+        'success': True,
+        'message': '验证码已发送至您的邮箱，请查收',
+        'token_id': token_id,
+        'expires_in': PAY_PASSWORD_RESET_TTL
+    })
+
+@app.route('/api/pay-password/reset-by-email', methods=['POST'])
+@csrf_protect
+@limiter.limit(RATE_LIMITS['pay_password_reset'])
+@login_required
+def reset_pay_password_by_email():
     username = session['user']['username']
     data = request.get_json()
-    qq_number = data.get('qq_number', '').strip()
-    password = data.get('password', '')
-
+    verification_code = data.get('verification_code', '').strip()
+    new_pay_password = data.get('new_pay_password', '')
+    if not verification_code:
+        return jsonify({'error': '请输入邮箱验证码'}), 400
+    if len(new_pay_password) != 6 or not new_pay_password.isdigit():
+        return jsonify({'error': '支付密码必须为6位数字'}), 400
     user_data = users.get(username, {})
-    bound_qq = user_data.get('qq_number', '')
-
-    if not bound_qq:
-        return jsonify({'success': False, 'message': '您尚未绑定QQ号'}), 400
-
-    if qq_number != bound_qq:
-        return jsonify({'success': False, 'message': 'QQ号验证失败，请输入绑定的QQ号'}), 400
-
-    if not bcrypt.check_password_hash(user_data['password'], password):
-        return jsonify({'success': False, 'message': '登录密码错误'}), 400
-
-    current_points = user_data.get('totalPoints', 0)
-
-    if current_points < 15:
-        return jsonify({'success': False, 'message': '积分不足，清除支付密码需要15积分'}), 400
-
-    if username not in user_pay_passwords:
-        return jsonify({'success': False, 'message': '用户没有支付密码记录'}), 400
-
-    del user_pay_passwords[username]
-    save_user_pay_passwords()
-
-    user_data['totalPoints'] = round(current_points - 15, 2)
-    save_users()
-
-    add_system_total_points(15)
-
-    return jsonify({
-        'success': True,
-        'message': '已清除用户 ' + username + ' 的支付密码，消耗15积分（已归入系统总积分）'
-    })
-
-@app.route('/api/buy-reset-code', methods=['POST'])
-@csrf_protect
-@mall_access_required
-@identity_required
-def buy_reset_code():
-    start_time = time.time()
-    username = session['user']['username']
-    user_data = users.get(username, {})
-
-    original_price = 8
-    final_price = get_discounted_price(original_price, username)
-
-    use_pl = request.get_json().get('use_pl', False)
-    payment_method = 'pl' if use_pl else 'points'
-
-    can_add, msg = check_user_code_limit(username)
-    if not can_add:
-        return jsonify({'error': msg}), 400
-
-    order_id = create_order(username, '重置密码卡密', final_price, payment_method, 'reset_code', 'reset')
-
-    response_time = int((time.time() - start_time) * 1000)
-    return jsonify({
-        'success': True,
-        'order_id': order_id,
-        'payment_method': payment_method,
-        'redirect_url': f'/pay/{order_id}',
-        'originalPrice': original_price,
-        'finalPrice': final_price,
-        'savedPoints': original_price - final_price if is_new_user(username) else 0,
-        'responseTime': response_time
-    })
+    if not user_data:
+        return jsonify({'error': '用户不存在'}), 400
+    user_email = user_data.get('email', '')
+    if not user_email:
+        return jsonify({'error': '您尚未绑定邮箱'}), 400
+    success, message = email_service.verify_code(user_email, verification_code)
+    if not success:
+        return jsonify({'error': message}), 400
+    if set_pay_password(username, new_pay_password):
+        for tid, token in list(pay_password_reset_tokens.items()):
+            if token.get('username') == username:
+                del pay_password_reset_tokens[tid]
+        save_pay_password_reset_tokens()
+        return jsonify({
+            'success': True,
+            'message': '支付密码重置成功'
+        })
+    return jsonify({'error': '重置失败，请重试'}), 500
 
 @app.route('/api/buy-point-code', methods=['POST'])
 @csrf_protect
@@ -8644,19 +7614,14 @@ def buy_point_code():
     start_time = time.time()
     username = session['user']['username']
     user_data = users.get(username, {})
-
     original_price = 1.2
     final_price = get_discounted_price(original_price, username)
-
     use_pl = request.get_json().get('use_pl', False)
     payment_method = 'pl' if use_pl else 'points'
-
     can_add, msg = check_user_code_limit(username)
     if not can_add:
         return jsonify({'error': msg}), 400
-
     order_id = create_order(username, '普通积分卡密', final_price, payment_method, 'point_code', 'point')
-
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
@@ -8677,92 +7642,14 @@ def buy_premium_point_code():
     start_time = time.time()
     username = session['user']['username']
     user_data = users.get(username, {})
-
     original_price = 3.5
     final_price = get_discounted_price(original_price, username)
-
     use_pl = request.get_json().get('use_pl', False)
     payment_method = 'pl' if use_pl else 'points'
-
     can_add, msg = check_user_code_limit(username)
     if not can_add:
         return jsonify({'error': msg}), 400
-
     order_id = create_order(username, '高级积分卡密', final_price, payment_method, 'premium_point_code', 'premium_point')
-
-    response_time = int((time.time() - start_time) * 1000)
-    return jsonify({
-        'success': True,
-        'order_id': order_id,
-        'payment_method': payment_method,
-        'redirect_url': f'/pay/{order_id}',
-        'originalPrice': original_price,
-        'finalPrice': final_price,
-        'savedPoints': original_price - final_price if is_new_user(username) else 0,
-        'responseTime': response_time
-    })
-
-@app.route('/api/buy-boost-code', methods=['POST'])
-@csrf_protect
-@mall_access_required
-@identity_required
-def buy_boost_code():
-    start_time = time.time()
-    username = session['user']['username']
-    user_data = users.get(username, {})
-
-    original_price = 8.8
-    final_price = get_discounted_price(original_price, username)
-
-    use_pl = request.get_json().get('use_pl', False)
-    payment_method = 'pl' if use_pl else 'points'
-
-    can_add, msg = check_user_code_limit(username)
-    if not can_add:
-        return jsonify({'error': msg}), 400
-
-    order_id = create_order(username, '积分加成卡', final_price, payment_method, 'boost_code', 'boost')
-
-    response_time = int((time.time() - start_time) * 1000)
-    return jsonify({
-        'success': True,
-        'order_id': order_id,
-        'payment_method': payment_method,
-        'redirect_url': f'/pay/{order_id}',
-        'originalPrice': original_price,
-        'finalPrice': final_price,
-        'savedPoints': original_price - final_price if is_new_user(username) else 0,
-        'responseTime': response_time
-    })
-
-@app.route('/api/buy-cancellation-code', methods=['POST'])
-@csrf_protect
-@mall_access_required
-@identity_required
-def buy_cancellation_code():
-    start_time = time.time()
-    username = session['user']['username']
-    user_data = users.get(username, {})
-
-    if user_data.get('cancellationCodePurchased', False):
-        return jsonify({'error': '每个账号仅限购买一次注销卡密'}), 400
-
-    consecutive_days = user_data.get('attendanceConsecutiveDays', 0)
-    if consecutive_days < 4:
-        return jsonify({'error': f'需要连续签到4天才可购买注销卡密，当前连续签到{consecutive_days}天'}), 400
-
-    original_price = 9.9
-    final_price = get_discounted_price(original_price, username)
-
-    use_pl = request.get_json().get('use_pl', False)
-    payment_method = 'pl' if use_pl else 'points'
-
-    can_add, msg = check_user_code_limit(username)
-    if not can_add:
-        return jsonify({'error': msg}), 400
-
-    order_id = create_order(username, '注销账号卡密', final_price, payment_method, 'cancellation_code', 'cancellation')
-
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
@@ -8783,19 +7670,14 @@ def buy_special_point_code():
     start_time = time.time()
     username = session['user']['username']
     user_data = users.get(username, {})
-
     original_price = 20
     final_price = get_discounted_price(original_price, username)
-
     use_pl = request.get_json().get('use_pl', False)
     payment_method = 'pl' if use_pl else 'points'
-
     can_add, msg = check_user_code_limit(username)
     if not can_add:
         return jsonify({'error': msg}), 400
-
     order_id = create_order(username, '特殊积分卡密', final_price, payment_method, 'special_point_code', 'special_point')
-
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
@@ -8816,23 +7698,17 @@ def buy_makeup_code():
     start_time = time.time()
     username = session['user']['username']
     user_data = users.get(username, {})
-
     makeup_used_count = user_data.get('makeup_code_used_count', 0)
     if makeup_used_count >= 3:
         return jsonify({'error': '补签卡永久限购3次，您已使用完所有次数'}), 400
-
     original_price = 200
     final_price = get_discounted_price(original_price, username)
-
     use_pl = request.get_json().get('use_pl', False)
     payment_method = 'pl' if use_pl else 'points'
-
     can_add, msg = check_user_code_limit(username)
     if not can_add:
         return jsonify({'error': msg}), 400
-
     order_id = create_order(username, '补签卡', final_price, payment_method, 'makeup_code', 'makeup')
-
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
@@ -8853,32 +7729,24 @@ def buy_gamblers_code():
     start_time = time.time()
     username = session['user']['username']
     user_data = users.get(username, {})
-
     today = datetime.now().strftime('%Y-%m-%d')
     last_purchase_date = user_data.get('last_gamblers_purchase_date', '')
     purchase_count = user_data.get('gamblers_code_purchase_count', 0)
-
     if last_purchase_date != today:
         purchase_count = 0
         user_data['gamblers_code_purchase_count'] = 0
         user_data['last_gamblers_purchase_date'] = today
         save_users()
-
     if purchase_count >= 3:
         return jsonify({'error': f'赌神卡单日限购3次，今日已购买{purchase_count}次'}), 400
-
     original_price = 100
     final_price = get_discounted_price(original_price, username)
-
     use_pl = request.get_json().get('use_pl', False)
     payment_method = 'pl' if use_pl else 'points'
-
     can_add, msg = check_user_code_limit(username)
     if not can_add:
         return jsonify({'error': msg}), 400
-
     order_id = create_order(username, '赌神积分卡', final_price, payment_method, 'gamblers_code', 'gamblers')
-
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
@@ -8899,32 +7767,24 @@ def buy_box_code():
     start_time = time.time()
     username = session['user']['username']
     user_data = users.get(username, {})
-
     today = datetime.now().strftime('%Y-%m-%d')
     last_purchase_date = user_data.get('last_box_purchase_date', '')
     purchase_count = user_data.get('box_code_purchase_count', 0)
-
     if last_purchase_date != today:
         purchase_count = 0
         user_data['box_code_purchase_count'] = 0
         user_data['last_box_purchase_date'] = today
         save_users()
-
     if purchase_count >= 5:
         return jsonify({'error': f'盲盒卡单日限购5次，今日已购买{purchase_count}次'}), 400
-
     original_price = 28.8
     final_price = get_discounted_price(original_price, username)
-
     use_pl = request.get_json().get('use_pl', False)
     payment_method = 'pl' if use_pl else 'points'
-
     can_add, msg = check_user_code_limit(username)
     if not can_add:
         return jsonify({'error': msg}), 400
-
     order_id = create_order(username, '盲盒卡', final_price, payment_method, 'box_code', 'box')
-
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
@@ -8945,32 +7805,24 @@ def buy_plcard_code():
     start_time = time.time()
     username = session['user']['username']
     user_data = users.get(username, {})
-
     today = datetime.now().strftime('%Y-%m-%d')
     last_purchase_date = user_data.get('last_plcard_purchase_date', '')
     purchase_count = user_data.get('plcard_code_purchase_count', 0)
-
     if last_purchase_date != today:
         purchase_count = 0
         user_data['plcard_code_purchase_count'] = 0
         user_data['last_plcard_purchase_date'] = today
         save_users()
-
     if purchase_count >= 10:
         return jsonify({'error': f'普通PL随机卡单日限购10次，今日已购买{purchase_count}次'}), 400
-
     original_price = 35.8
     final_price = get_discounted_price(original_price, username)
-
     use_pl = request.get_json().get('use_pl', False)
     payment_method = 'pl' if use_pl else 'points'
-
     can_add, msg = check_user_code_limit(username)
     if not can_add:
         return jsonify({'error': msg}), 400
-
     order_id = create_order(username, '普通PL随机卡', final_price, payment_method, 'plcard_code', 'plcard')
-
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
@@ -8991,19 +7843,14 @@ def buy_premium_boost_code():
     start_time = time.time()
     username = session['user']['username']
     user_data = users.get(username, {})
-
     original_price = 15.6
     final_price = get_discounted_price(original_price, username)
-
     use_pl = request.get_json().get('use_pl', False)
     payment_method = 'pl' if use_pl else 'points'
-
     can_add, msg = check_user_code_limit(username)
     if not can_add:
         return jsonify({'error': msg}), 400
-
     order_id = create_order(username, '高级加成卡', final_price, payment_method, 'premium_boost_code', 'premium_boost')
-
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
@@ -9023,45 +7870,32 @@ def buy_premium_boost_code():
 def use_gamblers_code():
     start_time = time.time()
     username = session['user']['username']
-
     data = request.get_json()
     gamblers_code = data.get('gamblersCode', '').strip().upper()
-
     if not gamblers_code:
         return jsonify({'error': '请输入赌神积分卡密'}), 400
-
     cleanup_all_expired_data()
-
     code_data = gamblers_codes.get(gamblers_code)
     if not code_data:
         return jsonify({'error': '卡密无效'}), 400
-
     if code_data.get('used'):
         return jsonify({'error': '卡密已被使用'}), 400
-
     if code_data.get('recycled'):
         return jsonify({'error': '卡密已被回收'}), 400
-
     if code_data.get('username') != username:
         return jsonify({'error': '卡密不属于当前用户'}), 400
-
     current_time = int(time.time() * 1000)
     if (current_time - code_data.get('createdAt', 0)) > 86400000:
         del gamblers_codes[gamblers_code]
         save_gamblers_codes()
         return jsonify({'error': '卡密已过期（24小时有效）'}), 400
-
     points_earned = round(random.uniform(10, 102), 2)
-
     points_added = update_earned_points(username, points_earned, True)
-
     if not points_added:
         return jsonify({'error': '今日获取积分已达上限14分'}), 400
-
     del gamblers_codes[gamblers_code]
     save_gamblers_codes()
     invalidate_user_caches(username)
-
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
@@ -9076,50 +7910,38 @@ def use_gamblers_code():
 def use_box_code():
     start_time = time.time()
     username = session['user']['username']
-
     data = request.get_json()
     box_code = data.get('boxCode', '').strip().upper()
-
     if not box_code:
         return jsonify({'error': '请输入盲盒卡密'}), 400
-
     cleanup_all_expired_data()
-
     code_data = box_codes.get(box_code)
     if not code_data:
         return jsonify({'error': '盲盒卡密无效'}), 400
-
     if code_data.get('used'):
         return jsonify({'error': '盲盒卡密已被使用'}), 400
-
     if code_data.get('recycled'):
         return jsonify({'error': '盲盒卡密已被回收'}), 400
-
     if code_data.get('username') != username:
         return jsonify({'error': '盲盒卡密不属于当前用户'}), 400
-
     current_time = int(time.time() * 1000)
     if (current_time - code_data.get('createdAt', 0)) > 172800000:
         del box_codes[box_code]
         save_box_codes()
         return jsonify({'error': '盲盒卡密已过期（48小时有效）'}), 400
-
-    possible_types = ['point_code', 'premium_point_code', 'boost_code', 'special_point_code', 'gamblers_code', 'premium_boost_code', 'plcard_code']
+    possible_types = ['point_code', 'premium_point_code', 'special_point_code', 'gamblers_code', 'premium_boost_code', 'plcard_code']
     chosen_type = random.choice(possible_types)
     type_map = {
         'point_code': ('point_code', generate_point_code, '普通积分卡密', point_codes, save_point_codes),
         'plcard_code': ('plcard_code', generate_plcard_code, 'PL随机卡', plcard_codes, save_plcard_codes),
         'premium_boost_code': ('premium_boost_code', generate_premium_boost_code, '高级积分加成卡密', premium_boost_codes, save_premium_boost_codes),
         'premium_point_code': ('premium_point_code', generate_premium_point_code, '高级积分卡密', premium_point_codes, save_premium_point_codes),
-        'boost_code': ('boost_code', generate_boost_code, '积分加成卡密', boost_codes, save_boost_codes),
         'special_point_code': ('special_point_code', generate_special_point_code, '特殊积分卡密', special_point_codes, save_special_point_codes),
         'gamblers_code': ('gamblers_code', generate_gamblers_code, '赌神积分卡密', gamblers_codes, save_gamblers_codes)
     }
-
     type_info = type_map[chosen_type]
     generated_code = type_info[1]()
     title = type_info[2]
-
     mail_attachment_id = f"mail_{int(time.time()*1000)}_{random.randint(1000,9999)}"
     mail_attachments[mail_attachment_id] = {
         'id': mail_attachment_id,
@@ -9139,10 +7961,8 @@ def use_box_code():
         'is_batch': False
     }
     save_mail_attachments()
-
     del box_codes[box_code]
     save_box_codes()
-
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
@@ -9158,41 +7978,29 @@ def use_box_code():
 def use_plcard_code():
     start_time = time.time()
     username = session['user']['username']
-
     data = request.get_json()
     plcard_code = data.get('plcardCode', '').strip().upper()
-
     if not plcard_code:
         return jsonify({'error': '请输入普通PL随机卡密'}), 400
-
     cleanup_all_expired_data()
-
     code_data = plcard_codes.get(plcard_code)
     if not code_data:
         return jsonify({'error': '普通PL随机卡密无效'}), 400
-
     if code_data.get('used'):
         return jsonify({'error': '卡密已被使用'}), 400
-
     if code_data.get('recycled'):
         return jsonify({'error': '卡密已被回收'}), 400
-
     if code_data.get('username') != username:
         return jsonify({'error': '卡密不属于当前用户'}), 400
-
     current_time = int(time.time() * 1000)
     if (current_time - code_data.get('createdAt', 0)) > 86400000:
         del plcard_codes[plcard_code]
         save_plcard_codes()
         return jsonify({'error': '卡密已过期（24小时有效）'}), 400
-
     pl_amount = round(random.uniform(1, 10), 4)
-
     update_user_pl_balance(username, pl_amount, 'plcard_reward', plcard_code)
-
     del plcard_codes[plcard_code]
     save_plcard_codes()
-
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
@@ -9208,39 +8016,29 @@ def use_plcard_code():
 def use_premium_boost_code():
     start_time = time.time()
     username = session['user']['username']
-
     data = request.get_json()
     premium_boost_code = data.get('premiumBoostCode', '').strip().upper()
-
     if not premium_boost_code:
         return jsonify({'error': '请输入高级加成卡密'}), 400
-
     cleanup_all_expired_data()
-
     code_data = premium_boost_codes.get(premium_boost_code)
     if not code_data:
         return jsonify({'error': '高级加成卡密无效'}), 400
-
     if code_data.get('used'):
         return jsonify({'error': '卡密已被使用'}), 400
-
     if code_data.get('recycled'):
         return jsonify({'error': '卡密已被回收'}), 400
-
     if code_data.get('username') != username:
         return jsonify({'error': '卡密不属于当前用户'}), 400
-
     current_time = int(time.time() * 1000)
     if (current_time - code_data.get('createdAt', 0)) > 172800000:
         del premium_boost_codes[premium_boost_code]
         save_premium_boost_codes()
         return jsonify({'error': '卡密已过期（48小时有效）'}), 400
-
     current_time_sec = int(time.time())
     existing_boost = user_boosts.get(username)
     if existing_boost and existing_boost.get('expiresAt', 0) > current_time_sec:
         return jsonify({'error': '已有激活的加成效果，请等待效果结束后再使用'}), 400
-
     expires_at = current_time_sec + 300
     user_boosts[username] = {
         'username': username,
@@ -9250,10 +8048,8 @@ def use_premium_boost_code():
         'boost_type': 'premium'
     }
     save_user_boosts()
-
     code_data['used'] = True
     save_premium_boost_codes()
-
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
@@ -9270,36 +8066,27 @@ def cancel_account():
     start_time = time.time()
     username = session['user']['username']
     data = request.get_json()
-
     email = data.get('email', '').strip().lower()
     verification_code = data.get('verification_code', '').strip()
     promise_agreed = data.get('promise_agreed', False)
-
     if not email or not verification_code:
         return jsonify({'error': '请填写邮箱和验证码'}), 400
-
     if not promise_agreed:
         return jsonify({'error': '请阅读并同意注销承诺书'}), 400
-
     user_data = users.get(username)
     if not user_data:
         return jsonify({'error': '用户不存在'}), 400
-
     if user_data.get('email') != email:
         return jsonify({'error': '邮箱与账号不匹配'}), 400
-
     success, message = email_service.verify_code(email, verification_code)
     if not success:
         return jsonify({'error': message}), 400
-
     delete_user_completely(username)
     invalidate_user_caches(username)
-
     session.clear()
     response = make_response(jsonify({'success': True, 'message': '账号已成功注销'}))
     response.set_cookie('session', '', expires=0, path='/')
     response.set_cookie('session_expiration', '', expires=0, path='/')
-
     response_time = int((time.time() - start_time) * 1000)
     response_data = jsonify({
         'success': True,
@@ -9307,129 +8094,6 @@ def cancel_account():
         'responseTime': response_time
     })
     return response_data
-
-@app.route('/api/use-cancellation-code', methods=['POST'])
-@csrf_protect
-@login_required
-def use_cancellation_code():
-    start_time = time.time()
-    data = request.get_json()
-    username = session['user']['username']
-    user_data = users.get(username, {})
-
-    email = data.get('email', '').strip().lower()
-    password = data.get('password', '')
-    cancellation_code = data.get('cancellationCode', '').strip().upper()
-    promise_agreed = data.get('promiseAgreed', False)
-
-    if not email or not password or not cancellation_code:
-        return jsonify({'error': '请填写完整信息'}), 400
-
-    if not promise_agreed:
-        return jsonify({'error': '请阅读并同意注销承诺书'}), 400
-
-    if user_data.get('email') != email:
-        return jsonify({'error': '邮箱与账号不匹配'}), 400
-
-    if not bcrypt.check_password_hash(user_data['password'], password):
-        return jsonify({'error': '密码错误'}), 400
-
-    if username != user_data.get('username'):
-        return jsonify({'error': '当前登录用户与要注销的用户不一致'}), 400
-
-    cleanup_all_expired_data()
-
-    code_data = cancellation_codes.get(cancellation_code)
-    if not code_data:
-        return jsonify({'error': '注销卡密无效'}), 400
-
-    if code_data.get('used'):
-        return jsonify({'error': '注销卡密已被使用'}), 400
-
-    if code_data.get('recycled'):
-        return jsonify({'error': '注销卡密已被回收'}), 400
-
-    if code_data.get('username') != username:
-        return jsonify({'error': '注销卡密不属于当前用户'}), 400
-
-    code_data['used'] = True
-    save_cancellation_codes()
-
-    delete_user_completely(username)
-    invalidate_user_caches(username)
-
-    session.clear()
-    response = make_response(jsonify({'success': True, 'message': '账号已成功注销'}))
-    response.set_cookie('session', '', expires=0, path='/')
-    response.set_cookie('session_expiration', '', expires=0, path='/')
-
-    response_time = int((time.time() - start_time) * 1000)
-    response_data = jsonify({
-        'success': True,
-        'message': '账号已成功注销',
-        'responseTime': response_time
-    })
-    return response_data
-
-@app.route('/api/use-boost-code', methods=['POST'])
-@csrf_protect
-@login_required
-@identity_required
-def use_boost_code():
-    start_time = time.time()
-    data = request.get_json()
-    username = session['user']['username']
-    boost_code = data.get('boostCode', '').strip().upper()
-
-    if not boost_code:
-        return jsonify({'error': '请输入加成卡密'}), 400
-
-    cleanup_all_expired_data()
-
-    code_data = boost_codes.get(boost_code)
-    if not code_data:
-        return jsonify({'error': '卡密无效'}), 400
-
-    if code_data.get('used'):
-        return jsonify({'error': '卡密已被使用'}), 400
-
-    if code_data.get('recycled'):
-        return jsonify({'error': '卡密已被回收'}), 400
-
-    if code_data.get('username') != username:
-        return jsonify({'error': '卡密不属于当前用户'}), 400
-
-    current_time = int(time.time() * 1000)
-    if (current_time - code_data.get('createdAt', 0)) > 259200000:
-        del boost_codes[boost_code]
-        save_boost_codes()
-        return jsonify({'error': '卡密已过期（72小时有效）'}), 400
-
-    current_time_sec = int(time.time())
-    existing_boost = user_boosts.get(username)
-    if existing_boost and existing_boost.get('expiresAt', 0) > current_time_sec:
-        return jsonify({'error': '已有激活的加成效果，请等待效果结束后再使用'}), 400
-
-    expires_at = current_time_sec + 300
-    user_boosts[username] = {
-        'username': username,
-        'activatedAt': current_time_sec,
-        'expiresAt': expires_at,
-        'boostCode': boost_code,
-        'boost_type': 'normal'
-    }
-    save_user_boosts()
-
-    code_data['used'] = True
-    save_boost_codes()
-
-    response_time = int((time.time() - start_time) * 1000)
-    return jsonify({
-        'success': True,
-        'message': '积分加成卡激活成功，5分钟内享受50%积分加成',
-        'expiresIn': 300,
-        'responseTime': response_time
-    })
 
 @app.route('/api/use-makeup-code', methods=['POST'])
 @csrf_protect
@@ -9440,66 +8104,48 @@ def use_makeup_code():
     username = session['user']['username']
     data = request.get_json()
     makeup_code = data.get('makeupCode', '').strip().upper()
-
     if not makeup_code:
         return jsonify({'error': '请输入补签卡密'}), 400
-
     cleanup_all_expired_data()
-
     code_data = makeup_codes.get(makeup_code)
     if not code_data:
         return jsonify({'error': '补签卡密无效'}), 400
-
     if code_data.get('used'):
         return jsonify({'error': '补签卡密已被使用'}), 400
-
     if code_data.get('recycled'):
         return jsonify({'error': '补签卡密已被回收'}), 400
-
     if code_data.get('username') != username:
         return jsonify({'error': '补签卡密不属于当前用户'}), 400
-
     current_time = int(time.time() * 1000)
     if (current_time - code_data.get('createdAt', 0)) > 3600000:
         del makeup_codes[makeup_code]
         save_makeup_codes()
         return jsonify({'error': '补签卡已过期（1小时有效）'}), 400
-
     user_data = users.get(username, {})
     makeup_used_count = user_data.get('makeup_code_used_count', 0)
     if makeup_used_count >= 3:
         return jsonify({'error': '补签卡永久限购3次，您已使用完所有次数'}), 400
-
     attendance_total_days = user_data.get('attendanceTotalDays', 0)
     attendance_consecutive_days = user_data.get('attendanceConsecutiveDays', 0)
-    last_attendance_timestamp = user_data.get('lastAttendanceTimestamp', 0)
-
     if attendance_consecutive_days >= attendance_total_days:
         return jsonify({'error': '您的连续签到天数已等于或大于累计签到天数，无需补签'}), 400
-
     if attendance_total_days <= 0:
         return jsonify({'error': '您还没有任何签到记录，无法补签'}), 400
-
     if attendance_consecutive_days > 0:
         days_to_add = attendance_total_days - attendance_consecutive_days
     else:
         days_to_add = 0
-
     if days_to_add <= 0:
         return jsonify({'error': '您的连续签到天数已等于或大于累计签到天数，无需补签'}), 400
-
     days_to_add = min(days_to_add, 30)
-
     user_data['attendanceConsecutiveDays'] = attendance_consecutive_days + days_to_add
     if user_data['attendanceConsecutiveDays'] > attendance_total_days:
         user_data['attendanceConsecutiveDays'] = attendance_total_days
-
     user_data['makeup_code_used_count'] = makeup_used_count + 1
     code_data['used'] = True
     save_makeup_codes()
     save_users()
     invalidate_user_caches(username)
-
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
@@ -9516,45 +8162,33 @@ def use_makeup_code():
 def recycle_code():
     start_time = time.time()
     username = session['user']['username']
-
     data = request.get_json()
     code = data.get('code', '').strip().upper()
     code_type = data.get('type', '')
-
-    if not code or code_type not in ['point', 'reset', 'premium_point', 'boost', 'special_point', 'plcard']:
+    if not code or code_type not in ['point', 'premium_point', 'special_point', 'plcard', 'premium_boost']:
         return jsonify({'error': '无效的请求参数'}), 400
-
     cleanup_all_expired_data()
-
     code_data = None
     if code_type == 'point':
         code_data = point_codes.get(code)
     elif code_type == 'premium_point':
         code_data = premium_point_codes.get(code)
-    elif code_type == 'boost':
-        code_data = boost_codes.get(code)
     elif code_type == 'special_point':
         code_data = special_point_codes.get(code)
     elif code_type == 'plcard':
         code_data = plcard_codes.get(code)
-    else:
-        code_data = reset_codes.get(code)
-
+    elif code_type == 'premium_boost':
+        code_data = premium_boost_codes.get(code)
     if not code_data:
         return jsonify({'error': '卡密不存在'}), 400
-
     if code_data.get('username') != username:
         return jsonify({'error': '卡密不属于当前用户'}), 400
-
     if code_data.get('used'):
         return jsonify({'error': '卡密已被使用，无法回收'}), 400
-
     if code_data.get('recycled'):
         return jsonify({'error': '卡密已被回收'}), 400
-
     if code_data.get('adminGranted', False):
         return jsonify({'error': '管理员赠送的卡密不可回收'}), 400
-
     current_time = int(time.time() * 1000)
     if code_type == 'point' and (current_time - code_data.get('createdAt', 0)) > 172800000:
         return jsonify({'error': '卡密已过期，无法回收'}), 400
@@ -9562,16 +8196,11 @@ def recycle_code():
         return jsonify({'error': '卡密已过期，无法回收'}), 400
     if code_type == 'special_point' and (current_time - code_data.get('createdAt', 0)) > 172800000:
         return jsonify({'error': '卡密已过期，无法回收'}), 400
-    if code_type == 'boost' and (current_time - code_data.get('createdAt', 0)) > 259200000:
-        return jsonify({'error': '卡密已过期，无法回收'}), 400
-    if code_type == 'reset' and (current_time - code_data.get('createdAt', 0)) > 86400000:
-        return jsonify({'error': '卡密已过期，无法回收'}), 400
     if code_type == 'plcard' and (current_time - code_data.get('createdAt', 0)) > 86400000:
         return jsonify({'error': '卡密已过期，无法回收'}), 400
-
-    if code_type == 'boost':
-        original_price = 8.8
-    elif code_type == 'premium_point':
+    if code_type == 'premium_boost' and (current_time - code_data.get('createdAt', 0)) > 172800000:
+        return jsonify({'error': '卡密已过期，无法回收'}), 400
+    if code_type == 'premium_point':
         original_price = 3.5
     elif code_type == 'point':
         original_price = 1.2
@@ -9580,33 +8209,25 @@ def recycle_code():
     elif code_type == 'plcard':
         original_price = 35.8
     else:
-        original_price = 8
-
+        original_price = 15.6
     recycle_price = round(original_price * 0.1, 2)
-
     user_data = users.get(username, {})
     if 'totalPoints' not in user_data:
         user_data['totalPoints'] = 0
     user_data['totalPoints'] = round(user_data['totalPoints'] + recycle_price, 2)
     save_users()
-
     code_data['recycled'] = True
-
     if code_type == 'point':
         save_point_codes()
     elif code_type == 'premium_point':
         save_premium_point_codes()
-    elif code_type == 'boost':
-        save_boost_codes()
     elif code_type == 'special_point':
         save_special_point_codes()
     elif code_type == 'plcard':
         save_plcard_codes()
-    else:
-        save_reset_codes()
-
+    elif code_type == 'premium_boost':
+        save_premium_boost_codes()
     invalidate_user_caches(username)
-
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
@@ -9622,41 +8243,30 @@ def recycle_code():
 def use_point_code():
     start_time = time.time()
     username = session['user']['username']
-
     data = request.get_json()
     point_code = data.get('pointCode', '').strip().upper()
-
     if not point_code:
         return jsonify({'error': '请输入积分卡密'}), 400
-
     cleanup_all_expired_data()
-
     code_data = point_codes.get(point_code)
     is_premium = False
     is_special = False
-
     if not code_data:
         code_data = premium_point_codes.get(point_code)
         if code_data:
             is_premium = True
-
     if not code_data:
         code_data = special_point_codes.get(point_code)
         if code_data:
             is_special = True
-
     if not code_data:
         return jsonify({'error': '卡密无效'}), 400
-
     if code_data.get('used'):
         return jsonify({'error': '卡密已被使用'}), 400
-
     if code_data.get('recycled'):
         return jsonify({'error': '卡密已被回收'}), 400
-
     if code_data.get('username') != username:
         return jsonify({'error': '卡密不属于当前用户'}), 400
-
     current_time = int(time.time() * 1000)
     if (current_time - code_data.get('createdAt', 0)) > 172800000:
         if is_premium:
@@ -9669,19 +8279,15 @@ def use_point_code():
             del point_codes[point_code]
             save_point_codes()
         return jsonify({'error': '卡密已过期（48小时有效）'}), 400
-
     if is_special:
         points_earned = round(random.uniform(18, 23), 2)
     elif is_premium:
         points_earned = round(random.uniform(2.5, 4.0), 2)
     else:
         points_earned = round(random.uniform(0.6, 2.0), 2)
-
     points_added = update_earned_points(username, points_earned, True)
-
     if not points_added:
         return jsonify({'error': '今日获取积分已达上限14分'}), 400
-
     if is_special:
         del special_point_codes[point_code]
         save_special_point_codes()
@@ -9691,9 +8297,7 @@ def use_point_code():
     else:
         del point_codes[point_code]
         save_point_codes()
-
     invalidate_user_caches(username)
-
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
@@ -9709,14 +8313,9 @@ def use_point_code():
 def get_inventory():
     start_time = time.time()
     username = session['user']['username']
-
     cleanup_all_expired_data()
-
     user_point_codes = []
     user_premium_codes = []
-    user_reset_codes = []
-    user_boost_codes = []
-    user_cancellation_codes = []
     user_special_codes = []
     user_makeup_codes = []
     user_gamblers_codes = []
@@ -9724,7 +8323,6 @@ def get_inventory():
     user_plcard_codes = []
     user_premium_boost_codes = []
     current_time = int(time.time() * 1000)
-
     for code, data in point_codes.items():
         if data.get('username') == username and not data.get('used', False) and not data.get('recycled', False):
             expires_in = 48 - (current_time - data.get('createdAt', 0)) / 3600000
@@ -9736,7 +8334,6 @@ def get_inventory():
                     'adminGranted': data.get('adminGranted', False),
                     'recyclable': not data.get('adminGranted', False)
                 })
-
     for code, data in premium_point_codes.items():
         if data.get('username') == username and not data.get('used', False) and not data.get('recycled', False):
             expires_in = 48 - (current_time - data.get('createdAt', 0)) / 3600000
@@ -9748,40 +8345,6 @@ def get_inventory():
                     'adminGranted': data.get('adminGranted', False),
                     'recyclable': not data.get('adminGranted', False)
                 })
-
-    for code, data in reset_codes.items():
-        if data.get('username') == username and data.get('type') == 'reset' and not data.get('used', False) and not data.get('recycled', False):
-            expires_in = 24 - (current_time - data.get('createdAt', 0)) / 3600000
-            if expires_in > 0:
-                user_reset_codes.append({
-                    'code': code,
-                    'expiresIn': round(expires_in, 1),
-                    'type': 'reset',
-                    'adminGranted': data.get('adminGranted', False),
-                    'recyclable': not data.get('adminGranted', False)
-                })
-
-    for code, data in boost_codes.items():
-        if data.get('username') == username and not data.get('used', False) and not data.get('recycled', False):
-            expires_in = 72 - (current_time - data.get('createdAt', 0)) / 3600000
-            if expires_in > 0:
-                user_boost_codes.append({
-                    'code': code,
-                    'expiresIn': round(expires_in, 1),
-                    'type': 'boost',
-                    'adminGranted': data.get('adminGranted', False),
-                    'recyclable': not data.get('adminGranted', False)
-                })
-
-    for code, data in cancellation_codes.items():
-        if data.get('username') == username and not data.get('used', False) and not data.get('recycled', False):
-            user_cancellation_codes.append({
-                'code': code,
-                'type': 'cancellation',
-                'adminGranted': data.get('adminGranted', False),
-                'recyclable': False
-            })
-
     for code, data in special_point_codes.items():
         if data.get('username') == username and not data.get('used', False) and not data.get('recycled', False):
             expires_in = 48 - (current_time - data.get('createdAt', 0)) / 3600000
@@ -9793,7 +8356,6 @@ def get_inventory():
                     'adminGranted': data.get('adminGranted', False),
                     'recyclable': not data.get('adminGranted', False)
                 })
-
     for code, data in makeup_codes.items():
         if data.get('username') == username and not data.get('used', False) and not data.get('recycled', False):
             expires_in = 1 - (current_time - data.get('createdAt', 0)) / 3600000
@@ -9805,7 +8367,6 @@ def get_inventory():
                     'adminGranted': data.get('adminGranted', False),
                     'recyclable': False
                 })
-
     for code, data in gamblers_codes.items():
         if data.get('username') == username and not data.get('used', False) and not data.get('recycled', False):
             expires_in = 24 - (current_time - data.get('createdAt', 0)) / 3600000
@@ -9817,7 +8378,6 @@ def get_inventory():
                     'adminGranted': data.get('adminGranted', False),
                     'recyclable': False
                 })
-
     for code, data in box_codes.items():
         if data.get('username') == username and not data.get('used', False) and not data.get('recycled', False):
             expires_in = 48 - (current_time - data.get('createdAt', 0)) / 3600000
@@ -9829,7 +8389,6 @@ def get_inventory():
                     'adminGranted': data.get('adminGranted', False),
                     'recyclable': False
                 })
-
     for code, data in plcard_codes.items():
         if data.get('username') == username and not data.get('used', False) and not data.get('recycled', False):
             expires_in = 24 - (current_time - data.get('createdAt', 0)) / 3600000
@@ -9841,7 +8400,6 @@ def get_inventory():
                     'adminGranted': data.get('adminGranted', False),
                     'recyclable': not data.get('adminGranted', False)
                 })
-
     for code, data in premium_boost_codes.items():
         if data.get('username') == username and not data.get('used', False) and not data.get('recycled', False):
             expires_in = 48 - (current_time - data.get('createdAt', 0)) / 3600000
@@ -9853,13 +8411,9 @@ def get_inventory():
                     'adminGranted': data.get('adminGranted', False),
                     'recyclable': not data.get('adminGranted', False)
                 })
-
     user_data = users.get(username, {})
-    cancellation_purchased = user_data.get('cancellationCodePurchased', False)
     consecutive_days = user_data.get('attendanceConsecutiveDays', 0)
-    cancellation_available = consecutive_days >= 4
     makeup_used_count = user_data.get('makeup_code_used_count', 0)
-
     created_at_str = user_data.get('createdAt', '')
     is_within_24h = False
     if created_at_str:
@@ -9869,7 +8423,6 @@ def get_inventory():
         except Exception:
             pass
     can_force_cancel = check_identity_verified(username) and is_within_24h
-
     today = datetime.now().strftime('%Y-%m-%d')
     last_gamblers_purchase = user_data.get('last_gamblers_purchase_date', '')
     gamblers_purchase_count = user_data.get('gamblers_code_purchase_count', 0)
@@ -9878,7 +8431,6 @@ def get_inventory():
         user_data['gamblers_code_purchase_count'] = 0
         user_data['last_gamblers_purchase_date'] = today
         save_users()
-
     last_box_purchase = user_data.get('last_box_purchase_date', '')
     box_purchase_count = user_data.get('box_code_purchase_count', 0)
     if last_box_purchase != today:
@@ -9886,7 +8438,6 @@ def get_inventory():
         user_data['box_code_purchase_count'] = 0
         user_data['last_box_purchase_date'] = today
         save_users()
-
     last_plcard_purchase = user_data.get('last_plcard_purchase_date', '')
     plcard_purchase_count = user_data.get('plcard_code_purchase_count', 0)
     if last_plcard_purchase != today:
@@ -9894,21 +8445,15 @@ def get_inventory():
         user_data['plcard_code_purchase_count'] = 0
         user_data['last_plcard_purchase_date'] = today
         save_users()
-
     mail_count = sum(1 for a in mail_attachments.values() if a.get('username') == username and not a.get('claimed', False))
-
     fund_balance = get_user_fund_balance(username)
     total_points_with_fund = user_data.get('totalPoints', 0) + fund_balance
     effective_points = get_user_effective_points(username)
     price_multiplier = get_price_multiplier(username)
-
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'pointCodes': user_point_codes,
         'premiumPointCodes': user_premium_codes,
-        'resetCodes': user_reset_codes,
-        'boostCodes': user_boost_codes,
-        'cancellationCodes': user_cancellation_codes,
         'specialPointCodes': user_special_codes,
         'makeupCodes': user_makeup_codes,
         'gamblersCodes': user_gamblers_codes,
@@ -9917,8 +8462,6 @@ def get_inventory():
         'premiumBoostCodes': user_premium_boost_codes,
         'isNewUser': is_new_user(username),
         'bonusPeriod': is_bonus_period(),
-        'cancellationPurchased': cancellation_purchased,
-        'cancellationAvailable': cancellation_available,
         'consecutiveDays': consecutive_days,
         'canForceCancel': can_force_cancel,
         'makeupUsedCount': makeup_used_count,
@@ -9937,93 +8480,24 @@ def get_inventory():
         'responseTime': response_time
     })
 
-@app.route('/api/reset-password', methods=['POST'])
-@csrf_protect
-@limiter.limit(RATE_LIMITS['reset_password'])
-def reset_password():
-    start_time = time.time()
-    data = request.get_json()
-    email = data.get('email', '').strip().lower()
-    username = data.get('username', '').strip()
-    new_password = data.get('newPassword', '')
-    reset_code = data.get('resetCode', '').strip().upper()
-
-    if not email or not username or not new_password or not reset_code:
-        return jsonify({'error': '请填写完整信息'}), 400
-
-    if username not in users:
-        return jsonify({'error': '用户名不存在'}), 400
-
-    user_data = users[username]
-    if user_data.get('email') != email:
-        return jsonify({'error': '邮箱与用户名不匹配'}), 400
-
-    if not validate_password(new_password):
-        return jsonify({'error': '密码至少8位，需包含至少两种类型（大小写字母/数字/特殊字符）'}), 400
-
-    cleanup_all_expired_data()
-
-    code_data = reset_codes.get(reset_code)
-    if not code_data:
-        return jsonify({'error': '卡密无效'}), 400
-
-    if code_data.get('used'):
-        return jsonify({'error': '卡密已被使用'}), 400
-
-    if code_data.get('recycled'):
-        return jsonify({'error': '卡密已被回收'}), 400
-
-    if code_data.get('username') != username:
-        return jsonify({'error': '卡密与用户名不匹配'}), 400
-
-    if code_data.get('email') != email:
-        return jsonify({'error': '卡密与邮箱不匹配'}), 400
-
-    current_time = int(time.time() * 1000)
-    if (current_time - code_data.get('createdAt', 0)) > 86400000:
-        del reset_codes[reset_code]
-        save_reset_codes()
-        return jsonify({'error': '卡密已过期（24小时有效）'}), 400
-
-    hashed_password = bcrypt.generate_password_hash(new_password).decode('utf-8')
-    users[username]['password'] = hashed_password
-    save_users()
-
-    del reset_codes[reset_code]
-    save_reset_codes()
-
-    response_time = int((time.time() - start_time) * 1000)
-    return jsonify({
-        'success': True,
-        'message': '密码重置成功',
-        'responseTime': response_time
-    })
-
 @app.route('/api/forgot-password/send-code', methods=['POST'])
 @csrf_protect
 @limiter.limit('2 per day')
 def forgot_password_send_code():
     start_time = time.time()
     data = request.get_json()
-
     username = data.get('username', '').strip()
     email = data.get('email', '').strip().lower()
-
     if not username or not email:
         return jsonify({'error': '请填写用户名和邮箱'}), 400
-
     if username not in users:
         return jsonify({'error': '用户名不存在'}), 400
-
     user_data = users[username]
     if user_data.get('email') != email:
         return jsonify({'error': '邮箱与用户名不匹配'}), 400
-
     if not validate_email(email):
         return jsonify({'error': '邮箱格式不正确'}), 400
-
     success, code, message = email_service.send_verification_code_with_limit(email, username, '重置密码')
-
     if success:
         response_time = int((time.time() - start_time) * 1000)
         return jsonify({
@@ -10035,32 +8509,25 @@ def forgot_password_send_code():
     else:
         return jsonify({'error': message}), 500
 
-
 @app.route('/api/forgot-password', methods=['POST'])
 @csrf_protect
 @limiter.limit(RATE_LIMITS['reset_password'])
 def forgot_password():
     start_time = time.time()
     data = request.get_json()
-
     username = data.get('username', '').strip()
     email = data.get('email', '').strip().lower()
     new_password = data.get('newPassword', '')
     verification_code = data.get('verificationCode', '').strip()
-
     if not username or not email or not new_password or not verification_code:
         return jsonify({'error': '请填写完整信息'}), 400
-
     if username not in users:
         return jsonify({'error': '用户名不存在'}), 400
-
     user_data = users[username]
     if user_data.get('email') != email:
         return jsonify({'error': '邮箱与用户名不匹配'}), 400
-
     if not validate_password(new_password):
         return jsonify({'error': '密码至少8位，需包含至少两种类型（大小写字母/数字/特殊字符）'}), 400
-
     reset_limits = load_reset_limits()
     today = time.strftime('%Y-%m-%d')
     if username not in reset_limits:
@@ -10069,22 +8536,17 @@ def forgot_password():
         reset_limits[username] = {'date': today, 'count': 0}
     if reset_limits[username]['count'] >= 2:
         return jsonify({'error': '今日重置密码次数已达上限（2次），请明日再试'}), 400
-
     success, message = email_service.verify_code(email, verification_code)
     if not success:
         return jsonify({'error': message}), 400
-
     total_points = user_data.get('totalPoints', 0)
     fund_balance = get_user_fund_balance(username)
     total_available = total_points + fund_balance
-
     if total_available < 8.8:
         return jsonify({'error': '重置密码需要8.8积分（含理财账户），当前可用积分不足'}), 400
-
     remaining_to_deduct = 8.8
     deducted_from_fund = 0
     deducted_from_main = 0
-
     if total_points >= remaining_to_deduct:
         user_data['totalPoints'] = round(total_points - remaining_to_deduct, 2)
         deducted_from_main = remaining_to_deduct
@@ -10101,17 +8563,13 @@ def forgot_password():
             fund_data[username]['balance'] = 0
             deducted_from_fund = fund_balance
             remaining_to_deduct = remaining_to_deduct - fund_balance
-
     save_users()
     save_fund_data()
-
     reset_limits[username]['count'] += 1
     save_reset_limits(reset_limits)
-
     hashed_password = bcrypt.generate_password_hash(new_password).decode('utf-8')
     users[username]['password'] = hashed_password
     save_users()
-
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
@@ -10128,17 +8586,16 @@ def get_boost_status():
     boost_data = user_boosts.get(username)
     boost_active = False
     boost_expires_in = 0
-    boost_type = 'normal'
+    boost_type = 'premium'
     if boost_data:
         expires_at = boost_data.get('expiresAt', 0)
         if expires_at > current_time_sec:
             boost_active = True
             boost_expires_in = expires_at - current_time_sec
-            boost_type = boost_data.get('boost_type', 'normal')
+            boost_type = boost_data.get('boost_type', 'premium')
         else:
             del user_boosts[username]
             save_user_boosts()
-
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'boostActive': boost_active,
@@ -10155,11 +8612,9 @@ def claim_daily_bonus():
     start_time = time.time()
     username = session['user']['username']
     user_data = users.get(username, {})
-
     daily_bonus_code = user_data.get('dailyBonusCode')
     if not daily_bonus_code:
         return jsonify({'error': '暂无待领取的每日奖励'}), 400
-
     for aid, attachment in mail_attachments.items():
         if attachment.get('username') == username and attachment.get('code') == daily_bonus_code and not attachment.get('claimed', False):
             if do_claim_mail_attachment(aid, username):
@@ -10174,7 +8629,6 @@ def claim_daily_bonus():
                     'message': '每日奖励已领取到您的背包',
                     'responseTime': response_time
                 })
-
     return jsonify({'error': '奖励卡密已失效'}), 400
 
 @app.route('/api/pl/rate', methods=['GET'])
@@ -10185,12 +8639,10 @@ def get_pl_rate():
     current_period = get_current_period()
     next_period_start = (current_period + 1) * PL_FLUCTUATION_INTERVAL
     next_update_in = max(0, next_period_start - current_time)
-
     last_update = pl_rate_data.get('last_update', 0)
     is_refreshing = False
     if current_time - last_update < 3:
         is_refreshing = True
-
     return jsonify({
         'rate': rate,
         'min_rate': PL_MIN_RATE,
@@ -10268,26 +8720,19 @@ def transfer_pl_api():
     target_username = data.get('target_username', '').strip()
     amount = float(data.get('amount', 0))
     password = data.get('password', '')
-
     if not target_username:
         return jsonify({'error': '请输入对方用户名'}), 400
-
     if amount <= 0:
         return jsonify({'error': '请输入有效的转账金额'}), 400
-
     if amount < 0.1:
         return jsonify({'error': '转账金额不能低于0.1PL'}), 400
-
     if not password:
         return jsonify({'error': '请输入账号密码'}), 400
-
     if not has_pay_password(username):
         return jsonify({'error': '请先设置支付密码'}), 400
-
     result, error = transfer_pl(username, target_username, amount, password)
     if error:
         return jsonify({'error': error}), 400
-
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
@@ -10306,21 +8751,16 @@ def confirm_transfer_pl_api():
     target_username = data.get('target_username', '').strip()
     amount = float(data.get('amount', 0))
     pay_password = data.get('pay_password', '')
-
     if not target_username or not amount or not pay_password:
         return jsonify({'error': '请填写完整信息'}), 400
-
     if not verify_pay_password(username, pay_password):
         return jsonify({'error': '支付密码错误'}), 400
-
     current_balance = get_user_pl_balance(username)
     if current_balance < amount:
         return jsonify({'error': f'PL余额不足，需要{amount}PL'}), 400
-
     result, error = transfer_pl(username, target_username, amount, users[username].get('password', ''))
     if error:
         return jsonify({'error': error}), 400
-
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
@@ -10338,29 +8778,21 @@ def create_transfer_order():
     data = request.get_json()
     target_username = data.get('target_username', '').strip()
     amount = float(data.get('amount', 0))
-
     if not target_username:
         return jsonify({'error': '请输入对方用户名'}), 400
-
     if target_username not in users:
         return jsonify({'error': '对方用户不存在'}), 400
-
     if target_username == username:
         return jsonify({'error': '不能转账给自己'}), 400
-
     if amount <= 0:
         return jsonify({'error': '请输入有效的转账金额'}), 400
-
     if amount < 0.1:
         return jsonify({'error': '转账金额不能低于0.1PL'}), 400
-
     current_balance = get_user_pl_balance(username)
     if current_balance < amount:
         return jsonify({'error': f'PL余额不足，需要{amount}PL，当前余额{current_balance}PL'}), 400
-
     if not has_pay_password(username):
         return jsonify({'error': '请先设置支付密码'}), 400
-
     order_id = generate_order_id('transfer')
     product_number = get_product_number('transfer')
     orders[order_id] = {
@@ -10383,7 +8815,6 @@ def create_transfer_order():
         'transfer_amount': amount
     }
     save_orders()
-
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
@@ -10399,34 +8830,28 @@ def get_pl_transfers():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
     transfer_type = request.args.get('type', 'all')
-
     records = []
     total_outgoing = 0
     total_incoming = 0
     total_coupon_saved = 0
-
     for tid, transfer in pl_transfers.items():
         is_from = transfer.get('from_username') == username
         is_to = transfer.get('to_username') == username
         if not is_from and not is_to:
             continue
-
         if transfer_type == 'outgoing' and not is_from:
             continue
         if transfer_type == 'incoming' and not is_to:
             continue
-
         amount = transfer.get('amount', 0)
         actual_paid = transfer.get('actual_paid', amount)
         coupon_discount = transfer.get('coupon_discount', 0)
         direction = 'outgoing' if is_from else 'incoming'
-
         if direction == 'outgoing':
             total_outgoing += amount
             total_coupon_saved += coupon_discount
         else:
             total_incoming += amount
-
         records.append({
             'id': tid,
             'from_username': transfer.get('from_username'),
@@ -10439,13 +8864,11 @@ def get_pl_transfers():
             'timestamp': transfer.get('timestamp', 0),
             'status': transfer.get('status', 'completed')
         })
-
     records.sort(key=lambda x: -x.get('timestamp', 0))
     total = len(records)
     start = (page - 1) * per_page
     end = start + per_page
     paginated = records[start:end]
-
     return jsonify({
         'records': paginated,
         'total': total,
@@ -10493,7 +8916,6 @@ def get_pl_history():
 def clear_pl_history():
     start_time = time.time()
     username = session['user']['username']
-
     exchange_records_to_remove = []
     for rid, record in pl_exchange_records.items():
         if record.get('username') == username:
@@ -10501,7 +8923,6 @@ def clear_pl_history():
     for rid in exchange_records_to_remove:
         del pl_exchange_records[rid]
     save_pl_exchange_records()
-
     transfer_records_to_remove = []
     for tid, transfer in pl_transfers.items():
         if transfer.get('from_username') == username or transfer.get('to_username') == username:
@@ -10509,7 +8930,6 @@ def clear_pl_history():
     for tid in transfer_records_to_remove:
         del pl_transfers[tid]
     save_pl_transfers()
-
     total_deleted = len(exchange_records_to_remove) + len(transfer_records_to_remove)
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
@@ -10537,35 +8957,28 @@ def get_pool_status_api():
     try:
         settle_yesterday_pool_unclaimed()
         settle_pool_funds()
-
         status = get_pool_status()
         today_reward = get_user_today_pool_reward(username)
         has_claimed = has_user_claimed_pool_today(username)
-
         today = get_today_pool_date()
         allocated = pool_records.get(today, {}).get('allocated_from_system', 0)
         already_paid = pool_records.get(today, {}).get('total_payout', 0)
         remaining_pool = max(0, round(allocated - already_paid, 4))
-
         cooldown_data = user_pool_claims.get(username, {}).get('last_claim_cooldown', {})
         last_claim_time = cooldown_data.get('timestamp', 0)
         cooldown_end_time = 0
         cooldown_remaining = False
-
         if last_claim_time > 0:
             cooldown_end_time = last_claim_time + (COOLDOWN_HOURS * 3600 * 1000)
             if int(time.time() * 1000) < cooldown_end_time:
                 cooldown_remaining = True
-
         user_data = users.get(username, {})
         total_days = user_data.get('attendanceTotalDays', 0)
         consecutive_days = user_data.get('attendanceConsecutiveDays', 0)
         is_verified = check_identity_verified(username)
         is_restricted = is_login_restricted(username)
-
         total_points = get_user_fund_total_points(username)
         full_base = calculate_user_pool_base_without_decay(username)
-
         if consecutive_days >= 7:
             cons_bonus = 1.0
         elif consecutive_days >= 4:
@@ -10574,17 +8987,12 @@ def get_pool_status_api():
             cons_bonus = 0.4
         else:
             cons_bonus = 0.0
-
         current_base = get_user_today_pool_base(username)
-
         now = datetime.now()
         next_midnight = now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
-
         user_bases = build_user_bases()
-
         theoretical_amount = pool_records.get(today, {}).get('theoretical_amount', status['pool_amount'])
         pool_limited_by_system = status['pool_amount'] < theoretical_amount
-
         can_claim = (
             total_days >= 7 and
             not has_claimed and
@@ -10594,7 +9002,6 @@ def get_pool_status_api():
             is_verified and
             not is_restricted
         )
-
         return jsonify({
             'today': status['today'],
             'pool_amount': status['pool_amount'],
@@ -10625,8 +9032,6 @@ def get_pool_status_api():
         })
     except Exception as e:
         log.error(f"Error in get_pool_status_api: {e}")
-        import traceback
-        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/pool/claim', methods=['POST'])
@@ -10639,32 +9044,24 @@ def claim_pool_reward():
     try:
         if has_user_claimed_pool_today(username):
             return jsonify({'error': '今日已领取瓜分奖励'}), 400
-
         user_data = users.get(username)
         if not user_data:
             return jsonify({'error': '用户不存在'}), 400
-
         total_days = user_data.get('attendanceTotalDays', 0)
         if total_days < 7:
             return jsonify({'error': f'需要累计签到7天才可瓜分，当前累计签到{total_days}天'}), 400
-
         if is_login_restricted(username):
             return jsonify({'error': '账号已被限制，无法瓜分'}), 400
-
         reward, error = process_pool_reward_for_user(username)
         if error:
             return jsonify({'error': error}), 400
-
         return jsonify({
             'success': True,
             'reward': reward,
             'message': f'成功领取{reward}积分瓜分奖励'
         })
-
     except Exception as e:
         log.error(f"Claim exception: {e}")
-        import traceback
-        traceback.print_exc()
         return jsonify({'error': f'服务器错误: {str(e)}'}), 500
 
 @app.route('/api/pool/tomorrow-preview', methods=['GET'])
@@ -10690,7 +9087,6 @@ def get_tomorrow_pool_preview():
 def get_mail_list():
     username = session['user']['username']
     cleanup_expired_mail_attachments()
-
     attachments = []
     for aid, attachment in mail_attachments.items():
         if attachment.get('username') == username:
@@ -10705,11 +9101,12 @@ def get_mail_list():
                 'created_at': attachment.get('created_at', 0),
                 'expires_at': attachment.get('expires_at', 0),
                 'claimed': is_claimed,
-                'source': attachment.get('source', '')
+                'source': attachment.get('source', ''),
+                'is_batch': attachment.get('is_batch', False),
+                'quantity': attachment.get('quantity', 1),
+                'codes': attachment.get('codes', [])
             })
-
     attachments.sort(key=lambda x: -x.get('created_at', 0))
-
     return jsonify({
         'attachments': attachments,
         'total': len(attachments)
@@ -10720,10 +9117,8 @@ def get_mail_list():
 def get_yesterday_pool_details():
     username = session['user']['username']
     yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
-
     details = pool_records.get(yesterday, {})
     payout_details = details.get('payout_details', {})
-
     if not payout_details or not isinstance(payout_details, dict):
         return jsonify({
             'date': yesterday,
@@ -10733,18 +9128,13 @@ def get_yesterday_pool_details():
             'top_10': [],
             'has_record': False
         })
-
     user_reward = payout_details.get(username, 0)
     total_payout = details.get('total_payout', 0)
-
     if total_payout == 0:
         total_payout = sum(payout_details.values())
-
     user_count = len([u for u, r in payout_details.items() if r > 0])
-
     top_10 = sorted(payout_details.items(), key=lambda x: -x[1])[:10]
     top_10_list = [{'username': u, 'reward': round(r, 2)} for u, r in top_10 if r > 0]
-
     return jsonify({
         'date': yesterday,
         'total_payout': round(total_payout, 2),
@@ -10759,7 +9149,6 @@ def get_yesterday_pool_details():
 def get_newbie_pool_status_api():
     username = session['user']['username']
     status = get_newbie_pool_status()
-
     user_data = users.get(username, {})
     created_at_str = user_data.get('createdAt', '')
     days_old = -1
@@ -10771,14 +9160,11 @@ def get_newbie_pool_status_api():
             is_eligible = days_old <= 7 and check_identity_verified(username) and not is_login_restricted(username)
         except Exception:
             pass
-
     today = datetime.now().strftime('%Y-%m-%d')
     has_attended = user_data.get('lastAttendanceDate', '') == today
     is_active = user_data.get('lastLoginDate', '') == today
-
     reward = get_user_newbie_reward(username) if is_eligible else 0
     has_claimed = has_user_claimed_newbie_today(username)
-
     return jsonify({
         'pool_amount': status['pool_amount'],
         'eligible_count': status['eligible_count'],
@@ -10815,84 +9201,63 @@ def claim_newbie_reward_api():
 @login_required
 def claim_mail_attachment(attachment_id):
     username = session['user']['username']
-
     if attachment_id not in mail_attachments:
         return jsonify({'error': '邮件附件不存在'}), 400
-
     attachment = mail_attachments[attachment_id]
-
     if attachment.get('username') != username:
         return jsonify({'error': '无权操作此邮件附件'}), 400
-
     if attachment.get('claimed', False):
         return jsonify({'error': '该附件已被领取'}), 400
-
     current_time = int(time.time() * 1000)
     expires_at = attachment.get('expires_at', 0)
     if expires_at > 0 and current_time > expires_at:
         del mail_attachments[attachment_id]
         save_mail_attachments()
         return jsonify({'error': '邮件附件已过期'}), 400
-
     success, message = do_claim_mail_attachment_with_message(attachment_id, username)
-
     if success:
         invalidate_user_caches(username)
         return jsonify({'success': True, 'message': message})
     else:
         return jsonify({'error': message}), 400
 
-
 def do_claim_mail_attachment(attachment_id, username):
     if attachment_id not in mail_attachments:
         return False
-
     attachment = mail_attachments[attachment_id]
-
     if attachment.get('username') != username:
         return False
-
     if attachment.get('claimed', False):
         return False
-
     is_batch = attachment.get('is_batch', False)
     attachment_type = attachment.get('type', '')
     codes = attachment.get('codes', [])
-
     code_storage_map = {
         'point_code': (point_codes, save_point_codes, 'point'),
         'premium_point_code': (premium_point_codes, save_premium_point_codes, 'premium_point'),
-        'reset_code': (reset_codes, save_reset_codes, 'reset'),
-        'boost_code': (boost_codes, save_boost_codes, 'boost'),
         'special_point_code': (special_point_codes, save_special_point_codes, 'special_point'),
         'makeup_code': (makeup_codes, save_makeup_codes, 'makeup'),
         'gamblers_code': (gamblers_codes, save_gamblers_codes, 'gamblers'),
-        'cancellation_code': (cancellation_codes, save_cancellation_codes, 'cancellation'),
         'box_code': (box_codes, save_box_codes, 'box'),
         'plcard_code': (plcard_codes, save_plcard_codes, 'plcard'),
         'premium_boost_code': (premium_boost_codes, save_premium_boost_codes, 'premium_boost')
     }
-
     if attachment_type == 'combined_reward':
         if not codes:
             return False
-
         combined_types = attachment.get('combined_types', [])
         code_to_type = {}
         for att_type in combined_types:
             if att_type in code_storage_map:
                 code_to_type[att_type] = code_storage_map[att_type]
-
         if not code_to_type:
             return False
-
         added_count = 0
         for code in codes:
             found_type = None
             found_storage = None
             found_save = None
             found_type_name = None
-
             for att_type, (storage, save_func, type_name) in code_to_type.items():
                 if code not in storage:
                     found_type = att_type
@@ -10900,7 +9265,6 @@ def do_claim_mail_attachment(attachment_id, username):
                     found_save = save_func
                     found_type_name = type_name
                     break
-
             if found_type and found_storage is not None:
                 found_storage[code] = {
                     'code': code,
@@ -10914,18 +9278,12 @@ def do_claim_mail_attachment(attachment_id, username):
                 }
                 found_save()
                 added_count += 1
-
-                if found_type == 'cancellation_code':
-                    users[username]['cancellationCodePurchased'] = True
-                    save_users()
-
         if added_count > 0:
             attachment['claimed'] = True
             attachment['claimed_at'] = int(time.time() * 1000)
             save_mail_attachments()
             return True
         return False
-
     elif attachment_type == 'points':
         points_amount = attachment.get('points_amount', 0)
         if points_amount > 0:
@@ -10934,15 +9292,12 @@ def do_claim_mail_attachment(attachment_id, username):
             attachment['claimed_at'] = int(time.time() * 1000)
             save_mail_attachments()
             return True
-
     elif attachment_type in code_storage_map:
         code_storage, save_func, type_name = code_storage_map[attachment_type]
-
         if is_batch:
             codes = attachment.get('codes', [])
             if not codes:
                 return False
-
             added_count = 0
             for code in codes:
                 if code and code not in code_storage:
@@ -10957,16 +9312,10 @@ def do_claim_mail_attachment(attachment_id, username):
                         'source': attachment.get('source', 'mail')
                     }
                     added_count += 1
-
             if added_count > 0:
                 save_func()
                 attachment['claimed'] = True
                 attachment['claimed_at'] = int(time.time() * 1000)
-
-                if attachment_type == 'cancellation_code':
-                    users[username]['cancellationCodePurchased'] = True
-                    save_users()
-
                 save_mail_attachments()
                 return True
             return False
@@ -10984,17 +9333,11 @@ def do_claim_mail_attachment(attachment_id, username):
                     'source': attachment.get('source', 'mail')
                 }
                 save_func()
-
-                if attachment_type == 'cancellation_code':
-                    users[username]['cancellationCodePurchased'] = True
-                    save_users()
-
                 attachment['claimed'] = True
                 attachment['claimed_at'] = int(time.time() * 1000)
                 save_mail_attachments()
                 return True
             return False
-
     elif attachment_type == 'coupon':
         coupon_data = attachment.get('coupon_data', {})
         if coupon_data:
@@ -11010,50 +9353,38 @@ def do_claim_mail_attachment(attachment_id, username):
                 return False
         else:
             return False
-
     return False
-
 
 def do_claim_mail_attachment_with_message(attachment_id, username):
     if attachment_id not in mail_attachments:
         return False, '邮件附件不存在'
-
     attachment = mail_attachments[attachment_id]
-
     if attachment.get('username') != username:
         return False, '无权操作此邮件附件'
-
     if attachment.get('claimed', False):
         return False, '该附件已被领取'
-
     current_time = int(time.time() * 1000)
     expires_at = attachment.get('expires_at', 0)
     if expires_at > 0 and current_time > expires_at:
         del mail_attachments[attachment_id]
         save_mail_attachments()
         return False, '邮件附件已过期'
-
     attachment_type = attachment.get('type', '')
     type_names = {
         'points': '积分',
         'point_code': '普通积分卡密',
         'premium_point_code': '高级积分卡密',
-        'reset_code': '重置密码卡密',
-        'boost_code': '积分加成卡密',
         'special_point_code': '特殊积分卡密',
         'makeup_code': '补签卡',
         'gamblers_code': '赌神积分卡密',
-        'cancellation_code': '注销卡密',
-        'coupon': '优惠券',
         'box_code': '盲盒卡',
         'plcard_code': '普通PL随机卡',
-        'premium_boost_code': '高级加成卡'
+        'premium_boost_code': '高级加成卡',
+        'coupon': '优惠券'
     }
-
     if do_claim_mail_attachment(attachment_id, username):
         type_name = type_names.get(attachment_type, attachment_type)
         quantity = attachment.get('quantity', 1)
-
         if quantity > 1:
             return True, f'成功领取{quantity}张{type_name}'
         return True, f'成功领取{type_name}'
@@ -11091,13 +9422,10 @@ def login():
     data = request.get_json()
     username_or_email = data.get('username', '').strip()
     password = data.get('password', '')
-
     if not username_or_email or not password:
         return jsonify({'error': '请填写用户名/邮箱和密码'}), 400
-
     user_data = None
     username = None
-
     if username_or_email in users:
         username = username_or_email
         user_data = users[username]
@@ -11107,18 +9435,14 @@ def login():
                 username = u
                 user_data = data
                 break
-
     if not user_data:
         return jsonify({'error': '用户名或密码错误'}), 400
-
     if not bcrypt.check_password_hash(user_data['password'], password):
         return jsonify({'error': '用户名或密码错误'}), 400
-
     session['user'] = {'username': username}
     user_data['lastLoginDate'] = datetime.now().strftime('%Y-%m-%d')
     save_users()
     invalidate_user_caches(username)
-
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
@@ -11126,7 +9450,6 @@ def login():
         'message': '登录成功',
         'responseTime': response_time
     })
-
 
 @app.route('/api/register', methods=['POST'])
 @csrf_protect
@@ -11139,41 +9462,30 @@ def register():
     password = data.get('password', '')
     qq_number = data.get('qq_number', '').strip()
     verification_code = data.get('verification_code', '').strip()
-
     if not username or not email or not password:
         return jsonify({'error': '请填写所有字段'}), 400
-
     if not validate_username(username):
         return jsonify({'error': '用户名必须为3-20位字符，仅支持字母、数字、下划线、中文'}), 400
-
     if username in users:
         return jsonify({'error': '用户名已被使用'}), 400
-
     if not validate_email(email):
         return jsonify({'error': '邮箱格式不正确'}), 400
-
     for existing_user in users.values():
         if existing_user.get('email') == email:
             return jsonify({'error': '邮箱已被注册'}), 400
-
     if not validate_password(password):
         return jsonify({'error': '密码至少8位，需包含至少两种类型（大小写字母/数字/特殊字符）'}), 400
-
     if qq_number and not re.match(r'^\d{5,15}$', qq_number):
         return jsonify({'error': 'QQ号格式不正确，请输入5-15位数字'}), 400
-
     if qq_number:
         for u, data in users.items():
             if data.get('qq_number') == qq_number:
                 return jsonify({'error': '该QQ号已被其他用户绑定'}), 400
-
     if not verification_code:
         return jsonify({'error': '请输入邮箱验证码'}), 400
-
     success, message = email_service.verify_code(email, verification_code)
     if not success:
         return jsonify({'error': message}), 400
-
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
     users[username] = {
         'username': username,
@@ -11191,7 +9503,6 @@ def register():
         'lastAttendanceTimestamp': 0,
         'attendanceClaimedTotalCycles': {},
         'attendanceClaimedConsecutiveCycles': {},
-        'cancellationCodePurchased': False,
         'coupon_usage_count': 0,
         'makeup_code_used_count': 0,
         'gamblers_code_purchase_count': 0,
@@ -11200,12 +9511,21 @@ def register():
         'last_box_purchase_date': '',
         'plcard_code_purchase_count': 0,
         'lastSplashShown': 0,
-        'last_plcard_purchase_date': ''
+        'last_plcard_purchase_date': '',
+        'email_verified': False,
+        'email_verified_at': 0,
+        'email_changed': False,
+        'email_changed_at': 0,
+        'old_email': '',
+        'membership': {
+            'is_member': False,
+            'activated_at': 0,
+            'expires_at': 0,
+            'lifetime': True
+        }
     }
     save_users()
-
     session['user'] = {'username': username}
-
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
@@ -11252,7 +9572,6 @@ def check_auth():
                 user_data['gamblers_code_purchase_count'] = 0
                 user_data['last_gamblers_purchase_date'] = today
                 save_users()
-
             last_box_purchase = user_data.get('last_box_purchase_date', '')
             box_purchase_count = user_data.get('box_code_purchase_count', 0)
             if last_box_purchase != today:
@@ -11260,7 +9579,6 @@ def check_auth():
                 user_data['box_code_purchase_count'] = 0
                 user_data['last_box_purchase_date'] = today
                 save_users()
-
             last_plcard_purchase = user_data.get('last_plcard_purchase_date', '')
             plcard_purchase_count = user_data.get('plcard_code_purchase_count', 0)
             if last_plcard_purchase != today:
@@ -11268,18 +9586,14 @@ def check_auth():
                 user_data['plcard_code_purchase_count'] = 0
                 user_data['last_plcard_purchase_date'] = today
                 save_users()
-
             mail_count = sum(1 for a in mail_attachments.values() if a.get('username') == username and not a.get('claimed', False))
-
             fund_balance = get_user_fund_balance(username)
             total_points_with_fund = user_data.get('totalPoints', 0) + fund_balance
             effective_points = get_user_effective_points(username)
             price_multiplier = get_price_multiplier(username)
-
             gcoin_data = game.get_gcoin_data(users, username)
             if not gcoin_data:
                 gcoin_data = {'balance': 0, 'total_earned': 0, 'total_spent': 0}
-
             return jsonify({
                 'authenticated': True,
                 'username': username,
@@ -11291,13 +9605,11 @@ def check_auth():
                 'dailyEarnedPoints': user_data.get('dailyEarnedPoints', 0),
                 'isNewUser': is_new_user(username),
                 'isVerified': is_verified,
-                'hasCancellationCode': user_data.get('cancellationCodePurchased', False),
                 'attendanceConsecutiveDays': user_data.get('attendanceConsecutiveDays', 0),
                 'isWithin24Hours': is_within_24h,
                 'dailyBonusCode': user_data.get('dailyBonusCode'),
                 'createdAt': user_data.get('createdAt'),
                 'lastLoginDate': user_data.get('lastLoginDate', ''),
-                'lastLoginTime': user_data.get('lastLoginTime', ''),
                 'makeupUsedCount': user_data.get('makeup_code_used_count', 0),
                 'gamblersPurchaseCount': gamblers_purchase_count,
                 'gamblersMaxCount': 3,
@@ -11308,7 +9620,9 @@ def check_auth():
                 'mailCount': mail_count,
                 'effectivePoints': effective_points,
                 'priceMultiplier': price_multiplier,
-                'gcoins': gcoin_data
+                'gcoins': gcoin_data,
+                'emailVerified': user_data.get('email_verified', False),
+                'emailChanged': user_data.get('email_changed', False)
             })
     return jsonify({'authenticated': False})
 
@@ -11331,27 +9645,20 @@ def update_qq_number():
     username = session['user']['username']
     data = request.get_json()
     qq_number = data.get('qq_number', '').strip()
-
     if not qq_number:
         return jsonify({'error': '请输入QQ号'}), 400
-
     if not re.match(r'^\d{5,15}$', qq_number):
         return jsonify({'error': 'QQ号格式不正确，请输入5-15位数字'}), 400
-
     user_data = users.get(username)
     if not user_data:
         return jsonify({'error': '用户不存在'}), 400
-
     if user_data.get('qq_number'):
         return jsonify({'error': 'QQ号已设置，不可修改'}), 400
-
     for u, data in users.items():
         if data.get('qq_number') == qq_number:
             return jsonify({'error': '该QQ号已被其他用户绑定'}), 400
-
     user_data['qq_number'] = qq_number
     save_users()
-
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
@@ -11393,14 +9700,11 @@ def get_points():
 def generate_phone():
     start_time = time.time()
     username = session['user']['username']
-
     phone_number = generate_phone_number()
     auth_code = generate_auth_code(phone_number)
     hidden_phone = phone_number[:3] + '*****' + phone_number[-4:]
-
     if username not in phone_records:
         phone_records[username] = []
-
     auth_codes[auth_code] = {
         'code': auth_code,
         'phoneNumber': phone_number,
@@ -11408,7 +9712,6 @@ def generate_phone():
         'createdAt': int(time.time() * 1000),
         'username': username
     }
-
     phone_records[username].append({
         'phoneNumber': phone_number,
         'hiddenPhone': hidden_phone,
@@ -11418,11 +9721,9 @@ def generate_phone():
         'timestamp': datetime.now().isoformat(),
         'username': username
     })
-
     save_phone_records()
     save_auth_codes()
     enforce_phone_record_limit()
-
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'hiddenPhone': hidden_phone,
@@ -11460,41 +9761,46 @@ def verify_authcode():
     username = session['user']['username']
     data = request.get_json()
     auth_code = data.get('authCode', '').strip().upper()
-
     if not auth_code:
         return jsonify({'error': '请输入授权码'}), 400
-
     if auth_code not in auth_codes:
         return jsonify({'error': '授权码无效'}), 400
-
     code_data = auth_codes[auth_code]
-
     if code_data.get('used'):
         return jsonify({'error': '授权码已被使用'}), 400
-
-    if code_data.get('verified', False):
-        return jsonify({'error': '授权码已验证，请回填完整号码获取积分'}), 400
-
+    if code_data.get('reward_claimed', False):
+        return jsonify({'error': '该授权码的积分奖励已被领取'}), 400
     code_username = code_data.get('username')
     if code_username != username:
         return jsonify({'error': '授权码不属于当前用户'}), 400
-
     current_time = int(time.time() * 1000)
     if (current_time - code_data.get('createdAt', 0)) > 180000:
         del auth_codes[auth_code]
         save_auth_codes()
         return jsonify({'error': '授权码已过期（3分钟有效）'}), 400
-
-    code_data['verified'] = True
+    points_earned = round(random.uniform(0.1, 0.5), 2)
+    points_added = update_earned_points(username, points_earned, False)
+    if not points_added:
+        return jsonify({'error': '今日获取积分已达上限14分'}), 400
+    code_data['used'] = True
+    code_data['reward_claimed'] = True
     save_auth_codes()
-
-    phone_number = code_data['phoneNumber']
-
+    for record in phone_records.get(username, []):
+        if record.get('authCode') == auth_code:
+            record['used'] = True
+            save_phone_records()
+            break
+    multiplier = get_total_multiplier(username)
+    invalidate_user_caches(username)
+    phone_number = code_data.get('phoneNumber', '')
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
+        'pointsEarned': points_earned,
         'phoneNumber': phone_number,
-        'responseTime': response_time
+        'responseTime': response_time,
+        'bonusMultiplier': multiplier,
+        'originalPoints': points_earned
     })
 
 @app.route('/api/attendance/token', methods=['POST'])
@@ -11504,25 +9810,19 @@ def verify_authcode():
 @identity_required
 def issue_attendance_token():
     username = session['user']['username']
-
     if is_login_restricted(username):
         return jsonify({'error': '账号已被限制登录'}), 403
-
     _cleanup_expired_attendance_tokens()
-
     ok, err, state = _validate_attendance_state(username)
     if not ok:
         return jsonify({'error': err}), 400
-
     data = request.get_json(silent=True) or {}
     intent_date = (data.get('date') or state['today']).strip()
     if intent_date != state['today']:
         return jsonify({'error': '签到日期异常'}), 400
-
     daily_earned = users.get(username, {}).get('dailyEarnedPoints', 0)
     if daily_earned < 3:
         return jsonify({'error': f'今日获取积分需达到3积分才可签到，当前{daily_earned:.2f}/14'}), 400
-
     for tid, t in list(attendance_tokens.items()):
         if t.get('username') == username and not t.get('used', False):
             if int(time.time()) - t.get('created_at', 0) < ATTENDANCE_TOKEN_TTL:
@@ -11533,7 +9833,6 @@ def issue_attendance_token():
                     'nonce': t['nonce'],
                     'body_hash': t.get('body_hash', '')
                 })
-
     nonce = secrets.token_hex(16)
     issued_at = int(time.time())
     ip_fp = _attendance_ip_fingerprint(get_client_ip())
@@ -11557,7 +9856,6 @@ def issue_attendance_token():
     }
     attendance_tokens[token_id] = token_payload
     save_attendance_tokens()
-
     return jsonify({
         'success': True,
         'token': token_payload['token'],
@@ -11574,135 +9872,99 @@ def issue_attendance_token():
 def attendance():
     start_time = time.time()
     username = session['user']['username']
-
     if is_login_restricted(username):
         return jsonify({'error': '账号已被限制登录'}), 403
-
     data = request.get_json(silent=True) or {}
     token = (data.get('attendance_token') or '').strip()
     nonce = (data.get('nonce') or '').strip()
     req_date = (data.get('date') or '').strip()
     req_body_hash = (data.get('body_hash') or '').strip()
-
     if not token or not nonce:
         return jsonify({'error': '签到令牌缺失，请刷新页面后重试'}), 400
-
     if not req_date or not req_body_hash:
         return jsonify({'error': '签到请求参数缺失'}), 400
-
     _cleanup_expired_attendance_tokens()
-
     if '.' not in token:
         return jsonify({'error': '签到令牌格式错误'}), 400
-
     token_id, signature = token.split('.', 1)
     record = attendance_tokens.get(token_id)
-
     if not record:
         return jsonify({'error': '签到令牌无效或已过期'}), 400
-
     if record.get('used', False):
         attendance_tokens.pop(token_id, None)
         save_attendance_tokens()
         return jsonify({'error': '签到令牌已被使用'}), 400
-
     if record.get('username') != username:
         return jsonify({'error': '签到令牌不属于当前用户'}), 400
-
     now_ts = int(time.time())
     if now_ts - record.get('issued_at', 0) > ATTENDANCE_TOKEN_TTL:
         attendance_tokens.pop(token_id, None)
         save_attendance_tokens()
         return jsonify({'error': '签到令牌已过期，请刷新页面重新获取'}), 400
-
     if record.get('nonce') != nonce:
         return jsonify({'error': '签到令牌校验失败'}), 400
-
     if record.get('date') != req_date:
         return jsonify({'error': '签到日期与令牌不匹配'}), 400
-
     expected_body_hash = record.get('body_hash', '')
     if expected_body_hash and not hmac.compare_digest(expected_body_hash, req_body_hash):
         return jsonify({'error': '签到请求体已被篡改'}), 400
-
     client_ip = get_client_ip()
     ua = request.headers.get('User-Agent', '')
-
     ip_fp = _attendance_ip_fingerprint(client_ip)
     if record.get('ip_fp') != ip_fp:
         return jsonify({'error': '签到环境异常，请使用原网络环境重试'}), 400
-
     sign_base = f"att|{username}|{record.get('date')}|{nonce}|{record.get('issued_at')}|{ip_fp}|{expected_body_hash}"
     expected_sig = _attendance_hmac(sign_base)
     if not hmac.compare_digest(expected_sig, signature):
         return jsonify({'error': '签到令牌签名校验失败'}), 400
-
     user_data = users.get(username)
     if not user_data:
         return jsonify({'error': '用户不存在'}), 400
-
     ok, err, state = _validate_attendance_state(username)
     if not ok:
         return jsonify({'error': err}), 400
-
     today = state['today']
     yesterday = state['yesterday']
     last_date = state['last_date']
     total_days = state['total_days']
     consecutive = state['consecutive']
-
     if last_date == today:
         attendance_tokens.pop(token_id, None)
         save_attendance_tokens()
         return jsonify({'error': '今日已签到'}), 400
-
     daily_earned = user_data.get('dailyEarnedPoints', 0)
     if daily_earned < 3:
         return jsonify({'error': f'今日获取积分需达到3积分才可签到，当前{daily_earned:.2f}/14'}), 400
-
     ok_net, net_err = _check_network_attendance_conflict(username, client_ip, ua)
     if not ok_net:
         return jsonify({'error': net_err}), 429
-
     record['used'] = True
     record['used_at'] = now_ts
     save_attendance_tokens()
     attendance_tokens.pop(token_id, None)
-
     _mark_network_attendance(username, client_ip, ua)
-
     points_earned = 0.3
     user_data['dailyEarnedPoints'] = round(user_data.get('dailyEarnedPoints', 0), 2)
-
     if 'totalPoints' not in user_data:
         user_data['totalPoints'] = 0
-
     new_total = total_days + 1
     if last_date == yesterday:
         new_consecutive = consecutive + 1
     else:
         new_consecutive = 1
-
     if new_consecutive > new_total:
         new_consecutive = new_total
-
     if new_total - total_days != 1:
         return jsonify({'error': '签到状态异常'}), 400
-
     user_data['totalPoints'] = round(user_data['totalPoints'] + points_earned, 2)
     user_data['attendanceConsecutiveDays'] = new_consecutive
     user_data['attendanceTotalDays'] = new_total
-
     if not user_data.get('firstAttendanceDate'):
         user_data['firstAttendanceDate'] = today
-
     user_data['lastAttendanceDate'] = today
     user_data['lastAttendanceTimestamp'] = now_ts
-
     added_points = add_random_system_points(username)
-
     save_users()
-
     try:
         user_email = user_data.get('email', '')
         if user_email:
@@ -11715,7 +9977,7 @@ def attendance():
             boost_data = user_boosts.get(username) or {}
             boost_type_label = ''
             if boost_mult > 1.0:
-                boost_type_label = '高级加成卡' if boost_data.get('boost_type') == 'premium' else '普通加成卡'
+                boost_type_label = '高级加成卡'
             request_ts = int(time.time() * 1000)
             email_service.send_attendance_log_email(
                 username=username,
@@ -11737,10 +9999,8 @@ def attendance():
             )
     except Exception as _log_err:
         log.error(f"签到日志邮件发送异常: {_log_err}")
-
     rewards = check_and_award_attendance_rewards(username)
     invalidate_user_caches(username)
-
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
@@ -11761,10 +10021,8 @@ def attendance_info():
     user_data = users.get(username)
     if not user_data:
         return jsonify({'error': '用户不存在'}), 400
-
     reset_daily_points_if_needed(username)
     user_data = users.get(username)
-
     today = datetime.now().strftime('%Y-%m-%d')
     has_attended_today = user_data.get('lastAttendanceDate', '') == today
     daily_earned = user_data.get('dailyEarnedPoints', 0)
@@ -11790,30 +10048,23 @@ def verify_identity():
     real_name = data.get('real_name', '').strip()
     id_number = data.get('id_number', '').strip()
     gender = data.get('gender', '')
-
     if not real_name or not id_number or not gender:
         return jsonify({'error': '请填写完整信息'}), 400
-
     if len(id_number) != 18 or not re.match(r'^\d{17}[\dXx]$', id_number):
         return jsonify({'error': '身份证号码格式不正确'}), 400
-
     id_number = id_number.upper()
     age = calculate_age(id_number)
     if age is None:
         return jsonify({'error': '身份证号码无效'}), 400
     if age < 10 or age > 80:
         return jsonify({'error': f'年龄需在10-80岁之间，当前{age}岁'}), 400
-
     actual_gender = get_gender_from_id_number(id_number)
     if actual_gender != gender:
         return jsonify({'error': f'性别与身份证号码不符，实际性别为{actual_gender}'}), 400
-
     if username in identity_verifications and identity_verifications[username].get('verified', False):
         return jsonify({'error': '已经完成身份认证，无需重复认证'}), 400
-
     id_hash = hash_id_number(id_number)
     id_masked = mask_id_number(id_number)
-
     identity_verifications[username] = {
         'username': username,
         'real_name': real_name,
@@ -11826,16 +10077,13 @@ def verify_identity():
         'id_card_key': id_number
     }
     save_identity_verifications()
-
     used_data = load_id_cards_used()
     if id_number not in used_data or used_data[id_number] == False:
         used_data[id_number] = True
         save_id_cards_used(used_data)
         log.info(f"Manual verification marked ID card {id_number} as used for user {username}")
-
     pl_amount = round(random.uniform(0.5, 3.0), 4)
     update_user_pl_balance(username, pl_amount, 'identity_verification_reward', 'id_verify')
-
     coupon_types = ['full_reduction', 'unconditional', 'product_specific']
     for _ in range(2):
         coupon_type = random.choice(coupon_types)
@@ -11853,9 +10101,9 @@ def verify_identity():
             desc = f'无门槛减{discount}'
             grant_coupon_to_user(username, coupon_type, discount, 0, random.randint(24, 168), '', desc)
         elif coupon_type == 'product_specific':
-            product_ids = ['point_code', 'premium_point_code', 'reset_code', 'boost_code', 'special_point_code', 'makeup_code', 'gamblers_code']
+            product_ids = ['point_code', 'premium_point_code', 'special_point_code', 'makeup_code', 'gamblers_code']
             product_id = random.choice(product_ids)
-            price_map = {'point_code': 1.2, 'premium_point_code': 3.5, 'reset_code': 8, 'boost_code': 8.8, 'special_point_code': 20, 'makeup_code': 200, 'gamblers_code': 100}
+            price_map = {'point_code': 1.2, 'premium_point_code': 3.5, 'special_point_code': 20, 'makeup_code': 200, 'gamblers_code': 100}
             base_price = price_map.get(product_id, 0)
             max_discount = base_price * 0.8
             discount = round(random.uniform(0.3, max_discount), 1)
@@ -11866,9 +10114,7 @@ def verify_identity():
             product_label = get_product_type_label(product_id)
             desc = f'指定{product_label}减{discount}'
             grant_coupon_to_user(username, coupon_type, discount, 0, random.randint(24, 168), product_id, desc)
-
     invalidate_user_caches(username)
-
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
@@ -11923,19 +10169,15 @@ def check_identity_status():
 def gateway_status():
     start_time = time.time()
     username = session['user']['username']
-
     cleanup_expired_gateway_cards()
-
     user_data = users.get(username, {})
     active_card = get_user_active_card(username)
-
     result = {
         'username': username,
         'points': user_data.get('totalPoints', 0),
         'activeCard': None,
         'cardKey': None
     }
-
     if active_card:
         result['activeCard'] = {
             'type': active_card.get('type', ''),
@@ -11943,9 +10185,7 @@ def gateway_status():
             'price': active_card.get('price', 0)
         }
         result['cardKey'] = active_card.get('key', '')
-
     stock = get_gateway_stock_today()
-
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         **result,
@@ -11964,32 +10204,22 @@ def gateway_create_order():
     card_type = data.get('cardType', '')
     day_price = data.get('dayPrice', None)
     remain_hours = data.get('remainHours', None)
-
     if card_type not in ['hour', 'day', 'week', 'permanent']:
         return jsonify({'error': '无效的卡密类型'}), 400
-
     cleanup_expired_gateway_cards()
-
     active_card = get_user_active_card(username)
     if active_card:
         return jsonify({'error': '您已拥有有效的通行卡密，无需重复购买'}), 400
-
     if not check_gateway_stock(card_type):
         return jsonify({'error': f'{card_type}卡库存已用完，请明日再试'}), 400
-
     base_price = get_card_price(card_type, remain_hours if card_type == 'day' else None)
-
     if base_price <= 0:
         return jsonify({'error': '当前时间无法购买天卡，请选择其他卡密'}), 400
-
     final_price = get_final_price(base_price, username)
     price_info = get_price_info(base_price, username)
-
     user_data = users.get(username, {})
-
     if user_data.get('totalPoints', 0) < final_price:
         return jsonify({'error': f'积分不足，需要 {final_price} 积分，当前 {user_data.get("totalPoints", 0):.2f} 积分'}), 400
-
     order_id = generate_order_id('gateway')
     product_number = get_product_number('gateway')
     orders[order_id] = {
@@ -12021,7 +10251,6 @@ def gateway_create_order():
         'discount_type': price_info['discount_type']
     }
     save_orders()
-
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
@@ -12036,12 +10265,9 @@ def gateway_create_order():
 def gateway_check_access():
     start_time = time.time()
     card_key = request.args.get('key', '').strip().upper()
-
     if not card_key:
         return jsonify({'hasAccess': False, 'error': '请提供卡密'}), 400
-
     cleanup_expired_gateway_cards()
-
     for username, card_data in gateway_cards.items():
         if card_data.get('key') == card_key and not card_data.get('used', False):
             expire_at = card_data.get('expire_at', 0)
@@ -12055,7 +10281,6 @@ def gateway_check_access():
                     'expireAt': expire_at,
                     'responseTime': response_time
                 })
-
     return jsonify({'hasAccess': False, 'error': '卡密无效或已过期'}), 400
 
 @app.route('/api/gateway/stock', methods=['GET'])
@@ -12072,9 +10297,7 @@ def get_order_history():
     username = session['user']['username']
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
-
     reload_if_changed()
-
     user_orders = []
     for order_id, order in orders.items():
         if order.get('username') == username:
@@ -12089,12 +10312,10 @@ def get_order_history():
                 'paid_at': order.get('paid_at', 0),
                 'delivered': order.get('delivered', False)
             })
-
     user_orders.sort(key=lambda x: -x.get('created_at', 0))
     total = len(user_orders)
     start = (page - 1) * per_page
     end = start + per_page
-
     return jsonify({
         'orders': user_orders[start:end],
         'total': total,
@@ -12208,7 +10429,6 @@ def get_fund_history():
     start = (page - 1) * per_page
     end = start + per_page
     response_time = int((time.time() - start_time) * 1000)
-
     for record in records[start:end]:
         if record.get('type') == 'refund':
             record['display_sign'] = '+'
@@ -12225,7 +10445,6 @@ def get_fund_history():
         else:
             record['display_sign'] = '+' if record.get('amount', 0) >= 0 else '-'
             record['display_type'] = record.get('type', '')
-
     return jsonify({
         'records': records[start:end],
         'total': total,
@@ -12260,16 +10479,13 @@ def get_nav_status():
     username = session['user']['username']
     current_nav = get_current_nav()
     today = datetime.now().strftime('%Y-%m-%d')
-
     holdings = nav_holdings.get(username, [])
-
     cleaned = [h for h in holdings if h.get('shares', 0) > 0]
     if len(cleaned) != len(holdings):
         log.debug(f"Cleaned {len(holdings) - len(cleaned)} zero-share holdings for {username}")
         nav_holdings[username] = cleaned
         save_nav_holdings()
     holdings = cleaned
-
     holdings_detail = []
     total_shares = 0
     total_profit = 0
@@ -12288,7 +10504,6 @@ def get_nav_status():
             'current_nav': current_nav,
             'profit': profit
         })
-
     market_value = total_shares * current_nav
     avg_cost = 0
     total_cost = 0
@@ -12296,10 +10511,8 @@ def get_nav_status():
         total_cost += h.get('shares', 0) * h.get('buy_nav', 0)
     if total_shares > 0:
         avg_cost = round(total_cost / total_shares, 4)
-
     next_update = datetime.strptime(today, '%Y-%m-%d') + timedelta(days=1)
     next_update = next_update.replace(hour=0, minute=0, second=0, microsecond=0)
-
     return jsonify({
         'current_nav': current_nav,
         'nav_date': int(datetime.strptime(today, '%Y-%m-%d').timestamp() * 1000),
@@ -12321,98 +10534,42 @@ def nav_sell_single_api():
     data = request.get_json()
     index = data.get('index', -1)
     shares = float(data.get('shares', 0))
-
     if index < 0:
         return jsonify({'error': '无效的持仓索引'}), 400
-
     holdings = nav_holdings.get(username, [])
     if index >= len(holdings):
         return jsonify({'error': '持仓不存在'}), 400
-
     holding = holdings[index]
     if holding.get('shares', 0) < shares:
         return jsonify({'error': '持有份额不足'}), 400
-
     today_start = int(datetime.now().replace(hour=0, minute=0, second=0, microsecond=0).timestamp() * 1000)
     today_end = int(datetime.now().replace(hour=23, minute=59, second=59, microsecond=999999).timestamp() * 1000)
     buy_time = holding.get('buy_time', 0)
-
     if today_start <= buy_time <= today_end:
         return jsonify({
             'error': '申购当天不得进行赎回操作，请于次日00:00后再试',
             'error_code': 'NAV_SELL_SAME_DAY'
         }), 400
-
-    current_nav = get_current_nav()
-    total_amount = shares * current_nav
-    total_cost = shares * holding.get('buy_nav', 0)
-    profit = round(total_amount - total_cost, 4)
-
-    if shares >= holding.get('shares', 0):
-        del holdings[index]
-    else:
-        holding['shares'] = round(holding['shares'] - shares, 2)
-
-    nav_holdings[username] = holdings
-    save_nav_holdings()
-
-    user_data = users.get(username)
-
-    profit_fee = 0
-    loss_amount = 0
-    user_receive = total_amount
-
-    if user_data:
-        if profit > 0:
-            profit_fee = round(profit * 0.08, 4)
-            user_receive = round(total_amount - profit_fee, 4)
-            user_data['totalPoints'] = round(user_data['totalPoints'] + user_receive, 2)
-            add_system_total_points(profit_fee)
-        elif profit < 0:
-            loss_amount = abs(profit)
-            user_receive = total_amount
-            user_data['totalPoints'] = round(user_data['totalPoints'] + total_amount, 2)
-            add_system_total_points(loss_amount)
-        else:
-            user_receive = total_amount
-            user_data['totalPoints'] = round(user_data['totalPoints'] + total_amount, 2)
-        save_users()
-
-    record_id = f"nav_{int(time.time()*1000)}_{random.randint(1000,9999)}"
-    nav_history[record_id] = {
-        'id': record_id,
-        'username': username,
-        'type': 'sell_nav',
-        'shares': shares,
-        'nav': current_nav,
-        'amount': total_amount,
-        'profit': profit,
-        'profit_fee': profit_fee,
-        'loss_amount': loss_amount,
-        'user_receive': user_receive,
-        'timestamp': int(time.time() * 1000)
-    }
-    save_nav_history()
-
+    result, error = nav_sell_single(username, index, shares)
+    if error:
+        return jsonify({'error': error}), 400
     invalidate_user_caches(username)
     response_time = int((time.time() - start_time) * 1000)
-
-    if profit > 0:
-        msg = f'赎回成功！获得 {user_receive:.2f} 积分（收益 {profit:.2f}，其中8%即 {profit_fee:.2f} 积分已归入系统池）'
-    elif profit < 0:
-        msg = f'赎回成功！获得 {user_receive:.2f} 积分（亏损 {loss_amount:.2f}，已全额归入系统池）'
+    if result['profit'] > 0:
+        msg = f'赎回成功！获得 {result["user_receive"]:.2f} 积分（收益 {result["profit"]:.2f}，其中8%即 {result["profit_fee"]:.2f} 积分已归入系统池）'
+    elif result['profit'] < 0:
+        msg = f'赎回成功！获得 {result["user_receive"]:.2f} 积分（亏损 {result["loss_amount"]:.2f}，已全额归入系统池）'
     else:
-        msg = f'赎回成功！获得 {user_receive:.2f} 积分（持平）'
-
+        msg = f'赎回成功！获得 {result["user_receive"]:.2f} 积分（持平）'
     return jsonify({
         'success': True,
-        'amount': total_amount,
-        'user_receive': user_receive,
-        'shares': shares,
-        'nav': current_nav,
-        'profit': profit,
-        'profit_fee': profit_fee,
-        'loss_amount': loss_amount,
+        'amount': result['amount'],
+        'user_receive': result['user_receive'],
+        'shares': result['shares'],
+        'nav': result['nav'],
+        'profit': result['profit'],
+        'profit_fee': result['profit_fee'],
+        'loss_amount': result['loss_amount'],
         'message': msg,
         'responseTime': response_time
     })
@@ -12459,13 +10616,11 @@ def nav_sell_api():
         return jsonify({'error': error}), 400
     invalidate_user_caches(username)
     response_time = int((time.time() - start_time) * 1000)
-
     message = f'赎回成功！获得 {result["user_receive"]:.2f} 积分'
     if result['profit'] > 0:
         message += f'（收益 {result["profit"]:.2f}，其中8%即 {result["profit_fee"]:.2f} 积分已归入系统池）'
     elif result['profit'] < 0:
         message += f'（亏损 {result["loss_amount"]:.2f}，已全额归入系统池）'
-
     return jsonify({
         'success': True,
         'amount': result['amount'],
@@ -12516,20 +10671,15 @@ def generate_qr_token_api():
     data = request.get_json()
     order_id = data.get('order_id', '')
     product_number = data.get('product_number', '')
-
     if not order_id:
         return jsonify({'error': '缺少订单号'}), 400
-
     order = orders.get(order_id)
     if not order:
         return jsonify({'error': '订单不存在'}), 404
-
     username = session['user']['username']
     if order.get('username') != username and order.get('owner') != username:
         return jsonify({'error': '无权操作此订单'}), 403
-
     token, timestamp = generate_qr_token(order_id, product_number or order.get('product_number', ''))
-
     return jsonify({
         'token': token,
         'timestamp': timestamp,
@@ -12542,18 +10692,14 @@ def qr_order_redirect(token):
         order_id, product_number, timestamp, error = decode_qr_token(token)
         if error:
             return jsonify({'valid': False, 'error': f'无效的二维码: {error}'}), 400
-
         current_time = int(time.time())
         if current_time - timestamp > 14400:
             return jsonify({'valid': False, 'error': '二维码已过期（超过4小时）'}), 400
-
         order = orders.get(order_id)
         if not order:
             return jsonify({'valid': False, 'error': '订单不存在'}), 404
-
         product_name = order.get('product_name', '未知商品')
         is_daifu = order.get('is_daifu', False)
-
         if is_daifu:
             owner = order.get('owner', order.get('username'))
             daifu_status = order.get('daifu_status', 'waiting_pay')
@@ -12568,7 +10714,6 @@ def qr_order_redirect(token):
                 'owner': owner,
                 'daifu_status': daifu_status
             })
-
         if order.get('status') == 'paid':
             return jsonify({
                 'valid': True,
@@ -12578,7 +10723,6 @@ def qr_order_redirect(token):
                 'status': 'paid',
                 'redirect_url': f'/pay/{order_id}'
             })
-
         if order.get('status') == 'pending':
             created_at = order.get('created_at', 0)
             current_time_ms = int(time.time() * 1000)
@@ -12590,7 +10734,6 @@ def qr_order_redirect(token):
                     'order_id': order_id,
                     'product_name': product_name
                 }), 400
-
         return jsonify({
             'valid': True,
             'order_id': order_id,
@@ -12613,10 +10756,8 @@ def refund_init(order_id):
     data = request.get_json() or {}
     card_key = data.get('card_key', '').strip().upper()
     is_gateway_refund = data.get('is_gateway_refund', False) or card_key
-
     if is_gateway_refund and card_key:
         return _refund_init_gateway(username, card_key)
-
     order = orders.get(order_id)
     if not order:
         return jsonify({'error': '订单不存在'}), 400
@@ -12630,7 +10771,6 @@ def refund_init(order_id):
         return jsonify({'error': '转账订单禁止退款'}), 400
     if order.get('is_daifu', False):
         return jsonify({'error': '代付订单禁止退款'}), 400
-
     delivered_codes = order.get('delivered_codes', [])
     for aid, attachment in mail_attachments.items():
         if attachment.get('username') != username:
@@ -12641,13 +10781,10 @@ def refund_init(order_id):
             code = attachment.get('code', '')
             if code and code in delivered_codes:
                 return jsonify({'error': '该订单的卡密尚未从邮箱领取，请先领取卡密后再申请退款'}), 400
-
     refund_amount, refund_points, reason, detail = calc_refund_amount(order, username)
     if refund_points <= 0:
         return jsonify({'error': '退款金额为0，无法退款'}), 400
-
     risk_passed, risk_msg, risk_score, risk_details = perform_refund_risk_check(username, refund_points)
-
     if not risk_passed:
         return jsonify({
             'error': risk_msg,
@@ -12655,7 +10792,6 @@ def refund_init(order_id):
             'risk_details': risk_details,
             'risk_check_failed': True
         }), 403
-
     if refund_points < REFUND_EMAIL_THRESHOLD:
         try:
             result = _do_refund(username, order_id, refund_points, refund_amount, reason)
@@ -12672,16 +10808,13 @@ def refund_init(order_id):
             'risk_message': risk_msg or '风控审查通过',
             **result
         })
-
     for tid, t in list(refund_tickets.items()):
         if t['order_id'] == order_id and not t['used']:
             if int(time.time()) - t['created_at'] < 60:
                 return jsonify({'error': '验证邮件已发送，请稍后再试'}), 429
             del refund_tickets[tid]
-
     ticket_id = f"rt_{int(time.time()*1000)}_{random.randint(1000, 9999)}"
     token, ts = generate_refund_token(order_id, ticket_id)
-
     refund_tickets[ticket_id] = {
         'ticket_id': ticket_id,
         'username': username,
@@ -12699,12 +10832,10 @@ def refund_init(order_id):
         'refund_result': None,
         'refunded_at': 0
     }
-
     user_email = users.get(username, {}).get('email', '')
     if not user_email:
         del refund_tickets[ticket_id]
         return jsonify({'error': '您的账号未绑定邮箱，无法进行大额退款验证'}), 400
-
     try:
         email_service.send_refund_verification_email(
             username, user_email, order, refund_points, token
@@ -12713,7 +10844,6 @@ def refund_init(order_id):
         log.error(f"发送退款验证邮件失败: {e}")
         del refund_tickets[ticket_id]
         return jsonify({'error': '验证邮件发送失败，请稍后重试'}), 500
-
     return jsonify({
         'success': True,
         'auto_refunded': False,
@@ -12734,7 +10864,6 @@ def refund_init(order_id):
 def refund_check(order_id):
     username = session['user']['username']
     order = orders.get(order_id)
-
     if not order:
         return jsonify({'error': '订单不存在'}), 400
     if order.get('username') != username:
@@ -12747,7 +10876,6 @@ def refund_check(order_id):
         return jsonify({'can_refund': False, 'reason': '转账订单禁止退款'}), 200
     if order.get('is_daifu', False):
         return jsonify({'can_refund': False, 'reason': '代付订单禁止退款'}), 200
-
     delivered_codes = order.get('delivered_codes', [])
     unclaimed = 0
     for aid, attachment in mail_attachments.items():
@@ -12766,13 +10894,10 @@ def refund_check(order_id):
             'has_unclaimed': True,
             'unclaimed_count': unclaimed
         }), 200
-
     refund_amount, refund_points, reason, detail = calc_refund_amount(order, username)
     if refund_points <= 0:
         return jsonify({'can_refund': False, 'reason': '退款金额为0，无法退款'}), 200
-
     risk_passed, risk_msg, risk_score, risk_details = perform_refund_risk_check(username, refund_points)
-
     return jsonify({
         'can_refund': risk_passed,
         'refund_amount': refund_amount,
@@ -12796,10 +10921,8 @@ def refund_verify_info():
     order_id, ticket_id, ts, err = decode_refund_token(token)
     if err:
         return jsonify({'error': f'链接无效: {err}'}), 400
-
     if int(time.time()) - ts > REFUND_TICKET_TTL:
         return jsonify({'error': '链接已过期，请回到退款页面重新发起'}), 400
-
     ticket = refund_tickets.get(ticket_id)
     if not ticket:
         return jsonify({'error': '链接已失效或已被使用'}), 400
@@ -12807,13 +10930,11 @@ def refund_verify_info():
         return jsonify({'error': '链接与订单不匹配'}), 400
     if ticket['used']:
         return jsonify({'error': '该退款已完成，无需重复验证'}), 400
-
     order = orders.get(order_id, {})
     if ticket.get('is_gateway_refund'):
         product_name = order.get('product_name') or f'通行卡密-{ticket.get("card_key", "")[:8]}...'
     else:
         product_name = order.get('product_name', '未知商品')
-
     return jsonify({
         'success': True,
         'order_id': order_id,
@@ -12829,7 +10950,6 @@ def refund_verify_info():
         'is_gateway_refund': ticket.get('is_gateway_refund', False)
     })
 
-
 @app.route('/api/refund/verify-confirm', methods=['POST'])
 @csrf_protect
 @limiter.limit('10 per minute')
@@ -12837,17 +10957,13 @@ def refund_verify_confirm():
     data = request.get_json()
     token = data.get('token', '').strip()
     password = data.get('password', '')
-
     if not token or not password:
         return jsonify({'error': '请填写密码'}), 400
-
     order_id, ticket_id, ts, err = decode_refund_token(token)
     if err:
         return jsonify({'error': f'链接无效: {err}'}), 400
-
     if int(time.time()) - ts > REFUND_TICKET_TTL:
         return jsonify({'error': '链接已过期，请回到退款页面重新发起'}), 400
-
     ticket = refund_tickets.get(ticket_id)
     if not ticket:
         return jsonify({'error': '链接已失效或已被使用'}), 400
@@ -12855,26 +10971,20 @@ def refund_verify_confirm():
         return jsonify({'error': '链接与订单不匹配'}), 400
     if ticket['used']:
         return jsonify({'error': '该退款已完成，无需重复验证'}), 400
-
     if ticket['email_verified']:
         return jsonify({'success': True, 'message': '已完成验证，请回到原页面等待退款'})
-
     username = ticket['username']
     user_data = users.get(username)
     if not user_data:
         return jsonify({'error': '用户不存在'}), 400
-
     if not bcrypt.check_password_hash(user_data['password'], password):
         return jsonify({'error': '密码错误，请重试'}), 400
-
     ticket['email_verified'] = True
     ticket['email_verified_at'] = int(time.time())
-
     return jsonify({
         'success': True,
         'message': '验证成功！请回到原页面等待退款完成'
     })
-
 
 @app.route('/api/order/<order_id>/refund-status', methods=['GET'])
 @login_required
@@ -12882,23 +10992,19 @@ def refund_status(order_id):
     username = session['user']['username']
     ticket_id = request.args.get('ticket', '').strip()
     ticket = refund_tickets.get(ticket_id)
-
     if not ticket:
         return jsonify({'error': 'ticket 不存在或已过期'}), 400
     if ticket['username'] != username:
         return jsonify({'error': '无权查看'}), 403
     if ticket['order_id'] != order_id:
         return jsonify({'error': 'ticket 与订单不匹配'}), 400
-
     if int(time.time()) - ticket['created_at'] > REFUND_TICKET_TTL:
         del refund_tickets[ticket_id]
         return jsonify({'error': 'ticket 已过期，请重新发起退款'}), 400
-
     elapsed = int(time.time()) - ticket['created_at']
     cooldown_ok = elapsed >= REFUND_COOLDOWN_SECONDS
     email_ok = ticket['email_verified']
     risk_ok = ticket['risk_passed']
-
     if cooldown_ok and email_ok and risk_ok and not ticket['used']:
         ticket['used'] = True
         try:
@@ -12931,7 +11037,6 @@ def refund_status(order_id):
                 'risk_details': ticket.get('risk_details', []),
                 'error': f'退款执行失败: {str(e)}'
             }), 500
-
     return jsonify({
         'email_verified': email_ok,
         'risk_passed': risk_ok,
@@ -12948,10 +11053,8 @@ def refund_status(order_id):
 def search_order():
     username = session['user']['username']
     keyword = request.args.get('keyword', '').strip()
-
     if not keyword:
         return jsonify({'error': '请输入查询关键词'}), 400
-
     if re.match(r'^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$', keyword):
         for u, card in gateway_cards.items():
             if card.get('key') == keyword and u == username and not card.get('used', False):
@@ -12960,7 +11063,6 @@ def search_order():
                 card_expire = card.get('expire_at', 0)
                 created_at = card.get('created_at', 0)
                 current_time = int(time.time() * 1000)
-
                 if card_expire > 0 and current_time > card_expire:
                     return jsonify({
                         'type': 'gateway',
@@ -12975,7 +11077,6 @@ def search_order():
                         'status': '已过期',
                         'username': username
                     }), 200
-
                 original_order_id = None
                 original_order = None
                 for oid, order in orders.items():
@@ -12985,7 +11086,6 @@ def search_order():
                             original_order_id = oid
                             original_order = order
                             break
-
                 if original_order_id and original_order:
                     if original_order.get('refunded', False):
                         return jsonify({
@@ -13003,7 +11103,6 @@ def search_order():
                             'order_id': original_order_id,
                             'is_refunded': True
                         }), 200
-
                 if card_type == 'hour':
                     refund_amount = card_price
                     reason = '小时卡全额退款'
@@ -13037,9 +11136,7 @@ def search_order():
                 else:
                     refund_amount = card_price
                     reason = '未知类型，全额退款'
-
                 virtual_order_id = f'GATEWAY_{keyword.replace("-", "")}'
-
                 return jsonify({
                     'type': 'gateway',
                     'exists': True,
@@ -13059,17 +11156,13 @@ def search_order():
                     'original_order_id': original_order_id,
                     'is_refunded': False
                 }), 200
-
         return jsonify({'type': 'gateway', 'exists': False, 'message': '通行卡密不存在或已被使用'}), 200
-
     found_orders = []
     for order_id, order in orders.items():
         if order.get('username') != username:
             continue
-
         order_number = order.get('product_number', '')
         anti_fake_code = order.get('anti_fake_code', '')
-
         if keyword == order_id or keyword == order_number or keyword == anti_fake_code:
             found_orders.append({
                 'type': 'order',
@@ -13094,10 +11187,8 @@ def search_order():
                 'product_number': order_number,
                 'owner': order.get('owner', order.get('username', ''))
             })
-
     if not found_orders:
         return jsonify({'type': 'order', 'orders': [], 'message': '未找到匹配订单'}), 200
-
     return jsonify({'type': 'order', 'orders': found_orders}), 200
 
 @app.route('/qr/<token>')
@@ -13114,31 +11205,24 @@ def qr_redirect_page(token):
 @login_required
 def quick_verify_identity():
     username = session['user']['username']
-
     if check_identity_verified(username):
         return jsonify({'error': '您已完成身份认证'}), 400
-
     available = get_available_id_card()
     if not available:
         stats = get_id_cards_stats()
         if stats['total'] == 0:
             return jsonify({'error': '快速认证暂不可用，请手动认证'}), 400
         return jsonify({'error': '所有身份证已使用完毕，请手动认证'}), 400
-
     real_name = available['name']
     id_number = available['id_number']
     key = available['key']
-
     gender_digit = int(id_number[16])
     gender = '男' if gender_digit % 2 == 1 else '女'
-
     age = calculate_age(id_number)
     if age is None or age < 10 or age > 80:
         return jsonify({'error': f'身份证年龄验证失败 (年龄: {age}岁，需10-80岁)'}), 400
-
     id_hash = hash_id_number(id_number)
     id_masked = mask_id_number(id_number)
-
     identity_verifications[username] = {
         'username': username,
         'real_name': real_name,
@@ -13151,14 +11235,11 @@ def quick_verify_identity():
         'id_card_key': key
     }
     save_identity_verifications()
-
     used_data = load_id_cards_used()
     used_data[key] = True
     save_id_cards_used(used_data)
-
     pl_amount = round(random.uniform(0.5, 3.0), 4)
     update_user_pl_balance(username, pl_amount, 'identity_verification_reward', 'id_verify_quick')
-
     coupon_types = ['full_reduction', 'unconditional', 'product_specific']
     for _ in range(2):
         coupon_type = random.choice(coupon_types)
@@ -13176,9 +11257,9 @@ def quick_verify_identity():
             desc = f'无门槛减{discount}'
             grant_coupon_to_user(username, coupon_type, discount, 0, random.randint(24, 168), '', desc)
         elif coupon_type == 'product_specific':
-            product_ids = ['point_code', 'premium_point_code', 'reset_code', 'boost_code', 'special_point_code', 'makeup_code', 'gamblers_code']
+            product_ids = ['point_code', 'premium_point_code', 'special_point_code', 'makeup_code', 'gamblers_code']
             product_id = random.choice(product_ids)
-            price_map = {'point_code': 1.2, 'premium_point_code': 3.5, 'reset_code': 8, 'boost_code': 8.8, 'special_point_code': 20, 'makeup_code': 200, 'gamblers_code': 100}
+            price_map = {'point_code': 1.2, 'premium_point_code': 3.5, 'special_point_code': 20, 'makeup_code': 200, 'gamblers_code': 100}
             base_price = price_map.get(product_id, 0)
             max_discount = base_price * 0.8
             discount = round(random.uniform(0.3, max_discount), 1)
@@ -13189,10 +11270,8 @@ def quick_verify_identity():
             product_label = get_product_type_label(product_id)
             desc = f'指定{product_label}减{discount}'
             grant_coupon_to_user(username, coupon_type, discount, 0, random.randint(24, 168), product_id, desc)
-
     stats = get_id_cards_stats()
     invalidate_user_caches(username)
-
     return jsonify({
         'success': True,
         'message': f'快速认证成功！使用 {real_name} 完成认证，获得{pl_amount}PL和2张随机优惠券',
@@ -13207,17 +11286,14 @@ def quick_verify_identity():
 @login_required
 def quick_verify_status():
     username = session['user']['username']
-
     if check_identity_verified(username):
         return jsonify({
             'available': False,
             'reason': 'already_verified',
             'message': '您已完成身份认证'
         })
-
     stats = get_id_cards_stats()
     available = get_available_id_card()
-
     if stats['total'] == 0:
         return jsonify({
             'available': False,
@@ -13225,7 +11301,6 @@ def quick_verify_status():
             'message': '暂无可用身份证数据，请手动认证',
             'stats': stats
         })
-
     if stats['available'] == 0:
         return jsonify({
             'available': False,
@@ -13233,7 +11308,6 @@ def quick_verify_status():
             'message': '所有身份证已使用完毕，请手动认证',
             'stats': stats
         })
-
     return jsonify({
         'available': True,
         'stats': stats,
@@ -13248,43 +11322,34 @@ def customer_service_search():
     data = request.get_json()
     query = data.get('query', '').strip()
     username = session['user']['username']
-
     if not query:
         return jsonify({'error': '请输入您的问题'}), 400
-
     knowledge_base_path = os.path.join(os.path.dirname(__file__), 'knowledge_base.json')
-
     if not os.path.exists(knowledge_base_path):
         return jsonify({'error': '知识库暂不可用'}), 500
-
     try:
         with open(knowledge_base_path, 'r', encoding='utf-8') as f:
             kb = json.load(f)
     except Exception:
         return jsonify({'error': '知识库加载失败'}), 500
-
     topics = kb.get('topics', [])
     results = []
     query_lower = query.lower()
-
     for topic in topics:
         keywords = topic.get('keywords', [])
         title = topic.get('title', '')
         content = topic.get('content', '')
         match_score = 0
         matched_keywords = []
-
         for keyword in keywords:
             if keyword in query_lower:
                 match_score += 1
                 matched_keywords.append(keyword)
-
         title_lower = title.lower()
         content_lower = content.lower()
         title_words = title_lower.split()
         content_words = content_lower.split()
         query_words = query_lower.split()
-
         for qw in query_words:
             if len(qw) >= 2:
                 for tw in title_words:
@@ -13296,7 +11361,6 @@ def customer_service_search():
                     if cw in qw or qw in cw:
                         if len(cw) >= 2 and cw not in matched_keywords:
                             matched_keywords.append(cw)
-
         if match_score > 0:
             results.append({
                 'id': topic.get('id', ''),
@@ -13305,10 +11369,8 @@ def customer_service_search():
                 'score': round(match_score, 1),
                 'matched_keywords': matched_keywords[:5]
             })
-
     results.sort(key=lambda x: x['score'], reverse=True)
     top_results = results[:3]
-
     user_data = users.get(username, {})
     today = datetime.now().strftime('%Y-%m-%d')
     response_data = {
@@ -13317,18 +11379,14 @@ def customer_service_search():
         'user_data': {},
         'responseTime': int((time.time() - start_time) * 1000)
     }
-
     is_attendance_query = any(kw in query_lower for kw in ['签到', '打卡', '今日签到', '签到状态', '签到情况'])
-
     if is_attendance_query:
         has_attended_today = user_data.get('lastAttendanceDate', '') == today
         total_days = user_data.get('attendanceTotalDays', 0)
         consecutive_days = user_data.get('attendanceConsecutiveDays', 0)
         daily_earned = user_data.get('dailyEarnedPoints', 0)
-
         consecutive_rewards = get_consecutive_rewards(consecutive_days)
         total_rewards = get_total_rewards(total_days)
-
         response_data['user_data']['attendance'] = {
             'has_attended_today': has_attended_today,
             'total_days': total_days,
@@ -13340,7 +11398,6 @@ def customer_service_search():
             'next_consecutive_milestone': get_next_milestone(consecutive_days, 'consecutive'),
             'next_total_milestone': get_next_milestone(total_days, 'total')
         }
-
     is_points_query = any(kw in query_lower for kw in ['积分', '剩余积分', '积分余额', '多少积分'])
     if is_points_query:
         total_points = user_data.get('totalPoints', 0)
@@ -13354,7 +11411,6 @@ def customer_service_search():
             'daily_limit': 14,
             'remaining_today': max(0, 14 - daily_earned)
         }
-
     is_pl_query = any(kw in query_lower for kw in ['pl', 'PL', 'pl余额', 'PL余额'])
     if is_pl_query:
         pl_balance = get_user_pl_balance(username)
@@ -13364,7 +11420,6 @@ def customer_service_search():
             'rate': pl_rate,
             'points_value': round(pl_balance / pl_rate, 2) if pl_rate > 0 else 0
         }
-
     return jsonify(response_data)
 
 def get_consecutive_rewards(days):
@@ -13372,10 +11427,10 @@ def get_consecutive_rewards(days):
     base = days % 30
     if base == 0 and days > 0:
         cycle = days // 30
-        rewards.append('高级积分卡密 ×3 + 积分加成卡 ×2 + 重置密码卡密 ×1（第' + str(cycle) + '周期）')
+        rewards.append('高级积分卡密 ×3 + 高级加成卡 ×2（第' + str(cycle) + '周期）')
     elif base == 29:
         cycle = (days // 30) + 1
-        rewards.append('高级积分卡密 ×3 + 积分加成卡 ×2 + 重置密码卡密 ×1（第' + str(cycle) + '周期）')
+        rewards.append('高级积分卡密 ×3 + 高级加成卡 ×2（第' + str(cycle) + '周期）')
     elif base == 14:
         cycle = (days // 30) + 1
         rewards.append('高级积分卡密 ×3（第' + str(cycle) + '周期）')
@@ -13392,16 +11447,16 @@ def get_total_rewards(days):
     base = days % 30
     if days >= 99 and base == 9:
         cycle = (days // 30) + 1
-        rewards.append('38.0积分 + 积分加成卡 ×3（第' + str(cycle) + '周期）')
+        rewards.append('38.0积分 + 高级加成卡 ×3（第' + str(cycle) + '周期）')
     elif days >= 59 and base == 29:
         cycle = (days // 30) + 1
-        rewards.append('20.0积分 + 积分加成卡 ×2（第' + str(cycle) + '周期）')
+        rewards.append('20.0积分 + 高级加成卡 ×2（第' + str(cycle) + '周期）')
     elif base == 0 and days > 0:
         cycle = days // 30
-        rewards.append('8.8积分 + 积分加成卡 ×1（第' + str(cycle) + '周期）')
+        rewards.append('8.8积分 + 高级加成卡 ×1（第' + str(cycle) + '周期）')
     elif base == 28:
         cycle = (days // 30) + 1
-        rewards.append('8.8积分 + 积分加成卡 ×1（第' + str(cycle) + '周期）')
+        rewards.append('8.8积分 + 高级加成卡 ×1（第' + str(cycle) + '周期）')
     elif base == 15:
         cycle = (days // 30) + 1
         rewards.append('3.0积分（第' + str(cycle) + '周期）')
@@ -13443,7 +11498,6 @@ def get_news():
         if response.status_code == 200:
             content_type = response.headers.get('content-type', '')
             if 'image' in content_type:
-                import base64
                 image_data = base64.b64encode(response.content).decode('utf-8')
                 return jsonify({
                     'success': True,
@@ -13483,44 +11537,35 @@ def get_news():
 @limiter.limit('5 per day')
 def get_ip_signature():
     try:
-        import base64
-
         target_url = 'https://api.szfx.top/info-card/'
-
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept': 'image/*,*/*;q=0.8',
             'Referer': 'https://api.szfx.top/'
         }
-
         resp = requests.get(target_url, headers=headers, timeout=10, allow_redirects=True, stream=True)
-
         if resp.status_code != 200:
             return jsonify({
                 'success': False,
                 'error': f'IP签名档服务暂时不可用 (HTTP {resp.status_code})'
             }), 200
-
         content_type = resp.headers.get('Content-Type', '')
         if 'image' not in content_type.lower():
             return jsonify({
                 'success': False,
                 'error': 'IP签名档服务返回异常数据'
             }), 200
-
         content = resp.content
         if not content or len(content) < 100:
             return jsonify({
                 'success': False,
                 'error': 'IP签名档图片数据异常'
             }), 200
-
         if len(content) > 2 * 1024 * 1024:
             return jsonify({
                 'success': False,
                 'error': '图片过大，请稍后重试'
             }), 200
-
         img_base64 = base64.b64encode(content).decode('utf-8')
         fmt = 'png'
         if 'jpeg' in content_type.lower() or 'jpg' in content_type.lower():
@@ -13529,7 +11574,6 @@ def get_ip_signature():
             fmt = 'gif'
         elif 'webp' in content_type.lower():
             fmt = 'webp'
-
         return jsonify({
             'success': True,
             'type': 'image',
@@ -13537,7 +11581,6 @@ def get_ip_signature():
             'format': fmt,
             'source': 'szfx.top IP签名档'
         })
-
     except requests.exceptions.Timeout:
         return jsonify({
             'success': False,
@@ -13560,21 +11603,17 @@ def get_earthquake_info():
             limit = 1
         if limit > 10:
             limit = 10
-
         url = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/significant_month.geojson'
-
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
             'Accept': 'application/json'
         }
-
         resp = requests.get(url, headers=headers, timeout=10)
         if resp.status_code != 200:
             return jsonify({
                 'success': False,
                 'error': f'地震信息服务暂时不可用 (HTTP {resp.status_code})'
             }), 200
-
         data = resp.json()
         features = data.get('features', [])
         if not features:
@@ -13585,25 +11624,21 @@ def get_earthquake_info():
                 'source': 'USGS',
                 'message': '近一个月内无显著地震'
             })
-
         earthquakes = []
         for feat in features[:limit]:
             props = feat.get('properties', {})
             geom = feat.get('geometry', {})
             coords = geom.get('coordinates', [0, 0, 0])
-
             magnitude = props.get('mag', 0)
             place = props.get('place', '未知地点')
             time_ms = props.get('time', 0)
             tsunami = props.get('tsunami', 0)
             url_detail = props.get('url', '')
             depth = coords[2] if len(coords) > 2 else 0
-
             try:
                 time_str = datetime.fromtimestamp(time_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
             except Exception:
                 time_str = '未知'
-
             if magnitude >= 6.0:
                 level = 'severe'
                 level_text = '强震'
@@ -13616,7 +11651,6 @@ def get_earthquake_info():
             else:
                 level = 'minor'
                 level_text = '轻微'
-
             earthquakes.append({
                 'magnitude': round(magnitude, 1),
                 'place': place,
@@ -13627,7 +11661,6 @@ def get_earthquake_info():
                 'level_text': level_text,
                 'url': url_detail
             })
-
         return jsonify({
             'success': True,
             'earthquakes': earthquakes,
@@ -13635,7 +11668,6 @@ def get_earthquake_info():
             'source': 'USGS Earthquake Hazards Program',
             'period': '近一个月显著地震'
         })
-
     except requests.exceptions.Timeout:
         return jsonify({
             'success': False,
@@ -13703,7 +11735,6 @@ def proxy_music_playlist_recommend():
         log.error(f'Music playlist recommend proxy error: {e}')
         return jsonify({'error': '歌单服务暂不可用'}), 502
 
-
 @app.route('/api/music/playlist/detail', methods=['GET'])
 @login_required
 def proxy_music_playlist_detail():
@@ -13759,31 +11790,23 @@ def search_web():
     start_time = time.time()
     data = request.get_json()
     query = data.get('query', '').strip()
-
     if not query:
         return jsonify({'error': '请输入搜索内容'}), 400
-
     is_weather_query = any(kw in query for kw in ['天气', '气温', '温度', '降雨', '下雨', '晴天', '多云', '阴天', '风速'])
-
     if is_weather_query:
         lat_lng_pattern = r'(-?\d+\.?\d*)\s*[,，\s]\s*(-?\d+\.?\d*)'
         lat_lng_match = re.search(lat_lng_pattern, query)
-
         geo_result = None
         display_city = ''
-
         if lat_lng_match:
             try:
                 latitude = float(lat_lng_match.group(1))
                 longitude = float(lat_lng_match.group(2))
-
                 if -90 <= latitude <= 90 and -180 <= longitude <= 180:
                     log.info(f"Weather query by coordinates: lat={latitude}, lng={longitude}")
-
                     weather_data = fetch_weather_from_openmeteo(latitude, longitude)
                     if weather_data:
                         display_city = f'坐标 ({latitude}, {longitude})'
-
                         geo_result = {
                             'name': display_city,
                             'latitude': latitude,
@@ -13793,7 +11816,6 @@ def search_web():
                             'timezone': weather_data.get('timezone', 'auto'),
                             'matched_name': display_city
                         }
-
                         return jsonify({
                             'success': True,
                             'query': query,
@@ -13826,7 +11848,6 @@ def search_web():
                     log.warning(f"Invalid coordinates: {latitude}, {longitude}")
             except Exception as e:
                 log.error(f"Coordinate parse error: {e}")
-
         if not geo_result:
             cleaned = query
             for prefix in ['搜索', '搜', '查询', '查找', '查']:
@@ -13836,14 +11857,11 @@ def search_web():
             cleaned = cleaned.replace('天气预报', '').replace('天气', '').replace('气温', '').replace('温度', '').replace('降雨', '').replace('下雨', '').replace('晴天', '').replace('多云', '').replace('阴天', '').replace('风速', '').strip()
             cleaned = cleaned.replace('的', '').replace('是', '').strip()
             cleaned = re.sub(r'[^\u4e00-\u9fa5]', '', cleaned)
-
             if not cleaned or len(cleaned) < 2:
                 city = '北京'
             else:
                 city = cleaned
-
             log.debug(f"Weather query detected: original={query}, extracted_city={city}")
-
             region_result = lookup_region_coordinates(city)
             if region_result:
                 log.debug(f"Weather query matched in region.json: {city} -> {region_result['matched_name']} "
@@ -13861,7 +11879,6 @@ def search_web():
                 }
             else:
                 geo_result = geocode_city_openmeteo(city)
-
             if geo_result:
                 weather_data = fetch_weather_from_openmeteo(geo_result['latitude'], geo_result['longitude'])
                 if weather_data:
@@ -13870,7 +11887,6 @@ def search_web():
                         city_display += ' · ' + geo_result['admin1']
                     if geo_result.get('country'):
                         city_display += ', ' + geo_result['country']
-
                     return jsonify({
                         'success': True,
                         'query': query,
@@ -13899,9 +11915,7 @@ def search_web():
                     })
             else:
                 log.warning(f"Geocode failed for city: {city}, falling back to search")
-
     is_time_query = any(kw in query for kw in ['时间', '几点', '现在几点', '当前时间', '时区', '几点了', '什么时间'])
-
     if is_time_query:
         time_result = fetch_time_info(query)
         if time_result:
@@ -13913,7 +11927,6 @@ def search_web():
                 'time_data': time_result,
                 'responseTime': int((time.time() - start_time) * 1000)
             })
-
     search_engines = [
         {'name': 'Bing', 'url': f'https://www.bing.com/search?q={requests.utils.quote(query)}', 'parser': parse_bing},
         {'name': '搜狗', 'url': f'https://www.sogou.com/web?query={requests.utils.quote(query)}', 'parser': parse_sogou},
@@ -13921,7 +11934,6 @@ def search_web():
         {'name': 'DuckDuckGo', 'url': f'https://html.duckduckgo.com/html/?q={requests.utils.quote(query)}', 'parser': parse_duckduckgo},
         {'name': '百度', 'url': f'https://www.baidu.com/s?wd={requests.utils.quote(query)}', 'parser': parse_baidu}
     ]
-
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -13929,7 +11941,6 @@ def search_web():
         'Accept-Encoding': 'gzip, deflate',
         'Connection': 'keep-alive',
     }
-
     for engine in search_engines:
         try:
             response = requests.get(engine['url'], headers=headers, timeout=8)
@@ -13947,13 +11958,11 @@ def search_web():
                     })
         except Exception:
             continue
-
     return jsonify({
         'success': False,
         'error': '未找到相关结果，请换个关键词试试',
         'responseTime': int((time.time() - start_time) * 1000)
     })
-
 
 def fetch_time_info(query):
     timezone_map = {
@@ -13989,32 +11998,26 @@ def fetch_time_info(query):
         '古巴': 'America/Havana', '哈瓦那': 'America/Havana',
         '智利': 'America/Santiago', '圣地亚哥': 'America/Santiago'
     }
-
     try:
         import pytz
         pytz_available = True
     except Exception:
         pytz_available = False
-
     city_match = re.search(r'([\u4e00-\u9fa5]{2,10})(?:时间|几点|现在|当前|时区)?', query)
-
     location = '中国'
     timezone = 'Asia/Shanghai'
-
     if city_match:
         location = city_match.group(1)
         for key, tz in timezone_map.items():
             if key in location:
                 timezone = tz
                 break
-
     try:
         if pytz_available:
             tz = pytz.timezone(timezone)
             now = datetime.now(tz)
         else:
             now = datetime.utcnow()
-
         time_str = now.strftime('%H:%M:%S')
         date_str = now.strftime('%Y年%m月%d日')
         weekday = now.strftime('%A')
@@ -14023,7 +12026,6 @@ def fetch_time_info(query):
             'Thursday': '星期四', 'Friday': '星期五', 'Saturday': '星期六',
             'Sunday': '星期日'
         }.get(weekday, weekday)
-
         offset = ''
         if pytz_available and now.utcoffset():
             offset_seconds = now.utcoffset().total_seconds()
@@ -14035,7 +12037,6 @@ def fetch_time_info(query):
                 offset = f'UTC{offset_hours:02d}:{offset_minutes:02d}'
         else:
             offset = 'UTC'
-
         return {
             'location': location,
             'timezone': timezone,
@@ -14045,7 +12046,6 @@ def fetch_time_info(query):
             'offset': offset,
             'timestamp': int(now.timestamp())
         }
-
     except Exception as e:
         log.error(f"Time fetch error: {e}")
         return {
@@ -14057,7 +12057,6 @@ def fetch_time_info(query):
             'offset': 'UTC+08:00',
             'timestamp': int(datetime.now().timestamp())
         }
-
 
 def parse_bing(html):
     results = []
@@ -14079,7 +12078,6 @@ def parse_bing(html):
             break
     return results[:5]
 
-
 def parse_sogou(html):
     results = []
     pattern = r'<a[^>]*href="([^"]*)"[^>]*>(.*?)</a>.*?<p[^>]*>(.*?)</p>'
@@ -14099,7 +12097,6 @@ def parse_sogou(html):
         if len(results) >= 5:
             break
     return results[:5]
-
 
 def parse_duckduckgo(html):
     results = []
@@ -14121,7 +12118,6 @@ def parse_duckduckgo(html):
             break
     return results[:5]
 
-
 def parse_360(html):
     results = []
     pattern = r'<a[^>]*href="([^"]*)"[^>]*>(.*?)</a>.*?<p[^>]*class="[^"]*desc[^"]*"[^>]*>(.*?)</p>'
@@ -14141,7 +12137,6 @@ def parse_360(html):
         if len(results) >= 5:
             break
     return results[:5]
-
 
 def parse_baidu(html):
     results = []
@@ -14172,26 +12167,19 @@ def verify_email_code_api():
     data = request.get_json()
     email = data.get('email', '').strip().lower()
     code = data.get('code', '').strip()
-
     if not email or not code:
         return jsonify({'error': '请提供邮箱和验证码'}), 400
-
     if not validate_email(email):
         return jsonify({'error': '邮箱格式不正确'}), 400
-
     user_data = users.get(username)
     if not user_data:
         return jsonify({'error': '用户不存在'}), 400
-
     bound_email = user_data.get('email', '')
     if not bound_email:
         return jsonify({'error': '用户未绑定邮箱'}), 400
-
     if email != bound_email:
         return jsonify({'error': '输入的邮箱与绑定的邮箱不一致，请检查'}), 400
-
     success, message = email_service.verify_code(email, code)
-
     if success:
         user_data['email_verified'] = True
         user_data['email_verified_at'] = int(time.time() * 1000)
@@ -14206,23 +12194,19 @@ def verify_email_code_api():
     else:
         return jsonify({'error': message}), 400
 
-
 @app.route('/api/email/check-verification', methods=['GET'])
 @login_required
 def check_email_verification_api():
     username = session['user']['username']
     user_data = users.get(username, {})
-
     is_verified = user_data.get('email_verified', False)
     email = user_data.get('email', '')
     has_email = bool(email)
-
     return jsonify({
         'verified': is_verified,
         'has_email': has_email,
         'email': email
     })
-
 
 @app.route('/api/email/change', methods=['POST'])
 @csrf_protect
@@ -14233,44 +12217,33 @@ def change_email_api():
     data = request.get_json()
     new_email = data.get('new_email', '').strip().lower()
     code = data.get('code', '').strip()
-
     if not new_email or not code:
         return jsonify({'error': '请填写新邮箱和验证码'}), 400
-
     if not validate_email(new_email):
         return jsonify({'error': '邮箱格式不正确'}), 400
-
     user_data = users.get(username)
     if not user_data:
         return jsonify({'error': '用户不存在'}), 400
-
     old_email = user_data.get('email', '')
     if not old_email:
         return jsonify({'error': '用户未绑定邮箱'}), 400
-
     if new_email == old_email:
         return jsonify({'error': '新邮箱与当前邮箱相同'}), 400
-
     if user_data.get('email_changed', False):
         return jsonify({'error': '每个账号仅允许换绑一次'}), 400
-
     for u, data in users.items():
         if data.get('email') == new_email and u != username:
             return jsonify({'error': '该邮箱已被其他用户绑定'}), 400
-
     success, message = email_service.verify_code(new_email, code)
     if not success:
         return jsonify({'error': message}), 400
-
     user_data['email'] = new_email
     user_data['email_changed'] = True
     user_data['email_changed_at'] = int(time.time() * 1000)
     user_data['old_email'] = old_email
     user_data['email_verified'] = True
-
     save_users()
     invalidate_user_caches(username)
-
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
@@ -14278,7 +12251,6 @@ def change_email_api():
         'new_email': new_email,
         'responseTime': response_time
     })
-
 
 @app.route('/api/email/send-change-code', methods=['POST'])
 @csrf_protect
@@ -14289,31 +12261,23 @@ def send_change_email_code_api():
     username = session['user']['username']
     data = request.get_json()
     new_email = data.get('new_email', '').strip().lower()
-
     if not new_email:
         return jsonify({'error': '请输入新邮箱地址'}), 400
-
     if not validate_email(new_email):
         return jsonify({'error': '邮箱格式不正确'}), 400
-
     user_data = users.get(username)
     if not user_data:
         return jsonify({'error': '用户不存在'}), 400
-
     old_email = user_data.get('email', '')
     if not old_email:
         return jsonify({'error': '用户未绑定邮箱'}), 400
-
     if new_email == old_email:
         return jsonify({'error': '新邮箱与当前邮箱相同'}), 400
-
     if user_data.get('email_changed', False):
         return jsonify({'error': '每个账号仅允许换绑一次'}), 400
-
     for u, data in users.items():
         if data.get('email') == new_email and u != username:
             return jsonify({'error': '该邮箱已被其他用户绑定'}), 400
-
     status = email_service.get_verification_status(new_email)
     if status['exists'] and not status['expired'] and not status['verified']:
         remaining = status['expires_at'] - int(time.time())
@@ -14321,9 +12285,7 @@ def send_change_email_code_api():
             'error': f'验证码已发送，请等待 {remaining // 60} 分钟后重试',
             'remaining_seconds': remaining
         }), 429
-
     success, code, message = email_service.send_verification_code(new_email, username)
-
     if success:
         response_time = int((time.time() - start_time) * 1000)
         return jsonify({
@@ -14341,16 +12303,12 @@ def send_change_email_code_api():
 def send_verification_code_api():
     start_time = time.time()
     data = request.get_json() or {}
-
     email = data.get('email', '').strip().lower()
     purpose = data.get('purpose', '验证')
-
     if not email:
         return jsonify({'error': '请输入邮箱地址'}), 400
-
     if not validate_email(email):
         return jsonify({'error': '邮箱格式不正确'}), 400
-
     if purpose == '注册':
         for u, user_data in users.items():
             if user_data.get('email') == email:
@@ -14365,26 +12323,20 @@ def send_verification_code_api():
             })
         else:
             return jsonify({'error': message}), 500
-
     if purpose == '验证':
         if 'user' not in session:
             return jsonify({'error': '请先登录'}), 401
-
         username = session['user']['username']
         user_data = users.get(username)
         if not user_data:
             return jsonify({'error': '用户不存在'}), 400
-
         bound_email = user_data.get('email', '')
         if not bound_email:
             return jsonify({'error': '用户未绑定邮箱'}), 400
-
         if email != bound_email:
             return jsonify({'error': '输入的邮箱与绑定的邮箱不一致'}), 400
-
         if user_data.get('email_verified', False):
             return jsonify({'error': '邮箱已验证，无需重复验证'}), 400
-
         success, code, message = email_service.send_verification_code_with_limit(email, username, '验证')
         if success:
             return jsonify({
@@ -14395,30 +12347,23 @@ def send_verification_code_api():
             })
         else:
             return jsonify({'error': message}), 500
-
     if purpose == '换绑':
         if 'user' not in session:
             return jsonify({'error': '请先登录'}), 401
-
         username = session['user']['username']
         user_data = users.get(username)
         if not user_data:
             return jsonify({'error': '用户不存在'}), 400
-
         old_email = user_data.get('email', '')
         if not old_email:
             return jsonify({'error': '用户未绑定邮箱'}), 400
-
         if email == old_email:
             return jsonify({'error': '新邮箱与当前邮箱相同'}), 400
-
         if user_data.get('email_changed', False):
             return jsonify({'error': '每个账号仅允许换绑一次'}), 400
-
         for u, data in users.items():
             if data.get('email') == email and u != username:
                 return jsonify({'error': '该邮箱已被其他用户绑定'}), 400
-
         success, code, message = email_service.send_verification_code_with_limit(email, username, '换绑')
         if success:
             return jsonify({
@@ -14429,25 +12374,20 @@ def send_verification_code_api():
             })
         else:
             return jsonify({'error': message}), 500
-
     if purpose == '重置密码':
         if 'user' not in session:
             username = None
         else:
             username = session['user']['username']
-
         found_user = None
         for u, user_data in users.items():
             if user_data.get('email') == email:
                 found_user = u
                 break
-
         if not found_user:
             return jsonify({'error': '该邮箱未注册'}), 400
-
         if username and found_user != username:
             return jsonify({'error': '该邮箱不属于当前登录用户'}), 400
-
         success, code, message = email_service.send_verification_code_with_limit(email, found_user, '重置密码')
         if success:
             return jsonify({
@@ -14458,23 +12398,18 @@ def send_verification_code_api():
             })
         else:
             return jsonify({'error': message}), 500
-
     if purpose == '注销':
         if 'user' not in session:
             return jsonify({'error': '请先登录'}), 401
-
         username = session['user']['username']
         user_data = users.get(username)
         if not user_data:
             return jsonify({'error': '用户不存在'}), 400
-
         bound_email = user_data.get('email', '')
         if not bound_email:
             return jsonify({'error': '用户未绑定邮箱'}), 400
-
         if email != bound_email:
             return jsonify({'error': '输入的邮箱与绑定的邮箱不一致'}), 400
-
         success, code, message = email_service.send_verification_code_with_limit(email, username, '注销')
         if success:
             return jsonify({
@@ -14485,7 +12420,30 @@ def send_verification_code_api():
             })
         else:
             return jsonify({'error': message}), 500
-
+    if purpose == '重置支付密码':
+        if 'user' not in session:
+            return jsonify({'error': '请先登录'}), 401
+        username = session['user']['username']
+        user_data = users.get(username)
+        if not user_data:
+            return jsonify({'error': '用户不存在'}), 400
+        bound_email = user_data.get('email', '')
+        if not bound_email:
+            return jsonify({'error': '用户未绑定邮箱'}), 400
+        if email != bound_email:
+            return jsonify({'error': '输入的邮箱与绑定的邮箱不一致'}), 400
+        if not user_data.get('email_verified', False):
+            return jsonify({'error': '邮箱尚未验证，请先验证邮箱'}), 400
+        success, code, message = email_service.send_verification_code_with_limit(email, username, '重置支付密码')
+        if success:
+            return jsonify({
+                'success': True,
+                'message': '验证码已发送至您的邮箱，请查收',
+                'expires_in': email_service.CODE_EXPIRE_SECONDS,
+                'responseTime': int((time.time() - start_time) * 1000)
+            })
+        else:
+            return jsonify({'error': message}), 500
     return jsonify({'error': '无效的操作类型'}), 400
 
 @app.route('/api/announcements', methods=['GET'])
@@ -14520,40 +12478,29 @@ def get_public_announcements():
 def submit_feedback():
     start_time = time.time()
     username = session['user']['username']
-
     feedback_type = request.form.get('feedback_type', '').strip()
     content = request.form.get('content', '').strip()
-
     if not feedback_type:
         return jsonify({'error': '请选择反馈类型'}), 400
-
     if not content:
         return jsonify({'error': '请填写反馈内容'}), 400
-
     if len(content) < 5:
         return jsonify({'error': '反馈内容至少5个字符'}), 400
-
     if len(content) > 2000:
         return jsonify({'error': '反馈内容不能超过2000个字符'}), 400
-
     valid_types = ['功能建议', '问题反馈', '体验优化', '内容举报', '其他']
     if feedback_type not in valid_types:
         return jsonify({'error': '无效的反馈类型'}), 400
-
     user_data = users.get(username, {})
     user_email = user_data.get('email', '')
-
     if not user_email:
         return jsonify({'error': '您的账号未绑定邮箱，请先绑定邮箱后再提交反馈'}), 400
-
     files = request.files.getlist('attachments')
     if len(files) > 3:
         return jsonify({'error': '最多上传3个附件'}), 400
-
     attachments = []
     total_size = 0
     allowed_ext = {'.png', '.jpg', '.jpeg', '.gif', '.webp', '.pdf', '.txt', '.log', '.zip'}
-
     for f in files:
         if not f or not f.filename:
             continue
@@ -14575,9 +12522,7 @@ def submit_feedback():
             'content': raw,
             'mime_type': f.mimetype or 'application/octet-stream'
         })
-
     feedback_id = generate_feedback_id()
-
     feedbacks[feedback_id] = {
         'feedback_id': feedback_id,
         'username': username,
@@ -14585,19 +12530,16 @@ def submit_feedback():
         'feedback_type': feedback_type,
         'content': content,
         'created_at': int(time.time() * 1000),
-        'status': 'pending'
+        'status': 'pending',
+        'attachment_names': [a['filename'] for a in attachments]
     }
     save_feedbacks()
-
     success, message = email_service.send_feedback_email(
         username, user_email, feedback_type, feedback_id, content, attachments=attachments
     )
-
     attachments.clear()
-
     if not success:
         log.warning(f"反馈邮件发送失败: {feedback_id}, 原因: {message}")
-
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
@@ -14607,14 +12549,12 @@ def submit_feedback():
         'responseTime': response_time
     })
 
-
 @app.route('/api/feedback/list', methods=['GET'])
 @login_required
 def get_feedback_list():
     username = session['user']['username']
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
-
     user_feedbacks = []
     for fid, fb in feedbacks.items():
         if fb.get('username') == username:
@@ -14624,14 +12564,13 @@ def get_feedback_list():
                 'content': fb.get('content', ''),
                 'created_at': fb.get('created_at', 0),
                 'status': fb.get('status', 'pending'),
-                'reply': fb.get('reply', '')
+                'reply': fb.get('reply', ''),
+                'attachment_names': fb.get('attachment_names', [])
             })
-
     user_feedbacks.sort(key=lambda x: -x.get('created_at', 0))
     total = len(user_feedbacks)
     start = (page - 1) * per_page
     end = start + per_page
-
     return jsonify({
         'feedbacks': user_feedbacks[start:end],
         'total': total,
@@ -14640,29 +12579,24 @@ def get_feedback_list():
         'total_pages': (total + per_page - 1) // per_page if total > 0 else 1
     })
 
-
 @app.route('/api/feedback/<feedback_id>', methods=['GET'])
 @login_required
 def get_feedback_detail(feedback_id):
     username = session['user']['username']
-
     if feedback_id not in feedbacks:
         return jsonify({'error': '反馈不存在'}), 400
-
     fb = feedbacks[feedback_id]
-
     if fb.get('username') != username:
         return jsonify({'error': '无权查看此反馈'}), 403
-
     return jsonify({
         'feedback_id': feedback_id,
         'feedback_type': fb.get('feedback_type', ''),
         'content': fb.get('content', ''),
         'created_at': fb.get('created_at', 0),
         'status': fb.get('status', 'pending'),
-        'reply': fb.get('reply', '')
+        'reply': fb.get('reply', ''),
+        'attachment_names': fb.get('attachment_names', [])
     })
-
 
 @app.route('/api/admin/feedback/list', methods=['GET'])
 @admin_login_required
@@ -14671,7 +12605,6 @@ def admin_get_feedback_list():
     per_page = request.args.get('per_page', 20, type=int)
     status_filter = request.args.get('status', '').strip()
     search = request.args.get('search', '').strip()
-
     all_feedbacks = []
     for fid, fb in feedbacks.items():
         if status_filter and fb.get('status', 'pending') != status_filter:
@@ -14690,14 +12623,13 @@ def admin_get_feedback_list():
             'content': fb.get('content', ''),
             'created_at': fb.get('created_at', 0),
             'status': fb.get('status', 'pending'),
-            'reply': fb.get('reply', '')
+            'reply': fb.get('reply', ''),
+            'attachment_names': fb.get('attachment_names', [])
         })
-
     all_feedbacks.sort(key=lambda x: -x.get('created_at', 0))
     total = len(all_feedbacks)
     start = (page - 1) * per_page
     end = start + per_page
-
     return jsonify({
         'feedbacks': all_feedbacks[start:end],
         'total': total,
@@ -14706,20 +12638,16 @@ def admin_get_feedback_list():
         'total_pages': (total + per_page - 1) // per_page if total > 0 else 1
     })
 
-
 @app.route('/api/admin/feedback/delete', methods=['POST'])
 @csrf_protect
 @admin_login_required
 def admin_delete_feedback():
     data = request.get_json()
     feedback_id = data.get('feedback_id', '').strip()
-
     if not feedback_id or feedback_id not in feedbacks:
         return jsonify({'error': '反馈不存在'}), 400
-
     del feedbacks[feedback_id]
     save_feedbacks()
-
     return jsonify({
         'success': True,
         'message': '反馈已删除'
@@ -14733,13 +12661,10 @@ def admin_reply_feedback():
     feedback_id = data.get('feedback_id', '').strip()
     reply = data.get('reply', '').strip()
     status = data.get('status', 'replied')
-
     if not feedback_id or feedback_id not in feedbacks:
         return jsonify({'error': '反馈不存在'}), 400
-
     if status not in ['pending', 'replied', 'closed']:
         return jsonify({'error': '无效的状态'}), 400
-
     current_time = int(time.time() * 1000)
     feedbacks[feedback_id]['status'] = status
     feedbacks[feedback_id]['reply'] = reply
@@ -14747,7 +12672,6 @@ def admin_reply_feedback():
     if status == 'closed':
         feedbacks[feedback_id]['closed_at'] = current_time
     save_feedbacks()
-
     return jsonify({
         'success': True,
         'message': '反馈回复成功'
@@ -14839,30 +12763,23 @@ def admin_revoke_membership_api():
     data = request.get_json()
     username = data.get('username', '').strip()
     refund = data.get('refund', True)
-
     if not username or username not in users:
         return jsonify({'error': '用户不存在'}), 400
-
     user_data = users.get(username, {})
     if not user_data.get('membership', {}).get('is_member', False):
         return jsonify({'error': '该用户不是会员'}), 400
-
     success, message, refund_amount, snapshot = game.admin_revoke_membership(
         users, save_users, username, refund=refund
     )
-
     if not success:
         return jsonify({'error': message}), 400
-
     refunded_to_user = 0
     refunded_to_system = 0
-
     if refund and refund_amount > 0:
         add_points_without_limit(username, refund_amount)
         refunded_to_user = refund_amount
         deduct_system_total_points(refund_amount)
         refunded_to_system = refund_amount
-
         fund_record_id = f"fund_revoke_{int(time.time()*1000)}_{random.randint(1000,9999)}"
         fund_history[fund_record_id] = {
             'id': fund_record_id,
@@ -14873,7 +12790,6 @@ def admin_revoke_membership_api():
             'timestamp': int(time.time() * 1000)
         }
         save_fund_history()
-
     return jsonify({
         'success': True,
         'message': message,
@@ -14887,21 +12803,17 @@ def admin_revoke_membership_api():
         'username': username
     })
 
-
 @app.route('/api/admin/membership/restore', methods=['POST'])
 @csrf_protect
 @admin_login_required
 def admin_restore_membership_api():
     data = request.get_json()
     username = data.get('username', '').strip()
-
     if not username or username not in users:
         return jsonify({'error': '用户不存在'}), 400
-
     success, message = game.admin_restore_membership(users, save_users, username)
     if not success:
         return jsonify({'error': message}), 400
-
     return jsonify({
         'success': True,
         'message': message,
@@ -14920,7 +12832,6 @@ def admin_generate_auction():
         'message': message,
         'auction_id': auction_id
     })
-
 
 @app.route('/api/admin/auction/settle-all', methods=['POST'])
 @csrf_protect
@@ -14946,28 +12857,22 @@ def admin_membership_expiring_list():
 def get_auction_list_api():
     admin_token = request.headers.get('X-Admin-Token', '')
     is_admin = admin_token and admin_token in admin_sessions and admin_sessions[admin_token] > time.time()
-
     if not is_admin:
         if 'user' not in session:
             return jsonify({'error': '请先登录'}), 401
-
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
     sort_by = request.args.get('sort', 'ending').strip()
-
     all_auctions = game.get_all_auctions(analytics_cache)
-
     if sort_by == 'price':
         all_auctions.sort(key=lambda x: x.get('current_bid', 0))
     elif sort_by == 'newest':
         all_auctions.sort(key=lambda x: -x.get('created_at', 0))
     else:
         all_auctions.sort(key=lambda x: x.get('end_at', 0))
-
     total = len(all_auctions)
     start = (page - 1) * per_page
     end = start + per_page
-
     return jsonify({
         'auctions': all_auctions[start:end],
         'total': total,
@@ -14990,15 +12895,12 @@ def place_bid_api():
         bid_amount = int(data.get('bid_amount', 0))
     except (ValueError, TypeError):
         return jsonify({'error': '出价金额格式错误'}), 400
-
     if not auction_id:
         return jsonify({'error': '缺少拍卖ID'}), 400
-
     success, message = game.place_bid_server_auction(
         users, save_users, username, auction_id, bid_amount,
         analytics_cache, save_analytics_cache
     )
-
     if not success:
         return jsonify({'error': message}), 400
     reload_if_changed()
@@ -15010,7 +12912,6 @@ def place_bid_api():
         'new_gcoin_balance': gcoin_data.get('balance', 0) if gcoin_data else 0,
         'responseTime': response_time
     })
-
 
 @app.route('/api/auction/my-bids', methods=['GET'])
 @login_required
@@ -15076,20 +12977,16 @@ def get_market_listings_api():
     game_filter = request.args.get('game_id', '').strip()
     rarity_filter = request.args.get('rarity', '').strip()
     search = request.args.get('search', '').strip()
-
     all_listings = game.get_market_listings(users)
-
     if game_filter:
         all_listings = [l for l in all_listings if l.get('game_id') == game_filter]
     if rarity_filter:
         all_listings = [l for l in all_listings if l.get('rarity') == rarity_filter]
     if search:
         all_listings = [l for l in all_listings if search.lower() in l.get('card_name', '').lower() or search.lower() in l.get('seller', '').lower()]
-
     total = len(all_listings)
     start = (page - 1) * per_page
     end = start + per_page
-
     return jsonify({
         'listings': all_listings[start:end],
         'total': total,
@@ -15103,14 +13000,12 @@ def get_market_listings_api():
         }
     })
 
-
 @app.route('/api/market/my-listings', methods=['GET'])
 @login_required
 def get_my_market_listings():
     username = session['user']['username']
     listings = game.get_user_market_listings(users, username)
     return jsonify({'listings': listings, 'total': len(listings)})
-
 
 @app.route('/api/market/create', methods=['POST'])
 @csrf_protect
@@ -15127,10 +13022,8 @@ def create_market_listing_api():
         price_gcoins = int(data.get('price_gcoins', 0))
     except (ValueError, TypeError):
         return jsonify({'error': '参数格式错误'}), 400
-
     if not game_id or not card_id:
         return jsonify({'error': '请选择要出售的卡牌'}), 400
-
     success, message, listing_id = game.create_market_listing(
         users, save_users, username, game_id, card_id, quantity, price_gcoins
     )
@@ -15144,7 +13037,6 @@ def create_market_listing_api():
         'listing_id': listing_id,
         'responseTime': response_time
     })
-
 
 @app.route('/api/market/cancel', methods=['POST'])
 @csrf_protect
@@ -15160,7 +13052,6 @@ def cancel_market_listing_api():
         return jsonify({'error': message}), 400
     reload_if_changed()
     return jsonify({'success': True, 'message': message})
-
 
 @app.route('/api/market/buy', methods=['POST'])
 @csrf_protect
@@ -15197,7 +13088,6 @@ def get_gcoin_balance():
         return jsonify({'balance': 0, 'total_earned': 0, 'total_spent': 0})
     return jsonify(gcoin_data)
 
-
 @app.route('/api/gcoin/exchange/points-to-gcoins', methods=['POST'])
 @csrf_protect
 @login_required
@@ -15222,7 +13112,6 @@ def exchange_points_to_gcoins_api():
         'new_balance': gcoin_data.get('balance', 0),
         'responseTime': response_time
     })
-
 
 @app.route('/api/gcoin/exchange/gcoins-to-points', methods=['POST'])
 @csrf_protect
@@ -15251,7 +13140,6 @@ def exchange_gcoins_to_points_api():
         'responseTime': response_time
     })
 
-
 @app.route('/api/gcoin/exchange-rate', methods=['GET'])
 def get_gcoin_exchange_rate():
     return jsonify({
@@ -15273,7 +13161,6 @@ def get_game_list():
         'games': gm.get_game_list(username),
         'stats': gm.get_stats(username)
     })
-
 
 @app.route('/api/game/stats', methods=['GET'])
 @login_required
@@ -15568,7 +13455,6 @@ def get_game_history():
         'total': len(history)
     })
 
-
 @app.route('/api/game/history/delete', methods=['POST'])
 @csrf_protect
 @login_required
@@ -15586,7 +13472,6 @@ def delete_game_history():
         return jsonify({'success': True, 'message': '记录已删除'})
     return jsonify({'error': '记录不存在'}), 400
 
-
 @app.route('/api/game/history/clear', methods=['POST'])
 @csrf_protect
 @login_required
@@ -15598,7 +13483,6 @@ def clear_game_history():
     gm.clear_game_history(username)
     return jsonify({'success': True, 'message': '所有记录已清空'})
 
-
 @app.route('/api/game/tasks', methods=['GET'])
 @login_required
 def get_game_tasks():
@@ -15609,7 +13493,6 @@ def get_game_tasks():
     if not gm:
         return jsonify({'error': '游戏服务未初始化'}), 500
     return jsonify(gm.get_daily_tasks(username))
-
 
 @app.route('/api/game/tasks/claim', methods=['POST'])
 @csrf_protect
@@ -15629,7 +13512,6 @@ def claim_game_task():
         return jsonify({'success': True, 'message': message})
     return jsonify({'error': message}), 400
 
-
 @app.route('/api/game/tasks/claim-all', methods=['POST'])
 @csrf_protect
 @login_required
@@ -15643,7 +13525,6 @@ def claim_all_game_tasks():
         reload_if_changed()
         return jsonify({'success': True, 'message': message, 'total_reward': total})
     return jsonify({'error': message}), 400
-
 
 @app.route('/api/game/memory/state', methods=['GET'])
 @login_required
@@ -15672,7 +13553,6 @@ def get_achievements():
         return jsonify({'error': '游戏服务未初始化'}), 500
     return jsonify(gm.get_achievements(username))
 
-
 @app.route('/api/game/achievements/claim', methods=['POST'])
 @csrf_protect
 @login_required
@@ -15691,7 +13571,6 @@ def claim_achievement():
         return jsonify({'success': True, 'message': message})
     return jsonify({'error': message}), 400
 
-
 @app.route('/api/game/achievements/claim-all', methods=['POST'])
 @csrf_protect
 @login_required
@@ -15706,7 +13585,6 @@ def claim_all_achievements():
         return jsonify({'success': True, 'message': message, 'total_reward': total})
     return jsonify({'error': message}), 400
 
-
 @app.route('/api/game/items/shop', methods=['GET'])
 @login_required
 def get_item_shop():
@@ -15715,7 +13593,6 @@ def get_item_shop():
     if not gm:
         return jsonify({'error': '游戏服务未初始化'}), 500
     return jsonify({'items': gm.get_item_shop(username)})
-
 
 @app.route('/api/game/items/list', methods=['GET'])
 @login_required
@@ -15727,7 +13604,6 @@ def get_user_items():
     items = gm.get_user_items(username)
     effects = gm.get_active_effects(username)
     return jsonify({'items': list(items.values()), 'active_effects': effects})
-
 
 @app.route('/api/game/items/buy', methods=['POST'])
 @csrf_protect
@@ -15747,7 +13623,6 @@ def buy_item():
         return jsonify({'success': True, 'message': message})
     return jsonify({'error': message}), 400
 
-
 @app.route('/api/game/items/use', methods=['POST'])
 @csrf_protect
 @login_required
@@ -15765,7 +13640,6 @@ def use_item():
         reload_if_changed()
         return jsonify({'success': True, 'message': message})
     return jsonify({'error': message}), 400
-
 
 @app.route('/api/game/leaderboard', methods=['GET'])
 @login_required
@@ -15788,7 +13662,6 @@ def get_leaderboard():
         entry['is_self'] = (entry['username'] == username)
     return jsonify({'period': period, 'leaderboard': board})
 
-
 @app.route('/api/game/personal-stats', methods=['GET'])
 @login_required
 def get_personal_stats():
@@ -15809,7 +13682,6 @@ def get_collection_overview():
     if not gm:
         return jsonify({'error': '游戏服务未初始化'}), 500
     return jsonify(gm.get_collection_overview(username))
-
 
 @app.route('/api/game/collection/disenchant', methods=['POST'])
 @csrf_protect
@@ -15851,7 +13723,6 @@ def disenchant_all_cards():
         })
     return jsonify({'error': message}), 400
 
-
 @app.route('/api/game/collection/disenchantable', methods=['GET'])
 @login_required
 def get_disenchantable_cards():
@@ -15866,7 +13737,6 @@ def get_disenchantable_cards():
         'count': len(cards),
         'total_value': total_value
     })
-
 
 @app.route('/api/membership/supreme-requirements', methods=['GET'])
 @login_required
@@ -15944,7 +13814,6 @@ def get_checkin_status():
         return jsonify({'error': '游戏服务未初始化'}), 500
     return jsonify(gm.get_checkin_status(username))
 
-
 @app.route('/api/game/checkin/claim', methods=['POST'])
 @csrf_protect
 @login_required
@@ -15963,7 +13832,6 @@ def claim_checkin():
         })
     return jsonify({'error': message}), 400
 
-
 @app.route('/api/game/daily-first-win/status', methods=['GET'])
 @login_required
 def get_daily_first_win_status():
@@ -15972,7 +13840,6 @@ def get_daily_first_win_status():
     if not gm:
         return jsonify({'error': '游戏服务未初始化'}), 500
     return jsonify(gm.get_daily_first_win_status(username))
-
 
 @app.route('/api/game/daily-first-win/claim', methods=['POST'])
 @csrf_protect
@@ -15988,7 +13855,6 @@ def claim_daily_first_win():
         return jsonify({'success': True, 'message': message})
     return jsonify({'error': message}), 400
 
-
 @app.route('/api/game/chests/status', methods=['GET'])
 @login_required
 def get_chests_status():
@@ -15997,7 +13863,6 @@ def get_chests_status():
     if not gm:
         return jsonify({'error': '游戏服务未初始化'}), 500
     return jsonify(gm.get_chest_status(username))
-
 
 @app.route('/api/game/chests/open', methods=['POST'])
 @csrf_protect
@@ -16038,7 +13903,6 @@ def get_season_status_api():
         return jsonify({'error': '获取失败'}), 400
     return jsonify(status)
 
-
 @app.route('/api/game/season/milestone/claim', methods=['POST'])
 @csrf_protect
 @login_required
@@ -16061,7 +13925,6 @@ def claim_season_milestone_api():
         })
     return jsonify({'error': message}), 400
 
-
 @app.route('/api/game/season/tasks', methods=['GET'])
 @login_required
 def get_season_tasks_api():
@@ -16072,7 +13935,6 @@ def get_season_tasks_api():
     if not gm:
         return jsonify({'error': '游戏服务未初始化'}), 500
     return jsonify(gm.get_daily_season_tasks(username))
-
 
 @app.route('/api/game/season/tasks/claim', methods=['POST'])
 @csrf_protect
@@ -16100,7 +13962,6 @@ def claim_season_task_api():
         return jsonify(result)
     return jsonify({'error': message}), 400
 
-
 @app.route('/api/game/season/tasks/claim-all', methods=['POST'])
 @csrf_protect
 @login_required
@@ -16123,7 +13984,6 @@ def claim_all_season_tasks_api():
         return jsonify(result)
     return jsonify({'error': message}), 400
 
-
 @app.route('/api/game/season/ranks', methods=['GET'])
 def get_season_ranks_api():
     return jsonify({
@@ -16140,7 +14000,6 @@ def get_daily_bonus_status():
         return jsonify({'error': '游戏服务未初始化'}), 500
     return jsonify(gm.get_daily_bonus_status(username))
 
-
 @app.route('/api/game/daily-bonus/spin', methods=['POST'])
 @csrf_protect
 @login_required
@@ -16154,7 +14013,6 @@ def spin_daily_bonus():
         reload_if_changed()
         return jsonify({'success': True, 'message': message, 'reward': reward})
     return jsonify({'error': message}), 400
-
 
 @app.route('/api/game/dashboard', methods=['GET'])
 @login_required
@@ -16208,7 +14066,6 @@ def get_level_status():
         'all_levels': levels
     })
 
-
 @app.route('/api/game/titles/list', methods=['GET'])
 @login_required
 def get_titles_list():
@@ -16238,7 +14095,6 @@ def get_titles_list():
         'total_count': len(all_titles),
         'current_title': current_title
     })
-
 
 @app.route('/api/game/titles/set', methods=['POST'])
 @csrf_protect
@@ -16277,7 +14133,6 @@ def get_membership_tiers():
             'is_lifetime': info.get('duration_days', 30) == 0
         })
     return jsonify({'tiers': tiers})
-
 
 @app.route('/api/membership/upgrade', methods=['POST'])
 @csrf_protect
@@ -16324,10 +14179,8 @@ def get_weather_current():
         city = request.args.get('city', '').strip()
         latitude = request.args.get('latitude', type=float)
         longitude = request.args.get('longitude', type=float)
-
         if not city and (latitude is None or longitude is None):
             return jsonify({'error': '请提供城市名称或经纬度'}), 400
-
         if city and (latitude is None or longitude is None):
             region_result = lookup_region_coordinates(city)
             if region_result:
@@ -16346,11 +14199,9 @@ def get_weather_current():
         else:
             location_name = f'{latitude}, {longitude}'
             country = ''
-
         weather_data = fetch_weather_from_openmeteo(latitude, longitude)
         if not weather_data:
             return jsonify({'error': '天气数据获取失败'}), 500
-
         return jsonify({
             'success': True,
             'location': {
@@ -16366,11 +14217,9 @@ def get_weather_current():
             'data_source': 'Open-Meteo',
             'attribution': 'Weather data by Open-Meteo.com (CC BY 4.0)'
         })
-
     except Exception as e:
         log.error(f"Weather API error: {e}")
         return jsonify({'error': '服务器错误: ' + str(e)}), 500
-
 
 @app.route('/api/weather/forecast', methods=['GET'])
 @login_required
@@ -16378,15 +14227,12 @@ def get_weather_forecast():
     try:
         city = request.args.get('city', '').strip()
         days = request.args.get('days', 7, type=int)
-
         if not city:
             return jsonify({'error': '请提供城市名称'}), 400
-
         if days < 1:
             days = 1
         if days > 16:
             days = 16
-
         region_result = lookup_region_coordinates(city)
         if region_result:
             latitude = region_result['latitude']
@@ -16401,11 +14247,9 @@ def get_weather_forecast():
             longitude = geo_result['longitude']
             location_name = geo_result['name']
             country = geo_result.get('country', '')
-
         weather_data = fetch_weather_from_openmeteo(latitude, longitude)
         if not weather_data:
             return jsonify({'error': '天气数据获取失败'}), 500
-
         return jsonify({
             'success': True,
             'location': {
@@ -16418,7 +14262,6 @@ def get_weather_forecast():
             'data_source': 'Open-Meteo',
             'attribution': 'Weather data by Open-Meteo.com (CC BY 4.0)'
         })
-
     except Exception as e:
         log.error(f"Weather forecast API error: {e}")
         return jsonify({'error': '服务器错误: ' + str(e)}), 500
@@ -16429,16 +14272,13 @@ def get_log_status():
     username = session['user']['username']
     ip = get_client_ip()
     cleanup_expired_log_tickets()
-
     stats = get_ip_log_stats(ip, username)
     current_time = int(time.time())
-
     fresh_cooldown = load_data(LOG_REQUEST_COOLDOWN_FILE, {})
     cooldown_data = fresh_cooldown.get(username, {})
     last_request = cooldown_data.get('last_request', 0)
     elapsed = current_time - last_request if last_request > 0 else LOG_REQUEST_COOLDOWN_SECONDS
     cooldown_remaining = max(0, LOG_REQUEST_COOLDOWN_SECONDS - elapsed)
-
     return jsonify({
         'success': True,
         'ip_masked': mask_ip(ip),
@@ -16464,11 +14304,9 @@ def request_log_download():
     ip = get_client_ip()
     current_time = int(time.time())
     cleanup_expired_log_tickets()
-
     fresh_cooldown = load_data(LOG_REQUEST_COOLDOWN_FILE, {})
     cooldown_data = fresh_cooldown.get(username, {})
     last_request = cooldown_data.get('last_request', 0)
-
     if last_request > 0:
         elapsed = current_time - last_request
         if elapsed < LOG_REQUEST_COOLDOWN_SECONDS:
@@ -16477,7 +14315,6 @@ def request_log_download():
                 'cooldown_remaining': LOG_REQUEST_COOLDOWN_SECONDS - elapsed,
                 'can_request': False
             }), 429
-
     own_entries = [e for e in ip_logs.get(ip, []) if e.get('extra', {}).get('username', '') == username]
     if not own_entries:
         return jsonify({
@@ -16485,7 +14322,6 @@ def request_log_download():
             'can_request': True,
             'log_count': 0
         }), 400
-
     token, timestamp = generate_log_token(username, ip)
     ticket_id = f"log_{current_time}_{random.randint(1000, 9999)}"
     log_download_tickets[ticket_id] = {
@@ -16498,7 +14334,6 @@ def request_log_download():
         'used': False,
         'used_at': 0
     }
-
     fresh_cooldown[username] = {
         'last_request': current_time,
         'ip': ip,
@@ -16506,7 +14341,6 @@ def request_log_download():
     }
     log_request_cooldown[username] = fresh_cooldown[username]
     save_data(LOG_REQUEST_COOLDOWN_FILE, fresh_cooldown)
-
     stats = get_ip_log_stats(ip, username)
     return jsonify({
         'success': True,
@@ -16528,43 +14362,33 @@ def download_logs():
     token = request.args.get('token', '').strip()
     if not token:
         return jsonify({'error': '缺少下载令牌'}), 400
-
     username, ip, timestamp, error = decode_log_token(token)
     if error:
         return jsonify({'error': f'令牌无效: {error}'}), 400
-
     current_time = int(time.time())
     if current_time - timestamp > LOG_DOWNLOAD_EXPIRE_SECONDS:
         return jsonify({'error': '下载链接已过期，请重新申请'}), 400
-
     ticket_found = None
     for tid, ticket in log_download_tickets.items():
         if ticket.get('token') == token:
             ticket_found = ticket
             break
-
     if not ticket_found:
         return jsonify({'error': '下载令牌无效'}), 400
-
     if ticket_found.get('expires_at', 0) < current_time:
         tid = ticket_found.get('ticket_id')
         if tid in log_download_tickets:
             del log_download_tickets[tid]
         return jsonify({'error': '下载链接已过期'}), 400
-
     own_entries = [e for e in ip_logs.get(ip, []) if e.get('extra', {}).get('username', '') == username]
     if not own_entries:
         return jsonify({'error': '当前IP下暂无您的操作日志记录'}), 400
-
     log_content = format_log_entries(ip, own_entries, username)
-
     ticket_found['used'] = True
     ticket_found['used_at'] = current_time
-
     safe_ip = mask_ip(ip).replace('*', 'x').replace('.', '_')
     safe_user = ''.join(c for c in username if c.isalnum() or c in '_-')[:20] or 'user'
     filename = f"server_log_{safe_user}_{safe_ip}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-
     response = make_response(log_content.encode('utf-8'))
     response.headers['Content-Type'] = 'text/plain; charset=utf-8'
     response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
@@ -16609,9 +14433,7 @@ def get_splash_status():
     user_data = users.get(username, {})
     current_time = int(time.time() * 1000)
     seven_days_ms = 1 * 24 * 3600 * 1000
-
     last_splash = user_data.get('lastSplashShown')
-
     if last_splash is None:
         user_data['lastSplashShown'] = current_time
         save_users()
@@ -16619,14 +14441,12 @@ def get_splash_status():
         last_splash = current_time
     else:
         should_show = (current_time - last_splash) > seven_days_ms
-
     return jsonify({
         'should_show': should_show,
         'last_splash': last_splash,
         'cooldown_days': 1,
         'username': username
     })
-
 
 @app.route('/api/user/splash-shown', methods=['POST'])
 @csrf_protect
@@ -16744,7 +14564,6 @@ def mail_js():
 def static_files(path):
     if path.startswith('api/') or path.startswith('admin/api/'):
         return jsonify({'error': 'API endpoint not found'}), 404
-
     try:
         return send_from_directory('public', path)
     except Exception:
@@ -16787,20 +14606,18 @@ task_scheduler.register('fund_interest', lambda: [calculate_fund_interest(u) for
 task_scheduler.register('log_cleanup', lambda: (cleanup_old_ip_logs(), cleanup_expired_log_tickets(), save_ip_logs()), interval=120, initial_delay=60)
 task_scheduler.register('log_save', save_ip_logs, interval=60, initial_delay=30)
 task_scheduler.register('email_code_cleanup', email_service.cleanup_expired_codes, interval=60, initial_delay=30)
+task_scheduler.register('pay_password_reset_cleanup', cleanup_expired_pay_password_reset_tokens, interval=120, initial_delay=30)
 
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
-
     cleanup_all_expired_data()
     enforce_phone_record_limit()
     cleanup_expired_feedbacks()
-
     migrate_restricted_users()
     migrate_first_attendance_date()
     migrate_user_data()
     log.info("用户数据迁移完成")
-
     game.migrate_game_membership_data(users, save_users)
     gm_init = game.get_game_manager()
     if gm_init:
@@ -16814,7 +14631,6 @@ if __name__ == '__main__':
         if migrated > 0:
             save_users()
             log.info(f"游戏统计数据迁移完成，共处理 {migrated} 个用户")
-
     if not os.getenv('ADMIN_PASSWORD_HASH'):
         print("\n" + "="*60)
         print("⚠️  WARNING: ADMIN_PASSWORD_HASH not set in environment!")
@@ -16834,25 +14650,21 @@ if __name__ == '__main__':
         print(f"用户名: {ADMIN_USERNAME}")
         print(f"密码: 已从环境变量加载")
         print(f"{'='*60}\n")
-
     try:
         print(f"Server running on {SERVER_BASE_URL}")
         print(f"Also available on https://localhost:3000")
         print("按 Ctrl+C 优雅关闭服务器")
     except Exception as e:
         print(f"获取网络信息失败: {e}")
-
     ssl_dir = os.path.join(os.path.dirname(__file__), 'ssl')
     cert_file = os.path.join(ssl_dir, 'cert.pem')
     key_file = os.path.join(ssl_dir, 'key.pem')
-
     if not os.path.exists(cert_file) or not os.path.exists(key_file):
         print("SSL证书文件不存在，请先生成证书文件 ssl/cert.pem 和 ssl/key.pem")
         print("可以使用以下命令生成自签名证书:")
         print("mkdir -p ssl")
         print("openssl req -x509 -newkey rsa:4096 -nodes -out ssl/cert.pem -keyout ssl/key.pem -days 365")
         exit(1)
-
     try:
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         context.load_cert_chain(cert_file, key_file)

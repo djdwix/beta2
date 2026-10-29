@@ -17,7 +17,7 @@
             <div class="points-display">
                 <span>⭐ 总积分: <span id="totalPoints">0</span></span>
                 <span>📅 今日已获: <span id="dailyEarnedPoints">0</span>/14</span>
-                <span id="boostIndicator" style="display:none;">⚡ 加成中 <span id="boostTimer">0:00</span></span>
+                <span id="boostIndicator" style="display:none;">💎 高级加成 <span id="boostTimer">0:00</span></span>
                 <a href="/mail.html" class="mail-link" id="mailLink" style="position:relative;">📬 邮箱 <span id="mailBadge" style="display:none;position:absolute;top:-6px;right:-8px;background:#e74c3c;color:white;border-radius:50%;padding:0 6px;font-size:11px;font-weight:bold;">0</span></a>
                 <a href="/pool.html" class="mall-link" style="background:rgba(255,255,255,0.2);border-radius:20px;padding:4px 12px;color:white;text-decoration:none;font-size:13px;">🏊 瓜分池</a>
                 <a href="/fund.html" class="mall-link" style="background:rgba(255,255,255,0.2);border-radius:20px;padding:4px 12px;color:white;text-decoration:none;font-size:13px;">🏦 理财</a>
@@ -90,11 +90,10 @@
                 <div class="verify-section">
                     <div class="verify-input-wrapper">
                         <input type="text" id="authCodeInput" class="auth-code-input" placeholder="输入授权码（仅限大写字母+数字）" maxlength="8" autocomplete="off">
-                        <button id="verifyBtn" disabled>🔓 验证并回填获取积分</button>
+                        <button id="verifyBtn" disabled>🔓 验证并获取积分</button>
                     </div>
                 </div>
                 <div id="fullPhoneDisplay" class="full-phone-display" style="display:none;"></div>
-                <button id="copyFullPhoneBtn" class="copy-full-btn" style="display:none;">📋 复制完整号码</button>
             </div>
         </div>
     </div>
@@ -112,27 +111,7 @@
             <h3 style="color: #e74c3c; margin-bottom: 16px;">🗑️ 注销账号</h3>
             <p style="color: #e74c3c; font-size: 13px; margin-bottom: 20px; background: #fef2f2; padding: 10px; border-radius: 8px;">⚠️ 警告：注销后所有数据将被永久删除，无法恢复！</p>
 
-            <div style="display:flex; gap:8px; margin-bottom:16px; background:#f0f0f0; padding:4px; border-radius:60px;">
-                <button id="cancelTabCard" class="cancel-tab-btn active" style="flex:1; padding:10px; border:none; background:linear-gradient(135deg,#667eea,#764ba2); color:white; border-radius:60px; font-size:14px; font-weight:600; cursor:pointer;">🔑 卡密注销</button>
-                <button id="cancelTabEmail" class="cancel-tab-btn" style="flex:1; padding:10px; border:none; background:transparent; color:#666; border-radius:60px; font-size:14px; font-weight:600; cursor:pointer;">📧 邮箱验证注销</button>
-            </div>
-
-            <div id="cancelCardMethod">
-                <div style="margin-bottom:20px;">
-                    <label style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500; color: #333;">绑定邮箱</label>
-                    <input type="email" id="cancelCardEmail" placeholder="请输入绑定邮箱" style="width:100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 12px; font-size: 14px;">
-                </div>
-                <div style="margin-bottom:20px;">
-                    <label style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500; color: #333;">登录密码</label>
-                    <input type="password" id="cancelCardPassword" placeholder="请输入登录密码" style="width:100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 12px; font-size: 14px;">
-                </div>
-                <div style="margin-bottom:20px;">
-                    <label style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500; color: #333;">注销卡密</label>
-                    <input type="text" id="cancelCardCode" placeholder="格式: XXXX-XXXX-XXXX-XXXX" style="width:100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 12px; font-size: 14px; font-family: monospace;">
-                </div>
-            </div>
-
-            <div id="cancelEmailMethod" style="display:none;">
+            <div id="cancelEmailMethod">
                 <div style="margin-bottom:20px;">
                     <label style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500; color: #333;">绑定邮箱</label>
                     <input type="email" id="cancelEmailInput" placeholder="请输入绑定邮箱" style="width:100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 12px; font-size: 14px;">
@@ -155,7 +134,7 @@
             </div>
 
             <div style="display: flex; gap: 12px;">
-                <button id="confirmCancellationBtn" style="flex: 1; padding: 12px; background: #e74c3c; color: white; border: none; border-radius: 40px; font-size: 16px; font-weight: 600; cursor: pointer;">确认注销</button>
+                <button id="confirmCancellationBtn" style="flex: 1; padding: 12px; background: #e74c3c; color: white; border: none; border-radius: 40px; font-size: 16px; font-weight: 600; cursor: pointer;">确认注销 (邮箱验证)</button>
                 <button id="closeCancellationModal" style="flex: 1; padding: 12px; background: #999; color: white; border: none; border-radius: 40px; font-size: 16px; font-weight: 600; cursor: pointer;">取消</button>
             </div>
             <div id="cancellationMessage" style="margin-top: 16px; font-size: 13px; text-align: center;"></div>

@@ -6,8 +6,7 @@
     <title>积分商城</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js">
-    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -986,7 +985,6 @@
         var initRetryCount = 0;
         var MAX_INIT_RETRIES = 3;
 
-        // Dynamic pricing state
         var effectivePoints = 0;
         var priceMultiplier = 1.0;
         var priceTiers = [];
@@ -1079,8 +1077,6 @@
             if (el) el.style.display = 'none';
         }
 
-        // ===================== DYNAMIC PRICING HELPERS =====================
-
         function getMultiplierForPoints(points) {
             if (points >= 500000) return 1.90;
             if (points >= 300000) return 1.70;
@@ -1106,10 +1102,10 @@
         function updatePriceMultiplierDisplay() {
             var tier = getTierForPoints(effectivePoints);
             priceMultiplier = tier.multiplier;
-            
+
             document.getElementById('effectivePointsDisplay').textContent = Math.round(effectivePoints).toLocaleString();
             document.getElementById('multiplierDisplay').textContent = priceMultiplier.toFixed(2) + 'x';
-            
+
             var tierInfo = document.getElementById('tierInfoDisplay');
             if (priceMultiplier > 1.0) {
                 tierInfo.textContent = '📈 ' + tier.label + ' | 有效积分: ' + Math.round(effectivePoints).toLocaleString();
@@ -1140,8 +1136,6 @@
                 updatePriceMultiplierDisplay();
             }
         }
-
-        // ===================== END DYNAMIC PRICING HELPERS =====================
 
         async function getCachedPlData(forceRefresh) {
             if (!forceRefresh && isCacheValid('pl')) {
@@ -1379,9 +1373,7 @@
                 var warningHtml = product.warning ? '<div class="card-warning">' + product.warning + '</div>' : '';
                 var recycleHtml = product.recycleInfo ? '<div class="card-recycle">' + product.recycleInfo + '</div>' : '';
                 var badgeHtml = '';
-                if (product.type === 'cancellation') {
-                    badgeHtml = '<span class="card-badge">需签到4天</span>';
-                } else if (product.type === 'makeup') {
+                if (product.type === 'makeup') {
                     badgeHtml = '<span class="card-badge">永久限购3次</span>';
                 } else if (product.type === 'gamblers') {
                     badgeHtml = '<span class="card-badge">单日限购3次</span>';
@@ -1698,28 +1690,10 @@
             try {
                 var data = await getCachedInventory(forceRefresh);
                 if (!data) return;
-                var cancellationPurchased = data.cancellationPurchased || false;
-                var consecutiveDays = data.consecutiveDays || 0;
                 var makeupUsedCount = data.makeupUsedCount || 0;
                 var gamblersPurchaseCount = data.gamblersPurchaseCount || 0;
                 var boxPurchaseCount = data.boxPurchaseCount || 0;
                 var plcardPurchaseCount = data.plcardPurchaseCount || 0;
-
-                var cancellationBtn = document.querySelector('.buy-btn[data-type="cancellation"]');
-                if (cancellationBtn) {
-                    if (cancellationPurchased) {
-                        cancellationBtn.disabled = true;
-                        cancellationBtn.textContent = '✅ 已购买';
-                        cancellationBtn.className = 'buy-btn purchased';
-                    } else if (consecutiveDays < 4) {
-                        cancellationBtn.disabled = true;
-                        cancellationBtn.textContent = '🔒 需签到' + (4 - consecutiveDays) + '天';
-                    } else {
-                        cancellationBtn.disabled = false;
-                        cancellationBtn.textContent = '购买';
-                        cancellationBtn.className = 'buy-btn';
-                    }
-                }
 
                 var makeupBtn = document.querySelector('.buy-btn[data-type="makeup"]');
                 if (makeupBtn) {
@@ -1775,18 +1749,7 @@
 
                 document.querySelectorAll('.daifu-btn').forEach(function(btn) {
                     var type = btn.getAttribute('data-type');
-                    if (type === 'cancellation') {
-                        if (cancellationPurchased) {
-                            btn.disabled = true;
-                            btn.textContent = '✅ 已购买';
-                        } else if (consecutiveDays < 4) {
-                            btn.disabled = true;
-                            btn.textContent = '🔒 需签到' + (4 - consecutiveDays) + '天';
-                        } else {
-                            btn.disabled = false;
-                            btn.textContent = '🤝 代付';
-                        }
-                    } else if (type === 'makeup') {
+                    if (type === 'makeup') {
                         if (makeupUsedCount >= 3) {
                             btn.disabled = true;
                             btn.textContent = '✅ 已用尽';
@@ -2109,10 +2072,7 @@
                 { key: 'pointCodes', label: '⭐ 普通积分卡', icon: '⭐', allowUse: true, allowRecycle: true },
                 { key: 'premiumPointCodes', label: '💎 高级积分卡', icon: '💎', allowUse: true, allowRecycle: true },
                 { key: 'specialPointCodes', label: '🌟 特殊积分卡', icon: '🌟', allowUse: true, allowRecycle: true },
-                { key: 'boostCodes', label: '⚡ 加成卡', icon: '⚡', allowUse: true, allowRecycle: true },
                 { key: 'premiumBoostCodes', label: '💄 高级加成卡', icon: '💄', allowUse: true, allowRecycle: true },
-                { key: 'resetCodes', label: '🔐 重置密码卡', icon: '🔐', allowUse: false, allowRecycle: true },
-                { key: 'cancellationCodes', label: '🗑️ 注销卡', icon: '🗑️', allowUse: false, allowRecycle: false },
                 { key: 'makeupCodes', label: '📝 补签卡', icon: '📝', allowUse: true, allowRecycle: false },
                 { key: 'gamblersCodes', label: '🎰 赌神卡', icon: '🎰', allowUse: true, allowRecycle: false },
                 { key: 'boxCodes', label: '🎁 盲盒卡', icon: '🎁', allowUse: true, allowRecycle: false },
@@ -2139,27 +2099,20 @@
                     }
 
                     var useBtn = '';
-                    var copyBtn = '';
                     var recycleBtn = '';
 
-                    if (cat.key === 'resetCodes' || cat.key === 'cancellationCodes') {
-                        copyBtn = '<button class="use-btn copy-btn" onclick="copyCode(\'' + item.code + '\')">📋 复制</button>';
-                    } else {
-                        if (cat.key === 'boostCodes') {
-                            useBtn = '<button class="use-btn" onclick="useBoostCode(\'' + item.code + '\')">使用</button>';
-                        } else if (cat.key === 'premiumBoostCodes') {
-                            useBtn = '<button class="use-btn" onclick="usePremiumBoostCode(\'' + item.code + '\')">使用</button>';
-                        } else if (cat.key === 'pointCodes' || cat.key === 'premiumPointCodes' || cat.key === 'specialPointCodes') {
-                            useBtn = '<button class="use-btn" onclick="usePointCode(\'' + item.code + '\')">使用</button>';
-                        } else if (cat.key === 'makeupCodes') {
-                            useBtn = '<button class="use-btn" onclick="useMakeupCode(\'' + item.code + '\')">使用</button>';
-                        } else if (cat.key === 'gamblersCodes') {
-                            useBtn = '<button class="use-btn" onclick="useGamblersCode(\'' + item.code + '\')">使用</button>';
-                        } else if (cat.key === 'boxCodes') {
-                            useBtn = '<button class="use-btn" onclick="useBoxCode(\'' + item.code + '\')">使用</button>';
-                        } else if (cat.key === 'plcardCodes') {
-                            useBtn = '<button class="use-btn" onclick="usePlcardCode(\'' + item.code + '\')">使用</button>';
-                        }
+                    if (cat.key === 'premiumBoostCodes') {
+                        useBtn = '<button class="use-btn" onclick="usePremiumBoostCode(\'' + item.code + '\')">使用</button>';
+                    } else if (cat.key === 'pointCodes' || cat.key === 'premiumPointCodes' || cat.key === 'specialPointCodes') {
+                        useBtn = '<button class="use-btn" onclick="usePointCode(\'' + item.code + '\')">使用</button>';
+                    } else if (cat.key === 'makeupCodes') {
+                        useBtn = '<button class="use-btn" onclick="useMakeupCode(\'' + item.code + '\')">使用</button>';
+                    } else if (cat.key === 'gamblersCodes') {
+                        useBtn = '<button class="use-btn" onclick="useGamblersCode(\'' + item.code + '\')">使用</button>';
+                    } else if (cat.key === 'boxCodes') {
+                        useBtn = '<button class="use-btn" onclick="useBoxCode(\'' + item.code + '\')">使用</button>';
+                    } else if (cat.key === 'plcardCodes') {
+                        useBtn = '<button class="use-btn" onclick="usePlcardCode(\'' + item.code + '\')">使用</button>';
                     }
 
                     if (cat.allowRecycle && item.recyclable) {
@@ -2170,14 +2123,7 @@
                         recycleBtn = '<button class="use-btn recycle" onclick="recycleCode(\'' + item.code + '\', \'' + recycleKey + '\')">回收</button>';
                     }
 
-                    var tipText = '';
-                    if (cat.key === 'resetCodes') {
-                        tipText = ' <span style="font-size:10px;color:#888;">(需在密码重置页面使用)</span>';
-                    } else if (cat.key === 'cancellationCodes') {
-                        tipText = ' <span style="font-size:10px;color:#888;">(需在注销页面使用)</span>';
-                    }
-
-                    html += '<div class="inventory-item">' + item.code + ' ' + expireText + ' ' + useBtn + ' ' + copyBtn + ' ' + recycleBtn + tipText + '</div>';
+                    html += '<div class="inventory-item">' + item.code + ' ' + expireText + ' ' + useBtn + ' ' + recycleBtn + '</div>';
                 });
                 html += '</div></div>';
             });
@@ -2194,25 +2140,6 @@
                 badge.textContent = total;
             } else {
                 badge.style.display = 'none';
-            }
-        }
-
-        async function copyCode(code) {
-            try {
-                await navigator.clipboard.writeText(code);
-                showToast('✅ 已复制卡密: ' + code, 'success');
-            } catch (error) {
-                var textArea = document.createElement('textarea');
-                textArea.value = code;
-                document.body.appendChild(textArea);
-                textArea.select();
-                try {
-                    document.execCommand('copy');
-                    showToast('✅ 已复制卡密: ' + code, 'success');
-                } catch (e) {
-                    showToast('❌ 复制失败，请手动复制: ' + code, 'error');
-                }
-                document.body.removeChild(textArea);
             }
         }
 
@@ -2366,20 +2293,6 @@
             }
         }
 
-        async function useBoostCode(code) {
-            try {
-                var data = await apiRequest('/api/use-boost-code', {
-                    method: 'POST',
-                    body: JSON.stringify({ boostCode: code })
-                });
-                showToast('✅ ' + data.message, 'success');
-                await loadInventory(true);
-                await loadUserInfo(true);
-            } catch (error) {
-                showToast('❌ ' + error.message, 'error');
-            }
-        }
-
         async function usePremiumBoostCode(code) {
             try {
                 var data = await apiRequest('/api/use-premium-boost-code', {
@@ -2472,8 +2385,6 @@
                 'pointCodes': 'point',
                 'premiumPointCodes': 'premium_point',
                 'specialPointCodes': 'special_point',
-                'boostCodes': 'boost',
-                'resetCodes': 'reset',
                 'plcardCodes': 'plcard',
                 'premium_boost': 'premium_boost'
             };

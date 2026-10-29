@@ -394,7 +394,8 @@ def build_verification_email_html(username, code, expire_minutes, purpose="验�
         "换绑": "邮箱换绑",
         "注册": "邮箱注册",
         "重置密码": "重置密码",
-        "注销": "账号注销"
+        "注销": "账号注销",
+        "重置支付密码": "重置支付密码"
     }
     purpose_label = purpose_map.get(purpose, purpose)
     
@@ -675,7 +676,8 @@ def send_verification_code(email, username=None, purpose="验证"):
         "换绑": "邮箱换绑",
         "注册": "邮箱注册",
         "重置密码": "重置密码",
-        "注销": "账号注销"
+        "注销": "账号注销",
+        "重置支付密码": "重置支付密码"
     }
     purpose_label = purpose_map.get(purpose, purpose)
 
@@ -1324,11 +1326,9 @@ def send_attendance_log_email(username, user_email, total_days, consecutive_days
     if bonus_multiplier >= 2.4:
         multiplier_label = '时段加成 + 高级加成（最高档）'
     elif bonus_multiplier >= 1.9:
-        multiplier_label = '时段加成 + 普通加成'
+        multiplier_label = '时段加成 + 高级加成'
     elif bonus_multiplier > 1.8:
         multiplier_label = '高级加成卡 (90%)'
-    elif bonus_multiplier > 1.4:
-        multiplier_label = '普通加成卡 (50%)'
     elif bonus_multiplier > 1.2:
         multiplier_label = '时段加成 (30%)'
     if boost_type:

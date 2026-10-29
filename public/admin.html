@@ -249,7 +249,6 @@
         <button class="tab-btn active" data-tab="cdk"><i class="fas fa-ticket"></i> CDK管理</button>
         <button class="tab-btn" data-tab="announcement"><i class="fas fa-bullhorn"></i> 公告管理</button>
         <button class="tab-btn" data-tab="restrict"><i class="fas fa-ban"></i> 账号风控</button>
-        <button class="tab-btn" data-tab="reissue"><i class="fas fa-rotate-left"></i> 补发卡密</button>
         <button class="tab-btn" data-tab="users"><i class="fas fa-users"></i> 用户管理</button>
         <button class="tab-btn" data-tab="membership"><i class="fas fa-crown"></i> 会员管理</button>
         <button class="tab-btn" data-tab="auction"><i class="fas fa-gavel"></i> 拍卖管理</button>
@@ -392,17 +391,6 @@
         <div>
             <div style="font-weight:500;color:rgba(255,255,255,0.6);font-size:13px;margin-bottom:12px">受限用户列表</div>
             <div id="restrictedUsersList"></div>
-        </div>
-    </div>
-
-    <div id="reissueTab" class="tab-content">
-        <div class="section-title"><i class="fas fa-rotate-left"></i> 注销卡密补发</div>
-        <div style="background:rgba(255,255,255,0.03);border-radius:16px;padding:20px;border:1px solid rgba(255,255,255,0.05)">
-            <div class="form-row">
-                <div class="form-group" style="flex:0 0 280px"><label>用户名</label><input type="text" id="reissueUsername" placeholder="输入用户名"></div>
-                <button class="btn btn-warning" id="reissueBtn"><i class="fas fa-rotate-left"></i> 补发注销卡密</button>
-            </div>
-            <div id="reissueResult" style="margin-top:12px;"></div>
         </div>
     </div>
 
@@ -582,21 +570,17 @@
         {v:'points', t:'积分'},
         {v:'point_code', t:'普通积分卡密'},
         {v:'premium_point_code', t:'高级积分卡密'},
-        {v:'reset_code', t:'重置密码卡密'},
-        {v:'boost_code', t:'积分加成卡密'},
         {v:'special_point_code', t:'特殊积分卡密'},
         {v:'makeup_code', t:'补签卡'},
         {v:'gamblers_code', t:'赌神积分卡密'},
         {v:'box_code', t:'盲盒卡'},
         {v:'plcard_code', t:'普通PL随机卡'},
-        {v:'premium_boost_code', t:'高级加成卡'},
-        {v:'cancellation_code', t:'注销卡密'}
+        {v:'premium_boost_code', t:'高级加成卡'}
     ];
     var CDK_REWARD_LABELS = {
         'points':'积分','point_code':'普通积分卡','premium_point_code':'高级积分卡',
-        'reset_code':'重置密码卡','boost_code':'积分加成卡','special_point_code':'特殊积分卡',
-        'makeup_code':'补签卡','gamblers_code':'赌神卡','box_code':'盲盒卡',
-        'plcard_code':'PL随机卡','premium_boost_code':'高级加成卡','cancellation_code':'注销卡'
+        'special_point_code':'特殊积分卡','makeup_code':'补签卡','gamblers_code':'赌神卡',
+        'box_code':'盲盒卡','plcard_code':'PL随机卡','premium_boost_code':'高级加成卡'
     };
 
     var TIER_NAMES = {
@@ -662,9 +646,6 @@
             if(d.membership){
                 document.getElementById('membershipTotal').textContent=d.membership.total||0;
                 document.getElementById('membershipExpiring').textContent=d.membership.expiring||0;
-            }
-            if(d.auction){
-                document.getElementById('auctionActiveCount').textContent=d.auction.active||0;
             }
             hideErrorBoundary();
         }catch(e){console.error(e);showMessage('加载统计数据失败: '+e.message,'error');showErrorBoundary('加载统计数据失败: '+e.message)}
@@ -1240,7 +1221,6 @@
         w.style.display=this.value==='custom'?'block':'none';
     });
 
-    async function reissueCancellation(){var u=document.getElementById('reissueUsername').value.trim();if(!u){showMessage('请输入用户名','error');return}var btn=document.getElementById('reissueBtn');btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> 补发中...';try{var d=await apiRequest('/api/admin/reissue-cancellation',{method:'POST',body:JSON.stringify({username:u})});showMessage(d.message,'success');document.getElementById('reissueResult').innerHTML='<div style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.12);border-radius:12px;padding:12px 16px;color:#a7f3d0;"><i class="fas fa-check-circle" style="color:#34d399;"></i> 补发成功！已发送至用户邮箱</div>';document.getElementById('reissueUsername').value=''}catch(e){showMessage(e.message,'error')}finally{btn.disabled=false;btn.innerHTML='<i class="fas fa-rotate-left"></i> 补发注销卡密'}}
     function logoutAdmin(){currentToken=null;localStorage.removeItem('adminToken');document.getElementById('loginContainer').style.display='flex';document.getElementById('adminContainer').style.display='none';document.getElementById('adminUsername').value='';document.getElementById('adminPassword').value='';document.getElementById('loginError').textContent='';showMessage('已退出管理员会话','success')}
     async function checkAdminSession(){if(!currentToken)return;try{var r=await fetch('/api/admin/check-session',{headers:{'X-Admin-Token':currentToken}});var d=await r.json();if(!d.valid){showMessage('管理员会话已过期，请重新登录','warning');logoutAdmin()}}catch(e){}}
 
@@ -1395,7 +1375,6 @@
 
     document.getElementById('logoutAdminBtn').addEventListener('click',logoutAdmin);
     document.getElementById('refreshBtn').addEventListener('click',function(){loadStats();loadRestrictedUsers();loadCdkPackages();loadAnnouncements();loadUsers(currentUserPage);loadKnowledgeBase();loadFeedbackList(currentFeedbackPage);loadMembershipStats();loadMembershipList();loadExpiringMemberships();loadAuctions();loadAuctionHistory();showMessage('数据已刷新','success')});
-    document.getElementById('reissueBtn').addEventListener('click',reissueCancellation);
     document.getElementById('createCdkBtn').addEventListener('click',createCdkPackage);
     document.getElementById('addRewardBtn').addEventListener('click',addRewardRow);
     document.getElementById('searchCdkBtn').addEventListener('click',function(){currentCdkSearch=document.getElementById('cdkSearchFilter').value.trim();loadCdkPackages()});

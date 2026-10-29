@@ -192,7 +192,6 @@ function computeAttendanceBodyHash(dateStr, nonce) {
 var currentUser = null;
 var currentHiddenPhone = null;
 var currentAuthCode = null;
-var currentFullPhone = null;
 var cooldownInterval = null;
 var cooldownEndTime = null;
 var isCheckingAuth = false;
@@ -201,8 +200,7 @@ var boostExpiresIn = 0;
 var boostTimerInterval = null;
 var isVerified = false;
 var announcementCollapsed = false;
-var pendingVerificationData = null;
-var currentCancelMethod = 'card';
+var currentCancelMethod = 'email';
 var cancelEmailCodeTimer = null;
 var cancelEmailCountdownValue = 0;
 var attendanceToken = null;
@@ -268,14 +266,12 @@ async function checkBoostStatus() {
         var data = await apiRequest('/api/get-boost-status');
         boostActive = data.boostActive;
         boostExpiresIn = data.boostExpiresIn;
-        var boostType = data.boostType || 'normal';
+        var boostType = data.boostType || 'premium';
         var boostIndicator = document.getElementById('boostIndicator');
         if (boostActive && boostExpiresIn > 0) {
             if (boostIndicator) {
                 boostIndicator.style.display = 'inline-flex';
-                var icon = boostType === 'premium' ? '💎' : '⚡';
-                var label = boostType === 'premium' ? '高级加成' : '加成';
-                boostIndicator.innerHTML = icon + ' ' + label + ' <span id="boostTimer">' + formatBoostTime(boostExpiresIn) + '</span>';
+                boostIndicator.innerHTML = '💎 高级加成 <span id="boostTimer">' + formatBoostTime(boostExpiresIn) + '</span>';
             }
             updateBoostTimerDisplay();
             if (boostTimerInterval) clearInterval(boostTimerInterval);
@@ -474,25 +470,7 @@ async function checkAuthAndLoad() {
     if (isCheckingAuth) return false;
     isCheckingAuth = true;
     try {
-        var preload = null;
-        try {
-            var raw = sessionStorage.getItem('splash_preload');
-            if (raw) {
-                var parsed = JSON.parse(raw);
-                if (parsed && parsed.ts && (Date.now() - parsed.ts) < 15000) {
-                    preload = parsed;
-                }
-                sessionStorage.removeItem('splash_preload');
-            }
-        } catch (e) {}
-
-        var data;
-        if (preload && preload.auth) {
-            data = preload.auth;
-        } else {
-            data = await apiRequest('/api/check-auth');
-        }
-
+        var data = await apiRequest('/api/check-auth');
         if (data.authenticated) {
             currentUser = data.username;
             isVerified = data.isVerified || false;
@@ -501,9 +479,6 @@ async function checkAuthAndLoad() {
                 userInfoEl.innerHTML = '👤 ' + currentUser;
                 if (data.isNewUser) {
                     userInfoEl.innerHTML = '👤 ' + currentUser + ' <span class="new-user-badge">新人8折</span>';
-                }
-                if (data.hasCancellationCode) {
-                    userInfoEl.innerHTML += '<span class="cancellation-badge">已购注销卡</span>';
                 }
             }
             if (data.totalPoints !== undefined) {
@@ -528,16 +503,8 @@ async function checkAuthAndLoad() {
                 if (identityWarning) identityWarning.style.display = 'none';
                 if (mainContent) mainContent.style.display = 'block';
             }
-            if (preload && preload.attendance) {
-                applyAttendanceInfo(preload.attendance);
-            } else {
-                await loadAttendanceInfo();
-            }
-            if (preload && preload.mail && typeof preload.mail.total === 'number') {
-                applyMailBadge(preload.mail.total);
-            } else {
-                await updateMailBadge();
-            }
+            await loadAttendanceInfo();
+            await updateMailBadge();
             await loadRecords();
             await checkBoostStatus();
             await loadAnnouncements();
@@ -681,10 +648,8 @@ async function doAttendance() {
                         div.innerHTML = '🎉 ' + reward.message;
                     } else if (reward.type === 'premium_code') {
                         div.innerHTML = '💎 ' + reward.message + '<br><code style="background:#f0f0f0;padding:4px 8px;border-radius:8px;display:inline-block;margin-top:4px;">' + reward.code + '</code>';
-                    } else if (reward.type === 'boost_code') {
-                        div.innerHTML = '⚡ ' + reward.message + '<br><code style="background:#f0f0f0;padding:4px 8px;border-radius:8px;display:inline-block;margin-top:4px;">' + reward.code + '</code>';
-                    } else if (reward.type === 'reset_code') {
-                        div.innerHTML = '🔐 ' + reward.message + '<br><code style="background:#f0f0f0;padding:4px 8px;border-radius:8px;display:inline-block;margin-top:4px;">' + reward.code + '</code>';
+                    } else if (reward.type === 'premium_boost_code') {
+                        div.innerHTML = '💄 ' + reward.message + '<br><code style="background:#f0f0f0;padding:4px 8px;border-radius:8px;display:inline-block;margin-top:4px;">' + reward.code + '</code>';
                     }
                     rewardList.appendChild(div);
                 });
@@ -784,25 +749,20 @@ if (generateBtn) {
             var data = await apiRequest('/api/generate-phone', { method: 'POST', body: JSON.stringify({}) });
             currentHiddenPhone = data.hiddenPhone;
             currentAuthCode = data.authCode;
-            pendingVerificationData = null;
             var phoneDisplay = document.getElementById('phoneDisplay');
             if (phoneDisplay) phoneDisplay.innerHTML = '<span style="animation: pulse 0.3s;">' + data.hiddenPhone + '</span>';
             var fullPhoneDisplay = document.getElementById('fullPhoneDisplay');
             if (fullPhoneDisplay) fullPhoneDisplay.style.display = 'none';
-            var copyFullPhoneBtn = document.getElementById('copyFullPhoneBtn');
-            if (copyFullPhoneBtn) copyFullPhoneBtn.style.display = 'none';
             var authCodeInput = document.getElementById('authCodeInput');
             if (authCodeInput) {
                 authCodeInput.value = '';
-                authCodeInput.placeholder = '输入授权码验证后回填完整号码';
+                authCodeInput.placeholder = '输入授权码验证获取积分';
             }
             var verifyBtn = document.getElementById('verifyBtn');
             if (verifyBtn) {
                 verifyBtn.disabled = false;
-                verifyBtn.textContent = '🔑 验证授权码';
+                verifyBtn.textContent = '🔑 验证并获取积分';
             }
-            var existingBackfill = document.getElementById('backfillSection');
-            if (existingBackfill) existingBackfill.remove();
             await loadRecords();
             await updatePointsDisplay();
             startCooldown();
@@ -841,30 +801,12 @@ if (verifyBtnEl) {
                 method: 'POST',
                 body: JSON.stringify({ authCode: authCode })
             });
-            pendingVerificationData = {
-                fullPhone: data.phoneNumber,
-                pointsEarned: data.pointsEarned,
-                originalPoints: data.originalPoints,
-                bonusMultiplier: data.bonusMultiplier,
-                authCode: authCode
-            };
-            currentFullPhone = data.phoneNumber;
             var fullPhoneDisplay = document.getElementById('fullPhoneDisplay');
             if (fullPhoneDisplay) {
-                var maskedDisplay = currentFullPhone.substring(0, 3) + '*****' + currentFullPhone.substring(currentFullPhone.length - 4);
-                fullPhoneDisplay.innerHTML = '📞 完整号码: <span style="font-family:monospace;font-size:28px;color:#667eea;">' + maskedDisplay + '</span><br><span style="font-size:14px;color:#666;">验证成功！请点击下方按钮回填完整号码以获取积分</span>';
+                var maskedDisplay = data.phoneNumber.substring(0, 3) + '*****' + data.phoneNumber.substring(data.phoneNumber.length - 4);
+                fullPhoneDisplay.innerHTML = '🎉 <span style="font-size:32px;">✅</span><br><strong>验证成功！获得 ' + data.pointsEarned + ' 积分</strong><br><span style="font-size:13px;color:#666;">📞 完整号码: ' + maskedDisplay + '</span>';
                 fullPhoneDisplay.style.display = 'block';
-            }
-            var copyBtn = document.getElementById('copyFullPhoneBtn');
-            if (copyBtn) {
-                copyBtn.textContent = '📋 回填完整号码并获取积分';
-                copyBtn.style.display = 'block';
-                copyBtn.style.background = 'linear-gradient(135deg, #27ae60, #2ecc71)';
-                copyBtn.onclick = confirmBackfillAndClaim;
-            }
-            var existingBackfill = document.getElementById('backfillSection');
-            if (!existingBackfill) {
-                createBackfillSection();
+                fullPhoneDisplay.style.background = 'linear-gradient(135deg, #e8f5e9, #c8e6c9)';
             }
             if (authCodeInput) authCodeInput.value = '';
             var verifyBtn = document.getElementById('verifyBtn');
@@ -872,11 +814,17 @@ if (verifyBtnEl) {
                 verifyBtn.disabled = true;
                 verifyBtn.textContent = '✅ 已验证';
             }
+            await loadRecords();
+            await updatePointsDisplay();
             var toast = document.createElement('div');
-            toast.textContent = '✅ 授权码验证成功！请回填完整号码获取积分';
-            toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#667eea;color:white;padding:10px 20px;border-radius:40px;font-size:14px;z-index:2000;animation:fadeInOut 2s;';
+            toast.textContent = '🎉 验证成功！获得 ' + data.pointsEarned + ' 积分';
+            toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#27ae60;color:white;padding:10px 20px;border-radius:40px;font-size:14px;z-index:2000;animation:fadeInOut 2s;';
             document.body.appendChild(toast);
             setTimeout(function() { toast.remove(); }, 3000);
+            setTimeout(function() {
+                var fpd = document.getElementById('fullPhoneDisplay');
+                if (fpd) fpd.style.display = 'none';
+            }, 5000);
         } catch (error) {
             if (error.message.includes('请先完成身份认证')) {
                 alert('请先完成身份认证');
@@ -886,126 +834,6 @@ if (verifyBtnEl) {
             }
         }
     });
-}
-
-function createBackfillSection() {
-    var verifySection = document.querySelector('.verify-section');
-    if (!verifySection) return;
-    var backfillSection = document.createElement('div');
-    backfillSection.id = 'backfillSection';
-    backfillSection.style.cssText = 'margin-top:16px;padding:16px;background:#f0f8ff;border-radius:16px;border:2px dashed #667eea;display:block;';
-    backfillSection.innerHTML = '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;"><label style="font-size:14px;font-weight:600;color:#333;">📝 回填完整号码:</label><input type="text" id="backfillInput" placeholder="请输入完整手机号" style="flex:2;min-width:200px;padding:12px 16px;border:2px solid #e0e0e0;border-radius:60px;font-size:15px;font-family:monospace;outline:none;transition:all 0.3s;"><button id="backfillBtn" style="padding:12px 24px;background:linear-gradient(135deg,#27ae60,#2ecc71);color:white;border:none;border-radius:60px;font-size:15px;font-weight:600;cursor:pointer;transition:all 0.3s;">✅ 确认回填</button></div><div style="margin-top:8px;font-size:12px;color:#888;">💡 请输入完整号码 <strong style="color:#667eea;">' + currentFullPhone + '</strong> 以验证身份并获取积分</div>';
-    verifySection.appendChild(backfillSection);
-    var backfillInput = document.getElementById('backfillInput');
-    var backfillBtn = document.getElementById('backfillBtn');
-    if (backfillInput && backfillBtn) {
-        backfillInput.addEventListener('input', function(e) {
-            var val = e.target.value.replace(/\D/g, '');
-            e.target.value = val;
-            if (val.length === 11) {
-                backfillBtn.style.background = 'linear-gradient(135deg, #27ae60, #2ecc71)';
-                backfillBtn.style.opacity = '1';
-            } else {
-                backfillBtn.style.background = '#95a5a6';
-                backfillBtn.style.opacity = '0.6';
-            }
-        });
-        backfillInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && backfillInput.value.length === 11) {
-                backfillBtn.click();
-            }
-        });
-        backfillBtn.addEventListener('click', function() {
-            var inputVal = backfillInput.value.trim();
-            if (inputVal.length !== 11) {
-                alert('请输入完整的11位手机号码');
-                return;
-            }
-            if (inputVal !== currentFullPhone) {
-                alert('❌ 号码不匹配！请输入正确的完整号码: ' + currentFullPhone);
-                return;
-            }
-            claimPointsAfterBackfill();
-        });
-        backfillInput.focus();
-    }
-}
-
-function confirmBackfillAndClaim() {
-    var existingBackfill = document.getElementById('backfillSection');
-    if (!existingBackfill) {
-        createBackfillSection();
-    } else {
-        existingBackfill.style.display = 'block';
-        var input = document.getElementById('backfillInput');
-        if (input) input.focus();
-    }
-}
-
-async function claimPointsAfterBackfill() {
-    if (!pendingVerificationData) {
-        alert('请先验证授权码');
-        return;
-    }
-    var backfillBtn = document.getElementById('backfillBtn');
-    if (backfillBtn) {
-        backfillBtn.disabled = true;
-        backfillBtn.textContent = '⏳ 处理中...';
-    }
-    try {
-        var data = await apiRequest('/api/claim-backfill-reward', {
-            method: 'POST',
-            body: JSON.stringify({
-                phoneNumber: currentFullPhone,
-                authCode: pendingVerificationData.authCode || ''
-            })
-        });
-        pendingVerificationData = null;
-        var fullPhoneDisplay = document.getElementById('fullPhoneDisplay');
-        var bonusText = '';
-        if (data.bonusMultiplier) {
-            var multiplierDesc = '';
-            if (data.bonusMultiplier === 2.47) {
-                multiplierDesc = ' (时段30% + 高级加成90% = 120%)';
-            } else if (data.bonusMultiplier === 1.95) {
-                multiplierDesc = ' (时段30% + 加成50% = 80%)';
-            } else if (data.bonusMultiplier === 1.9) {
-                multiplierDesc = ' (高级加成90%)';
-            } else if (data.bonusMultiplier === 1.5) {
-                multiplierDesc = ' (加成卡50%)';
-            } else if (data.bonusMultiplier === 1.3) {
-                multiplierDesc = ' (时段30%)';
-            }
-            bonusText = '<br>🎁 积分加成' + multiplierDesc + '！ (' + data.originalPoints + ' → ' + data.pointsEarned + ')';
-        }
-        if (fullPhoneDisplay) {
-            fullPhoneDisplay.innerHTML = '🎉 <span style="font-size:32px;">✅</span><br><strong>回填成功！获得 ' + data.pointsEarned + ' 积分</strong>' + bonusText + '<br><span style="font-size:13px;color:#666;">📞 完整号码: ' + currentFullPhone + '</span>';
-            fullPhoneDisplay.style.background = 'linear-gradient(135deg, #e8f5e9, #c8e6c9)';
-        }
-        var backfillSection = document.getElementById('backfillSection');
-        if (backfillSection) {
-            backfillSection.style.display = 'none';
-        }
-        var copyFullPhoneBtn = document.getElementById('copyFullPhoneBtn');
-        if (copyFullPhoneBtn) copyFullPhoneBtn.style.display = 'none';
-        await loadRecords();
-        await updatePointsDisplay();
-        var toast = document.createElement('div');
-        toast.textContent = '🎉 回填成功！获得 ' + data.pointsEarned + ' 积分';
-        toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#27ae60;color:white;padding:10px 20px;border-radius:40px;font-size:14px;z-index:2000;animation:fadeInOut 2s;';
-        document.body.appendChild(toast);
-        setTimeout(function() { toast.remove(); }, 3000);
-        setTimeout(function() {
-            var fpd = document.getElementById('fullPhoneDisplay');
-            if (fpd) fpd.style.display = 'none';
-        }, 5000);
-    } catch (error) {
-        alert(error.message || '回填失败，请重试');
-        if (backfillBtn) {
-            backfillBtn.disabled = false;
-            backfillBtn.textContent = '✅ 确认回填';
-        }
-    }
 }
 
 var authCodeInputInit = document.getElementById('authCodeInput');
@@ -1018,7 +846,7 @@ if (authCodeInputInit) {
         e.target.value = value;
         if (value.trim().length > 0 && currentHiddenPhone) {
             verifyBtn.disabled = false;
-            verifyBtn.textContent = '🔑 验证授权码';
+            verifyBtn.textContent = '🔑 验证并获取积分';
         } else {
             verifyBtn.disabled = true;
         }
@@ -1060,70 +888,11 @@ var cancellationModal = document.getElementById('cancellationModal');
 var cancellationBtn = document.getElementById('cancellationBtn');
 var confirmCancellationBtn = document.getElementById('confirmCancellationBtn');
 var closeCancellationModal = document.getElementById('closeCancellationModal');
-var cancelTabCard = document.getElementById('cancelTabCard');
-var cancelTabEmail = document.getElementById('cancelTabEmail');
-var cancelCardMethod = document.getElementById('cancelCardMethod');
 var cancelEmailMethod = document.getElementById('cancelEmailMethod');
-
-function switchCancelMethod(method) {
-    currentCancelMethod = method;
-    if (method === 'card') {
-        if (cancelTabCard) {
-            cancelTabCard.className = 'cancel-tab-btn active';
-            cancelTabCard.style.background = 'linear-gradient(135deg,#667eea,#764ba2)';
-            cancelTabCard.style.color = 'white';
-        }
-        if (cancelTabEmail) {
-            cancelTabEmail.className = 'cancel-tab-btn';
-            cancelTabEmail.style.background = 'transparent';
-            cancelTabEmail.style.color = '#666';
-        }
-        if (cancelCardMethod) cancelCardMethod.style.display = 'block';
-        if (cancelEmailMethod) cancelEmailMethod.style.display = 'none';
-        if (confirmCancellationBtn) {
-            confirmCancellationBtn.textContent = '确认注销 (卡密)';
-            confirmCancellationBtn.disabled = false;
-        }
-        var cancellationMessage = document.getElementById('cancellationMessage');
-        if (cancellationMessage) cancellationMessage.textContent = '';
-    } else {
-        if (cancelTabEmail) {
-            cancelTabEmail.className = 'cancel-tab-btn active';
-            cancelTabEmail.style.background = 'linear-gradient(135deg,#667eea,#764ba2)';
-            cancelTabEmail.style.color = 'white';
-        }
-        if (cancelTabCard) {
-            cancelTabCard.className = 'cancel-tab-btn';
-            cancelTabCard.style.background = 'transparent';
-            cancelTabCard.style.color = '#666';
-        }
-        if (cancelCardMethod) cancelCardMethod.style.display = 'none';
-        if (cancelEmailMethod) cancelEmailMethod.style.display = 'block';
-        if (confirmCancellationBtn) {
-            confirmCancellationBtn.textContent = '确认注销 (邮箱验证)';
-            confirmCancellationBtn.disabled = false;
-        }
-        var cancellationMessage2 = document.getElementById('cancellationMessage');
-        if (cancellationMessage2) cancellationMessage2.textContent = '';
-    }
-}
-
-if (cancelTabCard) {
-    cancelTabCard.addEventListener('click', function() { switchCancelMethod('card'); });
-}
-if (cancelTabEmail) {
-    cancelTabEmail.addEventListener('click', function() { switchCancelMethod('email'); });
-}
 
 if (cancellationBtn) {
     cancellationBtn.addEventListener('click', function() {
         if (cancellationModal) cancellationModal.style.display = 'flex';
-        var cancelCardEmail = document.getElementById('cancelCardEmail');
-        if (cancelCardEmail) cancelCardEmail.value = '';
-        var cancelCardPassword = document.getElementById('cancelCardPassword');
-        if (cancelCardPassword) cancelCardPassword.value = '';
-        var cancelCardCode = document.getElementById('cancelCardCode');
-        if (cancelCardCode) cancelCardCode.value = '';
         var cancelEmailInput = document.getElementById('cancelEmailInput');
         if (cancelEmailInput) cancelEmailInput.value = '';
         var cancelEmailCode = document.getElementById('cancelEmailCode');
@@ -1144,7 +913,8 @@ if (cancellationBtn) {
             cancelEmailCodeTimer = null;
             cancelEmailCountdownValue = 0;
         }
-        switchCancelMethod('card');
+        if (cancelEmailMethod) cancelEmailMethod.style.display = 'block';
+        if (confirmCancellationBtn) confirmCancellationBtn.textContent = '确认注销 (邮箱验证)';
     });
 }
 
@@ -1258,122 +1028,60 @@ if (confirmCancellationBtn) {
             return;
         }
 
-        if (currentCancelMethod === 'card') {
-            var cancelCardEmail = document.getElementById('cancelCardEmail');
-            var cancelCardPassword = document.getElementById('cancelCardPassword');
-            var cancelCardCode = document.getElementById('cancelCardCode');
-            var email = cancelCardEmail ? cancelCardEmail.value.trim().toLowerCase() : '';
-            var password = cancelCardPassword ? cancelCardPassword.value : '';
-            var cancellationCode = cancelCardCode ? cancelCardCode.value.trim().toUpperCase() : '';
+        var cancelEmailInput = document.getElementById('cancelEmailInput');
+        var cancelEmailCode = document.getElementById('cancelEmailCode');
+        var email = cancelEmailInput ? cancelEmailInput.value.trim().toLowerCase() : '';
+        var verificationCode = cancelEmailCode ? cancelEmailCode.value.trim() : '';
 
-            if (!email || !password || !cancellationCode) {
-                if (messageDiv) {
-                    messageDiv.textContent = '请填写所有字段（邮箱、密码、卡密）';
-                    messageDiv.style.color = 'red';
-                }
-                return;
+        if (!email || !verificationCode) {
+            if (messageDiv) {
+                messageDiv.textContent = '请填写邮箱和验证码';
+                messageDiv.style.color = 'red';
             }
+            return;
+        }
 
-            var codePattern = /^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
-            if (!codePattern.test(cancellationCode)) {
-                if (messageDiv) {
-                    messageDiv.textContent = '卡密格式不正确，应为 XXXX-XXXX-XXXX-XXXX';
-                    messageDiv.style.color = 'red';
-                }
-                return;
+        if (verificationCode.length !== 6 || !/^\d{6}$/.test(verificationCode)) {
+            if (messageDiv) {
+                messageDiv.textContent = '验证码为6位数字，请检查输入';
+                messageDiv.style.color = 'red';
             }
+            return;
+        }
+
+        if (messageDiv) {
+            messageDiv.textContent = '正在处理注销请求...';
+            messageDiv.style.color = '#666';
+        }
+        btn.disabled = true;
+
+        try {
+            var data = await apiRequest('/api/account/cancel', {
+                method: 'POST',
+                body: JSON.stringify({
+                    email: email,
+                    verification_code: verificationCode,
+                    promise_agreed: promiseAgreed
+                })
+            });
 
             if (messageDiv) {
-                messageDiv.textContent = '正在处理注销请求...';
-                messageDiv.style.color = '#666';
+                messageDiv.textContent = data.message || '注销成功';
+                messageDiv.style.color = 'green';
             }
-            btn.disabled = true;
-
-            try {
-                var data = await apiRequest('/api/use-cancellation-code', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        email: email,
-                        password: password,
-                        cancellationCode: cancellationCode,
-                        promiseAgreed: promiseAgreed
-                    })
+            setTimeout(function() {
+                if (cancellationModal) cancellationModal.style.display = 'none';
+                document.cookie.split(';').forEach(function(c) {
+                    document.cookie = c.replace(/^ +/, '').replace(/=.*/, '=;expires=' + new Date().toUTCString() + ';path=/');
                 });
-
-                if (messageDiv) {
-                    messageDiv.textContent = data.message || '注销成功';
-                    messageDiv.style.color = 'green';
-                }
-                setTimeout(function() {
-                    if (cancellationModal) cancellationModal.style.display = 'none';
-                    document.cookie.split(';').forEach(function(c) {
-                        document.cookie = c.replace(/^ +/, '').replace(/=.*/, '=;expires=' + new Date().toUTCString() + ';path=/');
-                    });
-                    window.location.href = '/login.html';
-                }, 2000);
-            } catch (error) {
-                if (messageDiv) {
-                    messageDiv.textContent = error.message || '注销失败，请重试';
-                    messageDiv.style.color = 'red';
-                }
-                btn.disabled = false;
-            }
-        } else {
-            var cancelEmailInput = document.getElementById('cancelEmailInput');
-            var cancelEmailCode = document.getElementById('cancelEmailCode');
-            var email2 = cancelEmailInput ? cancelEmailInput.value.trim().toLowerCase() : '';
-            var verificationCode = cancelEmailCode ? cancelEmailCode.value.trim() : '';
-
-            if (!email2 || !verificationCode) {
-                if (messageDiv) {
-                    messageDiv.textContent = '请填写邮箱和验证码';
-                    messageDiv.style.color = 'red';
-                }
-                return;
-            }
-
-            if (verificationCode.length !== 6 || !/^\d{6}$/.test(verificationCode)) {
-                if (messageDiv) {
-                    messageDiv.textContent = '验证码为6位数字，请检查输入';
-                    messageDiv.style.color = 'red';
-                }
-                return;
-            }
-
+                window.location.href = '/login.html';
+            }, 2000);
+        } catch (error) {
             if (messageDiv) {
-                messageDiv.textContent = '正在处理注销请求...';
-                messageDiv.style.color = '#666';
+                messageDiv.textContent = error.message || '注销失败，请重试';
+                messageDiv.style.color = 'red';
             }
-            btn.disabled = true;
-
-            try {
-                var data2 = await apiRequest('/api/account/cancel', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        email: email2,
-                        verification_code: verificationCode,
-                        promise_agreed: promiseAgreed
-                    })
-                });
-
-                if (messageDiv) {
-                    messageDiv.textContent = data2.message || '注销成功';
-                    messageDiv.style.color = 'green';
-                }
-                setTimeout(function() {
-                    if (cancellationModal) cancellationModal.style.display = 'none';
-                    document.cookie.split(';').forEach(function(c) {
-                        document.cookie = c.replace(/^ +/, '').replace(/=.*/, '=;expires=' + new Date().toUTCString() + ';path=/');
-                    });
-                    window.location.href = '/login.html';
-                }, 2000);
-            } catch (error) {
-                if (messageDiv) {
-                    messageDiv.textContent = error.message || '注销失败，请重试';
-                    messageDiv.style.color = 'red';
-                }
-                btn.disabled = false;
-            }
+            btn.disabled = false;
         }
     });
 }
@@ -1399,7 +1107,3 @@ setInterval(function() {
     if (document.hidden) return;
     updateMailBadge();
 }, 30000);
-
-var style = document.createElement('style');
-style.textContent = '.cancellation-badge{background:#e74c3c;color:white;font-size:10px;padding:2px 6px;border-radius:20px;margin-left:8px;}.cancel-tab-btn{transition:all 0.3s;}.cancel-tab-btn:hover{opacity:0.85;}';
-document.head.appendChild(style);

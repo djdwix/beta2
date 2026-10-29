@@ -202,12 +202,6 @@ async function loadMailList() {
             } else if (item.type === 'premium_point_code') {
                 typeLabel = '高级积分卡';
                 badgeClass = 'code';
-            } else if (item.type === 'reset_code') {
-                typeLabel = '重置密码卡';
-                badgeClass = 'code';
-            } else if (item.type === 'boost_code') {
-                typeLabel = '加成卡';
-                badgeClass = 'code';
             } else if (item.type === 'special_point_code') {
                 typeLabel = '特殊积分卡';
                 badgeClass = 'code';
@@ -226,9 +220,6 @@ async function loadMailList() {
             } else if (item.type === 'premium_boost_code') {
                 typeLabel = '高级加成卡';
                 badgeClass = 'premium_boost';
-            } else if (item.type === 'cancellation_code') {
-                typeLabel = '注销卡';
-                badgeClass = 'cancellation';
             } else if (item.type === 'coupon') {
                 typeLabel = '优惠券';
                 badgeClass = 'coupon';

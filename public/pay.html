@@ -236,7 +236,7 @@
 
         <div id="resetPasswordSection" class="reset-pw-section">
             <span class="label"><i class="fas fa-key"></i> 支付密码管理</span>
-            <button class="reset-btn" id="resetPayPasswordBtn">重置支付密码（15积分）</button>
+            <button class="reset-btn" id="resetPayPasswordBtn">重置支付密码</button>
         </div>
 
         <div id="couponSection" class="coupon-section">
@@ -300,13 +300,17 @@
     <div id="resetPasswordModal" class="captcha-modal">
         <div class="captcha-modal-content">
             <h3><i class="fas fa-key"></i> 重置支付密码</h3>
-            <p style="color:#f87171;font-size:13px;margin-bottom:12px;font-weight:600">⚠️ 重置支付密码需要消耗15积分，请确认</p>
-            <p style="color:#8892b0;font-size:13px;margin-bottom:16px;">请输入绑定的QQ号验证身份</p>
-            <div class="captcha-input">
-                <input type="text" id="resetQqInput" placeholder="请输入绑定的QQ号" maxlength="15" style="width:100%;padding:16px 20px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:18px;font-size:16px;text-align:center;color:#f0f3ff;outline:none;font-weight:600">
+            <p style="color:#f87171;font-size:13px;margin-bottom:12px;font-weight:600">⚠️ 请通过邮箱验证码完成支付密码重置</p>
+            <p style="color:#8892b0;font-size:13px;margin-bottom:16px;">验证码将发送至您的绑定邮箱</p>
+            <div style="margin-bottom:12px;">
+                <input type="text" id="resetEmailCodeInput" placeholder="请输入6位邮箱验证码" maxlength="6" style="width:100%;padding:16px 20px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:18px;font-size:18px;text-align:center;letter-spacing:6px;color:#f0f3ff;outline:none;font-weight:600">
             </div>
-            <div style="margin-top:12px;">
-                <input type="password" id="resetPasswordInput" placeholder="请输入登录密码验证" style="width:100%;padding:16px 20px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:18px;font-size:16px;text-align:center;color:#f0f3ff;outline:none;font-weight:600">
+            <div style="display:flex;gap:10px;margin-bottom:12px;">
+                <button id="sendResetEmailCodeBtn" style="flex:1;padding:12px;background:linear-gradient(135deg,#7c8cff,#a78bfa);color:#fff;border:none;border-radius:40px;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;">发送邮箱验证码</button>
+            </div>
+            <div id="resetEmailCodeCountdown" style="font-size:12px;color:#6a7a9a;text-align:center;min-height:18px;margin-bottom:12px;"></div>
+            <div style="margin-bottom:12px;">
+                <input type="password" id="resetNewPayPassword" placeholder="设置新的6位支付密码" maxlength="6" inputmode="numeric" style="width:100%;padding:16px 20px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:18px;font-size:20px;text-align:center;letter-spacing:8px;color:#f0f3ff;outline:none;font-weight:700">
             </div>
             <div id="resetError" class="captcha-error">操作失败</div>
             <div class="captcha-buttons">
@@ -436,6 +440,8 @@
         var initRetryCount = 0;
         var MAX_INIT_RETRIES = 3;
         var isInitialized = false;
+        var resetEmailCodeTimer = null;
+        var resetEmailCodeCountdownValue = 0;
 
         function showErrorBoundary(message) {
             var el = document.getElementById('errorBoundary');
@@ -456,11 +462,8 @@
         };
 
         var productTypeToIdMap = {
-            'reset': 'reset_code',
             'point': 'point_code',
             'premium_point': 'premium_point_code',
-            'boost': 'boost_code',
-            'cancellation': 'cancellation_code',
             'special_point': 'special_point_code',
             'makeup': 'makeup_code',
             'gamblers': 'gamblers_code',
@@ -562,7 +565,7 @@
             }).then(function(response) {
                 var id = response.headers.get('X-Captcha-Id') || '';
                 if (id) { currentCaptchaId = id;
-                    currentOrderCaptchaId = id; } else { console.warn('No X-Captcha-Id header received'); }
+                    currentOrderCaptchaId = id; }
                 return response.blob();
             }).then(function(blob) {
                 var objectUrl = URL.createObjectURL(blob);
@@ -582,16 +585,6 @@
             document.getElementById('captchaInput').focus();
             document.getElementById('confirmCaptchaBtn').disabled = false;
             document.getElementById('confirmCaptchaBtn').textContent = '确认支付';
-        }
-
-        function showCaptchaModal(callback) {
-            pendingPayCallback = callback;
-            document.getElementById('captchaInput').value = '';
-            document.getElementById('captchaError').style.display = 'none';
-            document.getElementById('captchaModal').classList.add('active');
-            document.getElementById('captchaModal').style.display = 'flex';
-            loadCaptcha();
-            setTimeout(function() { document.getElementById('captchaInput').focus(); }, 300);
         }
 
         function showCaptchaModalDirect(callback) {
@@ -618,8 +611,6 @@
             if (e === 'unconditional') return '<span class="coupon-type-badge unconditional">无门槛</span>';
             if (e === 'product_specific') return '<span class="coupon-type-badge product">指定商品</span>';
             if (e === 'pl_discount') return '<span class="coupon-type-badge pl_discount">PL立减</span>';
-            if (e === 'makeup_specific') return '<span class="coupon-type-badge product">补签卡</span>';
-            if (e === 'gamblers_specific') return '<span class="coupon-type-badge product">赌神卡</span>';
             return '';
         }
 
@@ -628,8 +619,6 @@
             if (e.type === 'unconditional') return '无门槛减' + e.discount;
             if (e.type === 'product_specific') return '指定商品(' + (e.product_id || '') + ')减' + e.discount;
             if (e.type === 'pl_discount') return 'PL立减' + e.discount + 'PL';
-            if (e.type === 'makeup_specific') return '补签卡减' + e.discount;
-            if (e.type === 'gamblers_specific') return '赌神卡减' + e.discount;
             return '';
         }
 
@@ -638,8 +627,6 @@
             if (e === 'unconditional') return '无门槛券';
             if (e === 'product_specific') return '指定商品券';
             if (e === 'pl_discount') return 'PL立减金';
-            if (e === 'makeup_specific') return '补签卡券';
-            if (e === 'gamblers_specific') return '赌神卡券';
             return e;
         }
 
@@ -705,7 +692,7 @@
                     totalDiscountPoints += d;
                     currentPointsPrice -= d;
                     usedCoupons.push(c);
-                } else if (c.type === 'product_specific' || c.type === 'makeup_specific' || c.type === 'gamblers_specific') {
+                } else if (c.type === 'product_specific') {
                     var couponProductId = c.product_id || '';
                     if (couponProductId && (couponProductId === matchId || couponProductId === (orderData ? orderData.product_id : '') || couponProductId === (orderData ? orderData.product_type : ''))) {
                         var d = Math.min(c.discount, currentPointsPrice);
@@ -724,7 +711,7 @@
                 var plInPoints = totalDiscountPl * (currentRate || 1);
                 var totalPointsDiscount = totalDiscountPoints + plInPoints;
                 var finalPoints = Math.max(0, pointsPrice - totalPointsDiscount);
-                return { totalDiscountPl: totalDiscountPl, totalDiscountPoints: totalPointsDiscount, finalPricePl: finalPoints / (currentRate || 1), finalPricePoints: finalPoints, isPl: false, usedCoupons: usedCoupons };
+                return { totalDiscountPl: totalDiscountPl, totalDiscountPoints: totalDiscountPoints, finalPricePl: finalPoints / (currentRate || 1), finalPricePoints: finalPoints, isPl: false, usedCoupons: usedCoupons };
             }
         }
 
@@ -748,7 +735,7 @@
                 if (usedCouponTypes.has(c.type)) return false;
                 if (c.type === 'pl_discount') { if (!isPl) return false; if (orderPlPrice <= c.discount) return false; }
                 if (c.type === 'full_reduction') { var pointsPrice = orderData ? orderData.points_price || orderData.product_price : 0; if (pointsPrice < c.threshold) return false; }
-                if (c.type === 'product_specific' || c.type === 'makeup_specific' || c.type === 'gamblers_specific') {
+                if (c.type === 'product_specific') {
                     var couponProductId = c.product_id || '';
                     if (!couponProductId) return false;
                     if (couponProductId !== matchId && couponProductId !== productId && couponProductId !== productType) { return false; }
@@ -759,20 +746,7 @@
             if (available.length === 0) {
                 var opt = document.createElement('option');
                 opt.value = '';
-                if (selectedCoupons.length > 0 && availableCoupons.some(function(c) { return usedCouponTypes.has(c.type); })) {
-                    opt.textContent = '每种类型仅限使用1张';
-                } else if (!isPl && availableCoupons.some(function(c) { return c.type === 'pl_discount'; })) {
-                    opt.textContent = 'PL立减金仅限PL支付时使用';
-                } else if (isPl && availableCoupons.some(function(c) { return c.type === 'pl_discount'; })) {
-                    var plCoupon = availableCoupons.find(function(c) { return c.type === 'pl_discount'; });
-                    if (plCoupon && orderPlPrice <= plCoupon.discount) {
-                        opt.textContent = '订单金额(' + orderPlPrice.toFixed(4) + 'PL)需大于立减金(' + plCoupon.discount + 'PL)';
-                    } else {
-                        opt.textContent = '没有更多可用优惠券';
-                    }
-                } else {
-                    opt.textContent = '没有更多可用优惠券';
-                }
+                opt.textContent = '没有更多可用优惠券';
                 select.appendChild(opt);
             } else {
                 available.forEach(function(c) {
@@ -780,12 +754,6 @@
                     opt.value = c.id;
                     var label = getCouponDisplayText(c);
                     var typeName = getCouponTypeName(c.type);
-                    if (c.type === 'full_reduction') label = '[满减] ' + label;
-                    else if (c.type === 'unconditional') label = '[无门槛] ' + label;
-                    else if (c.type === 'product_specific') label = '[指定商品] ' + label;
-                    else if (c.type === 'pl_discount') label = '[PL立减] ' + label;
-                    else if (c.type === 'makeup_specific') label = '[补签卡] ' + label;
-                    else if (c.type === 'gamblers_specific') label = '[赌神卡] ' + label;
                     opt.textContent = label + ' (' + typeName + ')';
                     select.appendChild(opt);
                 });
@@ -902,18 +870,9 @@
                     try {
                         if (typeof QRCode !== 'undefined') {
                             new QRCode(container, { text: qrUrl, width: 140, height: 140, colorDark: '#0a0d1a', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.H });
-                        } else {
-                            var fallback = document.createElement('div');
-                            fallback.style.cssText = 'width:140px;height:140px;background:#f0f0f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#666;';
-                            fallback.textContent = 'QR库未加载';
-                            container.appendChild(fallback);
                         }
                     } catch (e) {
-                        console.error('QRCode generation failed:', e);
-                        var fallback = document.createElement('div');
-                        fallback.style.cssText = 'width:140px;height:140px;background:#f0f0f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#666;';
-                        fallback.textContent = '二维码生成失败';
-                        container.appendChild(fallback);
+                        container.innerHTML = '<div style="padding:20px;color:#f87171;font-size:13px;">二维码生成失败</div>';
                     }
                 } else {
                     container.innerHTML = '<div style="padding:20px;color:#f87171;font-size:13px;">二维码生成失败: ' + (data.error || '未知错误') + '</div>';
@@ -1313,7 +1272,7 @@
                 var pointsPrice = orderData ? orderData.points_price || orderData.product_price : 0;
                 if (pointsPrice < coupon.threshold) { showStatus('订单金额(' + pointsPrice + '积分)需大于门槛(' + coupon.threshold + '积分)', 'info'); return; }
             }
-            if (coupon.type === 'product_specific' || coupon.type === 'makeup_specific' || coupon.type === 'gamblers_specific') {
+            if (coupon.type === 'product_specific') {
                 var matchId = getOrderProductIdForMatch();
                 var couponProductId = coupon.product_id || '';
                 var productId = orderData ? orderData.product_id : '';
@@ -1329,8 +1288,6 @@
             updateCouponSelect();
             updatePriceDisplay();
             select.value = '';
-            var details = calculateDiscountDetails();
-            if (details.isPl) { showStatus('已添加优惠券，优惠 ' + details.totalDiscountPl.toFixed(4) + ' PL', 'success'); } else { showStatus('已添加优惠券，优惠 ' + details.totalDiscountPoints.toFixed(1) + ' 积分', 'success'); }
         });
 
         document.getElementById('setPasswordBtn').addEventListener('click', async function() {
@@ -1360,48 +1317,118 @@
         document.getElementById('resetPayPasswordBtn').addEventListener('click', function() {
             document.getElementById('resetPasswordModal').classList.add('active');
             document.getElementById('resetPasswordModal').style.display = 'flex';
-            document.getElementById('resetQqInput').value = '';
-            document.getElementById('resetPasswordInput').value = '';
+            document.getElementById('resetEmailCodeInput').value = '';
+            document.getElementById('resetNewPayPassword').value = '';
             document.getElementById('resetError').style.display = 'none';
+            document.getElementById('resetEmailCodeCountdown').textContent = '';
+            document.getElementById('sendResetEmailCodeBtn').disabled = false;
+            document.getElementById('sendResetEmailCodeBtn').textContent = '发送邮箱验证码';
+            if (resetEmailCodeTimer) {
+                clearInterval(resetEmailCodeTimer);
+                resetEmailCodeTimer = null;
+                resetEmailCodeCountdownValue = 0;
+            }
         });
 
         document.getElementById('cancelResetBtn').addEventListener('click', function() {
             document.getElementById('resetPasswordModal').classList.remove('active');
             document.getElementById('resetPasswordModal').style.display = 'none';
+            if (resetEmailCodeTimer) {
+                clearInterval(resetEmailCodeTimer);
+                resetEmailCodeTimer = null;
+                resetEmailCodeCountdownValue = 0;
+            }
+        });
+
+        document.getElementById('sendResetEmailCodeBtn').addEventListener('click', async function() {
+            var btn = this;
+            var errorEl = document.getElementById('resetError');
+            var countdownEl = document.getElementById('resetEmailCodeCountdown');
+            btn.disabled = true;
+            btn.textContent = '发送中...';
+            errorEl.style.display = 'none';
+            try {
+                var result = await apiRequest('/api/pay-password/send-reset-code', {
+                    method: 'POST',
+                    body: JSON.stringify({})
+                });
+                if (result.success) {
+                    errorEl.textContent = '✅ 验证码已发送至您的邮箱';
+                    errorEl.style.color = '#4ade80';
+                    errorEl.style.display = 'block';
+                    resetEmailCodeCountdownValue = 60;
+                    btn.textContent = resetEmailCodeCountdownValue + 's';
+                    if (countdownEl) countdownEl.textContent = '⏱️ ' + resetEmailCodeCountdownValue + '秒后可重新发送';
+                    if (resetEmailCodeTimer) clearInterval(resetEmailCodeTimer);
+                    resetEmailCodeTimer = setInterval(function() {
+                        resetEmailCodeCountdownValue--;
+                        if (resetEmailCodeCountdownValue <= 0) {
+                            clearInterval(resetEmailCodeTimer);
+                            resetEmailCodeTimer = null;
+                            btn.disabled = false;
+                            btn.textContent = '重新发送';
+                            if (countdownEl) countdownEl.textContent = '';
+                        } else {
+                            btn.textContent = resetEmailCodeCountdownValue + 's';
+                            if (countdownEl) countdownEl.textContent = '⏱️ ' + resetEmailCodeCountdownValue + '秒后可重新发送';
+                        }
+                    }, 1000);
+                } else {
+                    errorEl.textContent = '❌ ' + (result.error || '发送失败');
+                    errorEl.style.color = '#f87171';
+                    errorEl.style.display = 'block';
+                    btn.disabled = false;
+                    btn.textContent = '发送邮箱验证码';
+                }
+            } catch (err) {
+                errorEl.textContent = '❌ ' + err.message;
+                errorEl.style.color = '#f87171';
+                errorEl.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = '发送邮箱验证码';
+            }
         });
 
         document.getElementById('confirmResetBtn').addEventListener('click', async function() {
-            var qq = document.getElementById('resetQqInput').value.trim();
-            var password = document.getElementById('resetPasswordInput').value;
+            var code = document.getElementById('resetEmailCodeInput').value.trim();
+            var newPassword = document.getElementById('resetNewPayPassword').value.trim();
             var errorEl = document.getElementById('resetError');
-            if (!qq) { errorEl.textContent = '请输入绑定的QQ号';
-                errorEl.style.display = 'block'; return; }
-            if (!password) { errorEl.textContent = '请输入登录密码';
-                errorEl.style.display = 'block'; return; }
+            if (!code || code.length !== 6 || !/^\d{6}$/.test(code)) {
+                errorEl.textContent = '请输入6位邮箱验证码';
+                errorEl.style.color = '#f87171';
+                errorEl.style.display = 'block';
+                return;
+            }
+            if (!newPassword || newPassword.length !== 6 || !/^\d{6}$/.test(newPassword)) {
+                errorEl.textContent = '请输入6位数字支付密码';
+                errorEl.style.color = '#f87171';
+                errorEl.style.display = 'block';
+                return;
+            }
             errorEl.style.display = 'none';
             var btn = document.getElementById('confirmResetBtn');
             btn.disabled = true;
             btn.textContent = '处理中...';
             try {
-                var result = await apiRequest('/api/debug/clear-pay-password', {
+                var result = await apiRequest('/api/pay-password/reset-by-email', {
                     method: 'POST',
-                    body: JSON.stringify({ qq_number: qq, password: password })
+                    body: JSON.stringify({ verification_code: code, new_pay_password: newPassword })
                 });
                 if (result.success) {
                     errorEl.textContent = '✅ ' + result.message;
                     errorEl.style.color = '#4ade80';
                     errorEl.style.display = 'block';
-                    hasPassword = false;
-                    document.getElementById('resetPasswordSection').style.display = 'none';
-                    document.getElementById('setPasswordSection').style.display = 'block';
-                    document.getElementById('paymentSection').style.display = 'none';
+                    hasPassword = true;
+                    document.getElementById('resetPasswordSection').style.display = 'block';
+                    document.getElementById('setPasswordSection').style.display = 'none';
+                    document.getElementById('paymentSection').style.display = 'block';
                     setTimeout(function() {
                         document.getElementById('resetPasswordModal').classList.remove('active');
                         document.getElementById('resetPasswordModal').style.display = 'none';
                         errorEl.style.display = 'none';
                     }, 2000);
                 } else {
-                    errorEl.textContent = '❌ ' + result.message;
+                    errorEl.textContent = '❌ ' + (result.error || '重置失败');
                     errorEl.style.color = '#f87171';
                     errorEl.style.display = 'block';
                 }
@@ -1415,7 +1442,13 @@
 
         document.getElementById('resetPasswordModal').addEventListener('click', function(e) {
             if (e.target === this) { this.classList.remove('active');
-                this.style.display = 'none'; }
+                this.style.display = 'none';
+                if (resetEmailCodeTimer) {
+                    clearInterval(resetEmailCodeTimer);
+                    resetEmailCodeTimer = null;
+                    resetEmailCodeCountdownValue = 0;
+                }
+            }
         });
 
         document.getElementById('payBtn').addEventListener('click', function() {
@@ -1670,6 +1703,14 @@
         document.getElementById('newPayPassword').addEventListener('input', function() {
             this.value = this.value.replace(/\D/g, '').slice(0, 6);
             hideStatus();
+        });
+
+        document.getElementById('resetEmailCodeInput').addEventListener('input', function() {
+            this.value = this.value.replace(/\D/g, '').slice(0, 6);
+        });
+
+        document.getElementById('resetNewPayPassword').addEventListener('input', function() {
+            this.value = this.value.replace(/\D/g, '').slice(0, 6);
         });
 
         async function init() {
