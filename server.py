@@ -4,6 +4,9 @@ from flask_bcrypt import Bcrypt
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from functools import wraps
+from bs4 import BeautifulSoup
+from readability import Document
+from concurrent.futures import ThreadPoolExecutor
 import sys
 sys.dont_write_bytecode = True
 import json
@@ -85,6 +88,237 @@ SERVER_BASE_URL = detect_server_base_url()
 log.info(f"Server base URL: {SERVER_BASE_URL}")
 
 email_service.SERVER_BASE_URL = SERVER_BASE_URL
+
+def call_cloudflare_ai(prompt, system_prompt=None, max_tokens=1024, temperature=0.3):
+    account_id = os.getenv('CLOUDFLARE_ACCOUNT_ID')
+    api_token = os.getenv('CLOUDFLARE_API_TOKEN')
+    if not account_id or not api_token:
+        return None
+    messages = []
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    messages.append({"role": "user", "content": prompt})
+    try:
+        resp = requests.post(
+            f'https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/@cf/qwen/qwen3-30b-a3b-fp8',
+            headers={
+                'Authorization': f'Bearer {api_token}',
+                'Content-Type': 'application/json'
+            },
+            json={
+                'messages': messages,
+                'max_tokens': max_tokens,
+                'temperature': temperature
+            },
+            timeout=30
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            if data.get('success') and data.get('result', {}).get('response'):
+                return data['result']['response']
+        log.warning(f"Cloudflare AI error: {resp.status_code} {resp.text[:200]}")
+        return None
+    except Exception as e:
+        log.error(f"Cloudflare AI exception: {e}")
+        return None
+
+
+def ai_extract_knowledge(query, matched_topics):
+    """把命中的知识条目内容交给 AI，让它精准提取与用户问题相关的部分。"""
+    if not matched_topics:
+        return None
+    context_parts = []
+    for idx, topic in enumerate(matched_topics[:5], 1):
+        context_parts.append(f"【条目{idx}：{topic['title']}】\n{topic['content']}")
+    context = "\n\n".join(context_parts)
+    prompt = f"""用户问题：{query}
+
+以下是知识库中可能相关的条目内容：
+
+{context}
+
+请根据用户问题，从以上条目中精准提取相关信息并回答。要求：
+1. 只回答与用户问题直接相关的内容，不要整条复述。
+2. 如果多个条目都有相关内容，合并成一个清晰的回答。
+3. 用简洁的中文，可以分点，但不要冗长。
+4. 如果条目内容与问题无关，直接说"未找到相关说明"。
+"""
+    return call_cloudflare_ai(
+        prompt,
+        system_prompt="你是虚拟手机号生成器的智能客服助手，擅长从知识库中精准提取用户需要的信息。",
+        max_tokens=800,
+        temperature=0.2
+    )
+
+
+def ai_answer_fallback(query):
+    """知识库无命中时，AI 自由回答兜底。"""
+    prompt = f"""用户问题：{query}
+
+请用简洁的中文回答。如果你不确定答案，请引导用户：
+- 输入「搜索+内容」进行网页搜索
+- 或者通过意见反馈联系管理员
+"""
+    return call_cloudflare_ai(
+        prompt,
+        system_prompt="你是虚拟手机号生成器的智能客服助手，回答简洁、准确，不编造不存在的功能。",
+        max_tokens=600,
+        temperature=0.3
+    )
+
+def ai_summarize_knowledge(query, matched_topics):
+    """把命中的多条知识库内容汇总成结构化摘要。"""
+    if not matched_topics:
+        return None
+    context_parts = []
+    for idx, topic in enumerate(matched_topics[:5], 1):
+        context_parts.append(f"【{topic['title']}】\n{topic['content']}")
+    context = "\n\n".join(context_parts)
+    prompt = f"""用户搜索：{query}
+
+以下是知识库中匹配到的条目：
+
+{context}
+
+请将这些内容汇总成一段结构清晰的说明，要求：
+1. 用 2-4 个要点概括，不要逐条复述原文。
+2. 如果多条内容有重叠，合并去重。
+3. 最后用一句话总结核心结论。
+"""
+    return call_cloudflare_ai(
+        prompt,
+        system_prompt="你是信息整理助手，擅长把分散的内容汇总成结构化摘要。",
+        max_tokens=800,
+        temperature=0.2
+    )
+
+def extract_main_text(html_text):
+    if not html_text:
+        return ''
+    try:
+        doc = Document(html_text)
+        clean_html = doc.summary()
+        soup = BeautifulSoup(clean_html, 'lxml')
+        text = soup.get_text(separator=' ')
+        text = re.sub(r'\s+', ' ', text).strip()
+        if len(text) >= 30:
+            return text
+    except Exception:
+        pass
+    try:
+        soup = BeautifulSoup(html_text, 'lxml')
+        for tag in soup(['script', 'style', 'nav', 'header', 'footer', 'aside', 'form', 'iframe']):
+            tag.decompose()
+        text = soup.get_text(separator=' ')
+        text = re.sub(r'\s+', ' ', text).strip()
+        return text
+    except Exception:
+        return ''
+
+def _fetch_page_text(url):
+    try:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml',
+            'Accept-Language': 'zh-CN,zh;q=0.9'
+        }
+        resp = requests.get(url, headers=headers, timeout=6)
+        if resp.status_code == 200:
+            return extract_main_text(resp.text)
+    except Exception:
+        pass
+    return ''
+
+def ai_summarize_web(query, search_results):
+    if not search_results:
+        return None
+
+    candidates = []
+    for idx, r in enumerate(search_results[:5], 1):
+        url = r.get('url', '')
+        title = r.get('title', '')
+        desc = r.get('description', '')
+        if not url:
+            continue
+        candidates.append((idx, url, title, desc))
+
+    if not candidates:
+        return None
+
+    sources_map = {}
+    contents = []
+
+    with ThreadPoolExecutor(max_workers=5) as pool:
+        futures = {pool.submit(_fetch_page_text, c[1]): c for c in candidates}
+        for fut, (idx, url, title, desc) in futures.items():
+            try:
+                page_text = fut.result(timeout=8)
+            except Exception:
+                page_text = ''
+            if not page_text:
+                page_text = desc or title
+            if not page_text:
+                continue
+            sources_map[str(idx)] = {'title': title, 'url': url}
+            contents.append(f"【来源{idx}：{title}】\n{page_text[:2000]}")
+
+    if not contents:
+        return None
+
+    context = "\n\n".join(contents)
+
+    prompt = f"""用户搜索：{query}
+
+以下是抓取到的网页内容：
+
+{context}
+
+请根据以上内容回答用户搜索。要求：
+1. 用 3-5 个要点概括与搜索词最相关的信息，剔除广告和无关推荐。
+2. 要点末尾可选择性标注来源编号，格式如 [1]，但不要强制。
+3. 若多条内容冲突，指出分歧。
+4. 最后用一句话总结。
+5. 即使内容不完整，也基于已有信息给出尽可能有用的汇总，不要回答"未找到相关说明"。
+"""
+
+    answer = call_cloudflare_ai(
+        prompt,
+        system_prompt="你是信息整理助手，擅长从多个网页中提炼关键信息并过滤噪音。即使信息有限也要给出有价值的汇总。",
+        max_tokens=900,
+        temperature=0.3
+    )
+
+    if not answer:
+        return None
+
+    if '未找到相关说明' in answer or '没有找到' in answer or '无法找到' in answer:
+        return None
+
+    for idx_str, source in sources_map.items():
+        for pattern in [f"[{idx_str}]", f"【{idx_str}】", f"(来源{idx_str})", f"（来源{idx_str}）"]:
+            answer = answer.replace(pattern, f"[{idx_str}]({source['url']})")
+
+    return answer
+
+
+def build_fallback_search_answer(query, search_results):
+    if not search_results:
+        return None
+    lines = [f"关于「{query}」的搜索结果：", ""]
+    for idx, r in enumerate(search_results[:6], 1):
+        title = r.get('title', '').strip()
+        url = r.get('url', '').strip()
+        desc = r.get('description', '').strip()
+        if not title or not url:
+            continue
+        lines.append(f"{idx}. [{title}]({url})")
+        if desc:
+            lines.append(f"   {desc}")
+    if len(lines) <= 2:
+        return None
+    lines.append("")
+    lines.append("点击上方链接查看原文。")
+    return "\n".join(lines)
 
 app = Flask(__name__, static_folder='public')
 app.config['START_TIME'] = time.time()
@@ -11322,34 +11556,43 @@ def customer_service_search():
     data = request.get_json()
     query = data.get('query', '').strip()
     username = session['user']['username']
+
     if not query:
         return jsonify({'error': '请输入您的问题'}), 400
+
     knowledge_base_path = os.path.join(os.path.dirname(__file__), 'knowledge_base.json')
+
     if not os.path.exists(knowledge_base_path):
         return jsonify({'error': '知识库暂不可用'}), 500
+
     try:
         with open(knowledge_base_path, 'r', encoding='utf-8') as f:
             kb = json.load(f)
     except Exception:
         return jsonify({'error': '知识库加载失败'}), 500
+
     topics = kb.get('topics', [])
     results = []
     query_lower = query.lower()
+
     for topic in topics:
         keywords = topic.get('keywords', [])
         title = topic.get('title', '')
         content = topic.get('content', '')
         match_score = 0
         matched_keywords = []
+
         for keyword in keywords:
             if keyword in query_lower:
                 match_score += 1
                 matched_keywords.append(keyword)
+
         title_lower = title.lower()
         content_lower = content.lower()
         title_words = title_lower.split()
         content_words = content_lower.split()
         query_words = query_lower.split()
+
         for qw in query_words:
             if len(qw) >= 2:
                 for tw in title_words:
@@ -11361,6 +11604,7 @@ def customer_service_search():
                     if cw in qw or qw in cw:
                         if len(cw) >= 2 and cw not in matched_keywords:
                             matched_keywords.append(cw)
+
         if match_score > 0:
             results.append({
                 'id': topic.get('id', ''),
@@ -11369,9 +11613,19 @@ def customer_service_search():
                 'score': round(match_score, 1),
                 'matched_keywords': matched_keywords[:5]
             })
+
     results.sort(key=lambda x: x['score'], reverse=True)
     top_results = results[:3]
-    user_data = users.get(username, {})
+
+    user_data = users.get(username)
+    if not user_data:
+        return jsonify({
+            'found': False,
+            'results': [],
+            'user_data': {},
+            'responseTime': int((time.time() - start_time) * 1000)
+        })
+
     today = datetime.now().strftime('%Y-%m-%d')
     response_data = {
         'found': True if top_results else False,
@@ -11379,14 +11633,18 @@ def customer_service_search():
         'user_data': {},
         'responseTime': int((time.time() - start_time) * 1000)
     }
+
     is_attendance_query = any(kw in query_lower for kw in ['签到', '打卡', '今日签到', '签到状态', '签到情况'])
+
     if is_attendance_query:
         has_attended_today = user_data.get('lastAttendanceDate', '') == today
-        total_days = user_data.get('attendanceTotalDays', 0)
-        consecutive_days = user_data.get('attendanceConsecutiveDays', 0)
-        daily_earned = user_data.get('dailyEarnedPoints', 0)
+        total_days = int(user_data.get('attendanceTotalDays', 0) or 0)
+        consecutive_days = int(user_data.get('attendanceConsecutiveDays', 0) or 0)
+        daily_earned = float(user_data.get('dailyEarnedPoints', 0) or 0)
+
         consecutive_rewards = get_consecutive_rewards(consecutive_days)
         total_rewards = get_total_rewards(total_days)
+
         response_data['user_data']['attendance'] = {
             'has_attended_today': has_attended_today,
             'total_days': total_days,
@@ -11398,11 +11656,12 @@ def customer_service_search():
             'next_consecutive_milestone': get_next_milestone(consecutive_days, 'consecutive'),
             'next_total_milestone': get_next_milestone(total_days, 'total')
         }
+
     is_points_query = any(kw in query_lower for kw in ['积分', '剩余积分', '积分余额', '多少积分'])
     if is_points_query:
-        total_points = user_data.get('totalPoints', 0)
-        fund_balance = get_user_fund_balance(username)
-        daily_earned = user_data.get('dailyEarnedPoints', 0)
+        total_points = float(user_data.get('totalPoints', 0) or 0)
+        fund_balance = float(get_user_fund_balance(username) or 0)
+        daily_earned = float(user_data.get('dailyEarnedPoints', 0) or 0)
         response_data['user_data']['points'] = {
             'total_points': total_points,
             'fund_balance': fund_balance,
@@ -11411,15 +11670,67 @@ def customer_service_search():
             'daily_limit': 14,
             'remaining_today': max(0, 14 - daily_earned)
         }
+
     is_pl_query = any(kw in query_lower for kw in ['pl', 'PL', 'pl余额', 'PL余额'])
     if is_pl_query:
-        pl_balance = get_user_pl_balance(username)
-        pl_rate = get_current_pl_rate()
+        pl_balance = float(get_user_pl_balance(username) or 0)
+        pl_rate = float(get_current_pl_rate() or 0)
         response_data['user_data']['pl'] = {
             'balance': pl_balance,
             'rate': pl_rate,
             'points_value': round(pl_balance / pl_rate, 2) if pl_rate > 0 else 0
         }
+
+    is_summarize_intent = any(kw in query for kw in ['汇总', '总结', '概括', '整理', '归纳'])
+
+    if top_results:
+        if is_summarize_intent:
+            ai_answer = ai_summarize_knowledge(query, top_results)
+            if ai_answer:
+                response_data['ai_answer'] = ai_answer
+                response_data['ai_used'] = 'summarize'
+        else:
+            ai_answer = ai_extract_knowledge(query, top_results)
+            if ai_answer:
+                response_data['ai_answer'] = ai_answer
+                response_data['ai_used'] = 'extract'
+    else:
+        search_keyword = query
+        for kw in ['汇总', '总结', '概括', '整理', '归纳', '搜索', '搜', '查找', '查询']:
+            search_keyword = search_keyword.replace(kw, ' ').strip()
+        if search_keyword:
+            if search_keyword.lower() in ['ai', '人工智能']:
+                search_keyword = search_keyword + ' 行业动态 最新进展'
+            try:
+                search_resp = search_web_internal(search_keyword)
+            except Exception:
+                search_resp = None
+            if search_resp and search_resp.get('results'):
+                ai_answer = ai_summarize_web(query, search_resp['results'])
+                if ai_answer:
+                    response_data['ai_answer'] = ai_answer
+                    response_data['ai_used'] = 'summarize_web'
+                    response_data['search_sources'] = [
+                        {'title': r.get('title', ''), 'url': r.get('url', '')}
+                        for r in search_resp['results'][:5]
+                    ]
+                    response_data['found'] = True
+                    return jsonify(response_data)
+                fallback = build_fallback_search_answer(query, search_resp['results'])
+                if fallback:
+                    response_data['ai_answer'] = fallback
+                    response_data['ai_used'] = 'fallback_search'
+                    response_data['search_sources'] = [
+                        {'title': r.get('title', ''), 'url': r.get('url', '')}
+                        for r in search_resp['results'][:5]
+                    ]
+                    response_data['found'] = True
+                    return jsonify(response_data)
+        ai_answer = ai_answer_fallback(query)
+        if ai_answer:
+            response_data['ai_answer'] = ai_answer
+            response_data['ai_used'] = 'fallback'
+            response_data['found'] = True
     return jsonify(response_data)
 
 def get_consecutive_rewards(days):
@@ -11807,22 +12118,14 @@ def search_web():
                     weather_data = fetch_weather_from_openmeteo(latitude, longitude)
                     if weather_data:
                         display_city = f'坐标 ({latitude}, {longitude})'
-                        geo_result = {
-                            'name': display_city,
-                            'latitude': latitude,
-                            'longitude': longitude,
-                            'country': '',
-                            'admin1': '',
-                            'timezone': weather_data.get('timezone', 'auto'),
-                            'matched_name': display_city
-                        }
+                        city_display = display_city
                         return jsonify({
                             'success': True,
                             'query': query,
                             'engine': 'Open-Meteo',
                             'type': 'weather',
                             'weather_data': {
-                                'city': display_city,
+                                'city': city_display,
                                 'search_city': query,
                                 'matched_name': display_city,
                                 'admin1': '',
@@ -12060,20 +12363,21 @@ def fetch_time_info(query):
 
 def parse_bing(html):
     results = []
-    pattern = r'<li class="b_algo"[^>]*>.*?<h2[^>]*>.*?<a[^>]*href="([^"]*)"[^>]*>(.*?)</a>.*?<p[^>]*>(.*?)</p>'
-    matches = re.findall(pattern, html, re.DOTALL)
     seen = set()
-    for url, title, desc in matches:
-        if url and url not in seen and not url.startswith('javascript:') and not url.startswith('#') and 'javascript' not in url:
+    blocks = re.findall(r'<li class="b_algo".*?</li>', html, re.DOTALL)
+    for block in blocks[:20]:
+        m = re.search(r'<h2[^>]*>.*?<a[^>]*href="([^"]+)"[^>]*>(.*?)</a>', block, re.DOTALL)
+        if not m:
+            continue
+        url, title = m.group(1), m.group(2)
+        dm = re.search(r'<p[^>]*>(.*?)</p>', block, re.DOTALL)
+        desc = dm.group(1) if dm else ''
+        if url and url not in seen and not url.startswith('javascript:'):
             seen.add(url)
-            title_clean = re.sub(r'<[^>]+>', '', title).strip()
-            desc_clean = re.sub(r'<[^>]+>', '', desc).strip()
-            if title_clean and len(title_clean) > 2:
-                results.append({
-                    'title': title_clean[:120],
-                    'url': url,
-                    'description': desc_clean[:350] if desc_clean else '暂无描述'
-                })
+            t = re.sub(r'<[^>]+>', '', title).strip()
+            d = re.sub(r'<[^>]+>', '', desc).strip()
+            if len(t) > 2:
+                results.append({'title': t[:200], 'url': url, 'description': d[:500] or '暂无描述'})
         if len(results) >= 5:
             break
     return results[:5]
@@ -12157,6 +12461,130 @@ def parse_baidu(html):
         if len(results) >= 5:
             break
     return results[:5]
+
+def parse_yandex(html):
+    results = []
+    seen = set()
+    pattern = r'<a[^>]*href="(https?://[^"]+)"[^>]*>(.*?)</a>'
+    for url, title in re.findall(pattern, html, re.DOTALL)[:60]:
+        if 'yandex' in url or url in seen:
+            continue
+        seen.add(url)
+        t = re.sub(r'<[^>]+>', '', title).strip()
+        if len(t) > 5:
+            results.append({'title': t[:200], 'url': url, 'description': ''})
+        if len(results) >= 5:
+            break
+    return results[:5]
+
+
+def parse_brave(html):
+    results = []
+    seen = set()
+    pattern = r'<a[^>]*href="(https?://[^"]+)"[^>]*>(.*?)</a>'
+    for url, title in re.findall(pattern, html, re.DOTALL)[:60]:
+        if 'brave.com' in url or url in seen:
+            continue
+        seen.add(url)
+        t = re.sub(r'<[^>]+>', '', title).strip()
+        if len(t) > 5:
+            results.append({'title': t[:200], 'url': url, 'description': ''})
+        if len(results) >= 5:
+            break
+    return results[:5]
+
+
+def parse_mojeek(html):
+    results = []
+    seen = set()
+    pattern = r'<a[^>]*href="(https?://[^"]+)"[^>]*>(.*?)</a>'
+    for url, title in re.findall(pattern, html, re.DOTALL)[:60]:
+        if 'mojeek.com' in url or url in seen:
+            continue
+        seen.add(url)
+        t = re.sub(r'<[^>]+>', '', title).strip()
+        if len(t) > 5:
+            results.append({'title': t[:200], 'url': url, 'description': ''})
+        if len(results) >= 5:
+            break
+    return results[:5]
+
+
+def parse_startpage(html):
+    results = []
+    seen = set()
+    pattern = r'<a[^>]*href="(https?://[^"]+)"[^>]*>(.*?)</a>'
+    for url, title in re.findall(pattern, html, re.DOTALL)[:60]:
+        if 'startpage.com' in url or url in seen:
+            continue
+        seen.add(url)
+        t = re.sub(r'<[^>]+>', '', title).strip()
+        if len(t) > 5:
+            results.append({'title': t[:200], 'url': url, 'description': ''})
+        if len(results) >= 5:
+            break
+    return results[:5]
+
+def search_web_internal(query):
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+        'Accept-Encoding': 'gzip, deflate',
+        'Connection': 'keep-alive',
+    }
+    engines = [
+        {'name': 'Bing', 'url': f'https://www.bing.com/search?q={requests.utils.quote(query)}&setlang=zh-CN', 'parser': parse_bing},
+        {'name': '搜狗', 'url': f'https://www.sogou.com/web?query={requests.utils.quote(query)}', 'parser': parse_sogou},
+        {'name': '360搜索', 'url': f'https://www.so.com/s?q={requests.utils.quote(query)}', 'parser': parse_360},
+        {'name': 'DuckDuckGo', 'url': f'https://html.duckduckgo.com/html/?q={requests.utils.quote(query)}', 'parser': parse_duckduckgo},
+        {'name': '百度', 'url': f'https://www.baidu.com/s?wd={requests.utils.quote(query)}', 'parser': parse_baidu},
+        {'name': 'Yandex', 'url': f'https://yandex.com/search/?text={requests.utils.quote(query)}', 'parser': parse_yandex},
+        {'name': 'Brave', 'url': f'https://search.brave.com/search?q={requests.utils.quote(query)}', 'parser': parse_brave},
+        {'name': 'Mojeek', 'url': f'https://www.mojeek.com/search?q={requests.utils.quote(query)}', 'parser': parse_mojeek},
+        {'name': 'Startpage', 'url': f'https://www.startpage.com/sp/search?query={requests.utils.quote(query)}', 'parser': parse_startpage},
+    ]
+    merged = []
+    seen_urls = set()
+    seen_titles = set()
+    for engine in engines:
+        try:
+            resp = requests.get(engine['url'], headers=headers, timeout=8)
+            if resp.status_code != 200:
+                continue
+            items = engine['parser'](resp.text)
+            if not items:
+                continue
+            for item in items:
+                url = (item.get('url') or '').strip()
+                title = (item.get('title') or '').strip()
+                if not url or not title:
+                    continue
+                if url.startswith('javascript:') or url.startswith('#'):
+                    continue
+                if 'baidu.com/s?' in url or 'bing.com/search' in url or 'sogou.com/web' in url:
+                    continue
+                key_url = url.split('#')[0]
+                key_title = title[:60]
+                if key_url in seen_urls or key_title in seen_titles:
+                    continue
+                seen_urls.add(key_url)
+                seen_titles.add(key_title)
+                merged.append({
+                    'title': title[:200],
+                    'url': url,
+                    'description': (item.get('description') or '').strip()[:500],
+                    'engine': engine['name'],
+                })
+                if len(merged) >= 15:
+                    break
+        except Exception:
+            continue
+        if len(merged) >= 15:
+            break
+    if not merged:
+        return None
+    return {'engine': '多引擎合并', 'results': merged[:10], 'engines': [e['name'] for e in engines]}
 
 @app.route('/api/email/verify', methods=['POST'])
 @csrf_protect
@@ -14564,6 +14992,8 @@ def mail_js():
 def static_files(path):
     if path.startswith('api/') or path.startswith('admin/api/'):
         return jsonify({'error': 'API endpoint not found'}), 404
+    if path.startswith('http://') or path.startswith('https://'):
+        return jsonify({'error': 'Invalid path'}), 404
     try:
         return send_from_directory('public', path)
     except Exception:

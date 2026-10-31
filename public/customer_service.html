@@ -123,6 +123,9 @@
         .message.bot .content .playlist-detail .pd-song .pd-song-artist{font-size:11px;color:#999;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
         .message.bot .content .playlist-detail .pd-song .pd-song-play{font-size:16px;color:#667eea;flex-shrink:0;margin-left:8px}
         .message.bot .content .playlist-detail .pd-loading{text-align:center;color:#999;font-size:12px;padding:20px 0}
+        .message.bot .ai-answer-card{background:linear-gradient(135deg,#eef2ff,#e8f0fe);border-radius:14px;padding:14px 18px;border-left:4px solid #667eea;margin-top:6px}
+        .message.bot .ai-answer-card .ai-answer-header{font-size:12px;color:#667eea;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+        .message.bot .ai-answer-card .ai-answer-content{font-size:14px;color:#333;line-height:1.8;white-space:pre-wrap}
         .message.bot .matched-tag{display:inline-block;font-size:10px;background:#e8f0fe;color:#667eea;padding:2px 10px;border-radius:12px;margin-top:6px}
         .message.bot .suggestions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
         .message.bot .suggestions .sug{background:#f0f0f0;padding:4px 14px;border-radius:20px;font-size:12px;cursor:pointer;transition:all 0.2s;color:#666}
@@ -203,6 +206,7 @@
                     <span class="ex" onclick="sendQuick('北京天气')">🌤️ 搜索天气</span>
                     <span class="ex" onclick="sendQuick('当前时间')">🕐 中国时间</span>
                     <span class="ex" onclick="sendQuick('下载日志')">📄 下载日志</span>
+                    <span class="ex" onclick="sendQuick('账号限制有哪些')">🚫 账号限制</span>
                 </div>
             </div>
         </div>
@@ -220,7 +224,8 @@
             <span class="quick-btn" onclick="sendQuick('北京天气')">🌤️ 天气</span>
             <span class="quick-btn" onclick="sendQuick('当前时间')">🕐 时间</span>
             <span class="quick-btn" onclick="sendQuick('下载日志')">📄 下载日志</span>
-            <span class="quick-btn" onclick="sendQuick('怎么购买卡密')">🛒 商城</span>
+            <span class="quick-btn" onclick="sendQuick('账号限制有哪些')">🚫 账号限制</span>
+            <span class="quick-btn" onclick="sendQuick('汇总账号限制相关规则')">📝 汇总知识</span>
         </div>
         <div class="input-area">
             <input id="msgInput" placeholder="输入你的问题..." onkeydown="if(event.key==='Enter')sendMessage()">
@@ -624,13 +629,13 @@
         function formatWeatherDate(dateStr) {
             try {
                 if (!dateStr) return '--';
-                var d = new Date(dateStr);
-                if (isNaN(d.getTime())) return dateStr;
+                var parts = dateStr.split('-');
+                if (parts.length !== 3) return dateStr;
+                var d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
                 var today = new Date();
-                var tomorrow = new Date(today);
-                tomorrow.setDate(tomorrow.getDate() + 1);
-                if (d.toDateString() === today.toDateString()) return '今天';
-                if (d.toDateString() === tomorrow.toDateString()) return '明天';
+                var tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+                if (d.getTime() === new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()) return '今天';
+                if (d.getTime() === tomorrow.getTime()) return '明天';
                 var weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
                 return weekdays[d.getDay()];
             } catch (e) {
@@ -722,18 +727,6 @@
             } else {
                 html += '<div style="color:#999;font-size:13px;padding:8px 0;">暂无CDK礼包码</div>';
             }
-            html += '</div>';
-            return html;
-        }
-
-        function buildMetingMusicCard(data) {
-            if (!data || !data.songName) {
-                return '<div style="color:#e74c3c;padding:10px;text-align:center;">未找到该歌曲</div>';
-            }
-            var html = '<div class="music-card">';
-            html += '<div class="music-header">🎵 点歌台 · ' + escapeHtml(data.songName) + '</div>';
-            html += '<meting-js server="netease" type="search" id="' + escapeHtml(data.songName) + '" autoplay="false" fixed="false" mini="false" theme="#667eea"></meting-js>';
-            html += '<div class="music-hint">💡 降级音源：MetingJS · 点击播放按钮开始播放，VIP歌曲将跳过</div>';
             html += '</div>';
             return html;
         }
@@ -1197,7 +1190,45 @@
                 var contentDiv = document.createElement('div');
                 contentDiv.className = 'content';
 
-                if (extra && extra.time_data) {
+                if (extra && extra.ai_answer) {
+                    var aiHeader = '🤖 AI 智能回答';
+                    if (extra.ai_used === 'summarize') {
+                        aiHeader = '📝 知识库汇总';
+                    } else if (extra.ai_used === 'extract') {
+                        aiHeader = '📚 知识库精准提取';
+                    } else if (extra.ai_used === 'summarize_web') {
+                        aiHeader = '🌐 外部搜索汇总';
+                    }
+    
+                    var formattedAnswer = escapeHtml(extra.ai_answer);
+                    formattedAnswer = formattedAnswer.replace(
+                        /\[(\d+)\]\((https?:\/\/[^\s)]+)\)/g,
+                        '<a href="$2" target="_blank" rel="noopener noreferrer" style="color:#667eea;text-decoration:underline;font-weight:600;">[来源$1]</a>'
+                    );
+                    formattedAnswer = formattedAnswer.replace(
+                        /\(\s*\[来源(\d+)\]\((https?:\/\/[^\s)]+)\)\s*\)/g,
+                        '<a href="$2" target="_blank" rel="noopener noreferrer" style="color:#667eea;text-decoration:underline;font-weight:600;">[来源$1]</a>'
+                    );
+                    formattedAnswer = formattedAnswer.replace(/\n/g, '<br>');
+    
+                    var aiHtml = '<div class="ai-answer-card">';
+                    aiHtml += '<div class="ai-answer-header">' + aiHeader + '</div>';
+                    aiHtml += '<div class="ai-answer-content">' + formattedAnswer + '</div>';
+                    aiHtml += '</div>';
+    
+                    contentDiv.innerHTML = aiHtml;
+    
+                    if (extra.search_sources && extra.search_sources.length > 0) {
+                        contentDiv.innerHTML += '<div class="knowledge-divider"></div>📌 参考链接:<br>';
+                        extra.search_sources.forEach(function(s, idx) {
+                            contentDiv.innerHTML += '<div style="font-size:12px;color:#667eea;margin-top:6px;word-break:break-all;">' + (idx + 1) + '. <a href="' + escapeHtml(s.url) + '" target="_blank" rel="noopener noreferrer" style="color:#667eea;text-decoration:underline;">' + escapeHtml(s.title) + '</a></div>';
+                        });
+                    }
+    
+                    if (extra.knowledge_content && !extra.is_personal_query) {
+                        contentDiv.innerHTML += '<div class="knowledge-divider"></div>📖 相关说明:<br>' + formatContent(extra.knowledge_content);
+                    }
+                } else if (extra && extra.time_data) {
                     contentDiv.innerHTML = buildTimeCard(extra);
                 } else if (extra && extra.weather_data) {
                     contentDiv.innerHTML = buildWeatherCard(extra);
@@ -1250,7 +1281,7 @@
                 }
                 div.appendChild(contentDiv);
 
-                if (extra && extra.matched_keywords && extra.matched_keywords.length > 0 && !extra.is_personal_query && !extra.search_data && !extra.weather_data && !extra.time_data && !extra.cdk_data && !extra.music_data && !extra.prebuilt_html && !extra.feedback_data && !extra.ip_signature_data && !extra.earthquake_data && !extra.log_data) {
+                if (extra && extra.matched_keywords && extra.matched_keywords.length > 0 && !extra.is_personal_query && !extra.search_data && !extra.weather_data && !extra.time_data && !extra.cdk_data && !extra.music_data && !extra.prebuilt_html && !extra.feedback_data && !extra.ip_signature_data && !extra.earthquake_data && !extra.log_data && !extra.ai_answer) {
                     var tag = document.createElement('div');
                     tag.className = 'matched-tag';
                     tag.textContent = '🔍 匹配: ' + extra.matched_keywords.join('、');
@@ -1711,9 +1742,17 @@
                 var userData = data.user_data || {};
                 var hasPersonalData = Object.keys(userData).length > 0;
 
-                if (data.found && data.results && data.results.length > 0) {
+                if (data.ai_answer) {
+                    addMessage('bot', '', {
+                        title: data.ai_used === 'fallback' ? '🤖 AI 智能回答' : '📚 知识库精准提取',
+                        ai_answer: data.ai_answer,
+                        knowledge_content: hasPersonalData ? null : (data.results && data.results.length > 0 ? data.results[0].content : null),
+                        is_personal_query: hasPersonalData,
+                        user_data: hasPersonalData ? userData : null,
+                        matched_keywords: (data.results && data.results[0] && data.results[0].matched_keywords) || []
+                    });
+                } else if (data.found && data.results && data.results.length > 0) {
                     var firstResult = data.results[0];
-
                     if (hasPersonalData) {
                         addMessage('bot', '', {
                             title: '📊 个人数据',
