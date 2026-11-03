@@ -2,13 +2,14 @@
 
 # 虚拟手机号生成器系统
 
-一个功能完整的虚拟手机号生成与管理平台，包含积分系统、PL系统、游戏中心、智能客服等功能模块。
+一个功能完整的虚拟手机号生成与管理平台，包含积分系统、PL系统、游戏中心、智能客服、音乐点歌台等功能模块。
 
 ## 环境要求
 
 - Python 3.9+
 - pip
 - OpenSSL（用于生成 SSL 证书）
+- Go 1.25+（仅点歌台功能需要，如不使用可跳过）
 
 ## 快速开始
 
@@ -44,7 +45,6 @@ FEEDBACK_EMAIL=your-email@example.com
 
 FEEDBACK_EMAIL_PASSWORD=your-email-password
 
-
 FEEDBACK_SMTP_SERVER=smtp.example.com
 
 FEEDBACK_SMTP_PORT=465
@@ -54,6 +54,12 @@ VERIFICATION_CODE_EXPIRE_SECONDS=300
 VERIFICATION_CODE_LENGTH=6
 
 SMTP_USE_SSL=True
+
+# AI 智能客服（可选，不配置则智能客服仅使用本地知识库）
+
+CLOUDFLARE_ACCOUNT_ID=your-account-id
+
+CLOUDFLARE_API_TOKEN=your-api-token
 
 ### 3. 密钥生成方法
 
@@ -66,10 +72,10 @@ python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().d
 生成 QR_SECRET：
 python -c "import secrets; print(secrets.token_hex(32))"
 
-生成管理员密码哈希（将 your_password 替换为实际密码,请勿使用如#,//等注释类字符）：
+生成管理员密码哈希（将 your_password 替换为实际密码，请勿使用如 #、// 等注释类字符）：
 python -c 'import bcrypt; print(bcrypt.hashpw("your_password".encode("utf-8"), bcrypt.gensalt()).decode("utf-8"))'
 
-### 4. 生成 SSL 证书（可使用自己域名1的证书）
+### 4. 生成 SSL 证书（可使用自己域名的证书）
 
 mkdir -p ssl
 openssl req -x509 -newkey rsa:4096 -nodes -out ssl/cert.pem -keyout ssl/key.pem -days 365
@@ -81,41 +87,69 @@ python server.py
 服务器将在 https://{SERVER_IP}:POST 启动。
 
 
-### 6.快速认证说明
+### 6. 快速认证说明
 
-创建data/id_cards.csv文件
+创建 data/id_cards.csv 文件
 
-文件格式参照:
+文件格式参照：
 姓名,身份证号
 宫雅,XXXXXXXXXXXXXX
-[每行1个,自行网络上寻找身份证批量生成器]
+[每行1个，自行在网络上寻找身份证批量生成器]
 
+
+## AI 智能客服配置
+
+智能客服的 AI 能力基于 Cloudflare Workers AI，免费额度足够日常使用。
+
+**获取 Account ID 和 API Token：**
+
+1. 注册并登录 Cloudflare 控制台（dash.cloudflare.com）
+2. 在左侧菜单进入 **AI > Workers AI**
+3. 点击 **Use REST API**
+4. 点击 **Create a Workers AI API Token**，按提示创建后复制 **API Token**（该 Token 只显示一次，请妥善保存）[citation:9]
+5. 在同一页面复制 **Account ID**[citation:4]
+
+将这两个值填入 `.env` 文件的 `CLOUDFLARE_ACCOUNT_ID` 和 `CLOUDFLARE_API_TOKEN` 即可。未配置时，智能客服会退回到仅使用本地知识库回答，不影响其他功能。
+
+
+## go-music 点歌台配置
+
+点歌台依赖本地运行的 **go-music-api** 后端服务（默认端口 8080）。server.py 已内置对 `localhost:8080` 的代理，只需启动该服务即可。
+
+**下载与配置：**
+
+1. 前往项目 Release 页面下载对应系统的可执行文件：
+   https://github.com/guohuiyuan/go-music-api/releases [citation:7]
+
+2. 解压后直接运行二进制文件（Linux/macOS 先 `chmod +x`），默认监听 `http://localhost:8080`[citation:3]
+
+3. 如需使用网易云、QQ 音乐等需要登录才能播放的音源，可通过扫码登录写入 Cookie：
+   - 启动后访问 `http://localhost:8080/swagger/index.html` 查看 Swagger 文档
+   - 调用扫码登录相关接口，成功后 Cookie 会自动保存到 `cookies.json`[citation:3][citation:6]
+
+4. 如果不想用二进制，也可以从源码运行（需要 Go 1.25+）：
+   go mod tidy
+   go run main.go
+
+启动 go-music-api 后，点歌台即可正常搜索和播放音乐。如需指定其他端口，修改 server.py 中 `proxy_music_*` 函数里的 `localhost:8080` 即可。
 
 
 ## 项目根目录结构
 
 项目根目录/
 ├── server.py              # 主服务器
-
 ├── game.py                # 游戏模块
-
 ├── email_service.py       # 邮件服务
-
 ├── knowledge_base.json    # 知识库数据（可编辑）
-
 ├── requirements.txt       # Python 依赖
-
 ├── .env                   # 环境配置（不提交，发行版2.1.6及以上的zip包里有模板）
-
 ├── data/                  # 数据存储（自动生成，不提交）
-
 ├── public/                # 前端静态文件
-
 └── GAME/                  # 游戏中心前端
 
 重要提示：
 1. 以上所有 your-xxx-here 占位符均需替换为实际生成的值
-2. POST需要替换成你所使用的端口
+2. POST 需要替换成你所使用的端口
 3. 建议定期更换密钥，特别是 SECRET_KEY 和 ENCRYPTION_KEY
 4. 生产环境请使用强密码并妥善保管
-5. wiki双语指南:https://github.com/djdwix/beta2/wiki/elcome-to-the-beta2-wiki!-%23-BETA2-%E6%9C%8D%E5%8A%A1%E5%99%A8-%E2%80%90-%E7%8E%A9%E5%AE%B6%E6%8C%87%E5%8D%97
+5. wiki 双语指南：https://github.com/djdwix/beta2/wiki/elcome-to-the-beta2-wiki!-%23-BETA2-%E6%9C%8D%E5%8A%A1%E5%99%A8-%E2%80%90-%E7%8E%A9%E5%AE%B6%E6%8C%87%E5%8D%97
