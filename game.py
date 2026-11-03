@@ -137,8 +137,6 @@ TITLE_SYSTEM = {
         {'id': 'member_supreme', 'name': '至尊荣耀', 'icon': '👑', 'condition_type': 'tier', 'condition_value': 'supreme'},
         {'id': 'lucky_star', 'name': '天选之子', 'icon': '🌟', 'condition_type': 'lucky_x20', 'condition_value': 1},
         {'id': 'gcoin_collector', 'name': 'G币收藏家', 'icon': '🪙', 'condition_type': 'gcoins_total', 'condition_value': 10000},
-        {'id': 'market_trader', 'name': '交易达人', 'icon': '📈', 'condition_type': 'market_trades', 'condition_value': 10},
-        {'id': 'auction_winner', 'name': '拍卖赢家', 'icon': '🔨', 'condition_type': 'auction_wins', 'condition_value': 5},
         {'id': 'season_bronze', 'name': '青铜战士', 'icon': '🥉', 'condition_type': 'season_rank', 'condition_value': 'bronze'},
         {'id': 'season_silver', 'name': '白银斗士', 'icon': '🥈', 'condition_type': 'season_rank', 'condition_value': 'silver'},
         {'id': 'season_gold', 'name': '黄金勇士', 'icon': '🥇', 'condition_type': 'season_rank', 'condition_value': 'gold'},
@@ -204,12 +202,6 @@ ACHIEVEMENTS = [
     {'id': 'gcoin_1000', 'name': 'G币新手', 'desc': '累计获得1000 G币', 'icon': '🪙', 'reward': 20, 'type': 'gcoins_total', 'target': 1000},
     {'id': 'gcoin_10000', 'name': 'G币大户', 'desc': '累计获得10000 G币', 'icon': '💰', 'reward': 100, 'type': 'gcoins_total', 'target': 10000},
     {'id': 'gcoin_100000', 'name': 'G币巨富', 'desc': '累计获得100000 G币', 'icon': '💎', 'reward': 500, 'type': 'gcoins_total', 'target': 100000},
-    {'id': 'market_first_trade', 'name': '初次交易', 'desc': '完成第一笔卡牌交易', 'icon': '📈', 'reward': 10, 'type': 'market_trades', 'target': 1},
-    {'id': 'market_10_trades', 'name': '交易达人', 'desc': '完成10笔卡牌交易', 'icon': '💹', 'reward': 50, 'type': 'market_trades', 'target': 10},
-    {'id': 'market_50_trades', 'name': '交易大师', 'desc': '完成50笔卡牌交易', 'icon': '🏦', 'reward': 200, 'type': 'market_trades', 'target': 50},
-    {'id': 'auction_first_win', 'name': '初次竞拍', 'desc': '赢得第一次拍卖', 'icon': '🔨', 'reward': 20, 'type': 'auction_wins', 'target': 1},
-    {'id': 'auction_5_wins', 'name': '拍卖行家', 'desc': '赢得5次拍卖', 'icon': '⚖️', 'reward': 80, 'type': 'auction_wins', 'target': 5},
-    {'id': 'auction_20_wins', 'name': '拍卖之王', 'desc': '赢得20次拍卖', 'icon': '👑', 'reward': 300, 'type': 'auction_wins', 'target': 20},
     {'id': 'season_first', 'name': '赛季启航', 'desc': '参与第一赛季', 'icon': '🏁', 'reward': 10, 'type': 'season_participate', 'target': 1},
     {'id': 'season_silver', 'name': '白银晋级', 'desc': '达到白银段位', 'icon': '🥈', 'reward': 30, 'type': 'season_rank', 'target': 'silver'},
     {'id': 'season_gold', 'name': '黄金晋级', 'desc': '达到黄金段位', 'icon': '🥇', 'reward': 60, 'type': 'season_rank', 'target': 'gold'},
@@ -238,11 +230,11 @@ ITEM_SHOP = {
 CHECKIN_REWARDS = []
 
 CHEST_REWARDS = [
-    {'plays': 1, 'name': '青铜宝箱', 'icon': '🥉', 'points_min': 1, 'points_max': 3, 'item_chance': 0, 'gcoin_min': 0, 'gcoin_max': 0},
-    {'plays': 3, 'name': '白银宝箱', 'icon': '🥈', 'points_min': 3, 'points_max': 6, 'item_chance': 0, 'gcoin_min': 5, 'gcoin_max': 15},
-    {'plays': 5, 'name': '黄金宝箱', 'icon': '🥇', 'points_min': 6, 'points_max': 12, 'item_chance': 0.1, 'gcoin_min': 20, 'gcoin_max': 50},
-    {'plays': 10, 'name': '钻石宝箱', 'icon': '💎', 'points_min': 15, 'points_max': 30, 'item_chance': 0.3, 'gcoin_min': 60, 'gcoin_max': 120},
-    {'plays': 20, 'name': '传说宝箱', 'icon': '👑', 'points_min': 50, 'points_max': 80, 'item_chance': 1.0, 'gcoin_min': 200, 'gcoin_max': 500}
+    {'plays': 1, 'name': '青铜宝箱', 'icon': '🥉', 'gcoin_min': 5, 'gcoin_max': 15},
+    {'plays': 3, 'name': '白银宝箱', 'icon': '🥈', 'gcoin_min': 15, 'gcoin_max': 40},
+    {'plays': 5, 'name': '黄金宝箱', 'icon': '🥇', 'gcoin_min': 40, 'gcoin_max': 100},
+    {'plays': 10, 'name': '钻石宝箱', 'icon': '💎', 'gcoin_min': 100, 'gcoin_max': 250},
+    {'plays': 20, 'name': '传说宝箱', 'icon': '👑', 'gcoin_min': 300, 'gcoin_max': 600}
 ]
 
 CARD_COLLECTIONS = {
@@ -897,6 +889,8 @@ def activate_game_membership(users, save_users_func, username, tier='normal', co
     user_data['membership']['auto_renew'] = tier_info.get('auto_renew', False) and not is_lifetime
     user_data['membership']['previous_tier'] = 'none'
     user_data['membership']['renew_count'] = 0
+    user_data['membership']['total_paid'] = final_price
+    user_data['membership']['initial_duration_ms'] = 0 if is_lifetime else duration_days * 24 * 3600 * 1000
     if _get_base_tier(tier) == 'supreme':
         user_data['membership']['supreme_snapshot'] = {'total_plays': total_plays, 'win_rate': win_rate, 'purchased_at': now_ms}
     if coupon_id:
@@ -950,12 +944,15 @@ def upgrade_membership(users, save_users_func, username, new_tier, coupon_id=Non
     tier_info = MEMBERSHIP_TIERS[new_tier]
     duration_days = tier_info.get('duration_days', 30)
     is_lifetime = duration_days == 0
+    previous_total_paid = user_data['membership'].get('total_paid', current_price)
     user_data['membership']['tier'] = new_tier
     user_data['membership']['is_member'] = True
     user_data['membership']['activated_at'] = now_ms
     user_data['membership']['expires_at'] = 0 if is_lifetime else (now_ms + duration_days * 24 * 3600 * 1000)
     user_data['membership']['lifetime'] = is_lifetime
     user_data['membership']['auto_renew'] = tier_info.get('auto_renew', False) and not is_lifetime
+    user_data['membership']['total_paid'] = round(previous_total_paid + upgrade_price, 2)
+    user_data['membership']['initial_duration_ms'] = 0 if is_lifetime else duration_days * 24 * 3600 * 1000
     if new_base == 'supreme':
         user_data['membership']['supreme_snapshot'] = {'total_plays': total_plays, 'win_rate': win_rate, 'purchased_at': now_ms}
     if coupon_id:
@@ -1004,6 +1001,10 @@ def renew_membership(users, save_users_func, username):
     membership['expires_at'] = base_time + duration_days * 24 * 3600 * 1000
     membership['renew_count'] = renew_count + 1
     membership['last_renew_at'] = now_ms
+    membership['total_paid'] = round(membership.get('total_paid', base_price) + renew_price, 2)
+    initial_duration = membership.get('initial_duration_ms', 0)
+    if initial_duration <= 0:
+        membership['initial_duration_ms'] = duration_days * 24 * 3600 * 1000
     save_users_func()
     return True, f'续费成功！有效期延长{duration_days}天（{int(discount*100)}折优惠）', renew_price
 
@@ -1023,27 +1024,32 @@ def admin_revoke_membership(users, save_users_func, username, refund=True):
         return False, '会员等级数据异常', 0, None
     refund_amount = 0
     refund_detail = ''
+    total_paid = membership.get('total_paid', tier_info.get('price', 0))
     if refund:
-        full_price = tier_info.get('price', 0)
-        is_lifetime = tier_info.get('duration_days', 30) == 0
+        is_lifetime = membership.get('lifetime', False) or tier_info.get('duration_days', 30) == 0
         if is_lifetime:
-            refund_amount = full_price
-            refund_detail = f'永久会员全额退款 {full_price} 积分'
+            refund_amount = total_paid
+            refund_detail = f'永久会员全额退款 {total_paid} 积分'
         else:
-            duration_days = tier_info.get('duration_days', 30)
-            duration_ms = duration_days * 24 * 3600 * 1000
-            expires_at = membership.get('expires_at', 0)
             now_ms = int(time.time() * 1000)
-            if expires_at > 0 and duration_ms > 0:
+            expires_at = membership.get('expires_at', 0)
+            initial_duration_ms = membership.get('initial_duration_ms', 0)
+            if initial_duration_ms <= 0:
+                initial_duration_ms = tier_info.get('duration_days', 30) * 24 * 3600 * 1000
+            if expires_at > 0 and initial_duration_ms > 0:
                 remain_ms = max(0, expires_at - now_ms)
-                remain_ratio = remain_ms / duration_ms
+                total_valid_ms = initial_duration_ms
+                if remain_ms > total_valid_ms:
+                    remain_ms = total_valid_ms
+                remain_ratio = remain_ms / total_valid_ms if total_valid_ms > 0 else 0
                 remain_ratio = min(1.0, max(0.0, remain_ratio))
-                refund_amount = round(full_price * remain_ratio, 2)
+                refund_amount = round(total_paid * remain_ratio, 2)
                 remain_days = remain_ms / (24 * 3600 * 1000)
-                refund_detail = f'月卡剩余 {remain_days:.1f} 天，按比例退款 {refund_amount} / {full_price} 积分'
+                total_days = total_valid_ms / (24 * 3600 * 1000)
+                refund_detail = f'剩余 {remain_days:.1f} 天 / 共 {total_days:.1f} 天，按比例退款 {refund_amount} / {total_paid} 积分'
             else:
-                refund_amount = full_price
-                refund_detail = f'月卡全额退款 {full_price} 积分'
+                refund_amount = total_paid
+                refund_detail = f'全额退款 {total_paid} 积分'
     snapshot = {
         'username': username,
         'old_tier': old_tier,
@@ -1051,6 +1057,8 @@ def admin_revoke_membership(users, save_users_func, username, refund=True):
         'activated_at': membership.get('activated_at', 0),
         'expires_at': membership.get('expires_at', 0),
         'lifetime': membership.get('lifetime', False),
+        'total_paid': total_paid,
+        'initial_duration_ms': membership.get('initial_duration_ms', 0),
         'refund_amount': refund_amount,
         'refund_detail': refund_detail,
         'revoked_at': int(time.time() * 1000)
@@ -1097,10 +1105,16 @@ def admin_restore_membership(users, save_users_func, username):
         if expires_at > now_ms:
             membership['expires_at'] = expires_at
         else:
-            membership['expires_at'] = now_ms + tier_info.get('duration_days', 30) * 24 * 3600 * 1000
+            initial_duration_ms = snapshot.get('initial_duration_ms', 0)
+            if initial_duration_ms <= 0:
+                initial_duration_ms = tier_info.get('duration_days', 30) * 24 * 3600 * 1000
+            membership['expires_at'] = now_ms + initial_duration_ms
         membership['lifetime'] = False
     membership['auto_renew'] = tier_info.get('auto_renew', False)
     membership['restored_at'] = now_ms
+    membership['total_paid'] = snapshot.get('total_paid', tier_info.get('price', 0))
+    membership['initial_duration_ms'] = snapshot.get('initial_duration_ms', tier_info.get('duration_days', 30) * 24 * 3600 * 1000) if not is_lifetime else 0
+    membership['renew_count'] = 0
     save_users_func()
     return True, f'已恢复会员：{tier_info.get("name", old_tier)}'
 
@@ -1136,6 +1150,17 @@ def migrate_game_membership_data(users, save_users_func):
                 modified = True
             if 'renew_count' not in membership:
                 membership['renew_count'] = 0
+                modified = True
+            if 'total_paid' not in membership:
+                tier = membership.get('tier', 'none')
+                tier_info = MEMBERSHIP_TIERS.get(tier, {})
+                membership['total_paid'] = tier_info.get('price', 0)
+                modified = True
+            if 'initial_duration_ms' not in membership:
+                tier = membership.get('tier', 'none')
+                tier_info = MEMBERSHIP_TIERS.get(tier, {})
+                duration = tier_info.get('duration_days', 30)
+                membership['initial_duration_ms'] = 0 if duration == 0 else duration * 24 * 3600 * 1000
                 modified = True
         if migrate_season_data(user_data):
             modified = True
@@ -1261,470 +1286,6 @@ def exchange_gcoins_to_points(users, save_users_func, username, gcoin_amount):
     return True, f'兑换成功！{gcoin_amount} G币 = {points_amount} 积分', points_amount
 
 
-def get_market_listings(users):
-    all_listings = []
-    for username, user_data in users.items():
-        listings = user_data.get('market_listings', {})
-        for listing_id, listing in listings.items():
-            if listing.get('status') != 'active':
-                continue
-            if listing.get('expires_at', 0) > 0 and listing['expires_at'] < int(time.time() * 1000):
-                continue
-            all_listings.append({
-                'id': listing_id,
-                'seller': username,
-                'game_id': listing.get('game_id', ''),
-                'card_id': listing.get('card_id', ''),
-                'card_name': listing.get('card_name', ''),
-                'card_emoji': listing.get('card_emoji', ''),
-                'rarity': listing.get('rarity', 'common'),
-                'rarity_name': CARD_RARITY_NAMES.get(listing.get('rarity', 'common'), ''),
-                'rarity_color': CARD_RARITY_COLORS.get(listing.get('rarity', 'common'), '#fff'),
-                'quantity': listing.get('quantity', 1),
-                'price_gcoins': listing.get('price_gcoins', 0),
-                'created_at': listing.get('created_at', 0),
-                'expires_at': listing.get('expires_at', 0)
-            })
-    all_listings.sort(key=lambda x: -x.get('created_at', 0))
-    return all_listings
-
-
-def get_user_market_listings(users, username):
-    if username not in users:
-        return []
-    user_data = users[username]
-    listings = user_data.get('market_listings', {})
-    result = []
-    for listing_id, listing in listings.items():
-        if listing.get('status') != 'active':
-            continue
-        result.append({
-            'id': listing_id,
-            'game_id': listing.get('game_id', ''),
-            'card_id': listing.get('card_id', ''),
-            'card_name': listing.get('card_name', ''),
-            'card_emoji': listing.get('card_emoji', ''),
-            'rarity': listing.get('rarity', 'common'),
-            'rarity_name': CARD_RARITY_NAMES.get(listing.get('rarity', 'common'), ''),
-            'rarity_color': CARD_RARITY_COLORS.get(listing.get('rarity', 'common'), '#fff'),
-            'quantity': listing.get('quantity', 1),
-            'price_gcoins': listing.get('price_gcoins', 0),
-            'created_at': listing.get('created_at', 0),
-            'expires_at': listing.get('expires_at', 0)
-        })
-    result.sort(key=lambda x: -x.get('created_at', 0))
-    return result
-
-
-def create_market_listing(users, save_users_func, username, game_id, card_id, quantity, price_gcoins):
-    if username not in users:
-        return False, '用户不存在', None
-    if quantity < 1 or quantity > 99:
-        return False, '数量必须在1-99之间', None
-    if price_gcoins < 1 or price_gcoins > 1000000:
-        return False, '价格必须在1-1000000 G币之间', None
-    user_data = users[username]
-    if 'card_collection' not in user_data or game_id not in user_data['card_collection']:
-        return False, '未拥有该卡牌', None
-    owned = user_data['card_collection'][game_id]
-    if owned.get(card_id, 0) < quantity + 1:
-        return False, f'至少需保留1张，当前拥有 {owned.get(card_id, 0)} 张', None
-    card_info = None
-    if game_id in CARD_COLLECTIONS:
-        for card in CARD_COLLECTIONS[game_id]['cards']:
-            if card['id'] == card_id:
-                card_info = card
-                break
-    if not card_info:
-        return False, '卡牌不存在', None
-    if 'market_listings' not in user_data:
-        user_data['market_listings'] = {}
-    listing_id = f"lst_{int(time.time()*1000)}_{random.randint(1000,9999)}"
-    owned[card_id] -= quantity
-    user_data['market_listings'][listing_id] = {
-        'id': listing_id,
-        'game_id': game_id,
-        'card_id': card_id,
-        'card_name': card_info['name'],
-        'card_emoji': card_info['emoji'],
-        'rarity': card_info['rarity'],
-        'quantity': quantity,
-        'price_gcoins': price_gcoins,
-        'status': 'active',
-        'created_at': int(time.time() * 1000),
-        'expires_at': int(time.time() * 1000) + 7 * 24 * 3600 * 1000
-    }
-    save_users_func()
-    return True, f'上架成功！{card_info["emoji"]} {card_info["name"]} x{quantity}，单价 {price_gcoins} G币', listing_id
-
-
-def cancel_market_listing(users, save_users_func, username, listing_id):
-    if username not in users:
-        return False, '用户不存在'
-    user_data = users[username]
-    if 'market_listings' not in user_data or listing_id not in user_data['market_listings']:
-        return False, '挂单不存在'
-    listing = user_data['market_listings'][listing_id]
-    if listing.get('status') != 'active':
-        return False, '挂单状态异常'
-    game_id = listing.get('game_id', '')
-    card_id = listing.get('card_id', '')
-    quantity = listing.get('quantity', 1)
-    if 'card_collection' not in user_data:
-        user_data['card_collection'] = {}
-    if game_id not in user_data['card_collection']:
-        user_data['card_collection'][game_id] = {}
-    user_data['card_collection'][game_id][card_id] = user_data['card_collection'][game_id].get(card_id, 0) + quantity
-    listing['status'] = 'cancelled'
-    listing['cancelled_at'] = int(time.time() * 1000)
-    save_users_func()
-    return True, f'已取消挂单，{quantity} 张卡牌已返还'
-
-
-def buy_market_listing(users, save_users_func, buyer, listing_id):
-    if buyer not in users:
-        return False, '买家不存在', None
-    target_seller = None
-    target_listing = None
-    for username, user_data in users.items():
-        if 'market_listings' in user_data and listing_id in user_data['market_listings']:
-            if user_data['market_listings'][listing_id].get('status') == 'active':
-                target_seller = username
-                target_listing = user_data['market_listings'][listing_id]
-                break
-    if not target_listing:
-        return False, '挂单不存在或已下架', None
-    if target_seller == buyer:
-        return False, '不能购买自己的挂单', None
-    price = target_listing.get('price_gcoins', 0)
-    quantity = target_listing.get('quantity', 1)
-    total_price = price * quantity
-    buyer_data = users[buyer]
-    if 'gcoins' not in buyer_data or buyer_data['gcoins'].get('balance', 0) < total_price:
-        return False, f'G币余额不足，需要 {total_price} G币', None
-    buyer_data['gcoins']['balance'] = buyer_data['gcoins'].get('balance', 0) - total_price
-    buyer_data['gcoins']['total_spent'] = buyer_data['gcoins'].get('total_spent', 0) + total_price
-    system_fee = int(total_price * 0.05)
-    seller_receive = total_price - system_fee
-    seller_data = users[target_seller]
-    if 'gcoins' not in seller_data:
-        seller_data['gcoins'] = {'balance': 0, 'total_earned': 0, 'total_spent': 0}
-    seller_data['gcoins']['balance'] = seller_data['gcoins'].get('balance', 0) + seller_receive
-    seller_data['gcoins']['total_earned'] = seller_data['gcoins'].get('total_earned', 0) + seller_receive
-    game_id = target_listing.get('game_id', '')
-    card_id = target_listing.get('card_id', '')
-    if 'card_collection' not in buyer_data:
-        buyer_data['card_collection'] = {}
-    if game_id not in buyer_data['card_collection']:
-        buyer_data['card_collection'][game_id] = {}
-    buyer_data['card_collection'][game_id][card_id] = buyer_data['card_collection'][game_id].get(card_id, 0) + quantity
-    target_listing['status'] = 'sold'
-    target_listing['sold_at'] = int(time.time() * 1000)
-    target_listing['buyer'] = buyer
-    target_listing['seller_receive'] = seller_receive
-    target_listing['system_fee'] = system_fee
-    buyer_stats = buyer_data.get('game_stats', {})
-    if 'market_trades' not in buyer_stats:
-        buyer_stats['market_trades'] = 0
-    buyer_stats['market_trades'] += 1
-    seller_stats = seller_data.get('game_stats', {})
-    if 'market_trades' not in seller_stats:
-        seller_stats['market_trades'] = 0
-    seller_stats['market_trades'] += 1
-    save_users_func()
-    detail = {
-        'total_price': total_price,
-        'seller_receive': seller_receive,
-        'system_fee': system_fee,
-        'card_name': target_listing.get('card_name', ''),
-        'card_emoji': target_listing.get('card_emoji', ''),
-        'quantity': quantity,
-        'seller': target_seller
-    }
-    return True, f'购买成功！{target_listing.get("card_emoji", "")} {target_listing.get("card_name", "")} x{quantity}，花费 {total_price} G币', detail
-
-
-def get_all_legendary_cards():
-    result = []
-    for game_id, collection in CARD_COLLECTIONS.items():
-        for card in collection['cards']:
-            if card.get('rarity') == 'legendary':
-                result.append({
-                    'game_id': game_id,
-                    'game_name': collection['name'],
-                    'game_icon': collection['icon'],
-                    'card_id': card['id'],
-                    'card_name': card['name'],
-                    'card_emoji': card['emoji'],
-                    'rarity': card['rarity']
-                })
-    return result
-
-
-def server_create_auction(game_id, card_id, start_price, duration_hours=24, analytics_cache_ref=None, save_analytics_func=None):
-    legendary_cards = get_all_legendary_cards()
-    target_card = None
-    for card in legendary_cards:
-        if card['game_id'] == game_id and card['card_id'] == card_id:
-            target_card = card
-            break
-    if not target_card:
-        return False, '卡牌不存在或非传说卡', None
-    if analytics_cache_ref is None:
-        return False, '内部错误：缺少缓存引用', None
-    if 'server_auctions' not in analytics_cache_ref:
-        analytics_cache_ref['server_auctions'] = {}
-    server_auctions = analytics_cache_ref['server_auctions']
-    auction_id = f"srv_auc_{int(time.time()*1000)}_{random.randint(1000,9999)}"
-    now_ms = int(time.time() * 1000)
-    server_auctions[auction_id] = {
-        'id': auction_id,
-        'game_id': game_id,
-        'card_id': card_id,
-        'card_name': target_card['card_name'],
-        'card_emoji': target_card['card_emoji'],
-        'rarity': target_card['rarity'],
-        'start_price': start_price,
-        'current_bid': start_price,
-        'current_bidder': '',
-        'bids': [],
-        'status': 'active',
-        'is_server_generated': True,
-        'start_at': now_ms,
-        'end_at': now_ms + duration_hours * 3600 * 1000,
-        'created_at': now_ms
-    }
-    if save_analytics_func:
-        save_analytics_func()
-    return True, f'服务器已创建传说卡拍卖：{target_card["card_emoji"]} {target_card["card_name"]}，起拍价 {start_price} G币', auction_id
-
-
-def get_server_auctions(analytics_cache_ref):
-    if not analytics_cache_ref or 'server_auctions' not in analytics_cache_ref:
-        return []
-    now_ms = int(time.time() * 1000)
-    result = []
-    for auc_id, auc in analytics_cache_ref['server_auctions'].items():
-        if auc.get('status') != 'active':
-            continue
-        if auc.get('end_at', 0) < now_ms:
-            continue
-        result.append({
-            'id': auc_id,
-            'seller': '服务器',
-            'game_id': auc.get('game_id', ''),
-            'card_id': auc.get('card_id', ''),
-            'card_name': auc.get('card_name', ''),
-            'card_emoji': auc.get('card_emoji', ''),
-            'rarity': auc.get('rarity', 'common'),
-            'rarity_name': CARD_RARITY_NAMES.get(auc.get('rarity', 'common'), ''),
-            'rarity_color': CARD_RARITY_COLORS.get(auc.get('rarity', 'common'), '#fff'),
-            'start_price': auc.get('start_price', 0),
-            'current_bid': auc.get('current_bid', 0),
-            'current_bidder': auc.get('current_bidder', ''),
-            'bid_count': len(auc.get('bids', [])),
-            'is_server_generated': True,
-            'start_at': auc.get('start_at', 0),
-            'end_at': auc.get('end_at', 0),
-            'created_at': auc.get('created_at', 0)
-        })
-    result.sort(key=lambda x: x.get('end_at', 0))
-    return result
-
-
-def get_all_auctions(analytics_cache_ref):
-    return get_server_auctions(analytics_cache_ref)
-
-
-def place_bid_server_auction(users, save_users_func, bidder, auction_id, bid_amount, analytics_cache_ref, save_analytics_func):
-    if bidder not in users:
-        return False, '用户不存在'
-    if not analytics_cache_ref or 'server_auctions' not in analytics_cache_ref:
-        return False, '拍卖不存在'
-    target_auction = analytics_cache_ref['server_auctions'].get(auction_id)
-    if not target_auction:
-        return False, '拍卖不存在或已结束'
-    if target_auction.get('status') != 'active':
-        return False, '拍卖已结束'
-    now_ms = int(time.time() * 1000)
-    if target_auction.get('end_at', 0) < now_ms:
-        return False, '拍卖已结束'
-    current_bid = target_auction.get('current_bid', 0)
-    min_bid = current_bid + 10
-    if bid_amount < min_bid:
-        return False, f'出价必须高于当前价 {current_bid} G币，最低 {min_bid} G币'
-    bidder_data = users[bidder]
-    if 'gcoins' not in bidder_data or bidder_data['gcoins'].get('balance', 0) < bid_amount:
-        return False, f'G币余额不足，需要 {bid_amount} G币'
-    prev_bidder = target_auction.get('current_bidder', '')
-    prev_bid = target_auction.get('current_bid', 0)
-    if prev_bidder and prev_bidder in users:
-        prev_data = users[prev_bidder]
-        if 'gcoins' not in prev_data:
-            prev_data['gcoins'] = {'balance': 0, 'total_earned': 0, 'total_spent': 0}
-        prev_data['gcoins']['balance'] = prev_data['gcoins'].get('balance', 0) + prev_bid
-        prev_data['gcoins']['total_spent'] = max(0, prev_data['gcoins'].get('total_spent', 0) - prev_bid)
-    bidder_data['gcoins']['balance'] = bidder_data['gcoins'].get('balance', 0) - bid_amount
-    bidder_data['gcoins']['total_spent'] = bidder_data['gcoins'].get('total_spent', 0) + bid_amount
-    target_auction['current_bid'] = bid_amount
-    target_auction['current_bidder'] = bidder
-    if 'bids' not in target_auction:
-        target_auction['bids'] = []
-    target_auction['bids'].append({
-        'bidder': bidder,
-        'amount': bid_amount,
-        'timestamp': now_ms
-    })
-    save_users_func()
-    if save_analytics_func:
-        save_analytics_func()
-    return True, f'出价成功！当前最高价 {bid_amount} G币'
-
-
-def settle_server_auction(users, save_users_func, auction_id, analytics_cache_ref, save_analytics_func, mail_attachments_ref=None, save_mail_func=None, email_notifier=None):
-    if not analytics_cache_ref or 'server_auctions' not in analytics_cache_ref:
-        return False, '拍卖不存在', 0
-    target_auction = analytics_cache_ref['server_auctions'].get(auction_id)
-    if not target_auction:
-        return False, '拍卖不存在', 0
-    if target_auction.get('status') != 'active':
-        return False, '拍卖状态异常', 0
-    now_ms = int(time.time() * 1000)
-    if target_auction.get('end_at', 0) > now_ms:
-        return False, '拍卖尚未结束', 0
-    winner = target_auction.get('current_bidder', '')
-    final_price = target_auction.get('current_bid', 0)
-    if not winner:
-        target_auction['status'] = 'unsold'
-        target_auction['settled_at'] = now_ms
-        if save_analytics_func:
-            save_analytics_func()
-        return True, '拍卖无人出价，已流拍', 0
-    if winner not in users:
-        target_auction['status'] = 'failed'
-        target_auction['settled_at'] = now_ms
-        if save_analytics_func:
-            save_analytics_func()
-        return False, '买家不存在', 0
-    winner_data = users[winner]
-    game_id = target_auction.get('game_id', '')
-    card_id = target_auction.get('card_id', '')
-    if 'card_collection' not in winner_data:
-        winner_data['card_collection'] = {}
-    if game_id not in winner_data['card_collection']:
-        winner_data['card_collection'][game_id] = {}
-    winner_data['card_collection'][game_id][card_id] = winner_data['card_collection'][game_id].get(card_id, 0) + 1
-    winner_stats = winner_data.get('game_stats', {})
-    if 'auction_wins' not in winner_stats:
-        winner_stats['auction_wins'] = 0
-    winner_stats['auction_wins'] += 1
-    if mail_attachments_ref is not None:
-        mail_attachment_id = f"mail_{int(time.time()*1000)}_{random.randint(1000,9999)}"
-        mail_attachments_ref[mail_attachment_id] = {
-            'id': mail_attachment_id,
-            'username': winner,
-            'type': 'auction_reward',
-            'card_data': {
-                'game_id': game_id,
-                'card_id': card_id,
-                'card_name': target_auction.get('card_name', ''),
-                'card_emoji': target_auction.get('card_emoji', ''),
-                'rarity': target_auction.get('rarity', 'legendary')
-            },
-            'used': False,
-            'created_at': now_ms,
-            'expires_at': now_ms + 7 * 24 * 3600 * 1000,
-            'title': f'🔨 拍卖所得-{target_auction.get("card_name", "")}',
-            'description': f'你以 {final_price} G币赢得传说卡 {target_auction.get("card_emoji", "")} {target_auction.get("card_name", "")}',
-            'claimed': True,
-            'claimed_at': now_ms,
-            'source': 'auction_win'
-        }
-        if save_mail_func:
-            save_mail_func()
-    target_auction['status'] = 'sold'
-    target_auction['settled_at'] = now_ms
-    target_auction['winner'] = winner
-    target_auction['final_price'] = final_price
-    target_auction['system_fee'] = 0
-    save_users_func()
-    if save_analytics_func:
-        save_analytics_func()
-    if email_notifier:
-        winner_email = winner_data.get('email', '')
-        if winner_email:
-            card_name = target_auction.get('card_name', '')
-            card_emoji = target_auction.get('card_emoji', '')
-            rarity = target_auction.get('rarity', 'legendary')
-            settled_time_str = datetime.fromtimestamp(now_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
-            try:
-                email_notifier(winner, winner_email, card_name, card_emoji, rarity, game_id, final_price, settled_time_str)
-            except Exception:
-                pass
-    return True, f'拍卖成交！{winner} 以 {final_price} G币赢得 {target_auction.get("card_name", "")}', final_price
-
-
-def server_generate_random_auction(analytics_cache_ref, save_analytics_func):
-    legendary_cards = get_all_legendary_cards()
-    if not legendary_cards:
-        return False, '没有可拍卖的传说卡', None
-    if 'server_auctions' not in analytics_cache_ref:
-        analytics_cache_ref['server_auctions'] = {}
-    now_ms = int(time.time() * 1000)
-    active_count = 0
-    for auc in analytics_cache_ref['server_auctions'].values():
-        if auc.get('status') == 'active' and auc.get('end_at', 0) > now_ms:
-            active_count += 1
-    if active_count >= 3:
-        return False, '当前已有3场进行中的服务器拍卖', None
-    selected = random.choice(legendary_cards)
-    base_price = random.randint(100, 500)
-    duration_hours = random.choice([12, 24, 36, 48])
-    return server_create_auction(selected['game_id'], selected['card_id'], base_price, duration_hours, analytics_cache_ref, save_analytics_func)
-
-
-def auto_settle_server_auctions(users, save_users_func, analytics_cache_ref, save_analytics_func, mail_attachments_ref=None, save_mail_func=None, email_notifier=None):
-    if not analytics_cache_ref or 'server_auctions' not in analytics_cache_ref:
-        return 0
-    now_ms = int(time.time() * 1000)
-    settled_count = 0
-    for auc_id in list(analytics_cache_ref['server_auctions'].keys()):
-        auc = analytics_cache_ref['server_auctions'][auc_id]
-        if auc.get('status') != 'active':
-            continue
-        if auc.get('end_at', 0) <= now_ms:
-            success, message, final_price = settle_server_auction(users, save_users_func, auc_id, analytics_cache_ref, save_analytics_func, mail_attachments_ref, save_mail_func, email_notifier)
-            if success:
-                settled_count += 1
-    return settled_count
-
-
-def should_create_new_auction(analytics_cache_ref, save_analytics_func, interval_hours=6):
-    if not analytics_cache_ref:
-        return False
-    if 'last_auto_auction_time' not in analytics_cache_ref:
-        analytics_cache_ref['last_auto_auction_time'] = 0
-    now_ms = int(time.time() * 1000)
-    interval_ms = interval_hours * 3600 * 1000
-    last_time = analytics_cache_ref.get('last_auto_auction_time', 0)
-    if now_ms - last_time >= interval_ms:
-        analytics_cache_ref['last_auto_auction_time'] = now_ms
-        if save_analytics_func:
-            save_analytics_func()
-        return True
-    return False
-
-
-def has_active_auction(analytics_cache_ref):
-    if not analytics_cache_ref or 'server_auctions' not in analytics_cache_ref:
-        return False
-    now_ms = int(time.time() * 1000)
-    for auc in analytics_cache_ref['server_auctions'].values():
-        if auc.get('status') == 'active' and auc.get('end_at', 0) > now_ms:
-            return True
-    return False
-
-
 class GameManager:
     def __init__(self, users_data, save_users_func, add_points_func, get_user_data_func):
         self.users = users_data
@@ -1786,8 +1347,7 @@ class GameManager:
                 'game_wins': {}, 'game_plays': {},
                 'roulette_number_hits': 0, 'memory_perfect': 0,
                 'lucky_x20': 0, 'whack_score_30': 0,
-                'membership_coupon_count': 0, 'membership_coupon_used': 0,
-                'market_trades': 0, 'auction_wins': 0
+                'membership_coupon_count': 0, 'membership_coupon_used': 0
             }
         stats = user_data['game_stats']
         today = self.get_today()
@@ -1819,10 +1379,6 @@ class GameManager:
             stats['membership_coupon_count'] = 0
         if 'membership_coupon_used' not in stats:
             stats['membership_coupon_used'] = 0
-        if 'market_trades' not in stats:
-            stats['market_trades'] = 0
-        if 'auction_wins' not in stats:
-            stats['auction_wins'] = 0
         return stats
 
     def get_user_game_history(self, username):
@@ -2139,7 +1695,7 @@ class GameManager:
         if 'card_collection' not in user_data:
             return False, '没有可分解的卡牌', 0, [], 0
         cards = user_data['card_collection']
-        total_points = 0
+        total_gcoins = 0
         details = []
         total_cards_disenchanted = 0
         for game_id, collection in CARD_COLLECTIONS.items():
@@ -2149,7 +1705,7 @@ class GameManager:
                 if count > 1:
                     extra = count - 1
                     value = extra * CARD_RARITY_DISENCHANT[card['rarity']]
-                    total_points += value
+                    total_gcoins += value * 10
                     total_cards_disenchanted += extra
                     owned[card['id']] = 1
                     if len(details) < max_details:
@@ -2161,15 +1717,14 @@ class GameManager:
                             'rarity_name': CARD_RARITY_NAMES[card['rarity']],
                             'rarity_color': CARD_RARITY_COLORS[card['rarity']],
                             'extra': extra,
-                            'points': value
+                            'gcoins': value * 10
                         })
-        if total_points <= 0:
+        if total_gcoins <= 0:
             return False, '没有可分解的重复卡牌', 0, [], 0
-        self.add_points(username, total_points)
-        add_gcoins(self.users, username, total_points * 10, 'disenchant')
+        add_gcoins(self.users, username, total_gcoins, 'disenchant')
         self.save_users()
         truncated = len(details) >= max_details and total_cards_disenchanted > max_details
-        return True, f'一键分解成功！共分解{total_cards_disenchanted}张重复卡牌，获得{total_points}积分 + {total_points*10}G币', total_points, details, total_cards_disenchanted
+        return True, f'一键分解成功！共分解{total_cards_disenchanted}张重复卡牌，获得{total_gcoins} G币', total_gcoins, details, total_cards_disenchanted
 
     def roll_card_drop(self, username, game_id):
         if game_id not in CARD_COLLECTIONS:
@@ -2218,17 +1773,16 @@ class GameManager:
                 'message': f'🎉 获得新卡牌 {selected["emoji"]} {selected["name"]}（{CARD_RARITY_NAMES[selected["rarity"]]}）'
             }
         else:
-            disenchant = CARD_RARITY_DISENCHANT[selected['rarity']]
-            self.add_points(username, disenchant)
-            add_gcoins(self.users, username, disenchant * 10, 'card_duplicate')
+            gcoins = CARD_RARITY_DISENCHANT[selected['rarity']] * 10
+            add_gcoins(self.users, username, gcoins, 'card_duplicate')
             return {
                 'type': 'card',
                 'is_new': False,
                 'card': selected,
                 'rarity_name': CARD_RARITY_NAMES[selected['rarity']],
                 'rarity_color': CARD_RARITY_COLORS[selected['rarity']],
-                'disenchant_points': disenchant,
-                'message': f'🎴 重复卡牌 {selected["emoji"]} {selected["name"]}，自动分解为 {disenchant} 积分'
+                'disenchant_gcoins': gcoins,
+                'message': f'🎴 重复卡牌 {selected["emoji"]} {selected["name"]}，自动分解为 {gcoins} G币'
             }
 
     def roll_coupon_drop(self, username, game_id):
@@ -2319,27 +1873,7 @@ class GameManager:
         }
 
     def roll_points_bonus(self, username, game_id):
-        base_rate = 0.01
-        if is_game_member(self.users, username):
-            base_rate *= 1.5
-        if random.random() > base_rate:
-            return None
-        total_weight = sum(c['weight'] for c in POINTS_BONUS_TABLE)
-        rand = random.uniform(0, total_weight)
-        cumulative = 0
-        selected = POINTS_BONUS_TABLE[-1]
-        for c in POINTS_BONUS_TABLE:
-            cumulative += c['weight']
-            if rand <= cumulative:
-                selected = c
-                break
-        self.add_points(username, selected['amount'])
-        add_gcoins(self.users, username, int(selected['amount'] * 10), 'points_bonus')
-        return {
-            'type': 'points_bonus',
-            'amount': selected['amount'],
-            'message': f'🧧 恭喜获得 {selected["amount"]} 积分红包 + {int(selected["amount"] * 10)} G币！'
-        }
+        return None
 
     def roll_gcoin_drop(self, username, game_id):
         base_rate = 0.15
@@ -2368,9 +1902,6 @@ class GameManager:
         item_drop = self.roll_item_drop(username, game_id)
         if item_drop:
             drops.append(item_drop)
-        points_drop = self.roll_points_bonus(username, game_id)
-        if points_drop:
-            drops.append(points_drop)
         gcoin_drop = self.roll_gcoin_drop(username, game_id)
         if gcoin_drop:
             drops.append(gcoin_drop)
@@ -2396,12 +1927,11 @@ class GameManager:
                 break
         if not card_info:
             return False, '卡牌不存在', 0
-        disenchant = CARD_RARITY_DISENCHANT[card_info['rarity']]
+        gcoins = CARD_RARITY_DISENCHANT[card_info['rarity']] * 10
         owned[card_id] = owned[card_id] - 1
-        self.add_points(username, disenchant)
-        add_gcoins(self.users, username, disenchant * 10, 'disenchant')
+        add_gcoins(self.users, username, gcoins, 'disenchant')
         self.save_users()
-        return True, f'分解成功！获得{disenchant}积分 + {disenchant*10}G币', disenchant
+        return True, f'分解成功！获得{gcoins} G币', gcoins
 
     def _compute_achievement_progress(self, ach, stats, win_streak, tier, checkin, chest, daily_first, total_cards, sets_complete, username):
         progress = 0
@@ -2454,10 +1984,6 @@ class GameManager:
         elif ach['type'] == 'gcoins_total':
             gcoin_data = get_gcoin_data(self.users, username)
             progress = gcoin_data.get('total_earned', 0) if gcoin_data else 0
-        elif ach['type'] == 'market_trades':
-            progress = stats.get('market_trades', 0)
-        elif ach['type'] == 'auction_wins':
-            progress = stats.get('auction_wins', 0)
         elif ach['type'] == 'season_participate':
             user_data = self.users.get(username, {})
             season_data = user_data.get('season', {})
@@ -2582,12 +2108,10 @@ class GameManager:
         if not ach_info:
             return False, '成就不存在'
         ach_data['reward_claimed'] = True
-        reward = ach_info['reward']
-        gcoin_reward = ach_info.get('gcoin_reward', reward * 10)
-        self.add_points(username, reward)
+        gcoin_reward = ach_info.get('gcoin_reward', GCOIN_EARN_TABLE['achievement_unlock'])
         add_gcoins(self.users, username, gcoin_reward, 'achievement_reward')
         self.save_users()
-        return True, f'领取成功！获得{reward}积分 + {gcoin_reward}G币'
+        return True, f'领取成功！获得{gcoin_reward}G币'
 
     def claim_all_achievement_rewards(self, username):
         if username not in self.users:
@@ -2595,7 +2119,6 @@ class GameManager:
         user_data = self.users[username]
         if 'achievements' not in user_data:
             return False, '暂无可领取', 0
-        total_reward = 0
         total_gcoins = 0
         count = 0
         for ach_id, ach_data in user_data['achievements'].items():
@@ -2607,15 +2130,13 @@ class GameManager:
                         break
                 if ach_info:
                     ach_data['reward_claimed'] = True
-                    total_reward += ach_info['reward']
-                    total_gcoins += ach_info.get('gcoin_reward', ach_info['reward'] * 10)
+                    total_gcoins += ach_info.get('gcoin_reward', GCOIN_EARN_TABLE['achievement_unlock'])
                     count += 1
         if count == 0:
             return False, '没有可领取的成就奖励', 0
-        self.add_points(username, total_reward)
         add_gcoins(self.users, username, total_gcoins, 'achievement_reward_all')
         self.save_users()
-        return True, f'领取成功！共获得{total_reward}积分 + {total_gcoins}G币', total_reward
+        return True, f'领取成功！共获得{total_gcoins}G币', total_gcoins
 
     def get_user_items(self, username):
         if username not in self.users:
@@ -2872,7 +2393,7 @@ class GameManager:
             dfw['claimed'] = False
             dfw['last_date'] = today
             self.save_users()
-        return {'claimed': dfw.get('claimed', False), 'total_claimed': dfw.get('total_claimed', 0), 'reward': 5}
+        return {'claimed': dfw.get('claimed', False), 'total_claimed': dfw.get('total_claimed', 0), 'reward': GCOIN_EARN_TABLE['daily_first_win']}
 
     def claim_daily_first_win(self, username):
         if username not in self.users:
@@ -2890,10 +2411,9 @@ class GameManager:
         dfw['claimed'] = True
         dfw['total_claimed'] = dfw.get('total_claimed', 0) + 1
         dfw['last_date'] = today
-        self.add_points(username, 5)
         add_gcoins(self.users, username, GCOIN_EARN_TABLE['daily_first_win'], 'daily_first_win')
         self.save_users()
-        return True, f'领取成功！获得 5 积分 + {GCOIN_EARN_TABLE["daily_first_win"]} G币'
+        return True, f'领取成功！获得 {GCOIN_EARN_TABLE["daily_first_win"]} G币'
 
     def get_chest_status(self, username):
         if username not in self.users:
@@ -2927,9 +2447,6 @@ class GameManager:
                 'plays': c['plays'],
                 'name': c['name'],
                 'icon': c['icon'],
-                'points_min': c['points_min'],
-                'points_max': c['points_max'],
-                'item_chance': c.get('item_chance', 0),
                 'gcoin_min': c.get('gcoin_min', 0),
                 'gcoin_max': c.get('gcoin_max', 0),
                 'unlocked': today_plays >= c['plays'],
@@ -2968,36 +2485,12 @@ class GameManager:
             return False, '宝箱不存在', 0, None
         if today_plays < chest_info['plays']:
             return False, f'今日还需玩 {chest_info["plays"] - today_plays} 局才能解锁', 0, None
-        points = random.randint(chest_info['points_min'], chest_info['points_max'])
-        gcoins = 0
-        if chest_info.get('gcoin_min', 0) > 0:
-            gcoins = random.randint(chest_info['gcoin_min'], chest_info['gcoin_max'])
+        gcoins = random.randint(chest_info['gcoin_min'], chest_info['gcoin_max'])
         chests.setdefault('opened', []).append(chest_plays)
-        self.add_points(username, points)
-        if gcoins > 0:
-            add_gcoins(self.users, username, gcoins, 'chest_open')
-        item_reward = None
-        if chest_info.get('item_chance', 0) > 0 and random.random() < chest_info['item_chance']:
-            basic_items = [i for i in ITEM_SHOP.values() if not i.get('member_only', False)]
-            if basic_items:
-                item_info = random.choice(basic_items)
-                if 'items' not in user_data:
-                    user_data['items'] = {}
-                if item_info['id'] not in user_data['items']:
-                    user_data['items'][item_info['id']] = {
-                        'id': item_info['id'], 'name': item_info['name'],
-                        'icon': item_info['icon'], 'desc': item_info['desc'],
-                        'count': 0, 'expires_at': 0
-                    }
-                user_data['items'][item_info['id']]['count'] = user_data['items'][item_info['id']].get('count', 0) + 1
-                item_reward = item_info['name']
+        add_gcoins(self.users, username, gcoins, 'chest_open')
         self.save_users()
-        msg_parts = [f'获得 {points} 积分']
-        if gcoins > 0:
-            msg_parts.append(f'{gcoins} G币')
-        if item_reward:
-            msg_parts.append(f'{item_reward} x1')
-        return True, f'开启{chest_info["name"]}，' + ' + '.join(msg_parts), points, item_reward
+        msg_parts = [f'获得 {gcoins} G币']
+        return True, f'开启{chest_info["name"]}，' + ' + '.join(msg_parts), gcoins, None
 
     def get_daily_bonus_status(self, username):
         if username not in self.users:
@@ -3046,12 +2539,12 @@ class GameManager:
         if db.get('spins', 0) >= max_spins:
             return False, f'今日抽奖次数已用完（{max_spins}次）', None
         rewards = [
-            {'icon': '💧', 'name': '1积分', 'points': 1, 'gcoins': 10, 'weight': 30},
-            {'icon': '💧', 'name': '2积分', 'points': 2, 'gcoins': 20, 'weight': 25},
-            {'icon': '💰', 'name': '3积分', 'points': 3, 'gcoins': 30, 'weight': 20},
-            {'icon': '💰', 'name': '5积分', 'points': 5, 'gcoins': 50, 'weight': 15},
-            {'icon': '💎', 'name': '8积分', 'points': 8, 'gcoins': 80, 'weight': 8},
-            {'icon': '🌟', 'name': '15积分', 'points': 15, 'gcoins': 150, 'weight': 2}
+            {'icon': '💧', 'name': '10 G币', 'gcoins': 10, 'weight': 30},
+            {'icon': '💧', 'name': '20 G币', 'gcoins': 20, 'weight': 25},
+            {'icon': '💰', 'name': '30 G币', 'gcoins': 30, 'weight': 20},
+            {'icon': '💰', 'name': '50 G币', 'gcoins': 50, 'weight': 15},
+            {'icon': '💎', 'name': '80 G币', 'gcoins': 80, 'weight': 8},
+            {'icon': '🌟', 'name': '150 G币', 'gcoins': 150, 'weight': 2}
         ]
         total_weight = sum(r['weight'] for r in rewards)
         rand = random.uniform(0, total_weight)
@@ -3064,11 +2557,10 @@ class GameManager:
                 break
         db['spins'] = db.get('spins', 0) + 1
         db['used_free'] = True
-        self.add_points(username, selected['points'])
         add_gcoins(self.users, username, selected.get('gcoins', 0), 'daily_bonus')
         self.save_users()
         remaining = max_spins - db['spins']
-        return True, f'恭喜获得 {selected["name"]} + {selected.get("gcoins", 0)} G币（剩余{remaining}次）', selected
+        return True, f'恭喜获得 {selected["name"]}（剩余{remaining}次）', selected
 
     def can_play(self, username):
         stats = self.get_user_game_stats(username)
@@ -3105,9 +2597,6 @@ class GameManager:
                 if 'game_wins' not in stats:
                     stats['game_wins'] = {}
                 stats['game_wins'][game_id] = stats['game_wins'].get(game_id, 0) + 1
-        if points_earned > 0:
-            stats['total_points_earned'] = round(stats.get('total_points_earned', 0) + points_earned, 2)
-            stats['today_points'] = round(stats.get('today_points', 0) + points_earned, 2)
         if gcoins_earned > 0:
             add_gcoins(self.users, username, gcoins_earned, f'game_win_{game_id}')
         self.save_users()
@@ -4009,8 +3498,8 @@ class GameManager:
         if base_tier not in ['diamond', 'supreme']:
             return {'success': False, 'error': '记忆翻牌是钻石会员及以上专属游戏'}
         if difficulty == 'hard':
-            symbols = ['🍎', '🍌', '🍇', '🍓', '🍒', '🍑', '🥝', '🍍', '🍉', '🍊', '🍋', '🍈', '🫐', '🍅', '🥭', '🍍']
-            cards = symbols[:12] + symbols[:12]
+            symbols = ['🍎', '🍌', '🍇', '🍓', '🍒', '🍑', '🥝', '🍍', '🍉', '🍊', '🍋', '🍈']
+            cards = symbols + symbols
             grid_size = 24
             total_pairs = 12
         else:
@@ -4667,8 +4156,7 @@ class GameManager:
                 'game_wins': {}, 'game_plays': {},
                 'roulette_number_hits': 0, 'memory_perfect': 0,
                 'lucky_x20': 0, 'whack_score_30': 0,
-                'membership_coupon_count': 0, 'membership_coupon_used': 0,
-                'market_trades': 0, 'auction_wins': 0
+                'membership_coupon_count': 0, 'membership_coupon_used': 0
             }
             modified = True
         else:
@@ -4687,12 +4175,6 @@ class GameManager:
                 modified = True
             if 'membership_coupon_used' not in stats:
                 stats['membership_coupon_used'] = 0
-                modified = True
-            if 'market_trades' not in stats:
-                stats['market_trades'] = 0
-                modified = True
-            if 'auction_wins' not in stats:
-                stats['auction_wins'] = 0
                 modified = True
         if 'gcoins' not in user_data:
             user_data['gcoins'] = {'balance': 0, 'total_earned': 0, 'total_spent': 0}
@@ -4800,10 +4282,6 @@ class GameManager:
                 matched = stats.get('lucky_x20', 0) >= cond_val
             elif cond_type == 'gcoins_total':
                 matched = gcoins_total >= cond_val
-            elif cond_type == 'market_trades':
-                matched = stats.get('market_trades', 0) >= cond_val
-            elif cond_type == 'auction_wins':
-                matched = stats.get('auction_wins', 0) >= cond_val
             elif cond_type == 'season_rank':
                 current_index = rank_order.index(season_rank) if season_rank in rank_order else 0
                 target_index = rank_order.index(cond_val) if cond_val in rank_order else 0

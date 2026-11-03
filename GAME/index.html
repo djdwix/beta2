@@ -211,8 +211,6 @@
         @keyframes couponDrop{0%{transform:translate(-50%,50px);opacity:0}10%{transform:translate(-50%,0);opacity:1}85%{transform:translate(-50%,0);opacity:1}100%{transform:translate(-50%,-30px);opacity:0}}
         .item-drop-toast{position:fixed;bottom:260px;left:50%;transform:translateX(-50%);padding:14px 24px;border-radius:16px;background:linear-gradient(135deg,rgba(167,139,250,0.95),rgba(124,58,237,0.95));color:#fff;font-size:14px;font-weight:600;z-index:9998;box-shadow:0 12px 40px rgba(167,139,250,0.5);animation:itemDrop 3.5s ease-out forwards;display:flex;align-items:center;gap:12px;border:2px solid rgba(255,255,255,0.2);max-width:90%}
         @keyframes itemDrop{0%{transform:translate(-50%,50px);opacity:0}10%{transform:translate(-50%,0);opacity:1}85%{transform:translate(-50%,0);opacity:1}100%{transform:translate(-50%,-30px);opacity:0}}
-        .points-drop-toast{position:fixed;bottom:340px;left:50%;transform:translateX(-50%);padding:14px 24px;border-radius:16px;background:linear-gradient(135deg,rgba(52,211,153,0.95),rgba(5,150,105,0.95));color:#fff;font-size:14px;font-weight:700;z-index:9998;box-shadow:0 12px 40px rgba(52,211,153,0.5);animation:pointsDrop 3s ease-out forwards;display:flex;align-items:center;gap:12px;border:2px solid rgba(255,255,255,0.2);max-width:90%}
-        @keyframes pointsDrop{0%{transform:translate(-50%,50px);opacity:0}10%{transform:translate(-50%,0);opacity:1}85%{transform:translate(-50%,0);opacity:1}100%{transform:translate(-50%,-30px);opacity:0}}
         .gcoin-drop-toast{position:fixed;bottom:420px;left:50%;transform:translateX(-50%);padding:14px 24px;border-radius:16px;background:linear-gradient(135deg,rgba(251,191,36,0.95),rgba(217,119,6,0.95));color:#1a1a2e;font-size:14px;font-weight:800;z-index:9998;box-shadow:0 12px 40px rgba(251,191,36,0.7);animation:gcoinDrop 3.2s ease-out forwards;display:flex;align-items:center;gap:12px;border:2px solid rgba(255,255,255,0.4);max-width:90%}
         @keyframes gcoinDrop{0%{transform:translate(-50%,50px);opacity:0}10%{transform:translate(-50%,0);opacity:1}85%{transform:translate(-50%,0);opacity:1}100%{transform:translate(-50%,-30px);opacity:0}}
         .season-score-toast{position:fixed;bottom:500px;left:50%;transform:translateX(-50%);padding:14px 24px;border-radius:16px;background:linear-gradient(135deg,rgba(236,72,153,0.95),rgba(190,24,93,0.95));color:#fff;font-size:14px;font-weight:800;z-index:9998;box-shadow:0 12px 40px rgba(236,72,153,0.7);animation:seasonDrop 3.5s ease-out forwards;display:flex;align-items:center;gap:12px;border:2px solid rgba(255,255,255,0.3);max-width:90%}
@@ -307,8 +305,7 @@
         <div class="right-group">
             <a href="/GAME/dashboard.html" class="membership-btn" style="background:linear-gradient(135deg,#fbbf24,#d97706);">🏆 赛季中心</a>
             <a href="/GAME/collection.html" class="membership-btn" style="background:linear-gradient(135deg,#a78bfa,#7c3aed);color:#fff;">📖 卡牌收集</a>
-            <a href="/GAME/market.html" class="membership-btn" style="background:linear-gradient(135deg,#60a5fa,#2563eb);color:#fff;">📈 交易市场</a>
-            <a href="/GAME/auction.html" class="membership-btn" style="background:linear-gradient(135deg,#f87171,#dc2626);color:#fff;">🔨 拍卖行</a>
+            <a href="/GAME/market.html" class="membership-btn" style="background:linear-gradient(135deg,#60a5fa,#2563eb);color:#fff;">🔄 积分兑换</a>
             <a href="/GAME/membership.html" class="membership-btn">👑 会员中心</a>
             <a href="/" class="back-btn">← 返回主控台</a>
         </div>
@@ -631,19 +628,6 @@
         setTimeout(function() { d.remove(); }, 3500);
     }
 
-    function showPointsDrop(drop) {
-        if (!drop) return;
-        var d = document.createElement('div');
-        d.className = 'points-drop-toast';
-        d.innerHTML = '<span style="font-size:32px;">🧧</span>' +
-            '<div>' +
-            '<div style="font-size:12px;opacity:0.8;">🎉 积分红包</div>' +
-            '<div style="font-size:16px;font-weight:800;">+' + drop.amount + ' 积分</div>' +
-            '</div>';
-        document.body.appendChild(d);
-        setTimeout(function() { d.remove(); }, 3000);
-    }
-
     function showGcoinDrop(drop) {
         if (!drop) return;
         var d = document.createElement('div');
@@ -690,7 +674,6 @@
         var cardDrops = drops.filter(function(d) { return d.type === 'card'; });
         var couponDrops = drops.filter(function(d) { return d.type === 'membership_coupon'; });
         var itemDrops = drops.filter(function(d) { return d.type === 'item'; });
-        var pointsDrops = drops.filter(function(d) { return d.type === 'points_bonus'; });
         var gcoinDrops = drops.filter(function(d) { return d.type === 'gcoin'; });
         var delay = 0;
         couponDrops.forEach(function(d) {
@@ -699,10 +682,6 @@
         });
         itemDrops.forEach(function(d) {
             setTimeout(function() { showItemDrop(d); }, delay);
-            delay += 400;
-        });
-        pointsDrops.forEach(function(d) {
-            setTimeout(function() { showPointsDrop(d); }, delay);
             delay += 400;
         });
         gcoinDrops.forEach(function(d) {
@@ -1181,7 +1160,7 @@
                 html += '</div>';
                 html += '</div>';
                 html += '<div style="display:flex;align-items:center;gap:12px;flex-shrink:0;">';
-                html += '<div class="task-reward">+' + a.reward + '积分</div>';
+                html += '<div class="task-reward">+' + a.gcoin_reward + ' G币</div>';
                 if (a.unlocked && !a.reward_claimed) {
                     claimableCount++;
                     html += '<button class="task-btn claimable" onclick="claimAchievement(\'' + a.id + '\')">领取</button>';

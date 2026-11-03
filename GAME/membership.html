@@ -181,7 +181,7 @@
                 <span class="value" id="dailyPlays">0 / 5</span>
             </div>
             <div class="item">
-                <span class="label">获胜积分加成</span>
+                <span class="label">获胜G币加成</span>
                 <span class="value" id="bonusRate">+0%</span>
             </div>
             <div class="item" id="expiryItem">
@@ -199,7 +199,7 @@
             <div class="bonus-info-box">
                 <span class="bonus-icon">💡</span>
                 <div class="bonus-text">
-                    开通会员后享受更多游戏次数和积分加成。<strong>月卡30天，永久卡一次购买长期有效</strong>。连续续费享折扣（9折/8.5折/8折）。
+                    开通会员后享受更多游戏次数和G币加成。<strong>月卡30天，永久卡一次购买长期有效</strong>。连续续费享折扣（9折/8.5折/8折）。
                 </div>
             </div>
 
@@ -447,7 +447,7 @@
         availableCoupons.forEach(function(c) {
             html += '<div class="coupon-card">';
             html += '<div class="coupon-info">';
-            html += '<div class="coupon-discount">-' + c.discount + ' 积分</div>';
+            html += '<div class="coupon-discount">-' + c.discount + ' G币</div>';
             html += '<div class="coupon-desc">' + escapeHtml(c.description) + '</div>';
             html += '<div class="coupon-expire">有效期至 ' + formatDate(c.expire_at) + '</div>';
             html += '</div>';
@@ -492,7 +492,7 @@
         html += '<div class="tier-name">' + escapeHtml(tier.name) + '</div>';
         var subtitle = tier.id === 'normal' ? '入门首选' : tier.id === 'gold' ? '进阶玩家必备' : tier.id === 'diamond' ? '顶级尊享体验' : tier.id === 'supreme' ? '至高无上荣耀' : (tier.is_lifetime ? '一次购买长期有效' : '超值选择');
         html += '<div class="tier-subtitle">' + subtitle + '</div>';
-        html += '<div class="tier-price">' + tier.price + ' <small>积分</small></div>';
+        html += '<div class="tier-price">' + tier.price + ' <small>G币</small></div>';
         if (tier.is_lifetime) {
             html += '<div class="tier-duration">♾️ 永久有效</div>';
         } else {
@@ -500,12 +500,12 @@
         }
         html += '<div class="tier-perks">';
         html += '<div class="tier-perk"><span class="icon">🎯</span> 每日游戏次数 <strong>' + tier.max_plays + '次</strong></div>';
-        html += '<div class="tier-perk highlight"><span class="icon">⭐</span> 获胜积分 <strong>+' + tier.bonus_rate + '%</strong> 加成</div>';
+        html += '<div class="tier-perk highlight"><span class="icon">⭐</span> 获胜G币 <strong>+' + tier.bonus_rate + '%</strong> 加成</div>';
         if (tier.drop_multiplier > 1.0) {
             html += '<div class="tier-perk highlight"><span class="icon">🎁</span> 掉落概率 <strong>×' + tier.drop_multiplier + '</strong> 加成</div>';
         }
         if (tier.daily_task_bonus > 0) {
-            html += '<div class="tier-perk highlight"><span class="icon">📋</span> 每日任务额外 <strong>+' + tier.daily_task_bonus + '积分</strong></div>';
+            html += '<div class="tier-perk highlight"><span class="icon">📋</span> 每日任务额外 <strong>+' + tier.daily_task_bonus + 'G币</strong></div>';
         }
         if (exclusiveNames.length > 0) {
             html += '<div class="tier-perk highlight"><span class="icon">🎮</span> 专属游戏: <strong>' + exclusiveNames.join('、') + '</strong></div>';
@@ -528,7 +528,7 @@
         } else if (isUpgrade) {
             var diff = tier.price - getTierPrice(currentTier);
             if (diff < 0) diff = 0;
-            html += '<button class="tier-btn upgrade" onclick="openPurchaseModal(\'' + tier.id + '\', ' + diff + ', \'upgrade\')">⬆️ 升级 (补' + diff.toFixed(2) + '积分)</button>';
+            html += '<button class="tier-btn upgrade" onclick="openPurchaseModal(\'' + tier.id + '\', ' + diff + ', \'upgrade\')">⬆️ 升级 (补' + diff.toFixed(2) + 'G币)</button>';
         } else {
             var canBuy = true;
             if (baseTier === 'supreme' && supremeReq && !supremeReq.meets_requirements) {
@@ -655,12 +655,12 @@
             document.getElementById('activeSubtitle').textContent = '您已享受全部会员权益';
         }
         var perks = '<div class="perk-active"><span class="icon">🎯</span> 每日游戏次数 <strong>' + data.max_plays + '次</strong>（已生效）</div>';
-        perks += '<div class="perk-active"><span class="icon">⭐</span> 获胜积分 <strong>+' + data.bonus_rate + '%</strong> 加成（已生效）</div>';
+        perks += '<div class="perk-active"><span class="icon">⭐</span> 获胜G币 <strong>+' + data.bonus_rate + '%</strong> 加成（已生效）</div>';
         if (data.drop_multiplier > 1.0) {
             perks += '<div class="perk-active"><span class="icon">🎁</span> 掉落概率 <strong>×' + data.drop_multiplier + '</strong> 加成（已生效）</div>';
         }
         if (data.daily_task_bonus > 0) {
-            perks += '<div class="perk-active"><span class="icon">📋</span> 每日任务额外 <strong>+' + data.daily_task_bonus + '积分</strong>（已生效）</div>';
+            perks += '<div class="perk-active"><span class="icon">📋</span> 每日任务额外 <strong>+' + data.daily_task_bonus + 'G币</strong>（已生效）</div>';
         }
         var exclusiveNames = getExclusiveGameNames(data);
         if (exclusiveNames.length > 0) {
@@ -728,7 +728,7 @@
                 var isSelected = bestCoupon && bestCoupon.id === c.id;
                 optionsHtml += '<div class="coupon-option' + (isSelected ? ' selected' : '') + '" onclick="selectCoupon(\'' + c.id + '\', this)">';
                 optionsHtml += '<div class="co-left">';
-                optionsHtml += '<div class="co-discount">-' + c.discount + ' 积分</div>';
+                optionsHtml += '<div class="co-discount">-' + c.discount + ' G币</div>';
                 optionsHtml += '<div class="co-desc">' + escapeHtml(c.description) + '</div>';
                 optionsHtml += '</div>';
                 optionsHtml += '<span class="co-check">' + (isSelected ? '✅' : '') + '</span>';
@@ -770,11 +770,11 @@
         }
         var finalPrice = Math.max(0, originalPrice - discount);
         var html = '';
-        html += '<div class="ps-row"><span>原价</span><span>' + originalPrice.toFixed(2) + ' 积分</span></div>';
+        html += '<div class="ps-row"><span>原价</span><span>' + originalPrice.toFixed(2) + ' G币</span></div>';
         if (discount > 0) {
-            html += '<div class="ps-row"><span>优惠券抵扣</span><span style="color:#34d399;">-' + discount.toFixed(2) + ' 积分</span></div>';
+            html += '<div class="ps-row"><span>优惠券抵扣</span><span style="color:#34d399;">-' + discount.toFixed(2) + ' G币</span></div>';
         }
-        html += '<div class="ps-row final"><span>实付</span><span>' + finalPrice.toFixed(2) + ' 积分</span></div>';
+        html += '<div class="ps-row final"><span>实付</span><span>' + finalPrice.toFixed(2) + ' G币</span></div>';
         document.getElementById('priceSummary').innerHTML = html;
     }
 

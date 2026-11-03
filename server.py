@@ -124,7 +124,6 @@ def call_cloudflare_ai(prompt, system_prompt=None, max_tokens=1024, temperature=
 
 
 def ai_extract_knowledge(query, matched_topics):
-    """把命中的知识条目内容交给 AI，让它精准提取与用户问题相关的部分。"""
     if not matched_topics:
         return None
     context_parts = []
@@ -152,7 +151,6 @@ def ai_extract_knowledge(query, matched_topics):
 
 
 def ai_answer_fallback(query):
-    """知识库无命中时，AI 自由回答兜底。"""
     prompt = f"""用户问题：{query}
 
 请用简洁的中文回答。如果你不确定答案，请引导用户：
@@ -167,7 +165,6 @@ def ai_answer_fallback(query):
     )
 
 def ai_summarize_knowledge(query, matched_topics):
-    """把命中的多条知识库内容汇总成结构化摘要。"""
     if not matched_topics:
         return None
     context_parts = []
@@ -972,6 +969,9 @@ log_download_tickets = {}
 attendance_tokens = load_data(ATTENDANCE_TOKEN_STORAGE_FILE, {})
 attendance_network_lock = load_data(ATTENDANCE_NETWORK_LOCK_FILE, {})
 pay_password_reset_tokens = load_data(PAY_PASSWORD_RESET_FILE, {})
+
+analytics_cache.pop('server_auctions', None)
+analytics_cache.pop('last_auto_auction_time', None)
 
 FILE_MODIFICATION_TIMES['users'] = get_file_mtime(USERS_FILE)
 FILE_MODIFICATION_TIMES['phone'] = get_file_mtime(PHONE_RECORDS_FILE)
@@ -10271,6 +10271,75 @@ def attendance_info():
         'responseTime': response_time
     })
 
+@app.route('/api/attendance/calendar', methods=['GET'])
+@login_required
+def attendance_calendar():
+    username = session['user']['username']
+    try:
+        year = int(request.args.get('year', datetime.now().year))
+        month = int(request.args.get('month', datetime.now().month))
+    except (ValueError, TypeError):
+        return jsonify({'error': '参数格式错误'}), 400
+    if year < 2020 or year > 2100 or month < 1 or month > 12:
+        return jsonify({'error': '参数超出范围'}), 400
+    user_data = users.get(username)
+    if not user_data:
+        return jsonify({'error': '用户不存在'}), 400
+    import calendar as py_calendar
+    today = datetime.now()
+    today_str = today.strftime('%Y-%m-%d')
+    last_attendance = user_data.get('lastAttendanceDate', '')
+    total_days = int(user_data.get('attendanceTotalDays', 0) or 0)
+    consecutive_days = int(user_data.get('attendanceConsecutiveDays', 0) or 0)
+    first_attendance = user_data.get('firstAttendanceDate', '')
+    first_weekday = (py_calendar.monthrange(year, month)[0] + 1) % 7
+    days_in_month = py_calendar.monthrange(year, month)[1]
+    signed_date_map = {}
+    if last_attendance and total_days > 0:
+        try:
+            last_dt = datetime.strptime(last_attendance, '%Y-%m-%d').date()
+            for offset in range(total_days):
+                d = last_dt - timedelta(days=offset)
+                signed_date_map[d.strftime('%Y-%m-%d')] = True
+        except Exception:
+            pass
+    days_data = []
+    for d in range(1, days_in_month + 1):
+        date_obj = datetime(year, month, d).date()
+        date_str = date_obj.strftime('%Y-%m-%d')
+        is_today = (date_str == today_str)
+        is_weekend = date_obj.weekday() in (5, 6)
+        is_signed = signed_date_map.get(date_str, False)
+        day_index = -1
+        if is_signed:
+            try:
+                signed_dates_sorted = sorted(signed_date_map.keys())
+                day_index = signed_dates_sorted.index(date_str)
+            except ValueError:
+                day_index = -1
+        elif date_str > today_str:
+            future_offset = (date_obj - today.date()).days
+            day_index = total_days + future_offset - 1
+        days_data.append({
+            'day': d,
+            'date': date_str,
+            'is_signed': is_signed,
+            'is_today': is_today,
+            'is_weekend': is_weekend,
+            'day_index': day_index
+        })
+    return jsonify({
+        'year': year,
+        'month': month,
+        'first_weekday': first_weekday,
+        'days_in_month': days_in_month,
+        'days': days_data,
+        'total_days': total_days,
+        'consecutive_days': consecutive_days,
+        'last_attendance_date': last_attendance,
+        'first_attendance_date': first_attendance
+    })
+
 @app.route('/api/verify_identity', methods=['POST'])
 @csrf_protect
 @limiter.limit(RATE_LIMITS['verify_identity'])
@@ -13239,38 +13308,68 @@ def admin_restore_membership_api():
     username = data.get('username', '').strip()
     if not username or username not in users:
         return jsonify({'error': '用户不存在'}), 400
+    user_data = users.get(username, {})
+    membership = user_data.get('membership', {})
+    snapshot = membership.get('revoke_snapshot')
+    if not snapshot:
+        return jsonify({'error': '没有可恢复的会员记录'}), 400
+    refund_amount = snapshot.get('refund_amount', 0)
+    clawback_amount = 0
+    shortfall = 0
+    if refund_amount > 0:
+        total_points = user_data.get('totalPoints', 0)
+        fund_balance = get_user_fund_balance(username)
+        total_available = total_points + fund_balance
+        if total_available >= refund_amount:
+            clawback_amount = refund_amount
+            remaining = refund_amount
+            if total_points >= remaining:
+                user_data['totalPoints'] = round(total_points - remaining, 2)
+                remaining = 0
+            else:
+                user_data['totalPoints'] = 0
+                remaining = remaining - total_points
+                if fund_balance >= remaining:
+                    fund_data[username]['balance'] = round(fund_balance - remaining, 2)
+                    remaining = 0
+                else:
+                    fund_data[username]['balance'] = 0
+                    remaining = remaining - fund_balance
+            save_users()
+            save_fund_data()
+            add_system_total_points(clawback_amount)
+        else:
+            clawback_amount = round(total_available, 2)
+            shortfall = round(refund_amount - clawback_amount, 2)
+            user_data['totalPoints'] = 0
+            if username in fund_data:
+                fund_data[username]['balance'] = 0
+            save_users()
+            save_fund_data()
+            if clawback_amount > 0:
+                add_system_total_points(clawback_amount)
+        fund_record_id = f"fund_restore_{int(time.time()*1000)}_{random.randint(1000,9999)}"
+        fund_history[fund_record_id] = {
+            'id': fund_record_id,
+            'username': username,
+            'type': 'withdraw',
+            'amount': round(clawback_amount, 2),
+            'reason': f'会员恢复扣回退款：{snapshot.get("refund_detail", "")}',
+            'timestamp': int(time.time() * 1000)
+        }
+        save_fund_history()
     success, message = game.admin_restore_membership(users, save_users, username)
     if not success:
         return jsonify({'error': message}), 400
     return jsonify({
         'success': True,
         'message': message,
-        'username': username
+        'username': username,
+        'clawback_amount': clawback_amount,
+        'shortfall': shortfall,
+        'refunded_to_system': clawback_amount,
+        'system_points_remaining': round(system_total_points, 2)
     })
-
-@app.route('/api/admin/auction/generate', methods=['POST'])
-@csrf_protect
-@admin_login_required
-def admin_generate_auction():
-    success, message, auction_id = game.server_generate_random_auction(analytics_cache, save_analytics_cache)
-    if not success:
-        return jsonify({'error': message}), 400
-    return jsonify({
-        'success': True,
-        'message': message,
-        'auction_id': auction_id
-    })
-
-@app.route('/api/admin/auction/settle-all', methods=['POST'])
-@csrf_protect
-@admin_login_required
-def admin_settle_all_auctions():
-    count = game.auto_settle_server_auctions(
-        users, save_users, analytics_cache, save_analytics_cache,
-        mail_attachments, save_mail_attachments,
-        email_service.send_auction_win_email_async
-    )
-    return jsonify({'success': True, 'message': f'已结算 {count} 场拍卖'})
 
 @app.route('/api/admin/membership/expiring-list', methods=['GET'])
 @admin_login_required
@@ -13280,229 +13379,6 @@ def admin_membership_expiring_list():
         return jsonify({'error': '游戏服务未初始化'}), 500
     expiring = gm.check_expiring_memberships()
     return jsonify({'expiring': expiring, 'total': len(expiring)})
-
-@app.route('/api/auction/list', methods=['GET'])
-def get_auction_list_api():
-    admin_token = request.headers.get('X-Admin-Token', '')
-    is_admin = admin_token and admin_token in admin_sessions and admin_sessions[admin_token] > time.time()
-    if not is_admin:
-        if 'user' not in session:
-            return jsonify({'error': '请先登录'}), 401
-    page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 20, type=int)
-    sort_by = request.args.get('sort', 'ending').strip()
-    all_auctions = game.get_all_auctions(analytics_cache)
-    if sort_by == 'price':
-        all_auctions.sort(key=lambda x: x.get('current_bid', 0))
-    elif sort_by == 'newest':
-        all_auctions.sort(key=lambda x: -x.get('created_at', 0))
-    else:
-        all_auctions.sort(key=lambda x: x.get('end_at', 0))
-    total = len(all_auctions)
-    start = (page - 1) * per_page
-    end = start + per_page
-    return jsonify({
-        'auctions': all_auctions[start:end],
-        'total': total,
-        'page': page,
-        'per_page': per_page,
-        'total_pages': (total + per_page - 1) // per_page if total > 0 else 1,
-        'sort': sort_by
-    })
-
-@app.route('/api/auction/bid', methods=['POST'])
-@csrf_protect
-@login_required
-@identity_required
-def place_bid_api():
-    start_time = time.time()
-    username = session['user']['username']
-    data = request.get_json()
-    auction_id = data.get('auction_id', '').strip()
-    try:
-        bid_amount = int(data.get('bid_amount', 0))
-    except (ValueError, TypeError):
-        return jsonify({'error': '出价金额格式错误'}), 400
-    if not auction_id:
-        return jsonify({'error': '缺少拍卖ID'}), 400
-    success, message = game.place_bid_server_auction(
-        users, save_users, username, auction_id, bid_amount,
-        analytics_cache, save_analytics_cache
-    )
-    if not success:
-        return jsonify({'error': message}), 400
-    reload_if_changed()
-    response_time = int((time.time() - start_time) * 1000)
-    gcoin_data = game.get_gcoin_data(users, username)
-    return jsonify({
-        'success': True,
-        'message': message,
-        'new_gcoin_balance': gcoin_data.get('balance', 0) if gcoin_data else 0,
-        'responseTime': response_time
-    })
-
-@app.route('/api/auction/my-bids', methods=['GET'])
-@login_required
-def get_my_auction_bids():
-    username = session['user']['username']
-    result = []
-    if 'server_auctions' in analytics_cache:
-        for auc_id, auc in analytics_cache['server_auctions'].items():
-            user_bids = [b for b in auc.get('bids', []) if b.get('bidder') == username]
-            if not user_bids:
-                continue
-            latest_user_bid = user_bids[-1].get('amount', 0)
-            is_winning = auc.get('current_bidder') == username and auc.get('status') == 'active'
-            result.append({
-                'id': auc_id,
-                'card_name': auc.get('card_name', ''),
-                'card_emoji': auc.get('card_emoji', ''),
-                'rarity': auc.get('rarity', 'legendary'),
-                'rarity_name': game.CARD_RARITY_NAMES.get(auc.get('rarity', 'legendary'), ''),
-                'rarity_color': game.CARD_RARITY_COLORS.get(auc.get('rarity', 'legendary'), '#fff'),
-                'current_bid': auc.get('current_bid', 0),
-                'current_bidder': auc.get('current_bidder', ''),
-                'my_latest_bid': latest_user_bid,
-                'my_bid_count': len(user_bids),
-                'is_winning': is_winning,
-                'status': auc.get('status', 'active'),
-                'winner': auc.get('winner', ''),
-                'final_price': auc.get('final_price', 0),
-                'end_at': auc.get('end_at', 0),
-                'start_at': auc.get('start_at', 0)
-            })
-    result.sort(key=lambda x: -x.get('end_at', 0))
-    return jsonify({'bids': result, 'total': len(result)})
-
-@app.route('/api/auction/settle', methods=['POST'])
-@csrf_protect
-@admin_login_required
-def settle_auction_api():
-    data = request.get_json()
-    auction_id = data.get('auction_id', '').strip()
-    if not auction_id:
-        return jsonify({'error': '缺少拍卖ID'}), 400
-    success, message, final_price = game.settle_server_auction(
-        users, save_users, auction_id,
-        analytics_cache, save_analytics_cache,
-        mail_attachments, save_mail_attachments,
-        email_service.send_auction_win_email_async
-    )
-    if not success:
-        return jsonify({'error': message}), 400
-    reload_if_changed()
-    return jsonify({
-        'success': True,
-        'message': message,
-        'final_price': final_price
-    })
-
-@app.route('/api/market/listings', methods=['GET'])
-@login_required
-def get_market_listings_api():
-    page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 20, type=int)
-    game_filter = request.args.get('game_id', '').strip()
-    rarity_filter = request.args.get('rarity', '').strip()
-    search = request.args.get('search', '').strip()
-    all_listings = game.get_market_listings(users)
-    if game_filter:
-        all_listings = [l for l in all_listings if l.get('game_id') == game_filter]
-    if rarity_filter:
-        all_listings = [l for l in all_listings if l.get('rarity') == rarity_filter]
-    if search:
-        all_listings = [l for l in all_listings if search.lower() in l.get('card_name', '').lower() or search.lower() in l.get('seller', '').lower()]
-    total = len(all_listings)
-    start = (page - 1) * per_page
-    end = start + per_page
-    return jsonify({
-        'listings': all_listings[start:end],
-        'total': total,
-        'page': page,
-        'per_page': per_page,
-        'total_pages': (total + per_page - 1) // per_page if total > 0 else 1,
-        'filters': {
-            'game_id': game_filter,
-            'rarity': rarity_filter,
-            'search': search
-        }
-    })
-
-@app.route('/api/market/my-listings', methods=['GET'])
-@login_required
-def get_my_market_listings():
-    username = session['user']['username']
-    listings = game.get_user_market_listings(users, username)
-    return jsonify({'listings': listings, 'total': len(listings)})
-
-@app.route('/api/market/create', methods=['POST'])
-@csrf_protect
-@login_required
-@identity_required
-def create_market_listing_api():
-    start_time = time.time()
-    username = session['user']['username']
-    data = request.get_json()
-    game_id = data.get('game_id', '').strip()
-    card_id = data.get('card_id', '').strip()
-    try:
-        quantity = int(data.get('quantity', 1))
-        price_gcoins = int(data.get('price_gcoins', 0))
-    except (ValueError, TypeError):
-        return jsonify({'error': '参数格式错误'}), 400
-    if not game_id or not card_id:
-        return jsonify({'error': '请选择要出售的卡牌'}), 400
-    success, message, listing_id = game.create_market_listing(
-        users, save_users, username, game_id, card_id, quantity, price_gcoins
-    )
-    if not success:
-        return jsonify({'error': message}), 400
-    reload_if_changed()
-    response_time = int((time.time() - start_time) * 1000)
-    return jsonify({
-        'success': True,
-        'message': message,
-        'listing_id': listing_id,
-        'responseTime': response_time
-    })
-
-@app.route('/api/market/cancel', methods=['POST'])
-@csrf_protect
-@login_required
-def cancel_market_listing_api():
-    username = session['user']['username']
-    data = request.get_json()
-    listing_id = data.get('listing_id', '').strip()
-    if not listing_id:
-        return jsonify({'error': '缺少挂单ID'}), 400
-    success, message = game.cancel_market_listing(users, save_users, username, listing_id)
-    if not success:
-        return jsonify({'error': message}), 400
-    reload_if_changed()
-    return jsonify({'success': True, 'message': message})
-
-@app.route('/api/market/buy', methods=['POST'])
-@csrf_protect
-@login_required
-@identity_required
-def buy_market_listing_api():
-    start_time = time.time()
-    username = session['user']['username']
-    data = request.get_json()
-    listing_id = data.get('listing_id', '').strip()
-    if not listing_id:
-        return jsonify({'error': '缺少挂单ID'}), 400
-    success, message, detail = game.buy_market_listing(users, save_users, username, listing_id)
-    if not success:
-        return jsonify({'error': message}), 400
-    reload_if_changed()
-    response_time = int((time.time() - start_time) * 1000)
-    return jsonify({
-        'success': True,
-        'message': message,
-        'detail': detail,
-        'responseTime': response_time
-    })
 
 @app.route('/api/gcoin/balance', methods=['GET'])
 @login_required
@@ -14768,7 +14644,7 @@ def request_log_download():
         'request_count': cooldown_data.get('request_count', 0) + 1
     }
     log_request_cooldown[username] = fresh_cooldown[username]
-    save_data(LOG_REQUEST_COOLDOWN_FILE, fresh_cooldown)
+    save_log_request_cooldown()
     stats = get_ip_log_stats(ip, username)
     return jsonify({
         'success': True,
@@ -15013,16 +14889,6 @@ def signal_handler(signum, frame):
     except Exception as e:
         log.error(f'保存数据时出错: {e}')
     sys.exit(0)
-
-task_scheduler.register('auto_auction_settle', lambda: game.auto_settle_server_auctions(
-    users, save_users, analytics_cache, save_analytics_cache,
-    mail_attachments, save_mail_attachments,
-    email_service.send_auction_win_email_async
-), interval=300, initial_delay=60)
-
-task_scheduler.register('auto_auction_generate', lambda: (
-    None if game.has_active_auction(analytics_cache) else game.server_generate_random_auction(analytics_cache, save_analytics_cache)
-), interval=120, initial_delay=60)
 
 task_scheduler.register('cleanup_expired_data', cleanup_all_expired_data, interval=60, initial_delay=10)
 task_scheduler.register('burn_system_points', burn_excess_system_points, interval=60, initial_delay=30)

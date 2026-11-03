@@ -238,7 +238,7 @@
             html += '</div>';
             if (disenchantData && disenchantData.count > 0) {
                 html += '<div class="disenchant-toolbar">';
-                html += '<button class="disenchant-btn-main" onclick="openDisenchantModal()">♻️ 一键分解所有重复卡牌（+' + disenchantData.total_value + '积分）</button>';
+                html += '<button class="disenchant-btn-main" onclick="openDisenchantModal()">♻️ 一键分解所有重复卡牌（+' + disenchantData.total_value + 'G币）</button>';
                 html += '</div>';
                 html += '<div class="disenchant-info">共 ' + disenchantData.count + ' 种卡牌有重复，每种保留1张</div>';
             }
@@ -285,7 +285,7 @@
     }
 
     async function disenchantCard(gameId, cardId) {
-        if (!confirm('确定要分解这张卡牌吗？分解后数量减1，获得少量积分。')) return;
+        if (!confirm('确定要分解这张卡牌吗？分解后数量减1，获得少量G币。')) return;
         try {
             var data = await apiRequest('/api/game/collection/disenchant', {
                 method: 'POST',
@@ -305,7 +305,7 @@
                 showMessage('没有可分解的重复卡牌', 'warning');
                 return;
             }
-            var detailsHtml = '<div style="margin-bottom:12px;color:#fbbf24;font-weight:600;">共 ' + data.count + ' 种卡牌有重复，可获得 ' + data.total_value + ' 积分</div>';
+            var detailsHtml = '<div style="margin-bottom:12px;color:#fbbf24;font-weight:600;">共 ' + data.count + ' 种卡牌有重复，可获得 ' + data.total_value + ' G币</div>';
             data.cards.forEach(function(c) {
                 detailsHtml += '<div class="detail-item">';
                 detailsHtml += '<div class="di-left">';

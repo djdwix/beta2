@@ -37,7 +37,6 @@
         .milestone-card .ms-icon{font-size:36px;display:block;margin-bottom:6px}
         .milestone-card .ms-name{font-size:13px;font-weight:700;color:#fff;margin-bottom:4px}
         .milestone-card .ms-reward{font-size:12px;color:#fbbf24;margin-bottom:2px;font-weight:600}
-        .milestone-card .ms-reward-points{font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:8px}
         .milestone-card .ms-btn{width:100%;padding:6px;border:none;border-radius:30px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.3s;min-height:32px}
         .milestone-card .ms-btn.claim{background:linear-gradient(135deg,#fbbf24,#d97706);color:#1a1a2e}
         .milestone-card .ms-btn.claim:hover{transform:scale(1.05)}
@@ -121,7 +120,7 @@
             🏆 赛季里程碑
             <span class="badge" id="seasonBadge">第 1 赛季</span>
         </div>
-        <div class="section-subtitle">达到指定段位即可领取里程碑奖励，段位越高奖励越丰厚（最高价值2000积分）</div>
+        <div class="section-subtitle">达到指定段位即可领取里程碑奖励，段位越高G币奖励越丰厚</div>
         <div class="season-rank-display" id="seasonRankDisplay">
             <div class="srd-icon" id="srdIcon">🥉</div>
             <div class="srd-info">
@@ -149,13 +148,13 @@
 
     <div class="section">
         <div class="section-title">🌅 每日首胜</div>
-        <div class="section-subtitle">每天第一局游戏胜利，额外 +5 积分</div>
+        <div class="section-subtitle">每天第一局游戏胜利，额外 +20 G币</div>
         <div class="first-win-card" id="firstWinCard">
             <div class="first-win-left">
                 <div class="first-win-icon">🌅</div>
                 <div class="first-win-info">
                     <div class="first-win-title">每日首胜奖励</div>
-                    <div class="first-win-desc" id="firstWinDesc">完成今日首胜后可领取 +5 积分</div>
+                    <div class="first-win-desc" id="firstWinDesc">完成今日首胜后可领取 +20 G币</div>
                 </div>
             </div>
             <button class="btn btn-success" id="firstWinBtn" onclick="claimFirstWin()">领取奖励</button>
@@ -182,20 +181,20 @@
             🔥 宝箱任务链
             <span class="badge" id="chestStreakBadge">连续 0 天</span>
         </div>
-        <div class="section-subtitle">连续 3 天开启全部宝箱，额外获得 +20 积分；连续 7 天，额外获得高级积分卡密 ×1</div>
+        <div class="section-subtitle">连续 3 天开启全部宝箱，额外获得 +2000 G币；连续 7 天，额外获得高级积分卡密 ×1</div>
         <div id="chestStreakInfo" style="display:flex;justify-content:space-between;align-items:center;padding:16px;background:rgba(251,191,36,0.08);border-radius:14px;border:1px solid rgba(251,191,36,0.2);margin-top:12px;flex-wrap:wrap;gap:12px;">
             <div style="font-size:14px;color:rgba(255,255,255,0.75);line-height:1.6;">
                 连续开启全部宝箱：<strong id="chestStreak" style="color:#fbbf24;font-size:18px;">0</strong> 天
             </div>
             <div style="font-size:13px;color:rgba(255,255,255,0.5);">
-                3天 = +20积分 / 7天 = 高级积分卡密
+                3天 = +2000 G币 / 7天 = 高级积分卡密
             </div>
         </div>
     </div>
 
     <div class="section">
         <div class="section-title">🎁 每日免费抽奖</div>
-        <div class="section-subtitle" id="spinSubtitle">每天 1 次免费抽奖，必得小额奖励（钻石/至尊会员每日可抽2次）</div>
+        <div class="section-subtitle" id="spinSubtitle">每天 1 次免费抽奖，必得小额G币（钻石/至尊会员每日可抽2次）</div>
         <div class="wheel-container">
             <div class="wheel-pointer">▼</div>
             <div class="wheel" id="dailyWheel"></div>
@@ -399,13 +398,10 @@
             else cls += ' locked';
             var gcoinMin = r.milestone_gcoin_min;
             var gcoinMax = r.milestone_gcoin_max;
-            var pointsMin = Math.round(gcoinMin / 100);
-            var pointsMax = Math.round(gcoinMax / 100);
             html += '<div class="' + cls + '">';
             html += '<span class="ms-icon" style="color:' + r.color + '">' + r.icon + '</span>';
             html += '<div class="ms-name">' + r.name + '</div>';
             html += '<div class="ms-reward">🪙 ' + gcoinMin.toLocaleString() + '~' + gcoinMax.toLocaleString() + ' G币</div>';
-            html += '<div class="ms-reward-points">≈ ' + pointsMin + '~' + pointsMax + ' 积分</div>';
             if (isClaimed) {
                 html += '<button class="ms-btn claimed" disabled>✅ 已领</button>';
             } else if (isAvailable || isReached) {
@@ -439,6 +435,7 @@
             var data = await apiRequest('/api/game/daily-first-win/status');
             var btn = document.getElementById('firstWinBtn');
             var desc = document.getElementById('firstWinDesc');
+            var reward = data.reward || 20;
             if (data.claimed) {
                 btn.textContent = '今日已领取';
                 btn.disabled = true;
@@ -448,7 +445,7 @@
                 btn.textContent = '领取奖励';
                 btn.disabled = false;
                 btn.className = 'btn btn-success';
-                desc.textContent = '完成今日首胜后可领取 +5 积分（累计已领 ' + data.total_claimed + ' 次）';
+                desc.textContent = '完成今日首胜后可领取 +' + reward + ' G币（累计已领 ' + data.total_claimed + ' 次）';
             }
         } catch (e) {
             showMessage('加载首胜状态失败: ' + e.message, 'error');
@@ -491,12 +488,7 @@
                 html += '<div class="' + cls + '">';
                 html += '<span class="chest-icon">' + c.icon + '</span>';
                 html += '<div class="chest-name">' + escapeHtml(c.name) + '</div>';
-                var descText = '需玩 ' + c.plays + ' 局 · 奖励 ' + c.points_min + '~' + c.points_max + ' 积分';
-                if (c.item_chance >= 1) {
-                    descText += '<span class="item-reward-tag">必掉道具</span>';
-                } else if (c.item_chance > 0) {
-                    descText += '<span class="item-reward-tag">' + Math.round(c.item_chance * 100) + '%掉道具</span>';
-                }
+                var descText = '需玩 ' + c.plays + ' 局 · 奖励 ' + c.gcoin_min + '~' + c.gcoin_max + ' G币';
                 html += '<div class="chest-desc">' + descText + '</div>';
                 if (c.opened) {
                     html += '<div class="chest-progress">✅ 已开启</div>';
@@ -523,6 +515,9 @@
                 body: JSON.stringify({ chest_plays: plays })
             });
             showMessage(data.message, 'success');
+            if (data.points && data.points > 0) {
+                showGcoinPopup(data.points);
+            }
             await loadChests();
         } catch (e) {
             showMessage(e.message || '开启失败', 'error');
@@ -534,12 +529,12 @@
         var wheel = document.getElementById('dailyWheel');
         if (!wheel) return;
         var segments = [
-            {'label': '1分', 'color': '#4b5563'},
-            {'label': '2分', 'color': '#6b7280'},
-            {'label': '3分', 'color': '#10b981'},
-            {'label': '5分', 'color': '#f59e0b'},
-            {'label': '8分', 'color': '#ef4444'},
-            {'label': '15分', 'color': '#ec4899'}
+            {'label': '10', 'color': '#4b5563'},
+            {'label': '20', 'color': '#6b7280'},
+            {'label': '30', 'color': '#10b981'},
+            {'label': '50', 'color': '#f59e0b'},
+            {'label': '80', 'color': '#ef4444'},
+            {'label': '150', 'color': '#ec4899'}
         ];
         var total = segments.length;
         var segAngle = 360 / total;
@@ -557,7 +552,7 @@
             label.className = 'wheel-label';
             var midAngle = j * segAngle + segAngle / 2;
             label.style.transform = 'rotate(' + midAngle + 'deg) translateY(-100px) rotate(-' + midAngle + 'deg)';
-            label.textContent = segments[j].label;
+            label.textContent = segments[j].label + ' G';
             wheel.appendChild(label);
         }
     }
@@ -569,9 +564,9 @@
             var result = document.getElementById('wheelResult');
             var subtitle = document.getElementById('spinSubtitle');
             if (data.max_spins && data.max_spins > 1) {
-                subtitle.textContent = '钻石/至尊会员每日可抽' + data.max_spins + '次，必得小额奖励';
+                subtitle.textContent = '钻石/至尊会员每日可抽' + data.max_spins + '次，必得小额G币';
             } else {
-                subtitle.textContent = '每天 1 次免费抽奖，必得小额奖励（钻石/至尊会员每日可抽2次）';
+                subtitle.textContent = '每天 1 次免费抽奖，必得小额G币（钻石/至尊会员每日可抽2次）';
             }
             if (!data.can_spin) {
                 btn.textContent = '今日已抽奖';
@@ -615,8 +610,23 @@
                 body: JSON.stringify({})
             });
             var reward = data.reward;
-            var pointsToIndex = {'1积分': 0, '2积分': 1, '3积分': 2, '5积分': 3, '8积分': 4, '15积分': 5};
-            var targetIndex = pointsToIndex[reward.name] || 0;
+            var gcoinToIndex = {'10 G币': 0, '20 G币': 1, '30 G币': 2, '50 G币': 3, '80 G币': 4, '150 G币': 5};
+            var targetIndex = 0;
+            if (reward && reward.name) {
+                targetIndex = gcoinToIndex[reward.name];
+                if (targetIndex === undefined) {
+                    var match = reward.name.match(/(\d+)/);
+                    if (match) {
+                        var num = parseInt(match[1]);
+                        if (num >= 150) targetIndex = 5;
+                        else if (num >= 80) targetIndex = 4;
+                        else if (num >= 50) targetIndex = 3;
+                        else if (num >= 30) targetIndex = 2;
+                        else if (num >= 20) targetIndex = 1;
+                        else targetIndex = 0;
+                    }
+                }
+            }
             var segAngle = 60;
             var targetAngle = 360 * 5 + (360 - (targetIndex * segAngle + segAngle / 2));
             spinCount++;
@@ -626,6 +636,9 @@
                 result.textContent = '🎉 ' + data.message;
                 result.className = 'wheel-result win';
                 showMessage(data.message, 'success');
+                if (reward && reward.gcoins) {
+                    showGcoinPopup(reward.gcoins);
+                }
                 loadDailyBonus();
                 isAnimating = false;
             }, 4200);
