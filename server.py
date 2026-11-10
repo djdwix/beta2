@@ -14979,7 +14979,7 @@ if __name__ == '__main__':
         print(f"{'='*60}\n")
     try:
         print(f"Server running on {SERVER_BASE_URL}")
-        print(f"Also available on https://localhost:3000")
+        print(f"Also available on https://localhost:5000")
         print("按 Ctrl+C 优雅关闭服务器")
     except Exception as e:
         print(f"获取网络信息失败: {e}")
@@ -14995,7 +14995,7 @@ if __name__ == '__main__':
     try:
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         context.load_cert_chain(cert_file, key_file)
-        app.run(host='0.0.0.0', port=3000, debug=False, ssl_context=context)
+        app.run(host='0.0.0.0', port=5000, debug=False, ssl_context=context)
     except BrokenPipeError:
         print("连接中断，忽略错误")
     except Exception as e:
