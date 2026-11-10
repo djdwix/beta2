@@ -13,3 +13,4 @@ email-validator==2.1.0
 beautifulsoup4==4.12.3
 lxml==5.1.0
 readability-lxml==0.8.1
+authlib==1.2.1

@@ -111,6 +111,14 @@ VERIFICATION_CODE_LENGTH=6
 
 CLOUDFLARE_ACCOUNT_ID=your-account-id
 CLOUDFLARE_API_TOKEN=your-api-token
+
+GITHUB_CLIENT_ID=你的Client_ID
+GITHUB_CLIENT_SECRET=你的Client_Secret
+GITHUB_REDIRECT_URI=https://你的网站域名:3000/api/auth/github/callback
+
+SITE_BASE_URL=写上面的地址https://你的网站域名:3000
+SITE_PORT=3000
+SITE_SCHEME=https
 ```
 
 其中 Cloudflare 配置为可选项；其余必需配置应以当前 `server.py` 的启动检查为准。不要将真实 `.env` 文件、邮箱密码、API Token 或加密密钥提交到公开仓库。
@@ -192,6 +200,74 @@ https://服务器IP:3000
 - [Cloudflare Workers AI 文档](https://developers.cloudflare.com/workers-ai/)
 - [Workers AI REST API](https://developers.cloudflare.com/api/resources/ai/subresources/run/methods/run/)
 
+# 如何创建 GitHub OAuth App 并获取 Client ID 与 Secret
+
+指导你如何在 GitHub 上创建 OAuth App，并获取用于接入 GitHub 登录所需的 Client ID 和 Client Secret。
+
+---
+
+## 一、创建 OAuth App
+
+### 1. 登录 GitHub
+
+使用你的 GitHub 账号登录 GitHub 官网。如果没有账号，请先注册。
+
+### 2. 进入 Developer Settings
+
+点击页面右上角的个人头像，选择 **Settings**。
+
+在左侧边栏底部，点击 **Developer settings**。
+
+在左侧边栏中，点击 **OAuth apps**。
+
+### 3. 新建 OAuth App
+
+点击 **New OAuth App** 按钮。
+
+如果之前没有创建过任何 OAuth App，该按钮可能显示为 **Register a new application**。
+
+### 4. 填写应用信息
+
+在弹出的表单中填写以下内容：
+
+| 字段 | 说明 |
+|------|------|
+| **Application name** | 应用名称，用户授权时会看到 |
+| **Homepage URL** | 应用首页完整地址 |
+| **Application description** | 应用描述（可选） |
+| **Authorization callback URL** | 授权回调地址，必须准确填写 |
+
+**回调地址填写要点**：
+
+- 必须与服务端 `GITHUB_REDIRECT_URI` 配置完全一致，包括协议、域名、端口、路径
+- 如果站点使用 HTTPS，回调地址也必须以 `https://` 开头
+- 回调路径固定为 `/api/auth/github/callback`
+- 末尾不要多加斜杠
+
+### 5. 完成注册
+
+确认信息无误后，点击 **Register application**。
+
+---
+
+## 二、获取 Client ID 和 Client Secret
+
+### 1. 复制 Client ID
+
+创建成功后，页面会跳转到应用详情页。在页面顶部可以看到 **Client ID**，点击复制按钮即可复制。
+
+### 2. 生成 Client Secret
+
+在同一个页面，找到 **Client secrets** 区域，点击 **Generate a new client secret**。
+
+**重要**：Client Secret 只会显示一次，生成后立即复制并妥善保存。如果丢失，只能重新生成一个新的，旧 Secret 将立即失效。
+
+---
+
+## 三、配置到服务端
+
+将获取到的 Client ID 和 Client Secret 填入服务端的环境变量配置中
+'
 ## 邮件服务配置
 
 `email_service.py` 使用 Python 标准库 `smtplib` 连接 SMTP 邮件服务器，支持 SSL 或 STARTTLS 连接方式。

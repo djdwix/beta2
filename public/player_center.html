@@ -206,6 +206,27 @@
         .error-boundary .error-desc{font-size:14px;color:#666;margin-bottom:16px}
         .error-boundary .retry-btn{padding:10px 32px;background:#dc2626;color:white;border:none;border-radius:40px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s}
         .error-boundary .retry-btn:hover{background:#b91c1c;transform:translateY(-2px);box-shadow:0 4px 12px rgba(220,38,38,0.3)}
+        .github-section{background:linear-gradient(135deg,#24292e10,#1b1f2310);border-radius:24px;padding:24px;margin-bottom:24px;border:1px solid rgba(36,41,46,0.15)}
+        .github-title{font-size:18px;font-weight:600;color:#333;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+        .github-title svg{width:22px;height:22px;fill:#24292e}
+        .github-status{display:flex;align-items:center;gap:16px;padding:12px 0}
+        .github-status .github-avatar{width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid #24292e;flex-shrink:0;background:#e0e0e0}
+        .github-status .github-info{display:flex;flex-direction:column;gap:2px}
+        .github-status .github-info .github-name{font-size:15px;font-weight:600;color:#24292e}
+        .github-status .github-info .github-sub{font-size:12px;color:#999}
+        .github-status .github-info .github-sub.bound{color:#27ae60}
+        .github-bind-btn{padding:10px 24px;background:linear-gradient(135deg,#24292e 0%,#1b1f23 100%);color:#fff;border:none;border-radius:40px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.3s;display:inline-flex;align-items:center;gap:8px;margin-top:12px}
+        .github-bind-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 4px 12px rgba(36,41,46,0.3)}
+        .github-bind-btn:disabled{opacity:0.6;cursor:not-allowed;transform:none}
+        .github-bind-btn svg{width:18px;height:18px;fill:#fff}
+        .github-unbind-btn{padding:8px 20px;background:#e74c3c;color:#fff;border:none;border-radius:40px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.3s;margin-top:8px}
+        .github-unbind-btn:hover{background:#c0392b}
+        .github-unbind-btn:disabled{opacity:0.5;cursor:not-allowed}
+        .toast-message{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);padding:13px 28px;border-radius:40px;font-size:14px;z-index:99999;max-width:90%;text-align:center;font-weight:700;box-shadow:0 10px 30px rgba(0,0,0,0.2);animation:toastIn 0.3s ease-out}
+        .toast-message.success{background:linear-gradient(135deg,#27ae60,#2ecc71);color:#fff}
+        .toast-message.error{background:linear-gradient(135deg,#ef5350,#e53935);color:#fff}
+        .toast-message.info{background:linear-gradient(135deg,#42a5f5,#1e88e5);color:#fff}
+        @keyframes toastIn{from{opacity:0;transform:translate(-50%,20px)}to{opacity:1;transform:translate(-50%,0)}}
         @media(max-width:600px){.container{max-width:95%}.header{padding:20px;flex-direction:column;text-align:center}.center-container{padding:20px}.info-row{flex-direction:column;align-items:flex-start;gap:4px}.pl-stats{flex-direction:column}.nav-links{flex-wrap:wrap;justify-content:center}.pl-op-tabs .tab-btn{min-width:80px;font-size:12px;padding:8px 12px}.pl-op-form .form-row{flex-direction:column}.pl-op-form .form-group{min-width:auto}.fee-info-bar{flex-direction:column;align-items:flex-start}.history-item{flex-direction:column;align-items:flex-start;gap:6px}.history-summary{flex-direction:column;gap:8px}.modal-content{padding:24px 16px}.modal-content .modal-tabs .tab-btn{min-width:70px;font-size:12px;padding:8px 12px}.modal-content .verify-input-group{flex-direction:column}.modal-content .verify-input-group input{width:100%}.modal-content .verify-send-btn{width:100%}}
     </style>
 </head>
@@ -254,10 +275,39 @@
                     <div class="info-row"><span class="info-label"><i class="fas fa-envelope"></i> 绑定邮箱</span><span class="info-value" id="displayEmail">-</span></div>
                     <div class="info-row"><span class="info-label"><i class="fas fa-check-circle"></i> 邮箱状态</span><span class="info-value" id="displayEmailStatus">-</span></div>
                     <div class="info-row"><span class="info-label"><i class="fab fa-qq"></i> QQ号</span><span class="info-value" id="displayQqNumber">未绑定</span></div>
+                    <div class="info-row"><span class="info-label"><i class="fab fa-github"></i> GitHub账号</span><span class="info-value" id="displayGithub">未绑定</span></div>
                     <div class="info-row"><span class="info-label"><i class="fas fa-calendar-plus"></i> 注册时间</span><span class="info-value" id="displayCreatedAt">-</span></div>
                     <div class="info-row"><span class="info-label"><i class="fas fa-calendar-check"></i> 最近登录</span><span class="info-value" id="displayLastLogin">-</span></div>
                     <div class="info-row"><span class="info-label"><i class="fas fa-shield-alt"></i> 认证状态</span><span class="info-value" id="displayVerified">-</span></div>
                     <div class="info-row"><span class="info-label"><i class="fas fa-calendar-day"></i> 补签卡使用次数</span><span class="info-value" id="displayMakeupUsed">0 / 3</span></div>
+                </div>
+                <div class="github-section">
+                    <div class="github-title">
+                        <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                        GitHub 账号绑定
+                    </div>
+                    <div id="githubStatusArea">
+                        <div id="githubUnboundArea" style="display:none;">
+                            <p style="font-size:13px;color:#666;margin-bottom:12px;">绑定 GitHub 账号后可使用 GitHub 快捷登录本站</p>
+                            <button class="github-bind-btn" id="githubBindBtn">
+                                <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                                绑定 GitHub 账号
+                            </button>
+                        </div>
+                        <div id="githubBoundArea" style="display:none;">
+                            <div class="github-status">
+                                <img class="github-avatar" id="githubAvatar" src="" alt="GitHub Avatar">
+                                <div class="github-info">
+                                    <span class="github-name" id="githubUsername">-</span>
+                                    <span class="github-sub bound">✅ 已绑定 GitHub</span>
+                                </div>
+                            </div>
+                            <button class="github-unbind-btn" id="githubUnbindBtn">解绑 GitHub 账号</button>
+                        </div>
+                        <div id="githubNotConfigured" style="display:none;">
+                            <p style="font-size:13px;color:#999;">GitHub 登录未配置，请联系管理员</p>
+                        </div>
+                    </div>
                 </div>
                 <div class="coupon-section">
                     <div class="coupon-title"><i class="fas fa-ticket-alt"></i> 优惠券背包 <button class="coupon-btn" id="showCouponBtn" style="margin-left:auto;padding:4px 16px;background:#667eea;border-radius:40px;font-size:13px;">查看全部</button></div>
@@ -310,7 +360,6 @@
         </div>
     </div>
 
-    <!-- QQ号设置弹窗 -->
     <div id="qqModal" class="modal">
         <div class="modal-content">
             <h3><i class="fab fa-qq"></i> 设置QQ号</h3>
@@ -324,7 +373,6 @@
         </div>
     </div>
 
-    <!-- 邮箱管理弹窗 -->
     <div id="emailModal" class="modal">
         <div class="modal-content">
             <div class="email-verify-header">
@@ -337,21 +385,18 @@
                 <div style="margin-top:4px;">状态: <span id="emailModalStatusBadge" class="status-badge">-</span></div>
             </div>
 
-            <!-- 已完成状态（已验证且已换绑） -->
             <div id="emailCompletedPanel" class="email-panel completed" style="display:none;">
                 <div class="check-icon">✅</div>
                 <div class="completed-title">邮箱管理已完成</div>
                 <div class="completed-desc">您的邮箱已验证且已换绑，无需进一步操作</div>
             </div>
 
-            <!-- 操作面板 -->
             <div id="emailActionsContainer">
                 <div class="modal-tabs" id="emailModalTabs">
                     <button class="tab-btn active" data-tab="verify" id="emailTabVerify">✅ 验证邮箱</button>
                     <button class="tab-btn" data-tab="change" id="emailTabChange">🔄 更换邮箱</button>
                 </div>
 
-                <!-- 验证邮箱面板 -->
                 <div id="emailVerifyPanel" class="email-panel active">
                     <p style="color:#666;font-size:14px;margin-bottom:12px;">验证您的邮箱以解锁更多功能</p>
                     <div class="verify-input-group">
@@ -365,7 +410,6 @@
                     </div>
                 </div>
 
-                <!-- 更换邮箱面板 -->
                 <div id="emailChangePanel" class="email-panel">
                     <div id="changeEmailInfo" class="info-banner warning">⚠️ 每个账号仅允许换绑一次，请谨慎操作</div>
                     <div class="input-group" style="margin-bottom:12px;">
@@ -389,7 +433,6 @@
         </div>
     </div>
 
-    <!-- PL历史记录弹窗 -->
     <div id="historyModal" class="modal">
         <div class="modal-content">
             <div class="history-header"><h3><i class="fas fa-history"></i> PL操作记录</h3><button class="clear-btn" id="clearHistoryBtn"><i class="fas fa-trash-alt"></i> 清空全部</button></div>
@@ -403,7 +446,6 @@
         </div>
     </div>
 
-    <!-- 确认弹窗 -->
     <div id="confirmModal" class="modal">
         <div class="modal-content">
             <h3>⚠️ 确认操作</h3>
@@ -415,7 +457,6 @@
         </div>
     </div>
 
-    <!-- 优惠券弹窗 -->
     <div id="couponModal" class="modal">
         <div class="modal-content">
             <h3><i class="fas fa-ticket-alt"></i> 我的优惠券</h3>
@@ -499,9 +540,10 @@
             }).then(function(response) {
                 return response.json().then(function(data) {
                     if (!response.ok) {
-                        if (response.status === 403 && data.error && data.error.includes('CSRF')) {
+                        if (response.status === 403 && data.error && (data.error.includes('CSRF') || data.error.includes('会话已过期') || data.error.includes('CSRF验证失败'))) {
                             csrfToken = null;
                             csrfTokenLastFetch = 0;
+                            try { document.cookie = 'csrf_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/'; } catch (e) {}
                             return fetchCsrfToken().then(function(newToken) {
                                 options.headers['X-CSRF-Token'] = newToken;
                                 return fetch(url, options);
@@ -531,6 +573,16 @@
             modal.classList.add('show');
         }
 
+        function showToast(msg, type) {
+            var existing = document.querySelector('.toast-message');
+            if (existing) existing.remove();
+            var toast = document.createElement('div');
+            toast.className = 'toast-message ' + (type || 'info');
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+            setTimeout(function() { if (toast) toast.remove(); }, 3000);
+        }
+
         var currentUser = null,
             isVerified = false,
             isCheckingAuth = false,
@@ -550,6 +602,9 @@
         var changeEmailCountdownTimer = null;
         var changeEmailCountdownValue = 0;
         var emailModalCurrentTab = 'verify';
+        var githubConfigured = false;
+        var githubBound = false;
+        var githubInfo = null;
 
         function showErrorBoundary(message) {
             var el = document.getElementById('errorBoundary');
@@ -768,7 +823,6 @@
 
                 allRecords.forEach(function(record) {
                     var sign = record.is_outgoing ? '-' : '+';
-                    var color = record.is_outgoing ? '#e74c3c' : '#27ae60';
                     var time = new Date(record.timestamp).toLocaleString('zh-CN');
 
                     html += '<div class="history-item">';
@@ -911,7 +965,6 @@
         document.getElementById('plAmountInput').addEventListener('keypress', function(e) { if (e.key === 'Enter') document.getElementById('plExecuteBtn').click(); });
         document.getElementById('plTargetUser').addEventListener('keypress', function(e) { if (e.key === 'Enter') document.getElementById('plExecuteBtn').click(); });
 
-        // QQ号设置
         var qqModal = document.getElementById('qqModal'),
             qqInput = document.getElementById('qqInput'),
             qqModalMessage = document.getElementById('qqModalMessage'),
@@ -969,8 +1022,6 @@
 
         qqInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') saveQqBtn.click(); });
 
-        // ==================== 邮箱管理弹窗功能 ====================
-
         function openEmailModal() {
             var modal = document.getElementById('emailModal');
             modal.style.display = 'flex';
@@ -981,7 +1032,6 @@
             var completedPanel = document.getElementById('emailCompletedPanel');
             var actionsContainer = document.getElementById('emailActionsContainer');
 
-            // 如果已验证且已换绑，显示完成状态，隐藏操作面板
             if (emailVerified && emailChanged) {
                 completedPanel.style.display = 'block';
                 actionsContainer.style.display = 'none';
@@ -994,7 +1044,6 @@
             var tabVerify = document.getElementById('emailTabVerify');
             var tabChange = document.getElementById('emailTabChange');
 
-            // 如果已验证，隐藏"验证邮箱"标签
             if (emailVerified) {
                 tabVerify.classList.add('hidden');
                 if (!tabChange.classList.contains('active')) {
@@ -1002,7 +1051,6 @@
                 }
             } else {
                 tabVerify.classList.remove('hidden');
-                // 如果已换绑，隐藏"更换邮箱"标签
                 if (emailChanged) {
                     tabChange.classList.add('hidden');
                     if (!tabVerify.classList.contains('active')) {
@@ -1016,7 +1064,6 @@
                 }
             }
 
-            // 如果两个都隐藏（理论上不会发生），显示验证
             if (tabVerify.classList.contains('hidden') && tabChange.classList.contains('hidden')) {
                 tabVerify.classList.remove('hidden');
                 switchEmailTab('verify');
@@ -1070,7 +1117,6 @@
                 statusBadge.className = 'status-badge unverified';
             }
 
-            // 更新换绑提示
             var changeInfo = document.getElementById('changeEmailInfo');
             if (emailChanged) {
                 changeInfo.textContent = '⚠️ 您已经换绑过邮箱，不可再次换绑';
@@ -1087,12 +1133,10 @@
         function switchEmailTab(tab) {
             emailModalCurrentTab = tab;
 
-            // 隐藏所有面板
             document.querySelectorAll('.email-panel').forEach(function(el) {
                 el.classList.remove('active');
             });
 
-            // 显示对应面板
             if (tab === 'verify') {
                 document.getElementById('emailVerifyPanel').classList.add('active');
                 document.getElementById('emailTabVerify').classList.add('active');
@@ -1104,20 +1148,17 @@
             }
         }
 
-        // 点击头像打开邮箱弹窗
         document.getElementById('avatarRow').addEventListener('click', function(e) {
             if (e.target.closest('#avatarHint') || e.target.closest('#qqModal')) return;
             openEmailModal();
         });
 
-        // 邮箱弹窗标签切换
         document.getElementById('emailModalTabs').addEventListener('click', function(e) {
             var btn = e.target.closest('.tab-btn');
             if (!btn || btn.classList.contains('active') || btn.classList.contains('hidden')) return;
             switchEmailTab(btn.dataset.tab);
         });
 
-        // 发送验证码（验证面板）
         document.getElementById('sendEmailVerifyBtn').addEventListener('click', async function() {
             var btn = this;
             var msg = document.getElementById('emailVerifyMessage');
@@ -1185,7 +1226,6 @@
             }, 1000);
         }
 
-        // 确认验证
         document.getElementById('confirmEmailVerifyBtn').addEventListener('click', async function() {
             var code = document.getElementById('emailVerifyCode').value.trim();
             var currentEmail = document.getElementById('displayEmail').textContent;
@@ -1251,7 +1291,6 @@
             }
         });
 
-        // 发送验证码（换绑面板）
         document.getElementById('sendChangeEmailBtn').addEventListener('click', async function() {
             var newEmail = document.getElementById('changeNewEmail').value.trim().toLowerCase();
             var btn = this;
@@ -1333,7 +1372,6 @@
             }, 1000);
         }
 
-        // 确认换绑
         document.getElementById('confirmChangeEmailBtn').addEventListener('click', async function() {
             var newEmail = document.getElementById('changeNewEmail').value.trim().toLowerCase();
             var code = document.getElementById('changeEmailCode').value.trim();
@@ -1408,13 +1446,11 @@
             }
         });
 
-        // 关闭邮箱弹窗
         document.getElementById('closeEmailModal').addEventListener('click', closeEmailModal);
         document.getElementById('emailModal').addEventListener('click', function(e) {
             if (e.target === this) closeEmailModal();
         });
 
-        // 键盘事件
         document.getElementById('emailVerifyCode').addEventListener('keypress', function(e) {
             if (e.key === 'Enter' && this.value.length === 6) {
                 document.getElementById('confirmEmailVerifyBtn').click();
@@ -1456,7 +1492,85 @@
             }
         }
 
-        // ==================== 结束邮箱管理弹窗功能 ====================
+        function showGithubStatus() {
+            document.getElementById('githubUnboundArea').style.display = 'none';
+            document.getElementById('githubBoundArea').style.display = 'none';
+            document.getElementById('githubNotConfigured').style.display = 'none';
+
+            if (!githubConfigured) {
+                document.getElementById('githubNotConfigured').style.display = 'block';
+                return;
+            }
+
+            if (githubBound) {
+                document.getElementById('githubBoundArea').style.display = 'block';
+                var ghAvatar = document.getElementById('githubAvatar');
+                if (githubInfo && githubInfo.github_avatar) {
+                    ghAvatar.src = githubInfo.github_avatar;
+                } else {
+                    ghAvatar.src = '';
+                }
+                document.getElementById('githubUsername').textContent = '@' + (githubInfo && githubInfo.github_username ? githubInfo.github_username : 'github');
+            } else {
+                document.getElementById('githubUnboundArea').style.display = 'block';
+            }
+        }
+
+        async function checkGithubStatus() {
+            try {
+                var configRes = await apiRequest('/api/auth/github/status');
+                githubConfigured = configRes.configured;
+            } catch (e) {
+                githubConfigured = false;
+            }
+
+            if (!githubConfigured) {
+                showGithubStatus();
+                return;
+            }
+
+            try {
+                var infoRes = await apiRequest('/api/user/github-info');
+                githubBound = infoRes.bound || false;
+                githubInfo = infoRes;
+            } catch (e) {
+                githubBound = false;
+                githubInfo = null;
+            }
+
+            showGithubStatus();
+        }
+
+        document.getElementById('githubBindBtn').addEventListener('click', function() {
+            var btn = this;
+            btn.disabled = true;
+            btn.innerHTML = '跳转中...';
+            window.location.href = '/api/auth/github/login?bind=1';
+        });
+
+        document.getElementById('githubUnbindBtn').addEventListener('click', async function() {
+            if (!confirm('确定要解绑 GitHub 账号吗？解绑后将无法使用 GitHub 快捷登录。\n注意：解绑前需要先设置支付密码。')) {
+                return;
+            }
+            var btn = this;
+            btn.disabled = true;
+            btn.textContent = '解绑中...';
+            try {
+                var res = await apiRequest('/api/user/unbind-github', { method: 'POST', body: JSON.stringify({}) });
+                if (res.success) {
+                    showToast('✅ GitHub 账号已解绑如需绑定其他 GitHub 账号，请先前往 GitHub 设置撤销对本应用的授权：https://github.com/settings/applications撤销后重新点击"绑定 GitHub 账号"即可绑定新账号。', 'success');
+                    githubBound = false;
+                    githubInfo = null;
+                    showGithubStatus();
+                    var displayGithub = document.getElementById('displayGithub');
+                    if (displayGithub) displayGithub.innerHTML = '<span style="color:#999;">未绑定</span>';
+                }
+            } catch (e) {
+                showToast('❌ ' + e.message, 'error');
+                btn.disabled = false;
+                btn.textContent = '解绑 GitHub 账号';
+            }
+        });
 
         async function checkAuthAndLoad() {
             if (isCheckingAuth) return false;
@@ -1492,6 +1606,7 @@
                     await loadPlData();
                     await loadCoupons();
                     await updateMailBadge();
+                    await checkGithubStatus();
                     switchOpType('points_to_pl');
                     updateEmailStatusDisplay();
                     isCheckingAuth = false;
@@ -1511,6 +1626,12 @@
             document.getElementById('displayUsernameShort').textContent = e.username;
             document.getElementById('displayEmail').textContent = e.email || '未绑定';
             document.getElementById('displayVerified').innerHTML = e.isVerified ? '<span class="badge verified">已认证</span>' : '<span class="badge unverified">未认证</span>';
+
+            if (e.github_id) {
+                document.getElementById('displayGithub').innerHTML = '<span style="color:#27ae60;">✅ @' + (e.github_username || '已绑定') + '</span>';
+            } else {
+                document.getElementById('displayGithub').innerHTML = '<span style="color:#999;">未绑定</span>';
+            }
 
             var qq = e.qq_number || '',
                 avatar = document.getElementById('userAvatar'),
@@ -1641,8 +1762,20 @@
             if (isInitialized) return;
             isInitialized = true;
             try {
+                csrfToken = null;
+                csrfTokenLastFetch = 0;
+                try {
+                    var cookieToken = getCsrfTokenFromCookie();
+                    if (cookieToken) { csrfToken = cookieToken; csrfTokenLastFetch = Date.now(); }
+                } catch (e) {}
                 await fetchCsrfToken().catch(function(e) { console.warn('CSRF pre-fetch failed:', e); });
                 await checkAuthAndLoad();
+                var urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get('github_bound') === '1') {
+                    showToast('✅ GitHub账号绑定成功', 'success');
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    await checkGithubStatus();
+                }
                 hideErrorBoundary();
             } catch (error) {
                 console.error('Init error:', error);

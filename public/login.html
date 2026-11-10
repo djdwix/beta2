@@ -101,6 +101,23 @@
         .toast-message.error{background:linear-gradient(135deg,#ef5350,#e53935);color:white}
         .toast-message.info{background:linear-gradient(135deg,#42a5f5,#1e88e5);color:white}
         .hidden{display:none!important}
+        .github-section{margin-top:24px;padding-top:24px;border-top:2px dashed #e0f2f4}
+        .github-divider{text-align:center;color:#90a4ae;font-size:12px;font-weight:600;margin-bottom:16px;position:relative}
+        .github-divider::before,.github-divider::after{content:'';position:absolute;top:50%;width:35%;height:1px;background:#e0f2f4}
+        .github-divider::before{left:0}
+        .github-divider::after{right:0}
+        .github-btn{width:100%;padding:14px;background:linear-gradient(135deg,#24292e 0%,#1b1f23 100%);color:#fff;border:none;border-radius:60px;font-size:15px;font-weight:800;cursor:pointer;transition:all .3s;box-shadow:0 8px 24px rgba(36,41,46,0.3);letter-spacing:0.5px;display:flex;align-items:center;justify-content:center;gap:10px}
+        .github-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 14px 34px rgba(36,41,46,0.45)}
+        .github-btn:disabled{opacity:0.6;cursor:not-allowed;box-shadow:none}
+        .github-btn svg{width:22px;height:22px;fill:#fff}
+        .github-bind-panel{background:#f6f8fa;border:2px solid #d0d7de;border-radius:24px;padding:24px;margin-bottom:24px;animation:fadeIn 0.5s ease-out}
+        .github-bind-panel .bind-header{display:flex;align-items:center;gap:16px;margin-bottom:16px}
+        .github-bind-panel .bind-header img{width:56px;height:56px;border-radius:50%;border:3px solid #24292e;object-fit:cover;background:#fff}
+        .github-bind-panel .bind-header .bind-name{font-size:18px;font-weight:800;color:#24292e}
+        .github-bind-panel .bind-header .bind-sub{font-size:12px;color:#57606a}
+        .github-bind-tabs{display:flex;gap:8px;margin-bottom:20px;background:#eaeef2;padding:5px;border-radius:60px}
+        .github-bind-tabs button{flex:1;padding:11px;border:none;background:transparent;font-size:14px;font-weight:700;cursor:pointer;transition:all .3s;border-radius:60px;color:#57606a}
+        .github-bind-tabs button.active{background:#24292e;color:#fff;box-shadow:0 6px 18px rgba(36,41,46,0.3)}
         @media(max-width:768px){.container{max-width:95%}.form-container{padding:40px 28px}.header{padding:22px 26px}.header h2{font-size:20px}}
         @media(max-width:600px){body{padding:12px}.container{border-radius:24px;max-width:95%}.header{padding:18px 22px;flex-direction:column;text-align:center}.header h2{font-size:18px}.form-container{padding:32px 20px}.tab-buttons{gap:6px}.tab-buttons button{padding:11px;font-size:14px}.input-group input{padding:13px 15px;font-size:14px}.input-group.code-group .code-btn{padding:13px 18px;font-size:13px;min-width:100px;height:50px}.modal-content{padding:24px}.code-group-row button{min-width:80px;padding:11px 16px;font-size:12px;height:44px}.code-group-row input{min-width:80px}}
         @media(max-width:480px){body{padding:8px}.container{border-radius:20px}.header{padding:16px 18px}.header h2{font-size:16px}.form-container{padding:24px 16px}h1{font-size:23px}.tab-buttons button{padding:9px;font-size:13px}.input-group input{padding:11px 13px;font-size:13px;border-radius:14px}.input-group label{font-size:12px}.input-group.code-group{gap:8px}.input-group.code-group .code-btn{padding:11px 14px;font-size:12px;min-width:80px;height:44px;border-radius:14px}.modal-content{padding:20px}.code-group-row{gap:8px}.code-group-row button{min-width:70px;padding:9px 12px;font-size:11px;height:38px}.forgot-tabs button{font-size:12px;padding:9px}.cookie-warning .btn-secondary{margin-left:0;margin-top:8px}.js-warning .btn-secondary{margin-left:0;margin-top:8px}.noscript-warning .steps{max-width:100%}}
@@ -194,6 +211,53 @@
                 </div>
             </div>
 
+            <div id="githubBindPanel" class="github-bind-panel" style="display:none;">
+                <div class="bind-header">
+                    <img id="githubBindAvatar" src="" alt="GitHub Avatar">
+                    <div>
+                        <div class="bind-name" id="githubBindUsername">GitHub 用户</div>
+                        <div class="bind-sub">已授权 GitHub 账号，请绑定到本站账号</div>
+                    </div>
+                </div>
+                <div class="github-bind-tabs">
+                    <button id="githubBindLoginTab" class="active">绑定到已有账号</button>
+                    <button id="githubBindRegisterTab">注册新账号</button>
+                </div>
+                <div id="githubBindLoginForm">
+                    <div class="input-group">
+                        <input type="text" id="githubBindLoginUsername" placeholder=" " autocomplete="username">
+                        <label>用户名 或 邮箱</label>
+                    </div>
+                    <div class="input-group">
+                        <input type="password" id="githubBindLoginPassword" placeholder=" " autocomplete="current-password">
+                        <label>密码</label>
+                    </div>
+                    <button type="button" id="githubBindLoginBtn" style="width:100%;padding:15px;background:linear-gradient(135deg,#24292e 0%,#1b1f23 100%);color:#fff;border:none;border-radius:60px;font-size:16px;font-weight:800;cursor:pointer;margin-top:14px;box-shadow:0 8px 24px rgba(36,41,46,0.3);">绑定并登录</button>
+                    <div id="githubBindLoginMessage" class="message"></div>
+                </div>
+                <div id="githubBindRegisterForm" style="display:none;">
+                    <div class="input-group">
+                        <input type="text" id="githubBindRegUsername" placeholder=" ">
+                        <label>用户名 (3-20位)</label>
+                    </div>
+                    <div class="input-group">
+                        <input type="email" id="githubBindRegEmail" placeholder=" " autocomplete="email">
+                        <label>邮箱地址</label>
+                    </div>
+                    <div class="input-group">
+                        <input type="password" id="githubBindRegPassword" placeholder=" " autocomplete="new-password">
+                        <label>密码</label>
+                    </div>
+                    <div class="password-hint">密码至少8位，需包含至少两种类型（大小写字母/数字/特殊字符）</div>
+                    <div class="input-group">
+                        <input type="text" id="githubBindRegQqNumber" placeholder=" " maxlength="15">
+                        <label>QQ号 (必填，绑定后不可修改)</label>
+                    </div>
+                    <button type="button" id="githubBindRegisterBtn" style="width:100%;padding:15px;background:linear-gradient(135deg,#24292e 0%,#1b1f23 100%);color:#fff;border:none;border-radius:60px;font-size:16px;font-weight:800;cursor:pointer;margin-top:14px;box-shadow:0 8px 24px rgba(36,41,46,0.3);">注册并绑定</button>
+                    <div id="githubBindRegisterMessage" class="message"></div>
+                </div>
+            </div>
+
             <div class="tab-buttons">
                 <button id="loginTab" class="active">登录</button>
                 <button id="registerTab">注册</button>
@@ -247,6 +311,14 @@
                 <button type="submit" id="registerBtn">注册</button>
                 <div id="registerMessage" class="message"></div>
             </div>
+
+            <div class="github-section">
+                <div class="github-divider">或使用第三方账号登录</div>
+                <button type="button" id="githubLoginBtn" class="github-btn">
+                    <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                    <span>使用 GitHub 登录</span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -284,6 +356,8 @@
         var isRedirecting = false;
         var forgotCodeTimer = null;
         var forgotCodeCountdown = 0;
+        var githubConfigured = false;
+        var githubPending = false;
 
         function checkJavaScript() {
             var jsWarning = document.getElementById('jsWarning');
@@ -314,6 +388,7 @@
             var loginTab = document.getElementById('loginTab');
             var registerTab = document.getElementById('registerTab');
             var sendCodeBtn = document.getElementById('sendCodeBtn');
+            var githubLoginBtn = document.getElementById('githubLoginBtn');
 
             if (warning) warning.style.display = 'block';
             if (loginForm) { loginForm.style.opacity = '0.5'; loginForm.style.pointerEvents = 'none'; }
@@ -323,6 +398,7 @@
             if (sendCodeBtn) { sendCodeBtn.disabled = true; sendCodeBtn.textContent = '⚠️ 请启用 Cookie'; sendCodeBtn.style.opacity = '0.5'; sendCodeBtn.style.cursor = 'not-allowed'; }
             if (loginTab) { loginTab.style.cursor = 'not-allowed'; loginTab.style.opacity = '0.5'; }
             if (registerTab) { registerTab.style.cursor = 'not-allowed'; registerTab.style.opacity = '0.5'; }
+            if (githubLoginBtn) { githubLoginBtn.disabled = true; githubLoginBtn.style.opacity = '0.5'; githubLoginBtn.style.cursor = 'not-allowed'; }
 
             var forgotLink = document.getElementById('forgotPasswordLink');
             if (forgotLink) { forgotLink.style.cursor = 'not-allowed'; forgotLink.style.opacity = '0.5'; forgotLink.style.pointerEvents = 'none'; }
@@ -335,6 +411,7 @@
             var loginBtn = document.getElementById('loginBtn');
             var registerBtn = document.getElementById('registerBtn');
             var sendCodeBtn = document.getElementById('sendCodeBtn');
+            var githubLoginBtn = document.getElementById('githubLoginBtn');
 
             if (warning) warning.style.display = 'none';
             if (loginForm) { loginForm.style.opacity = '1'; loginForm.style.pointerEvents = 'auto'; }
@@ -342,6 +419,7 @@
             if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = '登录'; loginBtn.style.opacity = '1'; loginBtn.style.cursor = 'pointer'; }
             if (registerBtn) { registerBtn.disabled = false; registerBtn.textContent = '注册'; registerBtn.style.opacity = '1'; registerBtn.style.cursor = 'pointer'; }
             if (sendCodeBtn) { sendCodeBtn.disabled = false; sendCodeBtn.textContent = '发送验证码'; sendCodeBtn.style.opacity = '1'; sendCodeBtn.style.cursor = 'pointer'; }
+            if (githubLoginBtn) { githubLoginBtn.disabled = false; githubLoginBtn.style.opacity = '1'; githubLoginBtn.style.cursor = 'pointer'; }
 
             var loginTab = document.getElementById('loginTab');
             var registerTab = document.getElementById('registerTab');
@@ -458,9 +536,10 @@
             }).then(function(response) {
                 return response.json().then(function(data) {
                     if (!response.ok) {
-                        if (response.status === 403 && data.error && data.error.includes('CSRF')) {
+                        if (response.status === 403 && data.error && (data.error.includes('CSRF') || data.error.includes('会话已过期') || data.error.includes('CSRF验证失败'))) {
                             csrfToken = null;
                             csrfTokenLastFetch = 0;
+                            try { document.cookie = 'csrf_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/'; } catch (e) {}
                             return fetchCsrfToken().then(function(newToken) {
                                 options.headers['X-CSRF-Token'] = newToken;
                                 return fetch(url, options);
@@ -493,6 +572,43 @@
                 console.error('Auth check failed:', e);
             }
             return false;
+        }
+
+        async function checkGithubPending() {
+            try {
+                var result = await apiRequest('/api/auth/github/pending');
+                if (result.has_pending) {
+                    githubPending = true;
+                    document.getElementById('githubBindPanel').style.display = 'block';
+                    document.getElementById('githubBindAvatar').src = result.github_avatar || '';
+                    document.getElementById('githubBindUsername').textContent = '@' + (result.github_username || 'github');
+                    var regEmail = document.getElementById('githubBindRegEmail');
+                    if (result.github_email && !regEmail.value) {
+                        regEmail.value = result.github_email;
+                    }
+                    document.querySelector('.tab-buttons').style.display = 'none';
+                    document.getElementById('loginForm').style.display = 'none';
+                    document.getElementById('registerForm').style.display = 'none';
+                    document.querySelector('.github-section').style.display = 'none';
+                }
+            } catch (e) {
+                console.error('Check github pending failed:', e);
+            }
+        }
+
+        async function checkGithubStatus() {
+            try {
+                var result = await apiRequest('/api/auth/github/status');
+                githubConfigured = result.configured;
+                var githubBtn = document.getElementById('githubLoginBtn');
+                if (!githubConfigured) {
+                    githubBtn.style.display = 'none';
+                }
+            } catch (e) {
+                console.error('Check github status failed:', e);
+                var githubBtn = document.getElementById('githubLoginBtn');
+                githubBtn.style.display = 'none';
+            }
         }
 
         function validateEmail(email) {
@@ -778,6 +894,133 @@
             }
         });
 
+        document.getElementById('githubLoginBtn').addEventListener('click', function() {
+            if (!cookieEnabled) {
+                showToastMessage('⚠️ 请先启用 Cookie', 'error');
+                return;
+            }
+            window.location.href = '/api/auth/github/login';
+        });
+
+        document.getElementById('githubBindLoginTab').addEventListener('click', function() {
+            document.getElementById('githubBindLoginTab').classList.add('active');
+            document.getElementById('githubBindRegisterTab').classList.remove('active');
+            document.getElementById('githubBindLoginForm').style.display = 'block';
+            document.getElementById('githubBindRegisterForm').style.display = 'none';
+        });
+
+        document.getElementById('githubBindRegisterTab').addEventListener('click', function() {
+            document.getElementById('githubBindRegisterTab').classList.add('active');
+            document.getElementById('githubBindLoginTab').classList.remove('active');
+            document.getElementById('githubBindLoginForm').style.display = 'none';
+            document.getElementById('githubBindRegisterForm').style.display = 'block';
+        });
+
+        document.getElementById('githubBindLoginBtn').addEventListener('click', async function() {
+            if (!cookieEnabled) {
+                showToastMessage('⚠️ 请先启用 Cookie', 'error');
+                return;
+            }
+            var username = document.getElementById('githubBindLoginUsername').value.trim();
+            var password = document.getElementById('githubBindLoginPassword').value;
+            var msg = document.getElementById('githubBindLoginMessage');
+            if (!username || !password) {
+                msg.textContent = '请填写用户名和密码';
+                msg.className = 'message error';
+                return;
+            }
+            msg.textContent = '绑定中...';
+            msg.className = 'message info';
+            this.disabled = true;
+            try {
+                var response = await apiRequest('/api/auth/github/login-existing', {
+                    method: 'POST',
+                    body: JSON.stringify({ username: username, password: password })
+                });
+                msg.textContent = response.message || '绑定成功，正在跳转...';
+                msg.className = 'message success';
+                setTimeout(function() { window.location.href = '/'; }, 800);
+            } catch (error) {
+                msg.textContent = error.message || '绑定失败';
+                msg.className = 'message error';
+                this.disabled = false;
+            }
+        });
+
+        document.getElementById('githubBindRegisterBtn').addEventListener('click', async function() {
+            if (!cookieEnabled) {
+                showToastMessage('⚠️ 请先启用 Cookie', 'error');
+                return;
+            }
+            var username = document.getElementById('githubBindRegUsername').value.trim();
+            var email = document.getElementById('githubBindRegEmail').value.trim();
+            var password = document.getElementById('githubBindRegPassword').value;
+            var qqNumber = document.getElementById('githubBindRegQqNumber').value.trim();
+            var msg = document.getElementById('githubBindRegisterMessage');
+
+            if (!username || !password) {
+                msg.textContent = '请填写用户名和密码';
+                msg.className = 'message error';
+                return;
+            }
+            if (username.length < 3 || username.length > 20) {
+                msg.textContent = '用户名长度必须为3-20位';
+                msg.className = 'message error';
+                return;
+            }
+            if (!/^[a-zA-Z0-9_\u4e00-\u9fa5]+$/.test(username)) {
+                msg.textContent = '用户名仅支持字母、数字、下划线、中文';
+                msg.className = 'message error';
+                return;
+            }
+            if (email && !validateEmail(email)) {
+                msg.textContent = '请输入有效的邮箱地址';
+                msg.className = 'message error';
+                return;
+            }
+            if (password.length < 8) {
+                msg.textContent = '密码长度至少8位';
+                msg.className = 'message error';
+                return;
+            }
+            var hasUpper = /[A-Z]/.test(password);
+            var hasLower = /[a-z]/.test(password);
+            var hasDigit = /[0-9]/.test(password);
+            var hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+            var typeCount = [hasUpper, hasLower, hasDigit, hasSpecial].filter(Boolean).length;
+            if (typeCount < 2) {
+                msg.textContent = '密码需包含至少两种类型（大小写字母/数字/特殊字符）';
+                msg.className = 'message error';
+                return;
+            }
+            if (qqNumber && !/^\d{5,15}$/.test(qqNumber)) {
+                msg.textContent = 'QQ号格式不正确，请输入5-15位数字';
+                msg.className = 'message error';
+                return;
+            }
+            msg.textContent = '注册中...';
+            msg.className = 'message info';
+            this.disabled = true;
+            try {
+                var response = await apiRequest('/api/auth/github/register', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        username: username,
+                        email: email,
+                        password: password,
+                        qq_number: qqNumber
+                    })
+                });
+                msg.textContent = response.message || '注册成功，正在跳转...';
+                msg.className = 'message success';
+                setTimeout(function() { window.location.href = '/'; }, 800);
+            } catch (error) {
+                msg.textContent = error.message || '注册失败';
+                msg.className = 'message error';
+                this.disabled = false;
+            }
+        });
+
         document.getElementById('loginUsername').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') document.getElementById('loginBtn').click();
         });
@@ -1044,7 +1287,7 @@
             if (e.key === 'Enter') forgotEmailResetBtn.click();
         });
 
-        function init() {
+        async function init() {
             checkJavaScript();
             cookieEnabled = checkCookieEnabled();
             cookieCheckDone = true;
@@ -1059,7 +1302,11 @@
             fetchCsrfToken().catch(function(e) {
                 console.warn('CSRF pre-fetch failed:', e);
             });
-            checkAuthAndRedirect();
+            await checkGithubPending();
+            if (!githubPending) {
+                await checkGithubStatus();
+                await checkAuthAndRedirect();
+            }
         }
 
         if (document.readyState === 'loading') {

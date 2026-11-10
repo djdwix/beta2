@@ -26,6 +26,7 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from dotenv import load_dotenv
+from authlib.integrations.flask_client import OAuth
 import logging
 import threading
 import secrets
@@ -59,6 +60,42 @@ for handler in logging.root.handlers:
     handler.addFilter(IgnoreBrokenPipe())
 
 load_dotenv()
+
+GITHUB_CLIENT_ID = os.getenv('GITHUB_CLIENT_ID', '')
+GITHUB_CLIENT_SECRET = os.getenv('GITHUB_CLIENT_SECRET', '')
+GITHUB_REDIRECT_URI = os.getenv('GITHUB_REDIRECT_URI', '')
+
+def detect_server_base_url():
+    env_url = os.getenv('SITE_BASE_URL', '').strip()
+    if env_url:
+        return env_url.rstrip('/')
+    port = os.getenv('SITE_PORT', '3000')
+    scheme = os.getenv('SITE_SCHEME', 'https')
+    host = None
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(2)
+        s.connect(('8.8.8.8', 80))
+        host = s.getsockname()[0]
+        s.close()
+    except Exception:
+        pass
+    if not host or host.startswith('127.'):
+        try:
+            host = socket.gethostbyname(socket.gethostname())
+        except Exception:
+            pass
+    if not host or host.startswith('127.'):
+        host = 'localhost'
+    return f'{scheme}://{host}:{port}'
+
+SERVER_BASE_URL = detect_server_base_url()
+
+if not GITHUB_REDIRECT_URI:
+    GITHUB_REDIRECT_URI = f'{SERVER_BASE_URL}/api/auth/github/callback'
+
+log.info(f"Server base URL: {SERVER_BASE_URL}")
+log.info(f"GitHub OAuth redirect URI: {GITHUB_REDIRECT_URI}")
 
 def detect_server_base_url():
     env_url = os.getenv('SITE_BASE_URL', '').strip()
@@ -368,7 +405,7 @@ app.config['SESSION_PERMANENT'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=3)
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_SECURE'] = False
 app.config['SESSION_COOKIE_PATH'] = '/'
 app.config['SESSION_COOKIE_DOMAIN'] = None
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
@@ -380,6 +417,29 @@ if not CORS_ALLOWED_ORIGINS or CORS_ALLOWED_ORIGINS == ['']:
 
 CORS(app, supports_credentials=True, origins=CORS_ALLOWED_ORIGINS)
 bcrypt = Bcrypt(app)
+
+oauth = OAuth(app)
+github = None
+
+def init_github_oauth():
+    global github
+    if GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET:
+        github = oauth.register(
+            name='github',
+            client_id=GITHUB_CLIENT_ID,
+            client_secret=GITHUB_CLIENT_SECRET,
+            access_token_url='https://github.com/login/oauth/access_token',
+            access_token_params=None,
+            authorize_url='https://github.com/login/oauth/authorize',
+            authorize_params=None,
+            api_base_url='https://api.github.com/',
+            client_kwargs={'scope': 'read:user user:email'},
+        )
+        log.info("GitHub OAuth initialized")
+    else:
+        log.warning("GitHub OAuth not configured (missing GITHUB_CLIENT_ID or GITHUB_CLIENT_SECRET)")
+
+init_github_oauth()
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 if not os.path.exists(DATA_DIR):
@@ -1199,6 +1259,18 @@ def migrate_user_data():
             modified = True
         if 'old_email' not in user_data:
             user_data['old_email'] = ''
+            modified = True
+        if 'github_id' not in user_data:
+            user_data['github_id'] = ''
+            modified = True
+        if 'github_username' not in user_data:
+            user_data['github_username'] = ''
+            modified = True
+        if 'github_bound_at' not in user_data:
+            user_data['github_bound_at'] = 0
+            modified = True
+        if 'github_avatar' not in user_data:
+            user_data['github_avatar'] = ''
             modified = True
         if 'membership' not in user_data:
             user_data['membership'] = {
@@ -9836,6 +9908,10 @@ def check_auth():
                 'username': username,
                 'email': user_data.get('email', ''),
                 'qq_number': user_data.get('qq_number', ''),
+                'github_id': user_data.get('github_id', ''),
+                'github_username': user_data.get('github_username', ''),
+                'github_avatar': user_data.get('github_avatar', ''),
+                'github_bound': bool(user_data.get('github_id', '')),
                 'totalPoints': user_data.get('totalPoints', 0),
                 'fundBalance': fund_balance,
                 'totalPointsWithFund': total_points_with_fund,
@@ -9862,6 +9938,371 @@ def check_auth():
                 'emailChanged': user_data.get('email_changed', False)
             })
     return jsonify({'authenticated': False})
+
+@app.route('/api/auth/github/status', methods=['GET'])
+def github_oauth_status():
+    return jsonify({
+        'configured': bool(GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET),
+        'client_id': GITHUB_CLIENT_ID[:8] + '...' if GITHUB_CLIENT_ID else '',
+        'redirect_uri': GITHUB_REDIRECT_URI
+    })
+
+
+@app.route('/api/auth/github/login', methods=['GET'])
+def github_login():
+    if not github:
+        return jsonify({'error': 'GitHub登录未配置，请联系管理员'}), 503
+    if request.args.get('bind') == '1' and 'user' in session:
+        session['github_bind_intent'] = True
+    else:
+        session.pop('github_bind_intent', None)
+    redirect_uri = GITHUB_REDIRECT_URI
+    return github.authorize_redirect(redirect_uri)
+
+
+@app.route('/api/auth/github/callback', methods=['GET'])
+def github_callback():
+    if not github:
+        return jsonify({'error': 'GitHub登录未配置，请联系管理员'}), 503
+    try:
+        token = github.authorize_access_token()
+        if not token:
+            return jsonify({'error': 'GitHub授权失败'}), 400
+        resp = github.get('user', token=token)
+        if resp.status_code != 200:
+            return jsonify({'error': '获取GitHub用户信息失败'}), 400
+        github_user = resp.json()
+        github_id = str(github_user.get('id', ''))
+        github_login_name = github_user.get('login', '')
+        github_avatar = github_user.get('avatar_url', '')
+        github_email = github_user.get('email', '')
+        if not github_id:
+            return jsonify({'error': 'GitHub用户信息无效'}), 400
+        try:
+            email_resp = github.get('user/emails', token=token)
+            if email_resp.status_code == 200:
+                emails = email_resp.json()
+                for e in emails:
+                    if e.get('primary') and e.get('verified'):
+                        github_email = e.get('email', '')
+                        break
+                if not github_email:
+                    for e in emails:
+                        if e.get('verified'):
+                            github_email = e.get('email', '')
+                            break
+        except Exception:
+            pass
+        bind_intent = session.pop('github_bind_intent', False)
+        current_username = session.get('user', {}).get('username')
+        found_username = None
+        for uname, udata in users.items():
+            if udata.get('github_id') == github_id:
+                found_username = uname
+                break
+        if bind_intent and current_username and current_username in users:
+            if found_username and found_username != current_username:
+                resp = make_response('<html><body><script>alert("该GitHub账号已绑定到其他用户");window.location.href="/player_center.html";</script></body></html>')
+                resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+                return resp
+            user_data = users[current_username]
+            user_data['github_id'] = github_id
+            user_data['github_username'] = github_login_name
+            user_data['github_avatar'] = github_avatar
+            user_data['github_bound_at'] = int(time.time() * 1000)
+            save_users()
+            session.pop('github_pending', None)
+            invalidate_user_caches(current_username)
+            resp = make_response('<html><body><script>window.location.href="/player_center.html?github_bound=1";</script></body></html>')
+            resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+            return resp
+        if found_username:
+            if is_login_restricted(found_username):
+                resp = make_response('<html><body><script>alert("账号已被限制登录，请联系管理员");window.location.href="/login.html";</script></body></html>')
+                resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+                return resp
+            session['user'] = {'username': found_username}
+            users[found_username]['lastLoginDate'] = datetime.now().strftime('%Y-%m-%d')
+            users[found_username]['github_username'] = github_login_name
+            users[found_username]['github_avatar'] = github_avatar
+            save_users()
+            invalidate_user_caches(found_username)
+            resp = make_response('<html><body><script>window.location.href="/";</script></body></html>')
+            resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+            return resp
+        session['github_pending'] = {
+            'github_id': github_id,
+            'github_username': github_login_name,
+            'github_avatar': github_avatar,
+            'github_email': github_email
+        }
+        resp = make_response('<html><body><script>window.location.href="/login.html?github_bind=1";</script></body></html>')
+        resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+        return resp
+    except Exception as e:
+        log.error(f"GitHub callback error: {e}")
+        return jsonify({'error': f'GitHub登录失败: {str(e)}'}), 500
+
+
+@app.route('/api/auth/github/pending', methods=['GET'])
+def github_pending_info():
+    pending = session.get('github_pending')
+    if not pending:
+        return jsonify({'has_pending': False})
+    return jsonify({
+        'has_pending': True,
+        'github_username': pending.get('github_username', ''),
+        'github_avatar': pending.get('github_avatar', ''),
+        'github_email': pending.get('github_email', '')
+    })
+
+
+@app.route('/api/auth/github/login-existing', methods=['POST'])
+@csrf_protect
+@limiter.limit('10 per minute')
+def github_login_existing():
+    pending = session.get('github_pending')
+    if not pending:
+        return jsonify({'error': '未找到GitHub授权信息，请重新授权'}), 400
+    data = request.get_json()
+    username = data.get('username', '').strip()
+    password = data.get('password', '')
+    if not username or not password:
+        return jsonify({'error': '请填写用户名和密码'}), 400
+    user_data = None
+    found_username = None
+    if username in users:
+        found_username = username
+        user_data = users[username]
+    else:
+        for u, d in users.items():
+            if d.get('email') == username.lower():
+                found_username = u
+                user_data = d
+                break
+    if not user_data:
+        return jsonify({'error': '用户名或密码错误'}), 400
+    if not bcrypt.check_password_hash(user_data['password'], password):
+        return jsonify({'error': '用户名或密码错误'}), 400
+    if is_login_restricted(found_username):
+        return jsonify({'error': '账号已被限制登录，请联系管理员'}), 403
+    github_id = pending.get('github_id', '')
+    for uname, udata in users.items():
+        if udata.get('github_id') == github_id and uname != found_username:
+            return jsonify({'error': '该GitHub账号已绑定到其他用户'}), 400
+    user_data['github_id'] = github_id
+    user_data['github_username'] = pending.get('github_username', '')
+    user_data['github_avatar'] = pending.get('github_avatar', '')
+    user_data['github_bound_at'] = int(time.time() * 1000)
+    user_data['lastLoginDate'] = datetime.now().strftime('%Y-%m-%d')
+    save_users()
+    session.pop('github_pending', None)
+    session.clear()
+    session['user'] = {'username': found_username}
+    invalidate_user_caches(found_username)
+    return jsonify({
+        'success': True,
+        'username': found_username,
+        'message': 'GitHub绑定成功并已登录'
+    })
+
+
+@app.route('/api/auth/github/register', methods=['POST'])
+@csrf_protect
+@limiter.limit('5 per minute')
+def github_register():
+    pending = session.get('github_pending')
+    if not pending:
+        return jsonify({'error': '未找到GitHub授权信息，请重新授权'}), 400
+    data = request.get_json()
+    username = data.get('username', '').strip()
+    password = data.get('password', '')
+    qq_number = data.get('qq_number', '').strip()
+    email = data.get('email', '').strip().lower()
+    if not username or not password:
+        return jsonify({'error': '请填写用户名和密码'}), 400
+    if not validate_username(username):
+        return jsonify({'error': '用户名必须为3-20位字符，仅支持字母、数字、下划线、中文'}), 400
+    if username in users:
+        return jsonify({'error': '用户名已被使用'}), 400
+    if not email:
+        email = pending.get('github_email', '')
+    if not email:
+        return jsonify({'error': '请填写邮箱地址'}), 400
+    if not validate_email(email):
+        return jsonify({'error': '邮箱格式不正确'}), 400
+    for existing_user in users.values():
+        if existing_user.get('email') == email:
+            return jsonify({'error': '邮箱已被注册'}), 400
+    if not validate_password(password):
+        return jsonify({'error': '密码至少8位，需包含至少两种类型（大小写字母/数字/特殊字符）'}), 400
+    if qq_number and not re.match(r'^\d{5,15}$', qq_number):
+        return jsonify({'error': 'QQ号格式不正确，请输入5-15位数字'}), 400
+    if qq_number:
+        for u, d in users.items():
+            if d.get('qq_number') == qq_number:
+                return jsonify({'error': '该QQ号已被其他用户绑定'}), 400
+    github_id = pending.get('github_id', '')
+    for uname, udata in users.items():
+        if udata.get('github_id') == github_id:
+            return jsonify({'error': '该GitHub账号已绑定到其他用户'}), 400
+    hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+    users[username] = {
+        'username': username,
+        'email': email,
+        'password': hashed_password,
+        'qq_number': qq_number,
+        'github_id': github_id,
+        'github_username': pending.get('github_username', ''),
+        'github_avatar': pending.get('github_avatar', ''),
+        'github_bound_at': int(time.time() * 1000),
+        'totalPoints': 400,
+        'unlimitedPoints': 0,
+        'dailyEarnedPoints': 0,
+        'lastEarnedDate': datetime.now().strftime('%Y-%m-%d'),
+        'lastLoginDate': datetime.now().strftime('%Y-%m-%d'),
+        'createdAt': datetime.now().isoformat(),
+        'attendanceTotalDays': 0,
+        'attendanceConsecutiveDays': 0,
+        'lastAttendanceTimestamp': 0,
+        'attendanceClaimedTotalCycles': {},
+        'attendanceClaimedConsecutiveCycles': {},
+        'coupon_usage_count': 0,
+        'makeup_code_used_count': 0,
+        'gamblers_code_purchase_count': 0,
+        'last_gamblers_purchase_date': '',
+        'box_code_purchase_count': 0,
+        'last_box_purchase_date': '',
+        'plcard_code_purchase_count': 0,
+        'lastSplashShown': 0,
+        'last_plcard_purchase_date': '',
+        'email_verified': False,
+        'email_verified_at': 0,
+        'email_changed': False,
+        'email_changed_at': 0,
+        'old_email': '',
+        'membership': {
+            'is_member': False,
+            'activated_at': 0,
+            'expires_at': 0,
+            'lifetime': True
+        }
+    }
+    save_users()
+    session.pop('github_pending', None)
+    session.clear()
+    session['user'] = {'username': username}
+    return jsonify({
+        'success': True,
+        'username': username,
+        'message': '注册成功'
+    })
+
+
+@app.route('/api/user/bind-github', methods=['POST'])
+@csrf_protect
+@login_required
+def bind_github():
+    if not github:
+        return jsonify({'error': 'GitHub登录未配置'}), 503
+    username = session['user']['username']
+    user_data = users.get(username)
+    if not user_data:
+        return jsonify({'error': '用户不存在'}), 400
+    if user_data.get('github_id'):
+        return jsonify({'error': '您已绑定GitHub账号，不可重复绑定'}), 400
+    data = request.get_json() or {}
+    github_id = str(data.get('github_id', '')).strip()
+    github_username = data.get('github_username', '').strip()
+    github_avatar = data.get('github_avatar', '').strip()
+    if not github_id:
+        return jsonify({'error': 'GitHub信息无效'}), 400
+    for uname, udata in users.items():
+        if udata.get('github_id') == github_id and uname != username:
+            return jsonify({'error': '该GitHub账号已绑定到其他用户'}), 400
+    user_data['github_id'] = github_id
+    user_data['github_username'] = github_username
+    user_data['github_avatar'] = github_avatar
+    user_data['github_bound_at'] = int(time.time() * 1000)
+    save_users()
+    invalidate_user_caches(username)
+    return jsonify({
+        'success': True,
+        'message': 'GitHub账号绑定成功',
+        'github_username': github_username,
+        'github_avatar': github_avatar
+    })
+
+
+@app.route('/api/user/unbind-github', methods=['POST'])
+@csrf_protect
+@login_required
+def unbind_github():
+    username = session['user']['username']
+    user_data = users.get(username)
+    if not user_data:
+        return jsonify({'error': '用户不存在'}), 400
+    if not user_data.get('github_id'):
+        return jsonify({'error': '您尚未绑定GitHub账号'}), 400
+    has_pay_password_set = has_pay_password(username)
+    if not has_pay_password_set:
+        return jsonify({'error': '解绑GitHub前请先设置支付密码，以确保账号安全'}), 400
+    user_data['github_id'] = ''
+    user_data['github_username'] = ''
+    user_data['github_avatar'] = ''
+    user_data['github_bound_at'] = 0
+    save_users()
+    invalidate_user_caches(username)
+    return jsonify({
+        'success': True,
+        'message': 'GitHub账号已解绑'
+    })
+
+
+@app.route('/api/user/github-info', methods=['GET'])
+@login_required
+def get_github_info():
+    username = session['user']['username']
+    user_data = users.get(username, {})
+    return jsonify({
+        'bound': bool(user_data.get('github_id')),
+        'github_username': user_data.get('github_username', ''),
+        'github_avatar': user_data.get('github_avatar', ''),
+        'github_bound_at': user_data.get('github_bound_at', 0)
+    })
+
+
+@app.route('/api/auth/github/complete-bind', methods=['POST'])
+@csrf_protect
+@login_required
+def complete_github_bind():
+    pending = session.get('github_pending')
+    if not pending:
+        return jsonify({'error': '未找到GitHub授权信息，请重新授权'}), 400
+    username = session['user']['username']
+    user_data = users.get(username)
+    if not user_data:
+        return jsonify({'error': '用户不存在'}), 400
+    if user_data.get('github_id'):
+        session.pop('github_pending', None)
+        return jsonify({'error': '您已绑定GitHub账号'}), 400
+    github_id = pending.get('github_id', '')
+    for uname, udata in users.items():
+        if udata.get('github_id') == github_id and uname != username:
+            session.pop('github_pending', None)
+            return jsonify({'error': '该GitHub账号已绑定到其他用户'}), 400
+    user_data['github_id'] = github_id
+    user_data['github_username'] = pending.get('github_username', '')
+    user_data['github_avatar'] = pending.get('github_avatar', '')
+    user_data['github_bound_at'] = int(time.time() * 1000)
+    save_users()
+    session.pop('github_pending', None)
+    invalidate_user_caches(username)
+    return jsonify({
+        'success': True,
+        'message': 'GitHub账号绑定成功',
+        'github_username': pending.get('github_username', '')
+    })
 
 @app.route('/api/user/restrictions', methods=['GET'])
 @login_required
@@ -14979,7 +15420,7 @@ if __name__ == '__main__':
         print(f"{'='*60}\n")
     try:
         print(f"Server running on {SERVER_BASE_URL}")
-        print(f"Also available on https://localhost:5000")
+        print(f"Also available on https://localhost:3000")
         print("按 Ctrl+C 优雅关闭服务器")
     except Exception as e:
         print(f"获取网络信息失败: {e}")
@@ -14995,7 +15436,7 @@ if __name__ == '__main__':
     try:
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         context.load_cert_chain(cert_file, key_file)
-        app.run(host='0.0.0.0', port=5000, debug=False, ssl_context=context)
+        app.run(host='0.0.0.0', port=3000, debug=False, ssl_context=context)
     except BrokenPipeError:
         print("连接中断，忽略错误")
     except Exception as e:
