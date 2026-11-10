@@ -114,9 +114,9 @@ python server.py
 
 ## go-music 点歌台配置
 
-点歌台依赖本地运行的 **go-music-api** 后端服务（默认端口 8080）。server.py 已内置对 `localhost:8080` 的代理，只需启动该服务即可。
+系统内置了两套点歌体验，均依赖本地运行的 **go-music-api** 后端服务（默认端口 8080）。`server.py` 已内置对 `localhost:8080` 的代理，只需启动该服务即可。
 
-**下载与配置：**
+**下载与配置 go-music-api：**
 
 1. 前往项目 Release 页面下载对应系统的可执行文件：
    https://github.com/guohuiyuan/go-music-api/releases [citation:7]
@@ -131,20 +131,33 @@ python server.py
    go mod tidy
    go run main.go
 
-启动 go-music-api 后，点歌台即可正常搜索和播放音乐。如需指定其他端口，修改 server.py 中 `proxy_music_*` 函数里的 `localhost:8080` 即可。
+**双端点歌台联动机制：**
+
+- **智能客服点歌台**：在智能客服对话框输入「点歌 XXX」，系统会动态检测 go-music-api 服务是否可用。若可用，会弹窗引导您跳转至全新、功能更完善的 NEBULA 独立点歌台；若未启动，则会静默使用内置的 MetingJS 公共音源作为兜底，不影响基础听歌。
+- **NEBULA 独立点歌台 (`/nebula.html`)**：专为本地 go-music-api 深度定制的沉浸式音乐空间。支持全平台音源切换、歌词解析、本地点歌历史、收藏管理及歌单直接载入，提供专业级的听歌体验。
+
+如需指定其他端口，修改 `server.py` 中 `proxy_music_*` 函数里的 `localhost:8080` 即可。
 
 
 ## 项目根目录结构
 
 项目根目录/
 ├── server.py              # 主服务器
+
 ├── game.py                # 游戏模块
+
 ├── email_service.py       # 邮件服务
+
 ├── knowledge_base.json    # 知识库数据（可编辑）
+
 ├── requirements.txt       # Python 依赖
+
 ├── .env                   # 环境配置（不提交，发行版2.1.6及以上的zip包里有模板）
+
 ├── data/                  # 数据存储（自动生成，不提交）
-├── public/                # 前端静态文件
+
+├── public/                # 前端静态文件（包含 nebula_music.html 等）
+
 └── GAME/                  # 游戏中心前端
 
 重要提示：
@@ -152,4 +165,3 @@ python server.py
 2. POST 需要替换成你所使用的端口
 3. 建议定期更换密钥，特别是 SECRET_KEY 和 ENCRYPTION_KEY
 4. 生产环境请使用强密码并妥善保管
-5. wiki 双语指南：https://github.com/djdwix/beta2/wiki/elcome-to-the-beta2-wiki!-%23-BETA2-%E6%9C%8D%E5%8A%A1%E5%99%A8-%E2%80%90-%E7%8E%A9%E5%AE%B6%E6%8C%87%E5%8D%97

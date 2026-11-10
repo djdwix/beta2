@@ -1263,6 +1263,9 @@ REFUND_TICKET_TTL = 1800
 REFUND_COOLDOWN_SECONDS = 30
 REFUND_EMAIL_THRESHOLD = 100
 
+_music_status_cache = {'ts': 0, 'ok': False}
+_MUSIC_STATUS_TTL = 30
+
 MAX_LOG_FILE_SIZE = 10 * 1024 * 1024
 MAX_LOG_ENTRIES_PER_IP = 300
 LOG_REQUEST_COOLDOWN_SECONDS = 43200
@@ -11874,7 +11877,7 @@ def get_next_milestone(current, milestone_type):
 def get_news():
     start_time = time.time()
     try:
-        response = requests.get('https://60s.aa1.cn/60s-api/new/api/60s-v5/', timeout=10)
+        response = requests.get('https://zj.v.api.aa1.cn/api/60s/', timeout=10)
         if response.status_code == 200:
             content_type = response.headers.get('content-type', '')
             if 'image' in content_type:
@@ -12060,16 +12063,40 @@ def get_earthquake_info():
             'error': '地震信息服务暂时不可用'
         }), 200
 
+@app.route('/api/music/health', methods=['GET'])
+def music_health():
+    now = time.time()
+    if now - _music_status_cache['ts'] < _MUSIC_STATUS_TTL:
+        return jsonify({'available': _music_status_cache['ok'], 'cached': True})
+    ok = False
+    try:
+        resp = requests.get(
+            'http://localhost:8080/api/v1/music/search',
+            params={'q': 'test', 'type': 'song', 'sources': 'netease'},
+            timeout=3
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            ok = bool(data)
+    except Exception:
+        ok = False
+    _music_status_cache['ts'] = now
+    _music_status_cache['ok'] = ok
+    return jsonify({'available': ok, 'cached': False})
+
 @app.route('/api/music/search', methods=['GET'])
 @login_required
 def proxy_music_search():
     q = request.args.get('q', '').strip()
     if not q:
         return jsonify({'error': '缺少搜索关键词'}), 400
+    source = request.args.get('source', 'netease').strip() or 'netease'
+    if source not in ['netease', 'tencent', 'kugou', 'kuwo', 'baidu']:
+        source = 'netease'
     try:
         resp = requests.get(
             'http://localhost:8080/api/v1/music/search',
-            params={'q': q, 'type': 'song', 'sources': 'netease'},
+            params={'q': q, 'type': 'song', 'sources': source},
             timeout=15
         )
         return jsonify(resp.json()), resp.status_code
@@ -14811,6 +14838,10 @@ def player_center_page():
 @app.route('/customer_service.html')
 def customer_service_page():
     return send_from_directory('public', 'customer_service.html')
+
+@app.route('/nebula.html')
+def nebula_music_page():
+    return send_from_directory('public', 'nebula_music.html')
 
 @app.route('/pay/<order_id>')
 def pay_page(order_id):
