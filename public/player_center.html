@@ -206,22 +206,27 @@
         .error-boundary .error-desc{font-size:14px;color:#666;margin-bottom:16px}
         .error-boundary .retry-btn{padding:10px 32px;background:#dc2626;color:white;border:none;border-radius:40px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s}
         .error-boundary .retry-btn:hover{background:#b91c1c;transform:translateY(-2px);box-shadow:0 4px 12px rgba(220,38,38,0.3)}
-        .github-section{background:linear-gradient(135deg,#24292e10,#1b1f2310);border-radius:24px;padding:24px;margin-bottom:24px;border:1px solid rgba(36,41,46,0.15)}
-        .github-title{font-size:18px;font-weight:600;color:#333;margin-bottom:16px;display:flex;align-items:center;gap:8px}
-        .github-title svg{width:22px;height:22px;fill:#24292e}
-        .github-status{display:flex;align-items:center;gap:16px;padding:12px 0}
-        .github-status .github-avatar{width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid #24292e;flex-shrink:0;background:#e0e0e0}
-        .github-status .github-info{display:flex;flex-direction:column;gap:2px}
-        .github-status .github-info .github-name{font-size:15px;font-weight:600;color:#24292e}
-        .github-status .github-info .github-sub{font-size:12px;color:#999}
-        .github-status .github-info .github-sub.bound{color:#27ae60}
-        .github-bind-btn{padding:10px 24px;background:linear-gradient(135deg,#24292e 0%,#1b1f23 100%);color:#fff;border:none;border-radius:40px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.3s;display:inline-flex;align-items:center;gap:8px;margin-top:12px}
-        .github-bind-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 4px 12px rgba(36,41,46,0.3)}
-        .github-bind-btn:disabled{opacity:0.6;cursor:not-allowed;transform:none}
-        .github-bind-btn svg{width:18px;height:18px;fill:#fff}
-        .github-unbind-btn{padding:8px 20px;background:#e74c3c;color:#fff;border:none;border-radius:40px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.3s;margin-top:8px}
-        .github-unbind-btn:hover{background:#c0392b}
-        .github-unbind-btn:disabled{opacity:0.5;cursor:not-allowed}
+        .oauth-section{background:linear-gradient(135deg,#24292e10,#1b1f2310);border-radius:24px;padding:24px;margin-bottom:24px;border:1px solid rgba(36,41,46,0.15)}
+        .oauth-section.lolia{background:linear-gradient(135deg,#6a4cff10,#4a2fcc10);border-color:rgba(106,76,255,0.15)}
+        .oauth-title{font-size:18px;font-weight:600;color:#333;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+        .oauth-title svg{width:22px;height:22px;fill:#24292e}
+        .oauth-title.lolia svg{fill:#4a2fcc}
+        .oauth-status{display:flex;align-items:center;gap:16px;padding:12px 0}
+        .oauth-status .oauth-avatar{width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid #24292e;flex-shrink:0;background:#e0e0e0}
+        .oauth-status.lolia .oauth-avatar{border-color:#4a2fcc}
+        .oauth-status .oauth-info{display:flex;flex-direction:column;gap:2px}
+        .oauth-status .oauth-info .oauth-name{font-size:15px;font-weight:600;color:#24292e}
+        .oauth-status .oauth-info .oauth-sub{font-size:12px;color:#999}
+        .oauth-status .oauth-info .oauth-sub.bound{color:#27ae60}
+        .oauth-bind-btn{padding:10px 24px;background:linear-gradient(135deg,#24292e 0%,#1b1f23 100%);color:#fff;border:none;border-radius:40px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.3s;display:inline-flex;align-items:center;gap:8px;margin-top:12px}
+        .oauth-bind-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 4px 12px rgba(36,41,46,0.3)}
+        .oauth-bind-btn:disabled{opacity:0.6;cursor:not-allowed;transform:none}
+        .oauth-bind-btn svg{width:18px;height:18px;fill:#fff}
+        .oauth-bind-btn.lolia{background:linear-gradient(135deg,#6a4cff 0%,#4a2fcc 100%)}
+        .oauth-bind-btn.lolia:hover:not(:disabled){box-shadow:0 4px 12px rgba(106,76,255,0.3)}
+        .oauth-unbind-btn{padding:8px 20px;background:#e74c3c;color:#fff;border:none;border-radius:40px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.3s;margin-top:8px}
+        .oauth-unbind-btn:hover{background:#c0392b}
+        .oauth-unbind-btn:disabled{opacity:0.5;cursor:not-allowed}
         .toast-message{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);padding:13px 28px;border-radius:40px;font-size:14px;z-index:99999;max-width:90%;text-align:center;font-weight:700;box-shadow:0 10px 30px rgba(0,0,0,0.2);animation:toastIn 0.3s ease-out}
         .toast-message.success{background:linear-gradient(135deg,#27ae60,#2ecc71);color:#fff}
         .toast-message.error{background:linear-gradient(135deg,#ef5350,#e53935);color:#fff}
@@ -276,36 +281,65 @@
                     <div class="info-row"><span class="info-label"><i class="fas fa-check-circle"></i> 邮箱状态</span><span class="info-value" id="displayEmailStatus">-</span></div>
                     <div class="info-row"><span class="info-label"><i class="fab fa-qq"></i> QQ号</span><span class="info-value" id="displayQqNumber">未绑定</span></div>
                     <div class="info-row"><span class="info-label"><i class="fab fa-github"></i> GitHub账号</span><span class="info-value" id="displayGithub">未绑定</span></div>
+                    <div class="info-row"><span class="info-label"><i class="fas fa-cube"></i> Lolia账号</span><span class="info-value" id="displayLolia">未绑定</span></div>
                     <div class="info-row"><span class="info-label"><i class="fas fa-calendar-plus"></i> 注册时间</span><span class="info-value" id="displayCreatedAt">-</span></div>
                     <div class="info-row"><span class="info-label"><i class="fas fa-calendar-check"></i> 最近登录</span><span class="info-value" id="displayLastLogin">-</span></div>
                     <div class="info-row"><span class="info-label"><i class="fas fa-shield-alt"></i> 认证状态</span><span class="info-value" id="displayVerified">-</span></div>
                     <div class="info-row"><span class="info-label"><i class="fas fa-calendar-day"></i> 补签卡使用次数</span><span class="info-value" id="displayMakeupUsed">0 / 3</span></div>
                 </div>
-                <div class="github-section">
-                    <div class="github-title">
+                <div class="oauth-section">
+                    <div class="oauth-title">
                         <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
                         GitHub 账号绑定
                     </div>
                     <div id="githubStatusArea">
                         <div id="githubUnboundArea" style="display:none;">
                             <p style="font-size:13px;color:#666;margin-bottom:12px;">绑定 GitHub 账号后可使用 GitHub 快捷登录本站</p>
-                            <button class="github-bind-btn" id="githubBindBtn">
+                            <button class="oauth-bind-btn" id="githubBindBtn">
                                 <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
                                 绑定 GitHub 账号
                             </button>
                         </div>
                         <div id="githubBoundArea" style="display:none;">
-                            <div class="github-status">
-                                <img class="github-avatar" id="githubAvatar" src="" alt="GitHub Avatar">
-                                <div class="github-info">
-                                    <span class="github-name" id="githubUsername">-</span>
-                                    <span class="github-sub bound">✅ 已绑定 GitHub</span>
+                            <div class="oauth-status">
+                                <img class="oauth-avatar" id="githubAvatar" src="" alt="GitHub Avatar">
+                                <div class="oauth-info">
+                                    <span class="oauth-name" id="githubUsername">-</span>
+                                    <span class="oauth-sub bound">✅ 已绑定 GitHub</span>
                                 </div>
                             </div>
-                            <button class="github-unbind-btn" id="githubUnbindBtn">解绑 GitHub 账号</button>
+                            <button class="oauth-unbind-btn" id="githubUnbindBtn">解绑 GitHub 账号</button>
                         </div>
                         <div id="githubNotConfigured" style="display:none;">
                             <p style="font-size:13px;color:#999;">GitHub 登录未配置，请联系管理员</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="oauth-section lolia">
+                    <div class="oauth-title lolia">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>
+                        Lolia 账号绑定
+                    </div>
+                    <div id="loliaStatusArea">
+                        <div id="loliaUnboundArea" style="display:none;">
+                            <p style="font-size:13px;color:#666;margin-bottom:12px;">绑定 Lolia 账号后可使用 Lolia 快捷登录本站</p>
+                            <button class="oauth-bind-btn lolia" id="loliaBindBtn">
+                                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>
+                                绑定 Lolia 账号
+                            </button>
+                        </div>
+                        <div id="loliaBoundArea" style="display:none;">
+                            <div class="oauth-status lolia">
+                                <img class="oauth-avatar" id="loliaAvatar" src="" alt="Lolia Avatar">
+                                <div class="oauth-info">
+                                    <span class="oauth-name" id="loliaUsername">-</span>
+                                    <span class="oauth-sub bound">✅ 已绑定 Lolia</span>
+                                </div>
+                            </div>
+                            <button class="oauth-unbind-btn" id="loliaUnbindBtn">解绑 Lolia 账号</button>
+                        </div>
+                        <div id="loliaNotConfigured" style="display:none;">
+                            <p style="font-size:13px;color:#999;">Lolia 登录未配置，请联系管理员</p>
                         </div>
                     </div>
                 </div>
@@ -470,15 +504,27 @@
         var csrfTokenRefreshPromise = null;
         var csrfTokenLastFetch = 0;
         var CSRF_TOKEN_TTL = 300000;
+        var kickedShown = false;
+
+        function showKickedMessage() {
+            if (kickedShown) return;
+            kickedShown = true;
+            var existing = document.querySelector('.kicked-toast');
+            if (existing) existing.remove();
+            var toast = document.createElement('div');
+            toast.className = 'kicked-toast';
+            toast.textContent = '您的账号已在其他设备登录，正在跳转登录页...';
+            toast.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);padding:14px 28px;background:linear-gradient(135deg,#ef5350,#e53935);color:#fff;border-radius:40px;font-size:14px;font-weight:700;z-index:999999;box-shadow:0 10px 30px rgba(0,0,0,0.2);max-width:90%;text-align:center;';
+            document.body.appendChild(toast);
+            setTimeout(function() { window.location.href = '/login.html'; }, 2000);
+        }
 
         function getCsrfTokenFromCookie() {
             try {
                 var cookies = document.cookie.split(';');
                 for (var i = 0; i < cookies.length; i++) {
                     var cookie = cookies[i].trim();
-                    if (cookie.indexOf('csrf_token=') === 0) {
-                        return cookie.substring('csrf_token='.length, cookie.length);
-                    }
+                    if (cookie.indexOf('csrf_token=') === 0) return cookie.substring('csrf_token='.length, cookie.length);
                 }
                 return null;
             } catch (e) { return null; }
@@ -492,20 +538,18 @@
         }
 
         function fetchCsrfToken() {
-            if (csrfTokenRefreshPromise) { return csrfTokenRefreshPromise; }
-            if (csrfToken && (Date.now() - csrfTokenLastFetch) < CSRF_TOKEN_TTL) { return Promise.resolve(csrfToken); }
+            if (csrfTokenRefreshPromise) return csrfTokenRefreshPromise;
+            if (csrfToken && (Date.now() - csrfTokenLastFetch) < CSRF_TOKEN_TTL) return Promise.resolve(csrfToken);
             var cookieToken = getCsrfTokenFromCookie();
-            if (cookieToken) { csrfToken = cookieToken;
-                csrfTokenLastFetch = Date.now(); return Promise.resolve(csrfToken); }
+            if (cookieToken) { csrfToken = cookieToken; csrfTokenLastFetch = Date.now(); return Promise.resolve(csrfToken); }
             csrfTokenRefreshPromise = fetch('/api/csrf-token', {
-                method: 'GET',
-                credentials: 'include',
+                method: 'GET', credentials: 'include',
                 headers: { 'Accept': 'application/json', 'Cache-Control': 'no-cache' }
             }).then(function(response) {
-                if (!response.ok) { throw new Error('Failed to fetch CSRF token: HTTP ' + response.status); }
+                if (!response.ok) throw new Error('Failed to fetch CSRF token: HTTP ' + response.status);
                 return response.json();
             }).then(function(data) {
-                if (!data.csrf_token) { throw new Error('No CSRF token in response'); }
+                if (!data.csrf_token) throw new Error('No CSRF token in response');
                 csrfToken = data.csrf_token;
                 csrfTokenLastFetch = Date.now();
                 setCsrfTokenCookie(csrfToken);
@@ -529,7 +573,8 @@
             if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') {
                 return fetch(url, options).then(function(response) {
                     return response.json().then(function(data) {
-                        if (!response.ok) { throw new Error(data.error || '请求失败: ' + response.status); }
+                        if (data && data.kicked) { showKickedMessage(); throw new Error('kicked'); }
+                        if (!response.ok) throw new Error(data.error || '请求失败: ' + response.status);
                         return data;
                     });
                 });
@@ -539,6 +584,7 @@
                 return fetch(url, options);
             }).then(function(response) {
                 return response.json().then(function(data) {
+                    if (data && data.kicked) { showKickedMessage(); throw new Error('kicked'); }
                     if (!response.ok) {
                         if (response.status === 403 && data.error && (data.error.includes('CSRF') || data.error.includes('会话已过期') || data.error.includes('CSRF验证失败'))) {
                             csrfToken = null;
@@ -549,7 +595,8 @@
                                 return fetch(url, options);
                             }).then(function(retryResponse) {
                                 return retryResponse.json().then(function(retryData) {
-                                    if (!retryResponse.ok) { throw new Error(retryData.error || '请求失败: ' + retryResponse.status); }
+                                    if (retryData && retryData.kicked) { showKickedMessage(); throw new Error('kicked'); }
+                                    if (!retryResponse.ok) throw new Error(retryData.error || '请求失败: ' + retryResponse.status);
                                     return retryData;
                                 });
                             });
@@ -596,7 +643,6 @@
         var isInitialized = false;
         var emailVerified = false;
         var emailChanged = false;
-        var isNewUser = false;
         var emailVerifyCountdownTimer = null;
         var emailVerifyCountdownValue = 0;
         var changeEmailCountdownTimer = null;
@@ -605,12 +651,14 @@
         var githubConfigured = false;
         var githubBound = false;
         var githubInfo = null;
+        var loliaConfigured = false;
+        var loliaBound = false;
+        var loliaInfo = null;
 
         function showErrorBoundary(message) {
             var el = document.getElementById('errorBoundary');
             var desc = document.getElementById('errorDesc');
-            if (el && desc) { desc.textContent = message || '网络连接失败，请检查网络后重试';
-                el.style.display = 'block'; }
+            if (el && desc) { desc.textContent = message || '网络连接失败，请检查网络后重试'; el.style.display = 'block'; }
         }
 
         function hideErrorBoundary() { var el = document.getElementById('errorBoundary'); if (el) el.style.display = 'none'; }
@@ -634,8 +682,7 @@
         function startRateCountdown(seconds) {
             var updateEl = document.getElementById('plRateCountdown');
             var headerCountdown = document.getElementById('rateCountdown');
-            if (rateCountdownInterval) { clearInterval(rateCountdownInterval);
-                rateCountdownInterval = null; }
+            if (rateCountdownInterval) { clearInterval(rateCountdownInterval); rateCountdownInterval = null; }
             if (typeof seconds !== 'number' || seconds <= 0) {
                 if (updateEl) updateEl.textContent = '更新中...';
                 if (headerCountdown) headerCountdown.textContent = '更新中...';
@@ -645,7 +692,6 @@
             }
             isRateCountdownActive = true;
             rateRemainingSeconds = seconds;
-
             function updateDisplay() {
                 var mins = Math.floor(rateRemainingSeconds / 60);
                 var secs = rateRemainingSeconds % 60;
@@ -657,8 +703,7 @@
             rateCountdownInterval = setInterval(function() {
                 rateRemainingSeconds--;
                 if (rateRemainingSeconds <= 0) {
-                    clearInterval(rateCountdownInterval);
-                    rateCountdownInterval = null;
+                    clearInterval(rateCountdownInterval); rateCountdownInterval = null;
                     isRateCountdownActive = false;
                     if (updateEl) updateEl.textContent = '更新中...';
                     if (headerCountdown) headerCountdown.textContent = '更新中...';
@@ -675,8 +720,8 @@
             if (forceSync === undefined) forceSync = false;
             var shouldSync = forceSync;
             var currentTime = Math.floor(Date.now() / 1000);
-            if (!shouldSync && (currentTime - lastServerSyncTime > 120)) { shouldSync = true; }
-            if (!shouldSync && isRateCountdownActive) { return; }
+            if (!shouldSync && (currentTime - lastServerSyncTime > 120)) shouldSync = true;
+            if (!shouldSync && isRateCountdownActive) return;
             try {
                 var e = await apiRequest('/api/pl/rate');
                 var rate = e.rate || 0.07;
@@ -685,7 +730,7 @@
                 document.getElementById('rateDisplay').textContent = rate.toFixed(4);
                 lastServerSyncTime = Math.floor(Date.now() / 1000);
                 if (e.next_update_in && e.next_update_in > 0) {
-                    if (!isRateCountdownActive || Math.abs(e.next_update_in - rateRemainingSeconds) > 5) { startRateCountdown(e.next_update_in); }
+                    if (!isRateCountdownActive || Math.abs(e.next_update_in - rateRemainingSeconds) > 5) startRateCountdown(e.next_update_in);
                 } else {
                     if (document.getElementById('plRateCountdown')) document.getElementById('plRateCountdown').textContent = '更新中...';
                     if (document.getElementById('rateCountdown')) document.getElementById('rateCountdown').textContent = '更新中...';
@@ -704,15 +749,15 @@
                 console.error('Load PL data failed:', e);
                 if (document.getElementById('plRateCountdown')) document.getElementById('plRateCountdown').textContent = '';
                 if (document.getElementById('rateCountdown')) document.getElementById('rateCountdown').textContent = '';
-                if (!isRateCountdownActive) { setTimeout(function() { loadPlData(true); }, 5000); }
+                if (!isRateCountdownActive) setTimeout(function() { loadPlData(true); }, 5000);
             }
         }
 
-        document.addEventListener('visibilitychange', function() { if (!document.hidden) { syncRateWithServer(); } });
+        document.addEventListener('visibilitychange', function() { if (!document.hidden) syncRateWithServer(); });
         window.addEventListener('focus', function() { syncRateWithServer(); });
         setInterval(function() {
             var currentTime = Math.floor(Date.now() / 1000);
-            if (currentTime - lastServerSyncTime > 300) { loadPlData(true); }
+            if (currentTime - lastServerSyncTime > 300) loadPlData(true);
         }, 60000);
 
         function updatePreview() {
@@ -721,8 +766,7 @@
             var val = parseFloat(input.value) || 0;
             var result = document.getElementById('plPreviewResult');
             var feeDisplay = document.getElementById('feeDisplay');
-            if (val <= 0) { result.textContent = '0.0000';
-                feeDisplay.textContent = '5%'; return; }
+            if (val <= 0) { result.textContent = '0.0000'; feeDisplay.textContent = '5%'; return; }
             if (currentOpType === 'points_to_pl') {
                 var plGross = val * rate;
                 var fee = plGross * 0.05;
@@ -745,43 +789,34 @@
             var container = document.getElementById('historyList');
             var filterBtn = document.getElementById('historyFilter').querySelector('.filter-btn.active');
             var filterType = filterBtn ? filterBtn.dataset.filter : 'all';
-
             try {
-                var [transferData, historyData] = await Promise.all([
+                var results = await Promise.all([
                     apiRequest('/api/pl/transfers?per_page=100&type=' + filterType),
                     apiRequest('/api/pl/history?per_page=100')
                 ]);
-
+                var transferData = results[0];
+                var historyData = results[1];
                 var allRecords = [];
-
                 var transfers = transferData.records || [];
                 transfers.forEach(function(record) {
                     var isOutgoing = record.direction === 'outgoing';
                     allRecords.push({
-                        id: record.id,
-                        type: 'transfer',
-                        from_username: record.from_username,
-                        to_username: record.to_username,
-                        direction: record.direction,
-                        amount: record.amount,
+                        id: record.id, type: 'transfer',
+                        from_username: record.from_username, to_username: record.to_username,
+                        direction: record.direction, amount: record.amount,
                         actual_paid: record.actual_paid || record.amount,
                         coupon_discount: record.coupon_discount || 0,
-                        rate: record.rate || 0,
-                        timestamp: record.timestamp,
+                        rate: record.rate || 0, timestamp: record.timestamp,
                         status: record.status || 'completed',
                         display_type: isOutgoing ? '转账转出' : '转账转入',
                         is_outgoing: isOutgoing
                     });
                 });
-
                 var history = historyData.records || [];
                 var opTypeMap = {
-                    'points_to_pl': '兑换 积分→PL',
-                    'pl_to_points': '兑换 PL→积分',
-                    'mall_purchase': '商城PL支付',
-                    'identity_verification_reward': '认证奖励',
-                    'pl_transfer_in': '转账转入',
-                    'pl_transfer_out': '转账转出',
+                    'points_to_pl': '兑换 积分→PL', 'pl_to_points': '兑换 PL→积分',
+                    'mall_purchase': '商城PL支付', 'identity_verification_reward': '认证奖励',
+                    'pl_transfer_in': '转账转入', 'pl_transfer_out': '转账转出',
                     'gateway_purchase': '网关卡购买'
                 };
                 history.forEach(function(record) {
@@ -789,71 +824,44 @@
                     var isOutgoing = amount < 0;
                     var opType = opTypeMap[record.operation_type] || record.operation_type || '未知操作';
                     allRecords.push({
-                        id: record.id,
-                        type: 'exchange',
-                        operation_type: record.operation_type,
-                        amount: Math.abs(amount),
-                        actual_paid: Math.abs(amount),
-                        coupon_discount: 0,
-                        rate: record.rate || 0,
-                        timestamp: record.timestamp,
-                        display_type: opType,
-                        is_outgoing: isOutgoing,
+                        id: record.id, type: 'exchange', operation_type: record.operation_type,
+                        amount: Math.abs(amount), actual_paid: Math.abs(amount), coupon_discount: 0,
+                        rate: record.rate || 0, timestamp: record.timestamp,
+                        display_type: opType, is_outgoing: isOutgoing,
                         from_username: isOutgoing ? currentUser : '系统',
                         to_username: isOutgoing ? '系统' : currentUser
                     });
                 });
-
                 allRecords.sort(function(a, b) { return (b.timestamp || 0) - (a.timestamp || 0); });
-
                 var summary = transferData.summary || { total_outgoing: 0, total_incoming: 0, total_coupon_saved: 0 };
-
                 if (allRecords.length === 0) {
                     container.innerHTML = '<div style="text-align:center;color:#999;padding:20px;">暂无记录</div>';
                     openHistoryModal();
                     return;
                 }
-
                 var html = '';
                 html += '<div class="history-summary">';
                 html += '<div class="item"><span class="label">转出总额: </span><span class="value outgoing">' + (summary.total_outgoing || 0).toFixed(4) + ' PL</span></div>';
                 html += '<div class="item"><span class="label">转入总额: </span><span class="value incoming">' + (summary.total_incoming || 0).toFixed(4) + ' PL</span></div>';
                 html += '<div class="item"><span class="label">优惠节省: </span><span class="value saved">' + (summary.total_coupon_saved || 0).toFixed(4) + ' PL</span></div>';
                 html += '</div>';
-
                 allRecords.forEach(function(record) {
                     var sign = record.is_outgoing ? '-' : '+';
                     var time = new Date(record.timestamp).toLocaleString('zh-CN');
-
-                    html += '<div class="history-item">';
-                    html += '<div>';
+                    html += '<div class="history-item"><div>';
                     html += '<span class="type">' + record.display_type + ' <span class="sub">';
-                    if (record.type === 'transfer') {
-                        html += record.from_username + ' → ' + record.to_username;
-                    } else {
-                        html += record.from_username + ' → ' + record.to_username;
-                        if (record.rate > 0) {
-                            html += ' (汇率 ' + record.rate.toFixed(4) + ')';
-                        }
-                    }
+                    html += record.from_username + ' → ' + record.to_username;
+                    if (record.type === 'exchange' && record.rate > 0) html += ' (汇率 ' + record.rate.toFixed(4) + ')';
                     html += '</span></span>';
-                    if (record.coupon_discount > 0 && record.is_outgoing) {
-                        html += '<span class="coupon-tag">🎫 优惠 ' + record.coupon_discount.toFixed(4) + ' PL</span>';
-                    }
-                    html += '</div>';
-                    html += '<div>';
+                    if (record.coupon_discount > 0 && record.is_outgoing) html += '<span class="coupon-tag">🎫 优惠 ' + record.coupon_discount.toFixed(4) + ' PL</span>';
+                    html += '</div><div>';
                     html += '<span class="amount ' + (record.is_outgoing ? 'negative' : 'positive') + '">' + sign + record.amount.toFixed(4) + ' PL</span>';
-                    if (record.is_outgoing && record.actual_paid < record.amount) {
-                        html += '<span class="actual-pay">实付 ' + record.actual_paid.toFixed(4) + ' PL</span>';
-                    }
+                    if (record.is_outgoing && record.actual_paid < record.amount) html += '<span class="actual-pay">实付 ' + record.actual_paid.toFixed(4) + ' PL</span>';
                     html += '<span class="time">' + time + '</span>';
-                    html += '</div>';
-                    html += '</div>';
+                    html += '</div></div>';
                 });
-
                 container.innerHTML = html;
                 openHistoryModal();
-
             } catch (e) {
                 console.error('Load history failed:', e);
                 container.innerHTML = '<div style="text-align:center;color:#e74c3c;padding:20px;">加载失败: ' + (e.message || '网络错误') + '</div>';
@@ -871,15 +879,14 @@
                     document.getElementById('confirmModal').classList.remove('show');
                     try {
                         var t = await apiRequest('/api/pl/history/clear', { method: 'DELETE' });
-                        if (t.success) { showPlMessage('✅ 所有PL操作记录已清空', 'success');
-                            await loadPlHistory();
-                            e(true); }
-                    } catch (t) { showPlMessage('❌ ' + t.message, 'error');
-                        e(false); }
+                        if (t.success) { showPlMessage('✅ 所有PL操作记录已清空', 'success'); await loadPlHistory(); e(true); }
+                    } catch (t) { showPlMessage('❌ ' + t.message, 'error'); e(false); }
                 };
-                document.getElementById('confirmNo').onclick = function() { document.getElementById('confirmModal').style.display = 'none';
+                document.getElementById('confirmNo').onclick = function() {
+                    document.getElementById('confirmModal').style.display = 'none';
                     document.getElementById('confirmModal').classList.remove('show');
-                    e(false); };
+                    e(false);
+                };
             });
         }
 
@@ -887,11 +894,9 @@
             currentOpType = t;
             document.querySelectorAll('#plOpTabs .tab-btn').forEach(function(e) { e.classList.remove('active'); });
             document.querySelector('#plOpTabs .tab-btn[data-type="' + t + '"]').classList.add('active');
-            var e = document.getElementById('targetUserGroup'),
-                r = document.getElementById('plTargetUser');
-            if (t === 'transfer') { e.style.display = 'block';
-                r.disabled = false; } else { e.style.display = 'none';
-                r.disabled = true; }
+            var e = document.getElementById('targetUserGroup'), r = document.getElementById('plTargetUser');
+            if (t === 'transfer') { e.style.display = 'block'; r.disabled = false; }
+            else { e.style.display = 'none'; r.disabled = true; }
             updatePreview();
         }
 
@@ -900,8 +905,8 @@
                 var data = await apiRequest('/api/mail/list');
                 var count = data.total || 0;
                 var badge = document.getElementById('mailBadge');
-                if (count > 0) { badge.style.display = 'inline';
-                    badge.textContent = count > 99 ? '99+' : count; } else { badge.style.display = 'none'; }
+                if (count > 0) { badge.style.display = 'inline'; badge.textContent = count > 99 ? '99+' : count; }
+                else { badge.style.display = 'none'; }
             } catch (e) { console.error('Update mail badge failed:', e); }
         }
 
@@ -920,9 +925,7 @@
             switchOpType(t.dataset.type);
         });
         document.getElementById('plExecuteBtn').addEventListener('click', async function() {
-            var e = this,
-                t = document.getElementById('plAmountInput'),
-                r = parseFloat(t.value);
+            var e = this, t = document.getElementById('plAmountInput'), r = parseFloat(t.value);
             if (!r || r <= 0) { showPlMessage('请输入有效的数量', 'error'); return; }
             if (currentOpType === 'transfer') {
                 var o = document.getElementById('plTargetUser').value.trim();
@@ -930,8 +933,7 @@
                 if (o === currentUser) { showPlMessage('不能转账给自己', 'error'); return; }
                 if (r < 0.1) { showPlMessage('转账金额不能低于0.1PL', 'error'); return; }
             }
-            e.disabled = true;
-            e.textContent = '处理中...';
+            e.disabled = true; e.textContent = '处理中...';
             try {
                 if (currentOpType === 'points_to_pl') {
                     var a = await apiRequest('/api/pl/exchange/points-to-pl', { method: 'POST', body: JSON.stringify({ points: r }) });
@@ -952,15 +954,15 @@
                         updatePreview();
                     }
                 } else if (currentOpType === 'transfer') {
-                    var s = document.getElementById('plTargetUser').value.trim(),
-                        l = await apiRequest('/api/pl/transfer/create-order', { method: 'POST', body: JSON.stringify({ target_username: s, amount: r }) });
+                    var s = document.getElementById('plTargetUser').value.trim();
+                    var l = await apiRequest('/api/pl/transfer/create-order', { method: 'POST', body: JSON.stringify({ target_username: s, amount: r }) });
                     if (l.success) {
                         showPlMessage('✅ 转账订单已创建，正在跳转至支付页面...', 'info');
                         setTimeout(function() { window.location.href = '/pay/' + l.order_id; }, 1000);
                     }
                 }
-            } catch (t) { showPlMessage('❌ ' + t.message, 'error'); } finally { e.disabled = false;
-                e.textContent = '执行操作'; }
+            } catch (t) { showPlMessage('❌ ' + t.message, 'error'); }
+            finally { e.disabled = false; e.textContent = '执行操作'; }
         });
         document.getElementById('plAmountInput').addEventListener('keypress', function(e) { if (e.key === 'Enter') document.getElementById('plExecuteBtn').click(); });
         document.getElementById('plTargetUser').addEventListener('keypress', function(e) { if (e.key === 'Enter') document.getElementById('plExecuteBtn').click(); });
@@ -981,19 +983,14 @@
             qqModalMessage.className = 'modal-message';
         });
 
-        closeQqModal.addEventListener('click', function() { qqModal.style.display = 'none';
-            qqModal.classList.remove('show'); });
-        qqModal.addEventListener('click', function(e) { if (e.target === this) { this.style.display = 'none';
-                this.classList.remove('show'); } });
+        closeQqModal.addEventListener('click', function() { qqModal.style.display = 'none'; qqModal.classList.remove('show'); });
+        qqModal.addEventListener('click', function(e) { if (e.target === this) { this.style.display = 'none'; this.classList.remove('show'); } });
 
         saveQqBtn.addEventListener('click', async function() {
             var qq = qqInput.value.trim();
-            if (!qq) { qqModalMessage.textContent = '请输入QQ号';
-                qqModalMessage.className = 'modal-message error'; return; }
-            if (!/^\d{5,15}$/.test(qq)) { qqModalMessage.textContent = 'QQ号格式不正确，请输入5-15位数字';
-                qqModalMessage.className = 'modal-message error'; return; }
-            this.disabled = true;
-            this.textContent = '绑定中...';
+            if (!qq) { qqModalMessage.textContent = '请输入QQ号'; qqModalMessage.className = 'modal-message error'; return; }
+            if (!/^\d{5,15}$/.test(qq)) { qqModalMessage.textContent = 'QQ号格式不正确，请输入5-15位数字'; qqModalMessage.className = 'modal-message error'; return; }
+            this.disabled = true; this.textContent = '绑定中...';
             try {
                 var res = await apiRequest('/api/user/update-qq', { method: 'POST', body: JSON.stringify({ qq_number: qq }) });
                 if (res.success) {
@@ -1002,22 +999,16 @@
                     document.getElementById('displayQqNumber').textContent = qq;
                     avatarHint.textContent = 'QQ头像 (已绑定，不可修改)';
                     avatarHint.classList.add('disabled');
-                    var avatar = document.getElementById('userAvatar'),
-                        fallback = document.getElementById('avatarFallback');
-                    avatar.style.display = 'block';
-                    fallback.style.display = 'none';
+                    var avatar = document.getElementById('userAvatar'), fallback = document.getElementById('avatarFallback');
+                    avatar.style.display = 'block'; fallback.style.display = 'none';
                     var avatarUrl = 'https://q1.qlogo.cn/g?b=qq&nk=' + qq + '&s=640';
                     avatar.src = avatarUrl + '&t=' + Date.now();
-                    avatar.onerror = function() { this.style.display = 'none';
-                        fallback.style.display = 'flex'; };
-                    avatar.onload = function() { this.style.display = 'block';
-                        fallback.style.display = 'none'; };
-                    setTimeout(function() { qqModal.style.display = 'none';
-                        qqModal.classList.remove('show'); }, 1500);
+                    avatar.onerror = function() { this.style.display = 'none'; fallback.style.display = 'flex'; };
+                    avatar.onload = function() { this.style.display = 'block'; fallback.style.display = 'none'; };
+                    setTimeout(function() { qqModal.style.display = 'none'; qqModal.classList.remove('show'); }, 1500);
                 }
-            } catch (e) { qqModalMessage.textContent = '❌ ' + e.message;
-                qqModalMessage.className = 'modal-message error'; } finally { this.disabled = false;
-                this.textContent = '绑定'; }
+            } catch (e) { qqModalMessage.textContent = '❌ ' + e.message; qqModalMessage.className = 'modal-message error'; }
+            finally { this.disabled = false; this.textContent = '绑定'; }
         });
 
         qqInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') saveQqBtn.click(); });
@@ -1026,44 +1017,31 @@
             var modal = document.getElementById('emailModal');
             modal.style.display = 'flex';
             modal.classList.add('show');
-
             updateEmailModalInfo();
-
             var completedPanel = document.getElementById('emailCompletedPanel');
             var actionsContainer = document.getElementById('emailActionsContainer');
-
             if (emailVerified && emailChanged) {
                 completedPanel.style.display = 'block';
                 actionsContainer.style.display = 'none';
                 return;
             }
-
             completedPanel.style.display = 'none';
             actionsContainer.style.display = 'block';
-
             var tabVerify = document.getElementById('emailTabVerify');
             var tabChange = document.getElementById('emailTabChange');
-
             if (emailVerified) {
                 tabVerify.classList.add('hidden');
-                if (!tabChange.classList.contains('active')) {
-                    switchEmailTab('change');
-                }
+                if (!tabChange.classList.contains('active')) switchEmailTab('change');
             } else {
                 tabVerify.classList.remove('hidden');
                 if (emailChanged) {
                     tabChange.classList.add('hidden');
-                    if (!tabVerify.classList.contains('active')) {
-                        switchEmailTab('verify');
-                    }
+                    if (!tabVerify.classList.contains('active')) switchEmailTab('verify');
                 } else {
                     tabChange.classList.remove('hidden');
-                    if (!tabVerify.classList.contains('active') && !tabChange.classList.contains('active')) {
-                        switchEmailTab('verify');
-                    }
+                    if (!tabVerify.classList.contains('active') && !tabChange.classList.contains('active')) switchEmailTab('verify');
                 }
             }
-
             if (tabVerify.classList.contains('hidden') && tabChange.classList.contains('hidden')) {
                 tabVerify.classList.remove('hidden');
                 switchEmailTab('verify');
@@ -1074,12 +1052,8 @@
             var modal = document.getElementById('emailModal');
             modal.style.display = 'none';
             modal.classList.remove('show');
-            if (emailVerifyCountdownTimer) { clearInterval(emailVerifyCountdownTimer);
-                emailVerifyCountdownTimer = null;
-                emailVerifyCountdownValue = 0; }
-            if (changeEmailCountdownTimer) { clearInterval(changeEmailCountdownTimer);
-                changeEmailCountdownTimer = null;
-                changeEmailCountdownValue = 0; }
+            if (emailVerifyCountdownTimer) { clearInterval(emailVerifyCountdownTimer); emailVerifyCountdownTimer = null; emailVerifyCountdownValue = 0; }
+            if (changeEmailCountdownTimer) { clearInterval(changeEmailCountdownTimer); changeEmailCountdownTimer = null; changeEmailCountdownValue = 0; }
             document.getElementById('sendEmailVerifyBtn').disabled = false;
             document.getElementById('sendEmailVerifyBtn').textContent = '发送验证码';
             document.getElementById('sendChangeEmailBtn').disabled = false;
@@ -1098,45 +1072,21 @@
         function updateEmailModalInfo() {
             var currentEmail = document.getElementById('displayEmail').textContent;
             document.getElementById('emailModalCurrentEmail').textContent = currentEmail || '未绑定';
-
             var statusBadge = document.getElementById('emailModalStatusBadge');
-            if (emailVerified && emailChanged) {
-                statusBadge.textContent = '✅ 已验证 + 已换绑';
-                statusBadge.className = 'status-badge changed';
-            } else if (emailVerified) {
-                statusBadge.textContent = '✅ 已验证';
-                statusBadge.className = 'status-badge verified';
-            } else if (emailChanged) {
-                statusBadge.textContent = '⚠️ 已换绑 (待验证)';
-                statusBadge.className = 'status-badge unverified';
-            } else if (currentEmail && currentEmail !== '未绑定') {
-                statusBadge.textContent = '⚠️ 未验证';
-                statusBadge.className = 'status-badge unverified';
-            } else {
-                statusBadge.textContent = '❌ 未绑定';
-                statusBadge.className = 'status-badge unverified';
-            }
-
+            if (emailVerified && emailChanged) { statusBadge.textContent = '✅ 已验证 + 已换绑'; statusBadge.className = 'status-badge changed'; }
+            else if (emailVerified) { statusBadge.textContent = '✅ 已验证'; statusBadge.className = 'status-badge verified'; }
+            else if (emailChanged) { statusBadge.textContent = '⚠️ 已换绑 (待验证)'; statusBadge.className = 'status-badge unverified'; }
+            else if (currentEmail && currentEmail !== '未绑定') { statusBadge.textContent = '⚠️ 未验证'; statusBadge.className = 'status-badge unverified'; }
+            else { statusBadge.textContent = '❌ 未绑定'; statusBadge.className = 'status-badge unverified'; }
             var changeInfo = document.getElementById('changeEmailInfo');
-            if (emailChanged) {
-                changeInfo.textContent = '⚠️ 您已经换绑过邮箱，不可再次换绑';
-                changeInfo.className = 'info-banner danger';
-            } else if (emailVerified) {
-                changeInfo.textContent = '✅ 您的邮箱已验证，可以换绑为新邮箱（仅限一次）';
-                changeInfo.className = 'info-banner success';
-            } else {
-                changeInfo.textContent = '⚠️ 每个账号仅允许换绑一次，请谨慎操作';
-                changeInfo.className = 'info-banner warning';
-            }
+            if (emailChanged) { changeInfo.textContent = '⚠️ 您已经换绑过邮箱，不可再次换绑'; changeInfo.className = 'info-banner danger'; }
+            else if (emailVerified) { changeInfo.textContent = '✅ 您的邮箱已验证，可以换绑为新邮箱（仅限一次）'; changeInfo.className = 'info-banner success'; }
+            else { changeInfo.textContent = '⚠️ 每个账号仅允许换绑一次，请谨慎操作'; changeInfo.className = 'info-banner warning'; }
         }
 
         function switchEmailTab(tab) {
             emailModalCurrentTab = tab;
-
-            document.querySelectorAll('.email-panel').forEach(function(el) {
-                el.classList.remove('active');
-            });
-
+            document.querySelectorAll('.email-panel').forEach(function(el) { el.classList.remove('active'); });
             if (tab === 'verify') {
                 document.getElementById('emailVerifyPanel').classList.add('active');
                 document.getElementById('emailTabVerify').classList.add('active');
@@ -1162,45 +1112,21 @@
         document.getElementById('sendEmailVerifyBtn').addEventListener('click', async function() {
             var btn = this;
             var msg = document.getElementById('emailVerifyMessage');
-
-            if (emailVerified) {
-                msg.textContent = '您的邮箱已验证，无需重复验证';
-                msg.className = 'info';
-                return;
-            }
-
+            if (emailVerified) { msg.textContent = '您的邮箱已验证，无需重复验证'; msg.className = 'info'; return; }
             var currentEmail = document.getElementById('displayEmail').textContent;
-            if (!currentEmail || currentEmail === '未绑定') {
-                msg.textContent = '您尚未绑定邮箱，请使用"更换邮箱"功能';
-                msg.className = 'error';
-                return;
-            }
-
-            btn.disabled = true;
-            msg.textContent = '发送中...';
-            msg.className = '';
-
+            if (!currentEmail || currentEmail === '未绑定') { msg.textContent = '您尚未绑定邮箱，请使用"更换邮箱"功能'; msg.className = 'error'; return; }
+            btn.disabled = true; msg.textContent = '发送中...'; msg.className = '';
             try {
-                var data = await apiRequest('/api/send-verification-code', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        email: currentEmail,
-                        purpose: '验证'
-                    })
-                });
-
+                var data = await apiRequest('/api/send-verification-code', { method: 'POST', body: JSON.stringify({ email: currentEmail, purpose: '验证' }) });
                 if (data.success) {
-                    msg.textContent = data.message || '验证码已发送至您的邮箱';
-                    msg.className = 'success';
+                    msg.textContent = data.message || '验证码已发送至您的邮箱'; msg.className = 'success';
                     startEmailVerifyCountdown(60, btn);
                 } else {
-                    msg.textContent = data.error || '发送失败';
-                    msg.className = 'error';
+                    msg.textContent = data.error || '发送失败'; msg.className = 'error';
                     btn.disabled = false;
                 }
             } catch (error) {
-                msg.textContent = error.message || '发送失败，请重试';
-                msg.className = 'error';
+                msg.textContent = error.message || '发送失败，请重试'; msg.className = 'error';
                 btn.disabled = false;
             }
         });
@@ -1214,10 +1140,8 @@
             emailVerifyCountdownTimer = setInterval(function() {
                 emailVerifyCountdownValue--;
                 if (emailVerifyCountdownValue <= 0) {
-                    clearInterval(emailVerifyCountdownTimer);
-                    emailVerifyCountdownTimer = null;
-                    btn.disabled = false;
-                    btn.textContent = '重新发送';
+                    clearInterval(emailVerifyCountdownTimer); emailVerifyCountdownTimer = null;
+                    btn.disabled = false; btn.textContent = '重新发送';
                     countdownEl.textContent = '';
                 } else {
                     btn.textContent = emailVerifyCountdownValue + 's';
@@ -1230,49 +1154,19 @@
             var code = document.getElementById('emailVerifyCode').value.trim();
             var currentEmail = document.getElementById('displayEmail').textContent;
             var msg = document.getElementById('emailVerifyMessage');
-
-            if (emailVerified) {
-                msg.textContent = '您的邮箱已验证，无需重复验证';
-                msg.className = 'info';
-                return;
-            }
-
-            if (!currentEmail || currentEmail === '未绑定') {
-                msg.textContent = '您尚未绑定邮箱，请使用"更换邮箱"功能';
-                msg.className = 'error';
-                return;
-            }
-
-            if (!code || code.length !== 6) {
-                msg.textContent = '请输入6位验证码';
-                msg.className = 'error';
-                return;
-            }
-
-            this.disabled = true;
-            msg.textContent = '验证中...';
-            msg.className = '';
-
+            if (emailVerified) { msg.textContent = '您的邮箱已验证，无需重复验证'; msg.className = 'info'; return; }
+            if (!currentEmail || currentEmail === '未绑定') { msg.textContent = '您尚未绑定邮箱，请使用"更换邮箱"功能'; msg.className = 'error'; return; }
+            if (!code || code.length !== 6) { msg.textContent = '请输入6位验证码'; msg.className = 'error'; return; }
+            this.disabled = true; msg.textContent = '验证中...'; msg.className = '';
             try {
-                var data = await apiRequest('/api/email/verify', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        email: currentEmail,
-                        code: code
-                    })
-                });
-
+                var data = await apiRequest('/api/email/verify', { method: 'POST', body: JSON.stringify({ email: currentEmail, code: code }) });
                 if (data.success) {
-                    msg.textContent = '✅ ' + data.message;
-                    msg.className = 'success';
+                    msg.textContent = '✅ ' + data.message; msg.className = 'success';
                     emailVerified = true;
                     document.getElementById('emailVerifyCode').value = '';
                     updateEmailStatusDisplay();
                     updateEmailModalInfo();
-                    if (emailVerifyCountdownTimer) {
-                        clearInterval(emailVerifyCountdownTimer);
-                        emailVerifyCountdownTimer = null;
-                    }
+                    if (emailVerifyCountdownTimer) { clearInterval(emailVerifyCountdownTimer); emailVerifyCountdownTimer = null; }
                     document.getElementById('sendEmailVerifyBtn').disabled = false;
                     document.getElementById('sendEmailVerifyBtn').textContent = '发送验证码';
                     document.getElementById('emailVerifyCountdown').textContent = '';
@@ -1280,13 +1174,11 @@
                     closeEmailModal();
                     setTimeout(function() { openEmailModal(); }, 300);
                 } else {
-                    msg.textContent = '❌ ' + data.error;
-                    msg.className = 'error';
+                    msg.textContent = '❌ ' + data.error; msg.className = 'error';
                     this.disabled = false;
                 }
             } catch (error) {
-                msg.textContent = '❌ ' + (error.message || '验证失败');
-                msg.className = 'error';
+                msg.textContent = '❌ ' + (error.message || '验证失败'); msg.className = 'error';
                 this.disabled = false;
             }
         });
@@ -1295,58 +1187,24 @@
             var newEmail = document.getElementById('changeNewEmail').value.trim().toLowerCase();
             var btn = this;
             var msg = document.getElementById('changeEmailMessage');
-
-            if (emailChanged) {
-                msg.textContent = '每个账号仅允许换绑一次，您已经换绑过邮箱';
-                msg.className = 'error';
-                return;
-            }
-
-            if (!newEmail) {
-                msg.textContent = '请输入新邮箱地址';
-                msg.className = 'error';
-                return;
-            }
-
+            if (emailChanged) { msg.textContent = '每个账号仅允许换绑一次，您已经换绑过邮箱'; msg.className = 'error'; return; }
+            if (!newEmail) { msg.textContent = '请输入新邮箱地址'; msg.className = 'error'; return; }
             var emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-            if (!emailRegex.test(newEmail)) {
-                msg.textContent = '请输入有效的邮箱地址';
-                msg.className = 'error';
-                return;
-            }
-
+            if (!emailRegex.test(newEmail)) { msg.textContent = '请输入有效的邮箱地址'; msg.className = 'error'; return; }
             var currentEmail = document.getElementById('displayEmail').textContent;
-            if (newEmail === currentEmail) {
-                msg.textContent = '新邮箱与当前邮箱相同';
-                msg.className = 'error';
-                return;
-            }
-
-            btn.disabled = true;
-            msg.textContent = '发送中...';
-            msg.className = '';
-
+            if (newEmail === currentEmail) { msg.textContent = '新邮箱与当前邮箱相同'; msg.className = 'error'; return; }
+            btn.disabled = true; msg.textContent = '发送中...'; msg.className = '';
             try {
-                var data = await apiRequest('/api/send-verification-code', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        email: newEmail,
-                        purpose: '换绑'
-                    })
-                });
-
+                var data = await apiRequest('/api/send-verification-code', { method: 'POST', body: JSON.stringify({ email: newEmail, purpose: '换绑' }) });
                 if (data.success) {
-                    msg.textContent = data.message || '验证码已发送至新邮箱';
-                    msg.className = 'success';
+                    msg.textContent = data.message || '验证码已发送至新邮箱'; msg.className = 'success';
                     startChangeEmailCountdown(60, btn);
                 } else {
-                    msg.textContent = data.error || '发送失败';
-                    msg.className = 'error';
+                    msg.textContent = data.error || '发送失败'; msg.className = 'error';
                     btn.disabled = false;
                 }
             } catch (error) {
-                msg.textContent = error.message || '发送失败，请重试';
-                msg.className = 'error';
+                msg.textContent = error.message || '发送失败，请重试'; msg.className = 'error';
                 btn.disabled = false;
             }
         });
@@ -1360,10 +1218,8 @@
             changeEmailCountdownTimer = setInterval(function() {
                 changeEmailCountdownValue--;
                 if (changeEmailCountdownValue <= 0) {
-                    clearInterval(changeEmailCountdownTimer);
-                    changeEmailCountdownTimer = null;
-                    btn.disabled = false;
-                    btn.textContent = '重新发送';
+                    clearInterval(changeEmailCountdownTimer); changeEmailCountdownTimer = null;
+                    btn.disabled = false; btn.textContent = '重新发送';
                     countdownEl.textContent = '';
                 } else {
                     btn.textContent = changeEmailCountdownValue + 's';
@@ -1376,58 +1232,23 @@
             var newEmail = document.getElementById('changeNewEmail').value.trim().toLowerCase();
             var code = document.getElementById('changeEmailCode').value.trim();
             var msg = document.getElementById('changeEmailMessage');
-
-            if (emailChanged) {
-                msg.textContent = '每个账号仅允许换绑一次，您已经换绑过邮箱';
-                msg.className = 'error';
-                return;
-            }
-
-            if (!newEmail) {
-                msg.textContent = '请输入新邮箱地址';
-                msg.className = 'error';
-                return;
-            }
-
+            if (emailChanged) { msg.textContent = '每个账号仅允许换绑一次，您已经换绑过邮箱'; msg.className = 'error'; return; }
+            if (!newEmail) { msg.textContent = '请输入新邮箱地址'; msg.className = 'error'; return; }
             var emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-            if (!emailRegex.test(newEmail)) {
-                msg.textContent = '请输入有效的邮箱地址';
-                msg.className = 'error';
-                return;
-            }
-
-            if (!code || code.length !== 6) {
-                msg.textContent = '请输入6位验证码';
-                msg.className = 'error';
-                return;
-            }
-
-            this.disabled = true;
-            msg.textContent = '换绑中...';
-            msg.className = '';
-
+            if (!emailRegex.test(newEmail)) { msg.textContent = '请输入有效的邮箱地址'; msg.className = 'error'; return; }
+            if (!code || code.length !== 6) { msg.textContent = '请输入6位验证码'; msg.className = 'error'; return; }
+            this.disabled = true; msg.textContent = '换绑中...'; msg.className = '';
             try {
-                var data = await apiRequest('/api/email/change', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        new_email: newEmail,
-                        code: code
-                    })
-                });
-
+                var data = await apiRequest('/api/email/change', { method: 'POST', body: JSON.stringify({ new_email: newEmail, code: code }) });
                 if (data.success) {
-                    msg.textContent = '✅ ' + data.message;
-                    msg.className = 'success';
+                    msg.textContent = '✅ ' + data.message; msg.className = 'success';
                     emailChanged = true;
                     emailVerified = true;
                     document.getElementById('changeEmailCode').value = '';
                     document.getElementById('changeNewEmail').value = '';
                     updateEmailStatusDisplay();
                     updateEmailModalInfo();
-                    if (changeEmailCountdownTimer) {
-                        clearInterval(changeEmailCountdownTimer);
-                        changeEmailCountdownTimer = null;
-                    }
+                    if (changeEmailCountdownTimer) { clearInterval(changeEmailCountdownTimer); changeEmailCountdownTimer = null; }
                     document.getElementById('sendChangeEmailBtn').disabled = false;
                     document.getElementById('sendChangeEmailBtn').textContent = '发送验证码';
                     document.getElementById('changeEmailCountdown').textContent = '';
@@ -1435,44 +1256,31 @@
                     closeEmailModal();
                     setTimeout(function() { openEmailModal(); }, 300);
                 } else {
-                    msg.textContent = '❌ ' + data.error;
-                    msg.className = 'error';
+                    msg.textContent = '❌ ' + data.error; msg.className = 'error';
                     this.disabled = false;
                 }
             } catch (error) {
-                msg.textContent = '❌ ' + (error.message || '换绑失败');
-                msg.className = 'error';
+                msg.textContent = '❌ ' + (error.message || '换绑失败'); msg.className = 'error';
                 this.disabled = false;
             }
         });
 
         document.getElementById('closeEmailModal').addEventListener('click', closeEmailModal);
-        document.getElementById('emailModal').addEventListener('click', function(e) {
-            if (e.target === this) closeEmailModal();
-        });
+        document.getElementById('emailModal').addEventListener('click', function(e) { if (e.target === this) closeEmailModal(); });
 
         document.getElementById('emailVerifyCode').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && this.value.length === 6) {
-                document.getElementById('confirmEmailVerifyBtn').click();
-            }
+            if (e.key === 'Enter' && this.value.length === 6) document.getElementById('confirmEmailVerifyBtn').click();
         });
-
         document.getElementById('changeEmailCode').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && this.value.length === 6) {
-                document.getElementById('confirmChangeEmailBtn').click();
-            }
+            if (e.key === 'Enter' && this.value.length === 6) document.getElementById('confirmChangeEmailBtn').click();
         });
-
         document.getElementById('changeNewEmail').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                document.getElementById('sendChangeEmailBtn').click();
-            }
+            if (e.key === 'Enter') document.getElementById('sendChangeEmailBtn').click();
         });
 
         function updateEmailStatusDisplay() {
             var statusEl = document.getElementById('displayEmailStatus');
             var badgeEl = document.getElementById('emailStatusBadge');
-
             if (emailVerified && emailChanged) {
                 statusEl.innerHTML = '<span class="badge email-changed">✅ 已验证 + 已换绑</span>';
                 badgeEl.textContent = '✅ 已验证 + 已换绑';
@@ -1496,23 +1304,29 @@
             document.getElementById('githubUnboundArea').style.display = 'none';
             document.getElementById('githubBoundArea').style.display = 'none';
             document.getElementById('githubNotConfigured').style.display = 'none';
-
-            if (!githubConfigured) {
-                document.getElementById('githubNotConfigured').style.display = 'block';
-                return;
-            }
-
+            if (!githubConfigured) { document.getElementById('githubNotConfigured').style.display = 'block'; return; }
             if (githubBound) {
                 document.getElementById('githubBoundArea').style.display = 'block';
                 var ghAvatar = document.getElementById('githubAvatar');
-                if (githubInfo && githubInfo.github_avatar) {
-                    ghAvatar.src = githubInfo.github_avatar;
-                } else {
-                    ghAvatar.src = '';
-                }
+                ghAvatar.src = (githubInfo && githubInfo.github_avatar) ? githubInfo.github_avatar : '';
                 document.getElementById('githubUsername').textContent = '@' + (githubInfo && githubInfo.github_username ? githubInfo.github_username : 'github');
             } else {
                 document.getElementById('githubUnboundArea').style.display = 'block';
+            }
+        }
+
+        function showLoliaStatus() {
+            document.getElementById('loliaUnboundArea').style.display = 'none';
+            document.getElementById('loliaBoundArea').style.display = 'none';
+            document.getElementById('loliaNotConfigured').style.display = 'none';
+            if (!loliaConfigured) { document.getElementById('loliaNotConfigured').style.display = 'block'; return; }
+            if (loliaBound) {
+                document.getElementById('loliaBoundArea').style.display = 'block';
+                var llAvatar = document.getElementById('loliaAvatar');
+                llAvatar.src = (loliaInfo && loliaInfo.lolia_avatar) ? loliaInfo.lolia_avatar : '';
+                document.getElementById('loliaUsername').textContent = '@' + (loliaInfo && loliaInfo.lolia_username ? loliaInfo.lolia_username : 'lolia');
+            } else {
+                document.getElementById('loliaUnboundArea').style.display = 'block';
             }
         }
 
@@ -1520,25 +1334,28 @@
             try {
                 var configRes = await apiRequest('/api/auth/github/status');
                 githubConfigured = configRes.configured;
-            } catch (e) {
-                githubConfigured = false;
-            }
-
-            if (!githubConfigured) {
-                showGithubStatus();
-                return;
-            }
-
+            } catch (e) { githubConfigured = false; }
+            if (!githubConfigured) { showGithubStatus(); return; }
             try {
                 var infoRes = await apiRequest('/api/user/github-info');
                 githubBound = infoRes.bound || false;
                 githubInfo = infoRes;
-            } catch (e) {
-                githubBound = false;
-                githubInfo = null;
-            }
-
+            } catch (e) { githubBound = false; githubInfo = null; }
             showGithubStatus();
+        }
+
+        async function checkLoliaStatus() {
+            try {
+                var configRes = await apiRequest('/api/lolia/status');
+                loliaConfigured = configRes.configured;
+            } catch (e) { loliaConfigured = false; }
+            if (!loliaConfigured) { showLoliaStatus(); return; }
+            try {
+                var infoRes = await apiRequest('/api/user/lolia-info');
+                loliaBound = infoRes.bound || false;
+                loliaInfo = infoRes;
+            } catch (e) { loliaBound = false; loliaInfo = null; }
+            showLoliaStatus();
         }
 
         document.getElementById('githubBindBtn').addEventListener('click', function() {
@@ -1549,16 +1366,15 @@
         });
 
         document.getElementById('githubUnbindBtn').addEventListener('click', async function() {
-            if (!confirm('确定要解绑 GitHub 账号吗？解绑后将无法使用 GitHub 快捷登录。\n注意：解绑前需要先设置支付密码。')) {
-                return;
-            }
+            if (!confirm('确定要解绑 GitHub 账号吗？解绑后将无法使用 GitHub 快捷登录。\n注意：解绑前需要先设置支付密码。')) return;
             var btn = this;
             btn.disabled = true;
             btn.textContent = '解绑中...';
             try {
                 var res = await apiRequest('/api/user/unbind-github', { method: 'POST', body: JSON.stringify({}) });
                 if (res.success) {
-                    showToast('✅ GitHub 账号已解绑如需绑定其他 GitHub 账号，请先前往 GitHub 设置撤销对本应用的授权：https://github.com/settings/applications撤销后重新点击"绑定 GitHub 账号"即可绑定新账号。', 'success');
+                    if (res.revoke_success) showToast('✅ GitHub账号已解绑，授权已同步撤销', 'success');
+                    else showToast('✅ GitHub账号已解绑，但授权撤销未成功，如需绑定新账号请前往 GitHub 设置手动撤销授权', 'info');
                     githubBound = false;
                     githubInfo = null;
                     showGithubStatus();
@@ -1572,6 +1388,35 @@
             }
         });
 
+        document.getElementById('loliaBindBtn').addEventListener('click', function() {
+            var btn = this;
+            btn.disabled = true;
+            btn.innerHTML = '跳转中...';
+            window.location.href = '/api/lolia/login?bind=1';
+        });
+
+        document.getElementById('loliaUnbindBtn').addEventListener('click', async function() {
+            if (!confirm('确定要解绑 Lolia 账号吗？解绑后将无法使用 Lolia 快捷登录。\n注意：解绑前需要先设置支付密码。')) return;
+            var btn = this;
+            btn.disabled = true;
+            btn.textContent = '解绑中...';
+            try {
+                var res = await apiRequest('/api/user/unbind-lolia', { method: 'POST', body: JSON.stringify({}) });
+                if (res.success) {
+                    showToast('✅ Lolia账号已解绑', 'success');
+                    loliaBound = false;
+                    loliaInfo = null;
+                    showLoliaStatus();
+                    var displayLolia = document.getElementById('displayLolia');
+                    if (displayLolia) displayLolia.innerHTML = '<span style="color:#999;">未绑定</span>';
+                }
+            } catch (e) {
+                showToast('❌ ' + e.message, 'error');
+                btn.disabled = false;
+                btn.textContent = '解绑 Lolia 账号';
+            }
+        });
+
         async function checkAuthAndLoad() {
             if (isCheckingAuth) return false;
             isCheckingAuth = true;
@@ -1580,39 +1425,27 @@
                 if (e.authenticated) {
                     currentUser = e.username;
                     isVerified = e.isVerified || false;
-                    isNewUser = e.isNewUser || false;
-
                     document.getElementById('userInfo').innerHTML = '👤 ' + currentUser;
                     document.getElementById('totalPoints').textContent = e.totalPoints.toFixed(2);
-
-                    var t = document.getElementById('identityWarning'),
-                        n = document.getElementById('mainContent');
-                    if (!isVerified) { t.style.display = 'flex';
-                        n.style.display = 'none';
-                        isCheckingAuth = false; return true; } else { t.style.display = 'none';
-                        n.style.display = 'block'; }
-
+                    var t = document.getElementById('identityWarning'), n = document.getElementById('mainContent');
+                    if (!isVerified) { t.style.display = 'flex'; n.style.display = 'none'; isCheckingAuth = false; return true; }
+                    else { t.style.display = 'none'; n.style.display = 'block'; }
                     try {
                         var emailCheck = await apiRequest('/api/email/check-verification');
                         emailVerified = emailCheck.verified || false;
                         emailChanged = emailCheck.has_email ? (e.email_changed || false) : false;
-                    } catch (err) {
-                        console.warn('Failed to get email verification status:', err);
-                        emailVerified = false;
-                        emailChanged = false;
-                    }
-
+                    } catch (err) { emailVerified = false; emailChanged = false; }
                     await loadUserInfo(e);
                     await loadPlData();
                     await loadCoupons();
                     await updateMailBadge();
                     await checkGithubStatus();
+                    await checkLoliaStatus();
                     switchOpType('points_to_pl');
                     updateEmailStatusDisplay();
                     isCheckingAuth = false;
                     return true;
-                } else { isCheckingAuth = false;
-                    window.location.href = '/login.html'; return false; }
+                } else { isCheckingAuth = false; window.location.href = '/login.html'; return false; }
             } catch (e) {
                 console.error('Auth check failed:', e);
                 isCheckingAuth = false;
@@ -1626,16 +1459,11 @@
             document.getElementById('displayUsernameShort').textContent = e.username;
             document.getElementById('displayEmail').textContent = e.email || '未绑定';
             document.getElementById('displayVerified').innerHTML = e.isVerified ? '<span class="badge verified">已认证</span>' : '<span class="badge unverified">未认证</span>';
-
-            if (e.github_id) {
-                document.getElementById('displayGithub').innerHTML = '<span style="color:#27ae60;">✅ @' + (e.github_username || '已绑定') + '</span>';
-            } else {
-                document.getElementById('displayGithub').innerHTML = '<span style="color:#999;">未绑定</span>';
-            }
-
-            var qq = e.qq_number || '',
-                avatar = document.getElementById('userAvatar'),
-                fallback = document.getElementById('avatarFallback');
+            if (e.github_id) document.getElementById('displayGithub').innerHTML = '<span style="color:#27ae60;">✅ @' + (e.github_username || '已绑定') + '</span>';
+            else document.getElementById('displayGithub').innerHTML = '<span style="color:#999;">未绑定</span>';
+            if (e.lolia_id) document.getElementById('displayLolia').innerHTML = '<span style="color:#27ae60;">✅ @' + (e.lolia_username || '已绑定') + '</span>';
+            else document.getElementById('displayLolia').innerHTML = '<span style="color:#999;">未绑定</span>';
+            var qq = e.qq_number || '', avatar = document.getElementById('userAvatar'), fallback = document.getElementById('avatarFallback');
             if (qq) {
                 document.getElementById('displayQqNumber').textContent = qq;
                 avatarHint.textContent = 'QQ头像 (已绑定，不可修改)';
@@ -1644,11 +1472,9 @@
                 fallback.style.display = 'none';
                 var avatarUrl = 'https://q1.qlogo.cn/g?b=qq&nk=' + qq + '&s=640';
                 avatar.src = avatarUrl;
-                avatar.onerror = function() { this.style.display = 'none';
-                    fallback.style.display = 'flex'; };
-                avatar.onload = function() { this.style.display = 'block';
-                    fallback.style.display = 'none'; };
-                if (avatar.complete) { if (avatar.naturalWidth === 0 || avatar.naturalHeight === 0) { avatar.onerror(); } }
+                avatar.onerror = function() { this.style.display = 'none'; fallback.style.display = 'flex'; };
+                avatar.onload = function() { this.style.display = 'block'; fallback.style.display = 'none'; };
+                if (avatar.complete) { if (avatar.naturalWidth === 0 || avatar.naturalHeight === 0) avatar.onerror(); }
             } else {
                 document.getElementById('displayQqNumber').textContent = '未绑定';
                 avatarHint.textContent = '点击设置QQ头像';
@@ -1656,7 +1482,6 @@
                 avatar.style.display = 'none';
                 fallback.style.display = 'flex';
             }
-
             var t = '-';
             if (e.createdAt) {
                 try {
@@ -1666,7 +1491,6 @@
                 } catch (n) { t = e.createdAt; }
             }
             document.getElementById('displayCreatedAt').textContent = t;
-
             var r = '-';
             if (e.lastLoginDate) {
                 try {
@@ -1679,7 +1503,6 @@
                 } catch (t) { r = e.lastLoginDate; }
             } else if (e.lastLoginDate !== undefined) r = e.lastLoginDate;
             document.getElementById('displayLastLogin').textContent = r;
-
             var makeupUsed = e.makeupUsedCount || 0;
             document.getElementById('displayMakeupUsed').textContent = makeupUsed + ' / 3';
             document.getElementById('makeupUsedDisplay').textContent = makeupUsed + ' / 3';
@@ -1705,8 +1528,8 @@
                 document.getElementById('cdkCode').value = '';
                 await updatePointsDisplay();
                 await updateMailBadge();
-            } catch (e) { showMessage(e.message, 'error'); } finally { t.disabled = false;
-                t.textContent = '兑换'; }
+            } catch (e) { showMessage(e.message, 'error'); }
+            finally { t.disabled = false; t.textContent = '兑换'; }
         }
 
         document.getElementById('logoutBtn').addEventListener('click', async function() {
@@ -1719,11 +1542,9 @@
         document.getElementById('exchangeCdkBtn').addEventListener('click', exchangeCdk);
         document.getElementById('cdkCode').addEventListener('keypress', function(e) { if (e.key === 'Enter') exchangeCdk(); });
 
-        document.getElementById('historyModal').addEventListener('click', function(e) { if (e.target === this) { closeHistoryModal(); } });
-        document.getElementById('confirmModal').addEventListener('click', function(e) { if (e.target === this) { this.style.display = 'none';
-                this.classList.remove('show'); } });
-        document.getElementById('couponModal').addEventListener('click', function(e) { if (e.target === this) { this.style.display = 'none';
-                this.classList.remove('show'); } });
+        document.getElementById('historyModal').addEventListener('click', function(e) { if (e.target === this) closeHistoryModal(); });
+        document.getElementById('confirmModal').addEventListener('click', function(e) { if (e.target === this) { this.style.display = 'none'; this.classList.remove('show'); } });
+        document.getElementById('couponModal').addEventListener('click', function(e) { if (e.target === this) { this.style.display = 'none'; this.classList.remove('show'); } });
 
         async function loadCoupons() {
             try {
@@ -1741,7 +1562,8 @@
             try {
                 var e = await apiRequest('/api/coupons/list');
                 var t = document.getElementById('couponList');
-                if (e.coupons.length === 0) { t.innerHTML = '<div style="text-align:center;color:#999;padding:20px;">暂无优惠券</div>'; } else {
+                if (e.coupons.length === 0) { t.innerHTML = '<div style="text-align:center;color:#999;padding:20px;">暂无优惠券</div>'; }
+                else {
                     t.innerHTML = e.coupons.map(function(e) {
                         var n = e.type_label || (e.type === 'full_reduction' ? '满减券' : e.type === 'unconditional' ? '无门槛券' : e.type === 'product_specific' ? '指定商品券' : e.type === 'pl_discount' ? 'PL立减金' : '指定补签卡券');
                         var r = e.used ? '<span class="badge-used">已使用</span>' : '<span class="badge-active">可使用</span>';
@@ -1775,6 +1597,11 @@
                     showToast('✅ GitHub账号绑定成功', 'success');
                     window.history.replaceState({}, document.title, window.location.pathname);
                     await checkGithubStatus();
+                }
+                if (urlParams.get('lolia_bound') === '1') {
+                    showToast('✅ Lolia账号绑定成功', 'success');
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    await checkLoliaStatus();
                 }
                 hideErrorBoundary();
             } catch (error) {

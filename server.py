@@ -27,6 +27,8 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from dotenv import load_dotenv
 from authlib.integrations.flask_client import OAuth
+from urllib.parse import urlencode
+from flask import redirect
 import logging
 import threading
 import secrets
@@ -96,6 +98,18 @@ if not GITHUB_REDIRECT_URI:
 
 log.info(f"Server base URL: {SERVER_BASE_URL}")
 log.info(f"GitHub OAuth redirect URI: {GITHUB_REDIRECT_URI}")
+
+LOLIA_CLIENT_ID = os.getenv('LOLIA_CLIENT_ID', '')
+LOLIA_CLIENT_SECRET = os.getenv('LOLIA_CLIENT_SECRET', '')
+LOLIA_REDIRECT_URI = os.getenv('LOLIA_REDIRECT_URI', '')
+LOLIA_AUTHORIZE_URL = 'https://dash.lolia.link/oauth/authorize'
+LOLIA_TOKEN_URL = 'https://api.lolia.link/api/v1/oauth2/token'
+LOLIA_USERINFO_URL = 'https://api.lolia.link/api/v1/user/info'
+
+if not LOLIA_REDIRECT_URI:
+    LOLIA_REDIRECT_URI = f'{SERVER_BASE_URL}/api/lolia/callback'
+
+log.info(f"Lolia OAuth redirect URI: {LOLIA_REDIRECT_URI}")
 
 def detect_server_base_url():
     env_url = os.getenv('SITE_BASE_URL', '').strip()
@@ -1271,6 +1285,30 @@ def migrate_user_data():
             modified = True
         if 'github_avatar' not in user_data:
             user_data['github_avatar'] = ''
+            modified = True
+        if 'login_token' not in user_data:
+            user_data['login_token'] = ''
+            modified = True
+        if 'login_token_issued_at' not in user_data:
+            user_data['login_token_issued_at'] = 0
+            modified = True
+        if 'github_access_token' not in user_data:
+            user_data['github_access_token'] = ''
+            modified = True
+        if 'lolia_id' not in user_data:
+            user_data['lolia_id'] = ''
+            modified = True
+        if 'lolia_username' not in user_data:
+            user_data['lolia_username'] = ''
+            modified = True
+        if 'lolia_avatar' not in user_data:
+            user_data['lolia_avatar'] = ''
+            modified = True
+        if 'lolia_bound_at' not in user_data:
+            user_data['lolia_bound_at'] = 0
+            modified = True
+        if 'lolia_access_token' not in user_data:
+            user_data['lolia_access_token'] = ''
             modified = True
         if 'membership' not in user_data:
             user_data['membership'] = {
@@ -2590,6 +2628,10 @@ def identity_required(f):
         username = session['user']['username']
         if is_login_restricted(username):
             return jsonify({'error': '账号已被限制登录，请联系管理员'}), 403
+        session_token = session.get('login_token', '')
+        if not validate_login_token(username, session_token):
+            session.clear()
+            return jsonify({'error': '您的账号已在其他设备登录，当前会话已失效', 'kicked': True}), 401
         if not check_identity_verified(username):
             return jsonify({'error': '请先完成身份认证', 'redirect': '/identity_verification.html'}), 403
         return f(*args, **kwargs)
@@ -2605,6 +2647,10 @@ def feedback_access_required(f):
         if 'user' not in session:
             return jsonify({'error': '请先登录'}), 401
         username = session['user']['username']
+        session_token = session.get('login_token', '')
+        if not validate_login_token(username, session_token):
+            session.clear()
+            return jsonify({'error': '您的账号已在其他设备登录，当前会话已失效', 'kicked': True}), 401
         if is_feedback_restricted(username):
             detail = restricted_users.get(username, {}).get('restriction_details', {}).get('feedback', {})
             expires_at = detail.get('expires_at', 0)
@@ -2629,6 +2675,10 @@ def login_restriction_required(f):
         username = session['user']['username']
         if is_login_restricted(username):
             return jsonify({'error': '账号已被限制登录，请联系管理员'}), 403
+        session_token = session.get('login_token', '')
+        if not validate_login_token(username, session_token):
+            session.clear()
+            return jsonify({'error': '您的账号已在其他设备登录，当前会话已失效', 'kicked': True}), 401
         return f(*args, **kwargs)
     return decorated_function
 
@@ -2640,6 +2690,10 @@ def mall_access_required(f):
         username = session['user']['username']
         if is_mall_restricted(username):
             return jsonify({'error': '账号已被限制使用商城功能，请联系管理员'}), 403
+        session_token = session.get('login_token', '')
+        if not validate_login_token(username, session_token):
+            session.clear()
+            return jsonify({'error': '您的账号已在其他设备登录，当前会话已失效', 'kicked': True}), 401
         if not check_identity_verified(username):
             return jsonify({'error': '请先完成身份认证', 'redirect': '/identity_verification.html'}), 403
         return f(*args, **kwargs)
@@ -2653,6 +2707,10 @@ def generate_phone_access_required(f):
         username = session['user']['username']
         if is_generate_phone_restricted(username):
             return jsonify({'error': '账号已被限制生成手机号功能，请联系管理员'}), 403
+        session_token = session.get('login_token', '')
+        if not validate_login_token(username, session_token):
+            session.clear()
+            return jsonify({'error': '您的账号已在其他设备登录，当前会话已失效', 'kicked': True}), 401
         if not check_identity_verified(username):
             return jsonify({'error': '请先完成身份认证', 'redirect': '/identity_verification.html'}), 403
         return f(*args, **kwargs)
@@ -3639,6 +3697,37 @@ def enforce_phone_record_limit():
             save_phone_records()
             save_auth_codes()
 
+def generate_login_token():
+    return secrets.token_urlsafe(32)
+
+
+def issue_login_token(username):
+    if username not in users:
+        return None
+    token = generate_login_token()
+    users[username]['login_token'] = token
+    users[username]['login_token_issued_at'] = int(time.time() * 1000)
+    save_users()
+    return token
+
+
+def validate_login_token(username, token):
+    if username not in users:
+        return False
+    if not token:
+        return False
+    stored_token = users[username].get('login_token', '')
+    if not stored_token:
+        return False
+    return hmac.compare_digest(stored_token, token)
+
+
+def revoke_login_token(username):
+    if username in users:
+        users[username]['login_token'] = ''
+        users[username]['login_token_issued_at'] = 0
+        save_users()
+
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -3647,6 +3736,10 @@ def login_required(f):
         username = session['user']['username']
         if is_login_restricted(username):
             return jsonify({'error': '账号已被限制登录，请联系管理员'}), 403
+        session_token = session.get('login_token', '')
+        if not validate_login_token(username, session_token):
+            session.clear()
+            return jsonify({'error': '您的账号已在其他设备登录，当前会话已失效', 'kicked': True}), 401
         return f(*args, **kwargs)
     return decorated_function
 
@@ -8390,6 +8483,7 @@ def cancel_account():
     success, message = email_service.verify_code(email, verification_code)
     if not success:
         return jsonify({'error': message}), 400
+    revoke_login_token(username)
     delete_user_completely(username)
     invalidate_user_caches(username)
     session.clear()
@@ -8878,6 +8972,7 @@ def forgot_password():
     save_reset_limits(reset_limits)
     hashed_password = bcrypt.generate_password_hash(new_password).decode('utf-8')
     users[username]['password'] = hashed_password
+    revoke_login_token(username)
     save_users()
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
@@ -9748,7 +9843,14 @@ def login():
         return jsonify({'error': '用户名或密码错误'}), 400
     if not bcrypt.check_password_hash(user_data['password'], password):
         return jsonify({'error': '用户名或密码错误'}), 400
+    if is_login_restricted(username):
+        return jsonify({'error': '账号已被限制登录，请联系管理员'}), 403
+    login_token = issue_login_token(username)
+    if not login_token:
+        return jsonify({'error': '登录失败，请重试'}), 500
+    session.clear()
     session['user'] = {'username': username}
+    session['login_token'] = login_token
     user_data['lastLoginDate'] = datetime.now().strftime('%Y-%m-%d')
     save_users()
     invalidate_user_caches(username)
@@ -9826,6 +9928,8 @@ def register():
         'email_changed': False,
         'email_changed_at': 0,
         'old_email': '',
+        'login_token': '',
+        'login_token_issued_at': 0,
         'membership': {
             'is_member': False,
             'activated_at': 0,
@@ -9834,7 +9938,10 @@ def register():
         }
     }
     save_users()
+    login_token = issue_login_token(username)
+    session.clear()
     session['user'] = {'username': username}
+    session['login_token'] = login_token
     response_time = int((time.time() - start_time) * 1000)
     return jsonify({
         'success': True,
@@ -9847,6 +9954,7 @@ def register():
 def logout():
     username = session.get('user', {}).get('username', '')
     if username:
+        revoke_login_token(username)
         invalidate_user_caches(username)
     session.clear()
     response = make_response(jsonify({'success': True, 'message': '已退出登录'}))
@@ -9857,11 +9965,14 @@ def logout():
     return response
 
 @app.route('/api/check-auth', methods=['GET'])
-@cached_api(ttl=3, key_prefix='check_auth')
 def check_auth():
     if 'user' in session and session['user']:
         username = session['user']['username']
         if username in users:
+            session_token = session.get('login_token', '')
+            if not validate_login_token(username, session_token):
+                session.clear()
+                return jsonify({'authenticated': False, 'kicked': True})
             reset_daily_points_if_needed(username)
             user_data = users[username]
             is_verified = check_identity_verified(username)
@@ -9928,6 +10039,10 @@ def check_auth():
                 'gamblersMaxCount': 3,
                 'boxPurchaseCount': box_purchase_count,
                 'boxMaxCount': 5,
+                'lolia_id': user_data.get('lolia_id', ''),
+                'lolia_username': user_data.get('lolia_username', ''),
+                'lolia_avatar': user_data.get('lolia_avatar', ''),
+                'lolia_bound': bool(user_data.get('lolia_id', '')),
                 'plcardPurchaseCount': plcard_purchase_count,
                 'plcardMaxCount': 10,
                 'mailCount': mail_count,
@@ -10001,6 +10116,12 @@ def github_callback():
                 found_username = uname
                 break
         if bind_intent and current_username and current_username in users:
+            session_token = session.get('login_token', '')
+            if not validate_login_token(current_username, session_token):
+                session.clear()
+                resp = make_response('<html><body><script>alert("您的账号已在其他设备登录，当前会话已失效");window.location.href="/login.html";</script></body></html>')
+                resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+                return resp
             if found_username and found_username != current_username:
                 resp = make_response('<html><body><script>alert("该GitHub账号已绑定到其他用户");window.location.href="/player_center.html";</script></body></html>')
                 resp.headers['Content-Type'] = 'text/html; charset=utf-8'
@@ -10010,6 +10131,7 @@ def github_callback():
             user_data['github_username'] = github_login_name
             user_data['github_avatar'] = github_avatar
             user_data['github_bound_at'] = int(time.time() * 1000)
+            user_data['github_access_token'] = token.get('access_token', '')
             save_users()
             session.pop('github_pending', None)
             invalidate_user_caches(current_username)
@@ -10021,10 +10143,18 @@ def github_callback():
                 resp = make_response('<html><body><script>alert("账号已被限制登录，请联系管理员");window.location.href="/login.html";</script></body></html>')
                 resp.headers['Content-Type'] = 'text/html; charset=utf-8'
                 return resp
+            login_token = issue_login_token(found_username)
+            if not login_token:
+                resp = make_response('<html><body><script>alert("登录失败，请重试");window.location.href="/login.html";</script></body></html>')
+                resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+                return resp
+            session.clear()
             session['user'] = {'username': found_username}
+            session['login_token'] = login_token
             users[found_username]['lastLoginDate'] = datetime.now().strftime('%Y-%m-%d')
             users[found_username]['github_username'] = github_login_name
             users[found_username]['github_avatar'] = github_avatar
+            users[found_username]['github_access_token'] = token.get('access_token', '')
             save_users()
             invalidate_user_caches(found_username)
             resp = make_response('<html><body><script>window.location.href="/";</script></body></html>')
@@ -10034,7 +10164,8 @@ def github_callback():
             'github_id': github_id,
             'github_username': github_login_name,
             'github_avatar': github_avatar,
-            'github_email': github_email
+            'github_email': github_email,
+            'access_token': token.get('access_token', '')
         }
         resp = make_response('<html><body><script>window.location.href="/login.html?github_bind=1";</script></body></html>')
         resp.headers['Content-Type'] = 'text/html; charset=utf-8'
@@ -10094,11 +10225,16 @@ def github_login_existing():
     user_data['github_username'] = pending.get('github_username', '')
     user_data['github_avatar'] = pending.get('github_avatar', '')
     user_data['github_bound_at'] = int(time.time() * 1000)
+    user_data['github_access_token'] = pending.get('access_token', '')
     user_data['lastLoginDate'] = datetime.now().strftime('%Y-%m-%d')
     save_users()
+    login_token = issue_login_token(found_username)
+    if not login_token:
+        return jsonify({'error': '登录失败，请重试'}), 500
     session.pop('github_pending', None)
     session.clear()
     session['user'] = {'username': found_username}
+    session['login_token'] = login_token
     invalidate_user_caches(found_username)
     return jsonify({
         'success': True,
@@ -10156,6 +10292,7 @@ def github_register():
         'github_username': pending.get('github_username', ''),
         'github_avatar': pending.get('github_avatar', ''),
         'github_bound_at': int(time.time() * 1000),
+        'github_access_token': pending.get('access_token', ''),
         'totalPoints': 400,
         'unlimitedPoints': 0,
         'dailyEarnedPoints': 0,
@@ -10181,6 +10318,8 @@ def github_register():
         'email_changed': False,
         'email_changed_at': 0,
         'old_email': '',
+        'login_token': '',
+        'login_token_issued_at': 0,
         'membership': {
             'is_member': False,
             'activated_at': 0,
@@ -10189,9 +10328,13 @@ def github_register():
         }
     }
     save_users()
+    login_token = issue_login_token(username)
+    if not login_token:
+        return jsonify({'error': '注册失败，请重试'}), 500
     session.pop('github_pending', None)
     session.clear()
     session['user'] = {'username': username}
+    session['login_token'] = login_token
     return jsonify({
         'success': True,
         'username': username,
@@ -10244,18 +10387,49 @@ def unbind_github():
         return jsonify({'error': '用户不存在'}), 400
     if not user_data.get('github_id'):
         return jsonify({'error': '您尚未绑定GitHub账号'}), 400
-    has_pay_password_set = has_pay_password(username)
-    if not has_pay_password_set:
+    if not has_pay_password(username):
         return jsonify({'error': '解绑GitHub前请先设置支付密码，以确保账号安全'}), 400
+    access_token = user_data.get('github_access_token', '')
+    revoke_success = False
+    revoke_message = ''
+    if access_token and GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET:
+        try:
+            auth_str = f"{GITHUB_CLIENT_ID}:{GITHUB_CLIENT_SECRET}"
+            auth_b64 = base64.b64encode(auth_str.encode()).decode()
+            revoke_resp = requests.delete(
+                f'https://api.github.com/applications/{GITHUB_CLIENT_ID}/token',
+                headers={
+                    'Authorization': f'Basic {auth_b64}',
+                    'Accept': 'application/vnd.github+json',
+                    'X-GitHub-Api-Version': '2022-11-28'
+                },
+                json={'access_token': access_token},
+                timeout=10
+            )
+            if revoke_resp.status_code == 204:
+                revoke_success = True
+                revoke_message = '已同步撤销GitHub授权'
+            else:
+                revoke_message = f'GitHub撤销返回 {revoke_resp.status_code}'
+                log.warning(f"GitHub token revoke failed: {revoke_resp.status_code} {revoke_resp.text[:200]}")
+        except Exception as e:
+            revoke_message = f'撤销异常: {str(e)}'
+            log.error(f"GitHub token revoke error: {e}")
+    else:
+        revoke_message = '未保存access_token，无法主动撤销'
     user_data['github_id'] = ''
     user_data['github_username'] = ''
     user_data['github_avatar'] = ''
     user_data['github_bound_at'] = 0
+    user_data['github_access_token'] = ''
     save_users()
     invalidate_user_caches(username)
     return jsonify({
         'success': True,
-        'message': 'GitHub账号已解绑'
+        'message': 'GitHub账号已解绑',
+        'revoke_success': revoke_success,
+        'revoke_message': revoke_message,
+        'github_revoke_url': 'https://github.com/settings/applications'
     })
 
 
@@ -10295,6 +10469,7 @@ def complete_github_bind():
     user_data['github_username'] = pending.get('github_username', '')
     user_data['github_avatar'] = pending.get('github_avatar', '')
     user_data['github_bound_at'] = int(time.time() * 1000)
+    user_data['github_access_token'] = pending.get('access_token', '')
     save_users()
     session.pop('github_pending', None)
     invalidate_user_caches(username)
@@ -10302,6 +10477,365 @@ def complete_github_bind():
         'success': True,
         'message': 'GitHub账号绑定成功',
         'github_username': pending.get('github_username', '')
+    })
+
+@app.route('/api/lolia/status', methods=['GET'])
+def lolia_oauth_status():
+    return jsonify({
+        'configured': bool(LOLIA_CLIENT_ID and LOLIA_CLIENT_SECRET),
+        'redirect_uri': LOLIA_REDIRECT_URI
+    })
+
+
+@app.route('/api/lolia/login', methods=['GET'])
+def lolia_login():
+    if not LOLIA_CLIENT_ID or not LOLIA_CLIENT_SECRET:
+        return jsonify({'error': 'Lolia登录未配置，请联系管理员'}), 503
+    if request.args.get('bind') == '1' and 'user' in session:
+        session['lolia_bind_intent'] = True
+    else:
+        session.pop('lolia_bind_intent', None)
+    state = secrets.token_urlsafe(24)
+    session['lolia_oauth_state'] = state
+    params = {
+        'client_id': LOLIA_CLIENT_ID,
+        'redirect_uri': LOLIA_REDIRECT_URI,
+        'response_type': 'code',
+        'scope': 'user.info',
+        'state': state
+    }
+    auth_url = LOLIA_AUTHORIZE_URL + '?' + urlencode(params)
+    return redirect(auth_url)
+
+
+@app.route('/api/lolia/callback', methods=['GET'])
+def lolia_callback():
+    if not LOLIA_CLIENT_ID or not LOLIA_CLIENT_SECRET:
+        return jsonify({'error': 'Lolia登录未配置，请联系管理员'}), 503
+    error = request.args.get('error', '')
+    if error:
+        resp = make_response('<html><body><script>alert("Lolia授权被拒绝或失败");window.location.href="/login.html";</script></body></html>')
+        resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+        return resp
+    code = request.args.get('code', '')
+    state = request.args.get('state', '')
+    expected_state = session.pop('lolia_oauth_state', '')
+    if not code:
+        return jsonify({'error': '缺少授权码'}), 400
+    if not expected_state or not hmac.compare_digest(state, expected_state):
+        return jsonify({'error': 'state校验失败，请重新授权'}), 400
+    
+    try:
+        token_payload = {
+            'grant_type': 'authorization_code',
+            'code': code,
+            'redirect_uri': LOLIA_REDIRECT_URI,
+            'client_id': LOLIA_CLIENT_ID,
+            'client_secret': LOLIA_CLIENT_SECRET
+        }
+        
+        token_resp = requests.post(
+            LOLIA_TOKEN_URL,
+            data=token_payload,
+            headers={'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded'},
+            timeout=15
+        )
+        
+        if token_resp.status_code != 200:
+            log.error(f"Lolia token exchange failed: {token_resp.status_code} {token_resp.text[:300]}")
+            resp = make_response('<html><body><script>alert("Lolia令牌交换失败，请重试");window.location.href="/login.html";</script></body></html>')
+            resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+            return resp
+            
+        token_data = token_resp.json()
+        access_token = token_data.get('access_token', '')
+        
+        if not access_token:
+            log.error(f"Lolia token response missing access_token: {token_data}")
+            resp = make_response('<html><body><script>alert("Lolia返回的令牌无效");window.location.href="/login.html";</script></body></html>')
+            resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+            return resp
+            
+        user_resp = requests.get(
+            LOLIA_USERINFO_URL,
+            headers={'Authorization': f'Bearer {access_token}', 'Accept': 'application/json'},
+            timeout=15
+        )
+        
+        if user_resp.status_code != 200:
+            log.error(f"Lolia userinfo failed: {user_resp.status_code} {user_resp.text[:300]}")
+            resp = make_response('<html><body><script>alert("获取Lolia用户信息失败");window.location.href="/login.html";</script></body></html>')
+            resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+            return resp
+            
+        user_info = user_resp.json()
+        lolia_user = user_info.get('data', user_info) if isinstance(user_info, dict) else {}
+        
+        lolia_id = str(lolia_user.get('id', '') or lolia_user.get('uid', '') or lolia_user.get('user_id', ''))
+        lolia_login_name = lolia_user.get('username', '') or lolia_user.get('name', '') or lolia_user.get('nickname', '')
+        lolia_avatar = lolia_user.get('avatar', '') or lolia_user.get('avatar_url', '') or lolia_user.get('headimg', '')
+        lolia_email = lolia_user.get('email', '')
+        
+        if not lolia_id:
+            log.error(f"Lolia userinfo missing id: {user_info}")
+            resp = make_response('<html><body><script>alert("Lolia用户信息无效");window.location.href="/login.html";</script></body></html>')
+            resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+            return resp
+            
+        bind_intent = session.pop('lolia_bind_intent', False)
+        current_username = session.get('user', {}).get('username')
+        found_username = None
+        
+        for uname, udata in users.items():
+            if udata.get('lolia_id') == lolia_id:
+                found_username = uname
+                break
+                
+        if bind_intent and current_username and current_username in users:
+            session_token = session.get('login_token', '')
+            if not validate_login_token(current_username, session_token):
+                session.clear()
+                resp = make_response('<html><body><script>alert("您的账号已在其他设备登录，当前会话已失效");window.location.href="/login.html";</script></body></html>')
+                resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+                return resp
+                
+            if found_username and found_username != current_username:
+                resp = make_response('<html><body><script>alert("该Lolia账号已绑定到其他用户");window.location.href="/player_center.html";</script></body></html>')
+                resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+                return resp
+                
+            user_data = users[current_username]
+            user_data['lolia_id'] = lolia_id
+            user_data['lolia_username'] = lolia_login_name
+            user_data['lolia_avatar'] = lolia_avatar
+            user_data['lolia_bound_at'] = int(time.time() * 1000)
+            user_data['lolia_access_token'] = access_token
+            save_users()
+            session.pop('lolia_pending', None)
+            invalidate_user_caches(current_username)
+            resp = make_response('<html><body><script>window.location.href="/player_center.html?lolia_bound=1";</script></body></html>')
+            resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+            return resp
+            
+        if found_username:
+            if is_login_restricted(found_username):
+                resp = make_response('<html><body><script>alert("账号已被限制登录，请联系管理员");window.location.href="/login.html";</script></body></html>')
+                resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+                return resp
+                
+            login_token = issue_login_token(found_username)
+            if not login_token:
+                resp = make_response('<html><body><script>alert("登录失败，请重试");window.location.href="/login.html";</script></body></html>')
+                resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+                return resp
+                
+            session.clear()
+            session['user'] = {'username': found_username}
+            session['login_token'] = login_token
+            users[found_username]['lastLoginDate'] = datetime.now().strftime('%Y-%m-%d')
+            users[found_username]['lolia_username'] = lolia_login_name
+            users[found_username]['lolia_avatar'] = lolia_avatar
+            users[found_username]['lolia_access_token'] = access_token
+            save_users()
+            invalidate_user_caches(found_username)
+            resp = make_response('<html><body><script>window.location.href="/";</script></body></html>')
+            resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+            return resp
+            
+        session['lolia_pending'] = {
+            'lolia_id': lolia_id,
+            'lolia_username': lolia_login_name,
+            'lolia_avatar': lolia_avatar,
+            'lolia_email': lolia_email,
+            'access_token': access_token
+        }
+        resp = make_response('<html><body><script>window.location.href="/login.html?lolia_bind=1";</script></body></html>')
+        resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+        return resp
+        
+    except Exception as e:
+        log.error(f"Lolia callback error: {e}")
+        return jsonify({'error': f'Lolia登录失败: {str(e)}'}), 500
+
+
+@app.route('/api/lolia/pending', methods=['GET'])
+def lolia_pending_info():
+    pending = session.get('lolia_pending')
+    if not pending:
+        return jsonify({'has_pending': False})
+    return jsonify({
+        'has_pending': True,
+        'lolia_username': pending.get('lolia_username', ''),
+        'lolia_avatar': pending.get('lolia_avatar', ''),
+        'lolia_email': pending.get('lolia_email', '')
+    })
+
+
+@app.route('/api/lolia/login-existing', methods=['POST'])
+@csrf_protect
+@limiter.limit('10 per minute')
+def lolia_login_existing():
+    pending = session.get('lolia_pending')
+    if not pending:
+        return jsonify({'error': '未找到Lolia授权信息，请重新授权'}), 400
+    data = request.get_json()
+    username = data.get('username', '').strip()
+    password = data.get('password', '')
+    if not username or not password:
+        return jsonify({'error': '请填写用户名和密码'}), 400
+    user_data = None
+    found_username = None
+    if username in users:
+        found_username = username
+        user_data = users[username]
+    else:
+        for u, d in users.items():
+            if d.get('email') == username.lower():
+                found_username = u
+                user_data = d
+                break
+    if not user_data:
+        return jsonify({'error': '用户名或密码错误'}), 400
+    if not bcrypt.check_password_hash(user_data['password'], password):
+        return jsonify({'error': '用户名或密码错误'}), 400
+    if is_login_restricted(found_username):
+        return jsonify({'error': '账号已被限制登录，请联系管理员'}), 403
+        
+    lolia_id = pending.get('lolia_id', '')
+    for uname, udata in users.items():
+        if udata.get('lolia_id') == lolia_id and uname != found_username:
+            return jsonify({'error': '该Lolia账号已绑定到其他用户'}), 400
+            
+    user_data['lolia_id'] = lolia_id
+    user_data['lolia_username'] = pending.get('lolia_username', '')
+    user_data['lolia_avatar'] = pending.get('lolia_avatar', '')
+    user_data['lolia_bound_at'] = int(time.time() * 1000)
+    user_data['lolia_access_token'] = pending.get('access_token', '')
+    user_data['lastLoginDate'] = datetime.now().strftime('%Y-%m-%d')
+    save_users()
+    
+    login_token = issue_login_token(found_username)
+    if not login_token:
+        return jsonify({'error': '登录失败，请重试'}), 500
+        
+    session.pop('lolia_pending', None)
+    session.clear()
+    session['user'] = {'username': found_username}
+    session['login_token'] = login_token
+    invalidate_user_caches(found_username)
+    return jsonify({'success': True, 'username': found_username, 'message': 'Lolia绑定成功并已登录'})
+
+
+@app.route('/api/lolia/register', methods=['POST'])
+@csrf_protect
+@limiter.limit('5 per minute')
+def lolia_register():
+    pending = session.get('lolia_pending')
+    if not pending:
+        return jsonify({'error': '未找到Lolia授权信息，请重新授权'}), 400
+    data = request.get_json()
+    username = data.get('username', '').strip()
+    password = data.get('password', '')
+    qq_number = data.get('qq_number', '').strip()
+    email = data.get('email', '').strip().lower()
+    if not username or not password:
+        return jsonify({'error': '请填写用户名和密码'}), 400
+    if not validate_username(username):
+        return jsonify({'error': '用户名必须为3-20位字符，仅支持字母、数字、下划线、中文'}), 400
+    if username in users:
+        return jsonify({'error': '用户名已被使用'}), 400
+    if not email:
+        email = pending.get('lolia_email', '')
+    if not email:
+        return jsonify({'error': '请填写邮箱地址'}), 400
+    if not validate_email(email):
+        return jsonify({'error': '邮箱格式不正确'}), 400
+    for existing_user in users.values():
+        if existing_user.get('email') == email:
+            return jsonify({'error': '邮箱已被注册'}), 400
+    if not validate_password(password):
+        return jsonify({'error': '密码至少8位，需包含至少两种类型（大小写字母/数字/特殊字符）'}), 400
+    if qq_number and not re.match(r'^\d{5,15}$', qq_number):
+        return jsonify({'error': 'QQ号格式不正确，请输入5-15位数字'}), 400
+    if qq_number:
+        for u, d in users.items():
+            if d.get('qq_number') == qq_number:
+                return jsonify({'error': '该QQ号已被其他用户绑定'}), 400
+                
+    lolia_id = pending.get('lolia_id', '')
+    for uname, udata in users.items():
+        if udata.get('lolia_id') == lolia_id:
+            return jsonify({'error': '该Lolia账号已绑定到其他用户'}), 400
+            
+    hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+    users[username] = {
+        'username': username, 'email': email, 'password': hashed_password,
+        'qq_number': qq_number,
+        'lolia_id': lolia_id, 'lolia_username': pending.get('lolia_username', ''),
+        'lolia_avatar': pending.get('lolia_avatar', ''), 'lolia_bound_at': int(time.time() * 1000),
+        'lolia_access_token': pending.get('access_token', ''),
+        'github_id': '', 'github_username': '', 'github_avatar': '', 'github_bound_at': 0, 'github_access_token': '',
+        'totalPoints': 0, 'unlimitedPoints': 0, 'dailyEarnedPoints': 0,
+        'lastEarnedDate': datetime.now().strftime('%Y-%m-%d'),
+        'lastLoginDate': datetime.now().strftime('%Y-%m-%d'),
+        'createdAt': datetime.now().isoformat(),
+        'attendanceTotalDays': 0, 'attendanceConsecutiveDays': 0, 'lastAttendanceTimestamp': 0,
+        'attendanceClaimedTotalCycles': {}, 'attendanceClaimedConsecutiveCycles': {},
+        'coupon_usage_count': 0, 'makeup_code_used_count': 0,
+        'gamblers_code_purchase_count': 0, 'last_gamblers_purchase_date': '',
+        'box_code_purchase_count': 0, 'last_box_purchase_date': '',
+        'plcard_code_purchase_count': 0, 'lastSplashShown': 0, 'last_plcard_purchase_date': '',
+        'email_verified': False, 'email_verified_at': 0,
+        'email_changed': False, 'email_changed_at': 0, 'old_email': '',
+        'login_token': '', 'login_token_issued_at': 0,
+        'membership': {'is_member': False, 'activated_at': 0, 'expires_at': 0, 'lifetime': True}
+    }
+    save_users()
+    
+    login_token = issue_login_token(username)
+    if not login_token:
+        return jsonify({'error': '注册失败，请重试'}), 500
+        
+    session.pop('lolia_pending', None)
+    session.clear()
+    session['user'] = {'username': username}
+    session['login_token'] = login_token
+    return jsonify({'success': True, 'username': username, 'message': '注册成功'})
+
+
+@app.route('/api/user/unbind-lolia', methods=['POST'])
+@csrf_protect
+@login_required
+def unbind_lolia():
+    username = session['user']['username']
+    user_data = users.get(username)
+    if not user_data:
+        return jsonify({'error': '用户不存在'}), 400
+    if not user_data.get('lolia_id'):
+        return jsonify({'error': '您尚未绑定Lolia账号'}), 400
+    if not has_pay_password(username):
+        return jsonify({'error': '解绑Lolia前请先设置支付密码，以确保账号安全'}), 400
+        
+    user_data['lolia_id'] = ''
+    user_data['lolia_username'] = ''
+    user_data['lolia_avatar'] = ''
+    user_data['lolia_bound_at'] = 0
+    user_data['lolia_access_token'] = ''
+    save_users()
+    invalidate_user_caches(username)
+    return jsonify({'success': True, 'message': 'Lolia账号已解绑'})
+
+
+@app.route('/api/user/lolia-info', methods=['GET'])
+@login_required
+def get_lolia_info():
+    username = session['user']['username']
+    user_data = users.get(username, {})
+    return jsonify({
+        'bound': bool(user_data.get('lolia_id')),
+        'lolia_username': user_data.get('lolia_username', ''),
+        'lolia_avatar': user_data.get('lolia_avatar', ''),
+        'lolia_bound_at': user_data.get('lolia_bound_at', 0)
     })
 
 @app.route('/api/user/restrictions', methods=['GET'])

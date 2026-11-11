@@ -101,23 +101,28 @@
         .toast-message.error{background:linear-gradient(135deg,#ef5350,#e53935);color:white}
         .toast-message.info{background:linear-gradient(135deg,#42a5f5,#1e88e5);color:white}
         .hidden{display:none!important}
-        .github-section{margin-top:24px;padding-top:24px;border-top:2px dashed #e0f2f4}
-        .github-divider{text-align:center;color:#90a4ae;font-size:12px;font-weight:600;margin-bottom:16px;position:relative}
-        .github-divider::before,.github-divider::after{content:'';position:absolute;top:50%;width:35%;height:1px;background:#e0f2f4}
-        .github-divider::before{left:0}
-        .github-divider::after{right:0}
-        .github-btn{width:100%;padding:14px;background:linear-gradient(135deg,#24292e 0%,#1b1f23 100%);color:#fff;border:none;border-radius:60px;font-size:15px;font-weight:800;cursor:pointer;transition:all .3s;box-shadow:0 8px 24px rgba(36,41,46,0.3);letter-spacing:0.5px;display:flex;align-items:center;justify-content:center;gap:10px}
-        .github-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 14px 34px rgba(36,41,46,0.45)}
-        .github-btn:disabled{opacity:0.6;cursor:not-allowed;box-shadow:none}
-        .github-btn svg{width:22px;height:22px;fill:#fff}
-        .github-bind-panel{background:#f6f8fa;border:2px solid #d0d7de;border-radius:24px;padding:24px;margin-bottom:24px;animation:fadeIn 0.5s ease-out}
-        .github-bind-panel .bind-header{display:flex;align-items:center;gap:16px;margin-bottom:16px}
-        .github-bind-panel .bind-header img{width:56px;height:56px;border-radius:50%;border:3px solid #24292e;object-fit:cover;background:#fff}
-        .github-bind-panel .bind-header .bind-name{font-size:18px;font-weight:800;color:#24292e}
-        .github-bind-panel .bind-header .bind-sub{font-size:12px;color:#57606a}
-        .github-bind-tabs{display:flex;gap:8px;margin-bottom:20px;background:#eaeef2;padding:5px;border-radius:60px}
-        .github-bind-tabs button{flex:1;padding:11px;border:none;background:transparent;font-size:14px;font-weight:700;cursor:pointer;transition:all .3s;border-radius:60px;color:#57606a}
-        .github-bind-tabs button.active{background:#24292e;color:#fff;box-shadow:0 6px 18px rgba(36,41,46,0.3)}
+        .oauth-section{margin-top:24px;padding-top:24px;border-top:2px dashed #e0f2f4}
+        .oauth-divider{text-align:center;color:#90a4ae;font-size:12px;font-weight:600;margin-bottom:16px;position:relative}
+        .oauth-divider::before,.oauth-divider::after{content:'';position:absolute;top:50%;width:35%;height:1px;background:#e0f2f4}
+        .oauth-divider::before{left:0}
+        .oauth-divider::after{right:0}
+        .oauth-btn{width:100%;padding:14px;color:#fff;border:none;border-radius:60px;font-size:15px;font-weight:800;cursor:pointer;transition:all .3s;letter-spacing:0.5px;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:12px}
+        .oauth-btn:last-child{margin-bottom:0}
+        .oauth-btn:hover:not(:disabled){transform:translateY(-2px)}
+        .oauth-btn:disabled{opacity:0.6;cursor:not-allowed;box-shadow:none}
+        .oauth-btn svg{width:22px;height:22px;fill:#fff;flex-shrink:0}
+        .oauth-btn.github{background:linear-gradient(135deg,#24292e 0%,#1b1f23 100%);box-shadow:0 8px 24px rgba(36,41,46,0.3)}
+        .oauth-btn.github:hover:not(:disabled){box-shadow:0 14px 34px rgba(36,41,46,0.45)}
+        .oauth-btn.lolia{background:linear-gradient(135deg,#6a4cff 0%,#4a2fcc 100%);box-shadow:0 8px 24px rgba(106,76,255,0.3)}
+        .oauth-btn.lolia:hover:not(:disabled){box-shadow:0 14px 34px rgba(106,76,255,0.45)}
+        .oauth-bind-panel{background:#f6f8fa;border:2px solid #d0d7de;border-radius:24px;padding:24px;margin-bottom:24px;animation:fadeIn 0.5s ease-out}
+        .oauth-bind-panel .bind-header{display:flex;align-items:center;gap:16px;margin-bottom:16px}
+        .oauth-bind-panel .bind-header img{width:56px;height:56px;border-radius:50%;border:3px solid #24292e;object-fit:cover;background:#fff}
+        .oauth-bind-panel .bind-header .bind-name{font-size:18px;font-weight:800;color:#24292e}
+        .oauth-bind-panel .bind-header .bind-sub{font-size:12px;color:#57606a}
+        .oauth-bind-tabs{display:flex;gap:8px;margin-bottom:20px;background:#eaeef2;padding:5px;border-radius:60px}
+        .oauth-bind-tabs button{flex:1;padding:11px;border:none;background:transparent;font-size:14px;font-weight:700;cursor:pointer;transition:all .3s;border-radius:60px;color:#57606a}
+        .oauth-bind-tabs button.active{background:#24292e;color:#fff;box-shadow:0 6px 18px rgba(36,41,46,0.3)}
         @media(max-width:768px){.container{max-width:95%}.form-container{padding:40px 28px}.header{padding:22px 26px}.header h2{font-size:20px}}
         @media(max-width:600px){body{padding:12px}.container{border-radius:24px;max-width:95%}.header{padding:18px 22px;flex-direction:column;text-align:center}.header h2{font-size:18px}.form-container{padding:32px 20px}.tab-buttons{gap:6px}.tab-buttons button{padding:11px;font-size:14px}.input-group input{padding:13px 15px;font-size:14px}.input-group.code-group .code-btn{padding:13px 18px;font-size:13px;min-width:100px;height:50px}.modal-content{padding:24px}.code-group-row button{min-width:80px;padding:11px 16px;font-size:12px;height:44px}.code-group-row input{min-width:80px}}
         @media(max-width:480px){body{padding:8px}.container{border-radius:20px}.header{padding:16px 18px}.header h2{font-size:16px}.form-container{padding:24px 16px}h1{font-size:23px}.tab-buttons button{padding:9px;font-size:13px}.input-group input{padding:11px 13px;font-size:13px;border-radius:14px}.input-group label{font-size:12px}.input-group.code-group{gap:8px}.input-group.code-group .code-btn{padding:11px 14px;font-size:12px;min-width:80px;height:44px;border-radius:14px}.modal-content{padding:20px}.code-group-row{gap:8px}.code-group-row button{min-width:70px;padding:9px 12px;font-size:11px;height:38px}.forgot-tabs button{font-size:12px;padding:9px}.cookie-warning .btn-secondary{margin-left:0;margin-top:8px}.js-warning .btn-secondary{margin-left:0;margin-top:8px}.noscript-warning .steps{max-width:100%}}
@@ -211,50 +216,50 @@
                 </div>
             </div>
 
-            <div id="githubBindPanel" class="github-bind-panel" style="display:none;">
+            <div id="oauthBindPanel" class="oauth-bind-panel" style="display:none;">
                 <div class="bind-header">
-                    <img id="githubBindAvatar" src="" alt="GitHub Avatar">
+                    <img id="oauthBindAvatar" src="" alt="Avatar">
                     <div>
-                        <div class="bind-name" id="githubBindUsername">GitHub 用户</div>
-                        <div class="bind-sub">已授权 GitHub 账号，请绑定到本站账号</div>
+                        <div class="bind-name" id="oauthBindUsername">OAuth 用户</div>
+                        <div class="bind-sub" id="oauthBindSub">已授权第三方账号，请绑定到本站账号</div>
                     </div>
                 </div>
-                <div class="github-bind-tabs">
-                    <button id="githubBindLoginTab" class="active">绑定到已有账号</button>
-                    <button id="githubBindRegisterTab">注册新账号</button>
+                <div class="oauth-bind-tabs">
+                    <button id="oauthBindLoginTab" class="active">绑定到已有账号</button>
+                    <button id="oauthBindRegisterTab">注册新账号</button>
                 </div>
-                <div id="githubBindLoginForm">
+                <div id="oauthBindLoginForm">
                     <div class="input-group">
-                        <input type="text" id="githubBindLoginUsername" placeholder=" " autocomplete="username">
+                        <input type="text" id="oauthBindLoginUsername" placeholder=" " autocomplete="username">
                         <label>用户名 或 邮箱</label>
                     </div>
                     <div class="input-group">
-                        <input type="password" id="githubBindLoginPassword" placeholder=" " autocomplete="current-password">
+                        <input type="password" id="oauthBindLoginPassword" placeholder=" " autocomplete="current-password">
                         <label>密码</label>
                     </div>
-                    <button type="button" id="githubBindLoginBtn" style="width:100%;padding:15px;background:linear-gradient(135deg,#24292e 0%,#1b1f23 100%);color:#fff;border:none;border-radius:60px;font-size:16px;font-weight:800;cursor:pointer;margin-top:14px;box-shadow:0 8px 24px rgba(36,41,46,0.3);">绑定并登录</button>
-                    <div id="githubBindLoginMessage" class="message"></div>
+                    <button type="button" id="oauthBindLoginBtn" style="width:100%;padding:15px;background:linear-gradient(135deg,#24292e 0%,#1b1f23 100%);color:#fff;border:none;border-radius:60px;font-size:16px;font-weight:800;cursor:pointer;margin-top:14px;box-shadow:0 8px 24px rgba(36,41,46,0.3);">绑定并登录</button>
+                    <div id="oauthBindLoginMessage" class="message"></div>
                 </div>
-                <div id="githubBindRegisterForm" style="display:none;">
+                <div id="oauthBindRegisterForm" style="display:none;">
                     <div class="input-group">
-                        <input type="text" id="githubBindRegUsername" placeholder=" ">
+                        <input type="text" id="oauthBindRegUsername" placeholder=" ">
                         <label>用户名 (3-20位)</label>
                     </div>
                     <div class="input-group">
-                        <input type="email" id="githubBindRegEmail" placeholder=" " autocomplete="email">
+                        <input type="email" id="oauthBindRegEmail" placeholder=" " autocomplete="email">
                         <label>邮箱地址</label>
                     </div>
                     <div class="input-group">
-                        <input type="password" id="githubBindRegPassword" placeholder=" " autocomplete="new-password">
+                        <input type="password" id="oauthBindRegPassword" placeholder=" " autocomplete="new-password">
                         <label>密码</label>
                     </div>
                     <div class="password-hint">密码至少8位，需包含至少两种类型（大小写字母/数字/特殊字符）</div>
                     <div class="input-group">
-                        <input type="text" id="githubBindRegQqNumber" placeholder=" " maxlength="15">
+                        <input type="text" id="oauthBindRegQqNumber" placeholder=" " maxlength="15">
                         <label>QQ号 (必填，绑定后不可修改)</label>
                     </div>
-                    <button type="button" id="githubBindRegisterBtn" style="width:100%;padding:15px;background:linear-gradient(135deg,#24292e 0%,#1b1f23 100%);color:#fff;border:none;border-radius:60px;font-size:16px;font-weight:800;cursor:pointer;margin-top:14px;box-shadow:0 8px 24px rgba(36,41,46,0.3);">注册并绑定</button>
-                    <div id="githubBindRegisterMessage" class="message"></div>
+                    <button type="button" id="oauthBindRegisterBtn" style="width:100%;padding:15px;background:linear-gradient(135deg,#24292e 0%,#1b1f23 100%);color:#fff;border:none;border-radius:60px;font-size:16px;font-weight:800;cursor:pointer;margin-top:14px;box-shadow:0 8px 24px rgba(36,41,46,0.3);">注册并绑定</button>
+                    <div id="oauthBindRegisterMessage" class="message"></div>
                 </div>
             </div>
 
@@ -312,11 +317,15 @@
                 <div id="registerMessage" class="message"></div>
             </div>
 
-            <div class="github-section">
-                <div class="github-divider">或使用第三方账号登录</div>
-                <button type="button" id="githubLoginBtn" class="github-btn">
+            <div class="oauth-section" id="oauthSection">
+                <div class="oauth-divider">或使用第三方账号登录</div>
+                <button type="button" id="githubLoginBtn" class="oauth-btn github">
                     <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
                     <span>使用 GitHub 登录</span>
+                </button>
+                <button type="button" id="loliaLoginBtn" class="oauth-btn lolia">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>
+                    <span>使用 Lolia 登录</span>
                 </button>
             </div>
         </div>
@@ -352,18 +361,18 @@
         var cookieCheckDone = false;
         var codeCountdown = 0;
         var codeTimer = null;
-        var currentResponseTime = 0;
         var isRedirecting = false;
         var forgotCodeTimer = null;
         var forgotCodeCountdown = 0;
         var githubConfigured = false;
         var githubPending = false;
+        var loliaConfigured = false;
+        var loliaPending = false;
+        var kickedShown = false;
 
         function checkJavaScript() {
             var jsWarning = document.getElementById('jsWarning');
-            if (jsWarning) {
-                jsWarning.style.display = 'none';
-            }
+            if (jsWarning) jsWarning.style.display = 'none';
             return true;
         }
 
@@ -374,9 +383,7 @@
                 var found = document.cookie.indexOf(testCookie) !== -1;
                 document.cookie = testCookie + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/';
                 return found;
-            } catch (e) {
-                return false;
-            }
+            } catch (e) { return false; }
         }
 
         function handleCookieDisabled() {
@@ -389,7 +396,7 @@
             var registerTab = document.getElementById('registerTab');
             var sendCodeBtn = document.getElementById('sendCodeBtn');
             var githubLoginBtn = document.getElementById('githubLoginBtn');
-
+            var loliaLoginBtn = document.getElementById('loliaLoginBtn');
             if (warning) warning.style.display = 'block';
             if (loginForm) { loginForm.style.opacity = '0.5'; loginForm.style.pointerEvents = 'none'; }
             if (registerForm) { registerForm.style.opacity = '0.5'; registerForm.style.pointerEvents = 'none'; }
@@ -399,7 +406,7 @@
             if (loginTab) { loginTab.style.cursor = 'not-allowed'; loginTab.style.opacity = '0.5'; }
             if (registerTab) { registerTab.style.cursor = 'not-allowed'; registerTab.style.opacity = '0.5'; }
             if (githubLoginBtn) { githubLoginBtn.disabled = true; githubLoginBtn.style.opacity = '0.5'; githubLoginBtn.style.cursor = 'not-allowed'; }
-
+            if (loliaLoginBtn) { loliaLoginBtn.disabled = true; loliaLoginBtn.style.opacity = '0.5'; loliaLoginBtn.style.cursor = 'not-allowed'; }
             var forgotLink = document.getElementById('forgotPasswordLink');
             if (forgotLink) { forgotLink.style.cursor = 'not-allowed'; forgotLink.style.opacity = '0.5'; forgotLink.style.pointerEvents = 'none'; }
         }
@@ -412,7 +419,7 @@
             var registerBtn = document.getElementById('registerBtn');
             var sendCodeBtn = document.getElementById('sendCodeBtn');
             var githubLoginBtn = document.getElementById('githubLoginBtn');
-
+            var loliaLoginBtn = document.getElementById('loliaLoginBtn');
             if (warning) warning.style.display = 'none';
             if (loginForm) { loginForm.style.opacity = '1'; loginForm.style.pointerEvents = 'auto'; }
             if (registerForm) { registerForm.style.opacity = '1'; registerForm.style.pointerEvents = 'auto'; }
@@ -420,12 +427,11 @@
             if (registerBtn) { registerBtn.disabled = false; registerBtn.textContent = '注册'; registerBtn.style.opacity = '1'; registerBtn.style.cursor = 'pointer'; }
             if (sendCodeBtn) { sendCodeBtn.disabled = false; sendCodeBtn.textContent = '发送验证码'; sendCodeBtn.style.opacity = '1'; sendCodeBtn.style.cursor = 'pointer'; }
             if (githubLoginBtn) { githubLoginBtn.disabled = false; githubLoginBtn.style.opacity = '1'; githubLoginBtn.style.cursor = 'pointer'; }
-
+            if (loliaLoginBtn) { loliaLoginBtn.disabled = false; loliaLoginBtn.style.opacity = '1'; loliaLoginBtn.style.cursor = 'pointer'; }
             var loginTab = document.getElementById('loginTab');
             var registerTab = document.getElementById('registerTab');
             if (loginTab) { loginTab.style.cursor = 'pointer'; loginTab.style.opacity = '1'; }
             if (registerTab) { registerTab.style.cursor = 'pointer'; registerTab.style.opacity = '1'; }
-
             var forgotLink = document.getElementById('forgotPasswordLink');
             if (forgotLink) { forgotLink.style.cursor = 'pointer'; forgotLink.style.opacity = '1'; forgotLink.style.pointerEvents = 'auto'; }
         }
@@ -456,19 +462,28 @@
             setTimeout(function() { if (toast) toast.remove(); }, 3000);
         }
 
+        function showKickedMessage() {
+            if (kickedShown) return;
+            kickedShown = true;
+            var existing = document.querySelector('.kicked-toast');
+            if (existing) existing.remove();
+            var toast = document.createElement('div');
+            toast.className = 'kicked-toast';
+            toast.textContent = '您的账号已在其他设备登录，正在跳转登录页...';
+            toast.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);padding:14px 28px;background:linear-gradient(135deg,#ef5350,#e53935);color:#fff;border-radius:40px;font-size:14px;font-weight:700;z-index:999999;box-shadow:0 10px 30px rgba(0,0,0,0.2);max-width:90%;text-align:center;';
+            document.body.appendChild(toast);
+            setTimeout(function() { window.location.href = '/login.html'; }, 2000);
+        }
+
         function getCsrfTokenFromCookie() {
             try {
                 var cookies = document.cookie.split(';');
                 for (var i = 0; i < cookies.length; i++) {
                     var cookie = cookies[i].trim();
-                    if (cookie.indexOf('csrf_token=') === 0) {
-                        return cookie.substring('csrf_token='.length, cookie.length);
-                    }
+                    if (cookie.indexOf('csrf_token=') === 0) return cookie.substring('csrf_token='.length, cookie.length);
                 }
                 return null;
-            } catch (e) {
-                return null;
-            }
+            } catch (e) { return null; }
         }
 
         function setCsrfTokenCookie(token) {
@@ -480,18 +495,11 @@
 
         function fetchCsrfToken() {
             if (csrfTokenRefreshPromise) return csrfTokenRefreshPromise;
-            if (csrfToken && (Date.now() - csrfTokenLastFetch) < CSRF_TOKEN_TTL) {
-                return Promise.resolve(csrfToken);
-            }
+            if (csrfToken && (Date.now() - csrfTokenLastFetch) < CSRF_TOKEN_TTL) return Promise.resolve(csrfToken);
             var cookieToken = getCsrfTokenFromCookie();
-            if (cookieToken) {
-                csrfToken = cookieToken;
-                csrfTokenLastFetch = Date.now();
-                return Promise.resolve(csrfToken);
-            }
+            if (cookieToken) { csrfToken = cookieToken; csrfTokenLastFetch = Date.now(); return Promise.resolve(csrfToken); }
             csrfTokenRefreshPromise = fetch('/api/csrf-token', {
-                method: 'GET',
-                credentials: 'include',
+                method: 'GET', credentials: 'include',
                 headers: { 'Accept': 'application/json', 'Cache-Control': 'no-cache' }
             }).then(function(response) {
                 if (!response.ok) throw new Error('Failed to fetch CSRF token: HTTP ' + response.status);
@@ -518,23 +526,21 @@
             options.headers['Content-Type'] = 'application/json';
             options.headers['Accept'] = 'application/json';
             var method = (options.method || 'GET').toUpperCase();
-
             if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') {
                 return fetch(url, options).then(function(response) {
                     return response.json().then(function(data) {
-                        if (!response.ok) {
-                            throw new Error(data.error || '请求失败: ' + response.status);
-                        }
+                        if (data && data.kicked) { showKickedMessage(); throw new Error('kicked'); }
+                        if (!response.ok) throw new Error(data.error || '请求失败: ' + response.status);
                         return data;
                     });
                 });
             }
-
             return fetchCsrfToken().then(function(token) {
                 options.headers['X-CSRF-Token'] = token;
                 return fetch(url, options);
             }).then(function(response) {
                 return response.json().then(function(data) {
+                    if (data && data.kicked) { showKickedMessage(); throw new Error('kicked'); }
                     if (!response.ok) {
                         if (response.status === 403 && data.error && (data.error.includes('CSRF') || data.error.includes('会话已过期') || data.error.includes('CSRF验证失败'))) {
                             csrfToken = null;
@@ -545,9 +551,8 @@
                                 return fetch(url, options);
                             }).then(function(retryResponse) {
                                 return retryResponse.json().then(function(retryData) {
-                                    if (!retryResponse.ok) {
-                                        throw new Error(retryData.error || '请求失败: ' + retryResponse.status);
-                                    }
+                                    if (retryData && retryData.kicked) { showKickedMessage(); throw new Error('kicked'); }
+                                    if (!retryResponse.ok) throw new Error(retryData.error || '请求失败: ' + retryResponse.status);
                                     return retryData;
                                 });
                             });
@@ -568,72 +573,116 @@
                     window.location.href = '/';
                     return true;
                 }
-            } catch (e) {
-                console.error('Auth check failed:', e);
-            }
+            } catch (e) { console.error('Auth check failed:', e); }
             return false;
         }
 
-        async function checkGithubPending() {
+        async function checkOAuthPending() {
+            var which = null;
+            var pendingData = null;
             try {
-                var result = await apiRequest('/api/auth/github/pending');
-                if (result.has_pending) {
-                    githubPending = true;
-                    document.getElementById('githubBindPanel').style.display = 'block';
-                    document.getElementById('githubBindAvatar').src = result.github_avatar || '';
-                    document.getElementById('githubBindUsername').textContent = '@' + (result.github_username || 'github');
-                    var regEmail = document.getElementById('githubBindRegEmail');
-                    if (result.github_email && !regEmail.value) {
-                        regEmail.value = result.github_email;
-                    }
-                    document.querySelector('.tab-buttons').style.display = 'none';
-                    document.getElementById('loginForm').style.display = 'none';
-                    document.getElementById('registerForm').style.display = 'none';
-                    document.querySelector('.github-section').style.display = 'none';
+                var gh = await apiRequest('/api/auth/github/pending');
+                if (gh.has_pending) { which = 'github'; pendingData = gh; }
+            } catch (e) {}
+            if (!which) {
+                try {
+                    var ll = await apiRequest('/api/lolia/pending');
+                    if (ll.has_pending) { which = 'lolia'; pendingData = ll; }
+                } catch (e) {}
+            }
+            if (!which) return;
+            if (which === 'github') githubPending = true; else loliaPending = true;
+            document.getElementById('oauthBindPanel').style.display = 'block';
+            var avatar = which === 'github' ? pendingData.github_avatar : pendingData.lolia_avatar;
+            var uname = which === 'github' ? pendingData.github_username : pendingData.lolia_username;
+            var email = which === 'github' ? pendingData.github_email : pendingData.lolia_email;
+            document.getElementById('oauthBindAvatar').src = avatar || '';
+            document.getElementById('oauthBindUsername').textContent = '@' + (uname || which);
+            document.getElementById('oauthBindSub').textContent = '已授权 ' + (which === 'github' ? 'GitHub' : 'Lolia') + ' 账号，请绑定到本站账号';
+            var regEmail = document.getElementById('oauthBindRegEmail');
+            if (email && !regEmail.value) regEmail.value = email;
+            document.querySelector('.tab-buttons').style.display = 'none';
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('registerForm').style.display = 'none';
+            document.getElementById('oauthSection').style.display = 'none';
+            document.getElementById('oauthBindLoginBtn').onclick = async function() {
+                var u = document.getElementById('oauthBindLoginUsername').value.trim();
+                var p = document.getElementById('oauthBindLoginPassword').value;
+                var msg = document.getElementById('oauthBindLoginMessage');
+                if (!u || !p) { msg.textContent = '请填写用户名和密码'; msg.className = 'message error'; return; }
+                msg.textContent = '绑定中...'; msg.className = 'message info';
+                this.disabled = true;
+                try {
+                    var url = which === 'github' ? '/api/auth/github/login-existing' : '/api/lolia/login-existing';
+                    var r = await apiRequest(url, { method: 'POST', body: JSON.stringify({ username: u, password: p }) });
+                    msg.textContent = r.message || '绑定成功，正在跳转...';
+                    msg.className = 'message success';
+                    setTimeout(function() { window.location.href = '/'; }, 800);
+                } catch (err) {
+                    msg.textContent = err.message || '绑定失败';
+                    msg.className = 'message error';
+                    this.disabled = false;
                 }
-            } catch (e) {
-                console.error('Check github pending failed:', e);
+            };
+            document.getElementById('oauthBindRegisterBtn').onclick = async function() {
+                var u = document.getElementById('oauthBindRegUsername').value.trim();
+                var e = document.getElementById('oauthBindRegEmail').value.trim();
+                var p = document.getElementById('oauthBindRegPassword').value;
+                var q = document.getElementById('oauthBindRegQqNumber').value.trim();
+                var msg = document.getElementById('oauthBindRegisterMessage');
+                if (!u || !p) { msg.textContent = '请填写用户名和密码'; msg.className = 'message error'; return; }
+                if (u.length < 3 || u.length > 20) { msg.textContent = '用户名长度必须为3-20位'; msg.className = 'message error'; return; }
+                if (!/^[a-zA-Z0-9_\u4e00-\u9fa5]+$/.test(u)) { msg.textContent = '用户名仅支持字母、数字、下划线、中文'; msg.className = 'message error'; return; }
+                if (e && !validateEmail(e)) { msg.textContent = '请输入有效的邮箱地址'; msg.className = 'message error'; return; }
+                if (p.length < 8) { msg.textContent = '密码长度至少8位'; msg.className = 'message error'; return; }
+                var hasUpper = /[A-Z]/.test(p), hasLower = /[a-z]/.test(p), hasDigit = /[0-9]/.test(p), hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(p);
+                if ([hasUpper, hasLower, hasDigit, hasSpecial].filter(Boolean).length < 2) { msg.textContent = '密码需包含至少两种类型'; msg.className = 'message error'; return; }
+                if (q && !/^\d{5,15}$/.test(q)) { msg.textContent = 'QQ号格式不正确'; msg.className = 'message error'; return; }
+                msg.textContent = '注册中...'; msg.className = 'message info';
+                this.disabled = true;
+                try {
+                    var url = which === 'github' ? '/api/auth/github/register' : '/api/lolia/register';
+                    var r = await apiRequest(url, { method: 'POST', body: JSON.stringify({ username: u, email: e, password: p, qq_number: q }) });
+                    msg.textContent = r.message || '注册成功，正在跳转...';
+                    msg.className = 'message success';
+                    setTimeout(function() { window.location.href = '/'; }, 800);
+                } catch (err) {
+                    msg.textContent = err.message || '注册失败';
+                    msg.className = 'message error';
+                    this.disabled = false;
+                }
+            };
+        }
+
+        async function checkOAuthStatus() {
+            try {
+                var gh = await apiRequest('/api/auth/github/status');
+                githubConfigured = gh.configured;
+                if (!githubConfigured) document.getElementById('githubLoginBtn').style.display = 'none';
+            } catch (e) { document.getElementById('githubLoginBtn').style.display = 'none'; }
+            try {
+                var ll = await apiRequest('/api/lolia/status');
+                loliaConfigured = ll.configured;
+                if (!loliaConfigured) document.getElementById('loliaLoginBtn').style.display = 'none';
+            } catch (e) { document.getElementById('loliaLoginBtn').style.display = 'none'; }
+            if (document.getElementById('githubLoginBtn').style.display === 'none' && document.getElementById('loliaLoginBtn').style.display === 'none') {
+                document.getElementById('oauthSection').style.display = 'none';
             }
         }
 
-        async function checkGithubStatus() {
-            try {
-                var result = await apiRequest('/api/auth/github/status');
-                githubConfigured = result.configured;
-                var githubBtn = document.getElementById('githubLoginBtn');
-                if (!githubConfigured) {
-                    githubBtn.style.display = 'none';
-                }
-            } catch (e) {
-                console.error('Check github status failed:', e);
-                var githubBtn = document.getElementById('githubLoginBtn');
-                githubBtn.style.display = 'none';
-            }
-        }
-
-        function validateEmail(email) {
-            return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);
-        }
+        function validateEmail(email) { return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email); }
 
         function startCountdown(seconds, btn) {
             codeCountdown = seconds;
             var countdownEl = document.getElementById('codeCountdown');
-
-            if (codeTimer) {
-                clearInterval(codeTimer);
-                codeTimer = null;
-            }
-
+            if (codeTimer) { clearInterval(codeTimer); codeTimer = null; }
             btn.disabled = true;
             btn.textContent = seconds + 's';
-
             codeTimer = setInterval(function() {
                 codeCountdown--;
                 if (codeCountdown <= 0) {
-                    clearInterval(codeTimer);
-                    codeTimer = null;
-                    btn.disabled = false;
-                    btn.textContent = '重新发送';
+                    clearInterval(codeTimer); codeTimer = null;
+                    btn.disabled = false; btn.textContent = '重新发送';
                     if (countdownEl) countdownEl.textContent = '';
                 } else {
                     btn.textContent = codeCountdown + 's';
@@ -643,10 +692,7 @@
         }
 
         document.getElementById('loginTab').addEventListener('click', function() {
-            if (!cookieEnabled) {
-                showToastMessage('⚠️ 请先启用 Cookie', 'error');
-                return;
-            }
+            if (!cookieEnabled) { showToastMessage('⚠️ 请先启用 Cookie', 'error'); return; }
             document.getElementById('loginTab').classList.add('active');
             document.getElementById('registerTab').classList.remove('active');
             document.getElementById('loginForm').style.display = 'block';
@@ -658,10 +704,7 @@
         });
 
         document.getElementById('registerTab').addEventListener('click', function() {
-            if (!cookieEnabled) {
-                showToastMessage('⚠️ 请先启用 Cookie', 'error');
-                return;
-            }
+            if (!cookieEnabled) { showToastMessage('⚠️ 请先启用 Cookie', 'error'); return; }
             document.getElementById('registerTab').classList.add('active');
             document.getElementById('loginTab').classList.remove('active');
             document.getElementById('loginForm').style.display = 'none';
@@ -673,43 +716,20 @@
         });
 
         document.getElementById('sendCodeBtn').addEventListener('click', async function() {
-            if (!cookieEnabled) {
-                showToastMessage('⚠️ 请先启用 Cookie', 'error');
-                return;
-            }
-
+            if (!cookieEnabled) { showToastMessage('⚠️ 请先启用 Cookie', 'error'); return; }
             var email = document.getElementById('regEmail').value.trim();
             var username = document.getElementById('regUsername').value.trim();
             var btn = this;
             var msg = document.getElementById('registerMessage');
-
-            if (!email) {
-                msg.textContent = '请先输入邮箱地址';
-                msg.className = 'message error';
-                return;
-            }
-
-            if (!validateEmail(email)) {
-                msg.textContent = '请输入有效的邮箱地址';
-                msg.className = 'message error';
-                return;
-            }
-
-            msg.textContent = '发送中...';
-            msg.className = 'message info';
-            btn.disabled = true;
-            btn.textContent = '发送中...';
-
+            if (!email) { msg.textContent = '请先输入邮箱地址'; msg.className = 'message error'; return; }
+            if (!validateEmail(email)) { msg.textContent = '请输入有效的邮箱地址'; msg.className = 'message error'; return; }
+            msg.textContent = '发送中...'; msg.className = 'message info';
+            btn.disabled = true; btn.textContent = '发送中...';
             try {
                 var response = await apiRequest('/api/send-verification-code', {
                     method: 'POST',
-                    body: JSON.stringify({
-                        email: email,
-                        username: username,
-                        purpose: '注册'
-                    })
+                    body: JSON.stringify({ email: email, username: username, purpose: '注册' })
                 });
-
                 if (response.success) {
                     msg.textContent = response.message || '验证码已发送至您的邮箱，请查收';
                     msg.className = 'message success';
@@ -717,46 +737,27 @@
                 } else {
                     msg.textContent = response.message || '发送失败，请重试';
                     msg.className = 'message error';
-                    btn.disabled = false;
-                    btn.textContent = '发送验证码';
+                    btn.disabled = false; btn.textContent = '发送验证码';
                 }
             } catch (error) {
                 msg.textContent = error.message || '发送失败，请重试';
                 msg.className = 'message error';
-                btn.disabled = false;
-                btn.textContent = '发送验证码';
+                btn.disabled = false; btn.textContent = '发送验证码';
             }
         });
 
         document.getElementById('loginBtn').addEventListener('click', async function() {
-            if (!cookieEnabled) {
-                showToastMessage('⚠️ 请先启用 Cookie', 'error');
-                return;
-            }
-
+            if (!cookieEnabled) { showToastMessage('⚠️ 请先启用 Cookie', 'error'); return; }
             var username = document.getElementById('loginUsername').value.trim();
             var password = document.getElementById('loginPassword').value;
             var msg = document.getElementById('loginMessage');
-
-            if (!username || !password) {
-                msg.textContent = '请输入用户名/邮箱和密码';
-                msg.className = 'message error';
-                return;
-            }
-
-            msg.textContent = '登录中...';
-            msg.className = 'message info';
+            if (!username || !password) { msg.textContent = '请输入用户名/邮箱和密码'; msg.className = 'message error'; return; }
+            msg.textContent = '登录中...'; msg.className = 'message info';
             this.disabled = true;
-
             try {
-                var response = await apiRequest('/api/login', {
-                    method: 'POST',
-                    body: JSON.stringify({ username: username, password: password })
-                });
-
+                var response = await apiRequest('/api/login', { method: 'POST', body: JSON.stringify({ username: username, password: password }) });
                 msg.textContent = response.message || '登录成功';
                 msg.className = 'message success';
-
                 var userData = await apiRequest('/api/user/restrictions');
                 if (userData.loginRestricted) {
                     msg.textContent = '❌ 账号已被限制登录，请联系管理员';
@@ -765,18 +766,12 @@
                     this.disabled = false;
                     return;
                 }
-
                 setTimeout(async function() {
                     try {
                         var splashStatus = await apiRequest('/api/user/splash-status');
-                        if (splashStatus.should_show) {
-                            window.location.href = '/splash.html';
-                        } else {
-                            window.location.href = '/';
-                        }
-                    } catch (e) {
-                        window.location.href = '/';
-                    }
+                        if (splashStatus.should_show) window.location.href = '/splash.html';
+                        else window.location.href = '/';
+                    } catch (e) { window.location.href = '/'; }
                 }, 500);
             } catch (error) {
                 msg.textContent = error.message || '登录失败';
@@ -786,106 +781,38 @@
         });
 
         document.getElementById('registerBtn').addEventListener('click', async function() {
-            if (!cookieEnabled) {
-                showToastMessage('⚠️ 请先启用 Cookie', 'error');
-                return;
-            }
-
+            if (!cookieEnabled) { showToastMessage('⚠️ 请先启用 Cookie', 'error'); return; }
             var username = document.getElementById('regUsername').value.trim();
             var email = document.getElementById('regEmail').value.trim();
             var password = document.getElementById('regPassword').value;
             var qqNumber = document.getElementById('regQqNumber').value.trim();
             var verificationCode = document.getElementById('regVerificationCode').value.trim();
             var msg = document.getElementById('registerMessage');
-
-            if (!username || !email || !password || !verificationCode) {
-                msg.textContent = '请填写所有必填字段（用户名、邮箱、验证码、密码、QQ号）';
-                msg.className = 'message error';
-                return;
-            }
-
-            if (username.length < 3 || username.length > 20) {
-                msg.textContent = '用户名长度必须为3-20位';
-                msg.className = 'message error';
-                return;
-            }
-
-            if (!/^[a-zA-Z0-9_\u4e00-\u9fa5]+$/.test(username)) {
-                msg.textContent = '用户名仅支持字母、数字、下划线、中文';
-                msg.className = 'message error';
-                return;
-            }
-
-            if (!validateEmail(email)) {
-                msg.textContent = '请输入有效的邮箱地址';
-                msg.className = 'message error';
-                return;
-            }
-
-            if (password.length < 8) {
-                msg.textContent = '密码长度至少8位';
-                msg.className = 'message error';
-                return;
-            }
-
-            var hasUpper = /[A-Z]/.test(password);
-            var hasLower = /[a-z]/.test(password);
-            var hasDigit = /[0-9]/.test(password);
-            var hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-            var typeCount = [hasUpper, hasLower, hasDigit, hasSpecial].filter(Boolean).length;
-            if (typeCount < 2) {
-                msg.textContent = '密码需包含至少两种类型（大小写字母/数字/特殊字符）';
-                msg.className = 'message error';
-                return;
-            }
-
-            if (!qqNumber) {
-                msg.textContent = 'QQ号是必填项，请输入您的QQ号';
-                msg.className = 'message error';
-                return;
-            }
-            if (!/^\d{5,15}$/.test(qqNumber)) {
-                msg.textContent = 'QQ号格式不正确，请输入5-15位数字';
-                msg.className = 'message error';
-                return;
-            }
-
-            if (verificationCode.length !== 6 || !/^\d{6}$/.test(verificationCode)) {
-                msg.textContent = '验证码为6位数字，请检查输入';
-                msg.className = 'message error';
-                return;
-            }
-
-            msg.textContent = '注册中...';
-            msg.className = 'message info';
+            if (!username || !email || !password || !verificationCode) { msg.textContent = '请填写所有必填字段（用户名、邮箱、验证码、密码、QQ号）'; msg.className = 'message error'; return; }
+            if (username.length < 3 || username.length > 20) { msg.textContent = '用户名长度必须为3-20位'; msg.className = 'message error'; return; }
+            if (!/^[a-zA-Z0-9_\u4e00-\u9fa5]+$/.test(username)) { msg.textContent = '用户名仅支持字母、数字、下划线、中文'; msg.className = 'message error'; return; }
+            if (!validateEmail(email)) { msg.textContent = '请输入有效的邮箱地址'; msg.className = 'message error'; return; }
+            if (password.length < 8) { msg.textContent = '密码长度至少8位'; msg.className = 'message error'; return; }
+            var hasUpper = /[A-Z]/.test(password), hasLower = /[a-z]/.test(password), hasDigit = /[0-9]/.test(password), hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+            if ([hasUpper, hasLower, hasDigit, hasSpecial].filter(Boolean).length < 2) { msg.textContent = '密码需包含至少两种类型'; msg.className = 'message error'; return; }
+            if (!qqNumber) { msg.textContent = 'QQ号是必填项'; msg.className = 'message error'; return; }
+            if (!/^\d{5,15}$/.test(qqNumber)) { msg.textContent = 'QQ号格式不正确'; msg.className = 'message error'; return; }
+            if (verificationCode.length !== 6 || !/^\d{6}$/.test(verificationCode)) { msg.textContent = '验证码为6位数字'; msg.className = 'message error'; return; }
+            msg.textContent = '注册中...'; msg.className = 'message info';
             this.disabled = true;
-
             try {
                 var response = await apiRequest('/api/register', {
                     method: 'POST',
-                    body: JSON.stringify({
-                        username: username,
-                        email: email,
-                        password: password,
-                        qq_number: qqNumber,
-                        verification_code: verificationCode
-                    })
+                    body: JSON.stringify({ username: username, email: email, password: password, qq_number: qqNumber, verification_code: verificationCode })
                 });
-
                 msg.textContent = response.message || '注册成功，正在跳转...';
                 msg.className = 'message success';
-
                 setTimeout(async function() {
                     try {
                         var splashStatus = await apiRequest('/api/user/splash-status');
-                        if (splashStatus.should_show) {
-                            window.location.href = '/splash.html';
-                        } else {
-                            window.location.href = '/';
-                        }
-                    } catch (e) {
-                        window.location.href = '/';
-                    }
+                        if (splashStatus.should_show) window.location.href = '/splash.html';
+                        else window.location.href = '/';
+                    } catch (e) { window.location.href = '/'; }
                 }, 800);
             } catch (error) {
                 msg.textContent = error.message || '注册失败';
@@ -895,153 +822,36 @@
         });
 
         document.getElementById('githubLoginBtn').addEventListener('click', function() {
-            if (!cookieEnabled) {
-                showToastMessage('⚠️ 请先启用 Cookie', 'error');
-                return;
-            }
+            if (!cookieEnabled) { showToastMessage('⚠️ 请先启用 Cookie', 'error'); return; }
             window.location.href = '/api/auth/github/login';
         });
 
-        document.getElementById('githubBindLoginTab').addEventListener('click', function() {
-            document.getElementById('githubBindLoginTab').classList.add('active');
-            document.getElementById('githubBindRegisterTab').classList.remove('active');
-            document.getElementById('githubBindLoginForm').style.display = 'block';
-            document.getElementById('githubBindRegisterForm').style.display = 'none';
+        document.getElementById('loliaLoginBtn').addEventListener('click', function() {
+            if (!cookieEnabled) { showToastMessage('⚠️ 请先启用 Cookie', 'error'); return; }
+            window.location.href = '/api/lolia/login';
         });
 
-        document.getElementById('githubBindRegisterTab').addEventListener('click', function() {
-            document.getElementById('githubBindRegisterTab').classList.add('active');
-            document.getElementById('githubBindLoginTab').classList.remove('active');
-            document.getElementById('githubBindLoginForm').style.display = 'none';
-            document.getElementById('githubBindRegisterForm').style.display = 'block';
+        document.getElementById('oauthBindLoginTab').addEventListener('click', function() {
+            document.getElementById('oauthBindLoginTab').classList.add('active');
+            document.getElementById('oauthBindRegisterTab').classList.remove('active');
+            document.getElementById('oauthBindLoginForm').style.display = 'block';
+            document.getElementById('oauthBindRegisterForm').style.display = 'none';
         });
 
-        document.getElementById('githubBindLoginBtn').addEventListener('click', async function() {
-            if (!cookieEnabled) {
-                showToastMessage('⚠️ 请先启用 Cookie', 'error');
-                return;
-            }
-            var username = document.getElementById('githubBindLoginUsername').value.trim();
-            var password = document.getElementById('githubBindLoginPassword').value;
-            var msg = document.getElementById('githubBindLoginMessage');
-            if (!username || !password) {
-                msg.textContent = '请填写用户名和密码';
-                msg.className = 'message error';
-                return;
-            }
-            msg.textContent = '绑定中...';
-            msg.className = 'message info';
-            this.disabled = true;
-            try {
-                var response = await apiRequest('/api/auth/github/login-existing', {
-                    method: 'POST',
-                    body: JSON.stringify({ username: username, password: password })
-                });
-                msg.textContent = response.message || '绑定成功，正在跳转...';
-                msg.className = 'message success';
-                setTimeout(function() { window.location.href = '/'; }, 800);
-            } catch (error) {
-                msg.textContent = error.message || '绑定失败';
-                msg.className = 'message error';
-                this.disabled = false;
-            }
+        document.getElementById('oauthBindRegisterTab').addEventListener('click', function() {
+            document.getElementById('oauthBindRegisterTab').classList.add('active');
+            document.getElementById('oauthBindLoginTab').classList.remove('active');
+            document.getElementById('oauthBindLoginForm').style.display = 'none';
+            document.getElementById('oauthBindRegisterForm').style.display = 'block';
         });
 
-        document.getElementById('githubBindRegisterBtn').addEventListener('click', async function() {
-            if (!cookieEnabled) {
-                showToastMessage('⚠️ 请先启用 Cookie', 'error');
-                return;
-            }
-            var username = document.getElementById('githubBindRegUsername').value.trim();
-            var email = document.getElementById('githubBindRegEmail').value.trim();
-            var password = document.getElementById('githubBindRegPassword').value;
-            var qqNumber = document.getElementById('githubBindRegQqNumber').value.trim();
-            var msg = document.getElementById('githubBindRegisterMessage');
-
-            if (!username || !password) {
-                msg.textContent = '请填写用户名和密码';
-                msg.className = 'message error';
-                return;
-            }
-            if (username.length < 3 || username.length > 20) {
-                msg.textContent = '用户名长度必须为3-20位';
-                msg.className = 'message error';
-                return;
-            }
-            if (!/^[a-zA-Z0-9_\u4e00-\u9fa5]+$/.test(username)) {
-                msg.textContent = '用户名仅支持字母、数字、下划线、中文';
-                msg.className = 'message error';
-                return;
-            }
-            if (email && !validateEmail(email)) {
-                msg.textContent = '请输入有效的邮箱地址';
-                msg.className = 'message error';
-                return;
-            }
-            if (password.length < 8) {
-                msg.textContent = '密码长度至少8位';
-                msg.className = 'message error';
-                return;
-            }
-            var hasUpper = /[A-Z]/.test(password);
-            var hasLower = /[a-z]/.test(password);
-            var hasDigit = /[0-9]/.test(password);
-            var hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-            var typeCount = [hasUpper, hasLower, hasDigit, hasSpecial].filter(Boolean).length;
-            if (typeCount < 2) {
-                msg.textContent = '密码需包含至少两种类型（大小写字母/数字/特殊字符）';
-                msg.className = 'message error';
-                return;
-            }
-            if (qqNumber && !/^\d{5,15}$/.test(qqNumber)) {
-                msg.textContent = 'QQ号格式不正确，请输入5-15位数字';
-                msg.className = 'message error';
-                return;
-            }
-            msg.textContent = '注册中...';
-            msg.className = 'message info';
-            this.disabled = true;
-            try {
-                var response = await apiRequest('/api/auth/github/register', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        username: username,
-                        email: email,
-                        password: password,
-                        qq_number: qqNumber
-                    })
-                });
-                msg.textContent = response.message || '注册成功，正在跳转...';
-                msg.className = 'message success';
-                setTimeout(function() { window.location.href = '/'; }, 800);
-            } catch (error) {
-                msg.textContent = error.message || '注册失败';
-                msg.className = 'message error';
-                this.disabled = false;
-            }
-        });
-
-        document.getElementById('loginUsername').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') document.getElementById('loginBtn').click();
-        });
-        document.getElementById('loginPassword').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') document.getElementById('loginBtn').click();
-        });
-        document.getElementById('regUsername').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') document.getElementById('registerBtn').click();
-        });
-        document.getElementById('regEmail').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') document.getElementById('registerBtn').click();
-        });
-        document.getElementById('regVerificationCode').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') document.getElementById('registerBtn').click();
-        });
-        document.getElementById('regPassword').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') document.getElementById('registerBtn').click();
-        });
-        document.getElementById('regQqNumber').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') document.getElementById('registerBtn').click();
-        });
+        document.getElementById('loginUsername').addEventListener('keypress', function(e) { if (e.key === 'Enter') document.getElementById('loginBtn').click(); });
+        document.getElementById('loginPassword').addEventListener('keypress', function(e) { if (e.key === 'Enter') document.getElementById('loginBtn').click(); });
+        document.getElementById('regUsername').addEventListener('keypress', function(e) { if (e.key === 'Enter') document.getElementById('registerBtn').click(); });
+        document.getElementById('regEmail').addEventListener('keypress', function(e) { if (e.key === 'Enter') document.getElementById('registerBtn').click(); });
+        document.getElementById('regVerificationCode').addEventListener('keypress', function(e) { if (e.key === 'Enter') document.getElementById('registerBtn').click(); });
+        document.getElementById('regPassword').addEventListener('keypress', function(e) { if (e.key === 'Enter') document.getElementById('registerBtn').click(); });
+        document.getElementById('regQqNumber').addEventListener('keypress', function(e) { if (e.key === 'Enter') document.getElementById('registerBtn').click(); });
 
         var forgotModal = document.getElementById('forgotModal');
         var forgotPasswordLink = document.getElementById('forgotPasswordLink');
@@ -1057,89 +867,47 @@
             document.getElementById('forgotEmailNewPassword').value = '';
             document.getElementById('forgotMessage').textContent = '';
             document.getElementById('forgotMessage').className = 'message';
-            if (forgotSendCodeBtn) {
-                forgotSendCodeBtn.disabled = false;
-                forgotSendCodeBtn.textContent = '发送验证码';
-            }
+            if (forgotSendCodeBtn) { forgotSendCodeBtn.disabled = false; forgotSendCodeBtn.textContent = '发送验证码'; }
             if (forgotCodeCountdownEl) forgotCodeCountdownEl.textContent = '';
-            if (forgotCodeTimer) {
-                clearInterval(forgotCodeTimer);
-                forgotCodeTimer = null;
-                forgotCodeCountdown = 0;
-            }
+            if (forgotCodeTimer) { clearInterval(forgotCodeTimer); forgotCodeTimer = null; forgotCodeCountdown = 0; }
         }
 
         forgotPasswordLink.addEventListener('click', function() {
-            if (!cookieEnabled) {
-                showToastMessage('⚠️ 请先启用 Cookie', 'error');
-                return;
-            }
+            if (!cookieEnabled) { showToastMessage('⚠️ 请先启用 Cookie', 'error'); return; }
             forgotModal.style.display = 'flex';
             resetForgotForm();
         });
 
         closeForgotModal.addEventListener('click', function() {
             forgotModal.style.display = 'none';
-            if (forgotCodeTimer) {
-                clearInterval(forgotCodeTimer);
-                forgotCodeTimer = null;
-                forgotCodeCountdown = 0;
-            }
-            if (forgotSendCodeBtn) {
-                forgotSendCodeBtn.disabled = false;
-                forgotSendCodeBtn.textContent = '发送验证码';
-            }
+            if (forgotCodeTimer) { clearInterval(forgotCodeTimer); forgotCodeTimer = null; forgotCodeCountdown = 0; }
+            if (forgotSendCodeBtn) { forgotSendCodeBtn.disabled = false; forgotSendCodeBtn.textContent = '发送验证码'; }
             if (forgotCodeCountdownEl) forgotCodeCountdownEl.textContent = '';
         });
 
         forgotSendCodeBtn.addEventListener('click', async function() {
-            if (!cookieEnabled) {
-                showToastMessage('⚠️ 请先启用 Cookie', 'error');
-                return;
-            }
-
+            if (!cookieEnabled) { showToastMessage('⚠️ 请先启用 Cookie', 'error'); return; }
             var username = document.getElementById('forgotEmailUsername').value.trim();
             var email = document.getElementById('forgotEmailAddr').value.trim();
             var msg = document.getElementById('forgotMessage');
-
-            if (!username || !email) {
-                msg.textContent = '请填写用户名和邮箱';
-                msg.className = 'message error';
-                return;
-            }
-
-            if (!validateEmail(email)) {
-                msg.textContent = '请输入有效的邮箱地址';
-                msg.className = 'message error';
-                return;
-            }
-
-            msg.textContent = '发送中...';
-            msg.className = 'message info';
-            this.disabled = true;
-            this.textContent = '发送中...';
-
+            if (!username || !email) { msg.textContent = '请填写用户名和邮箱'; msg.className = 'message error'; return; }
+            if (!validateEmail(email)) { msg.textContent = '请输入有效的邮箱地址'; msg.className = 'message error'; return; }
+            msg.textContent = '发送中...'; msg.className = 'message info';
+            this.disabled = true; this.textContent = '发送中...';
             try {
-                var response = await apiRequest('/api/forgot-password/send-code', {
-                    method: 'POST',
-                    body: JSON.stringify({ username: username, email: email })
-                });
-
+                var response = await apiRequest('/api/forgot-password/send-code', { method: 'POST', body: JSON.stringify({ username: username, email: email }) });
                 if (response.success) {
                     msg.textContent = response.message || '验证码已发送至您的邮箱，请查收';
                     msg.className = 'message success';
                     forgotCodeCountdown = 60;
                     this.textContent = forgotCodeCountdown + 's';
                     if (forgotCodeCountdownEl) forgotCodeCountdownEl.textContent = '⏱️ ' + forgotCodeCountdown + '秒后可重新发送';
-
                     if (forgotCodeTimer) clearInterval(forgotCodeTimer);
                     forgotCodeTimer = setInterval(function() {
                         forgotCodeCountdown--;
                         if (forgotCodeCountdown <= 0) {
-                            clearInterval(forgotCodeTimer);
-                            forgotCodeTimer = null;
-                            forgotSendCodeBtn.disabled = false;
-                            forgotSendCodeBtn.textContent = '重新发送';
+                            clearInterval(forgotCodeTimer); forgotCodeTimer = null;
+                            forgotSendCodeBtn.disabled = false; forgotSendCodeBtn.textContent = '重新发送';
                             if (forgotCodeCountdownEl) forgotCodeCountdownEl.textContent = '';
                         } else {
                             forgotSendCodeBtn.textContent = forgotCodeCountdown + 's';
@@ -1149,94 +917,40 @@
                 } else {
                     msg.textContent = response.message || '发送失败，请重试';
                     msg.className = 'message error';
-                    this.disabled = false;
-                    this.textContent = '发送验证码';
+                    this.disabled = false; this.textContent = '发送验证码';
                 }
             } catch (error) {
                 msg.textContent = error.message || '发送失败，请重试';
                 msg.className = 'message error';
-                this.disabled = false;
-                this.textContent = '发送验证码';
+                this.disabled = false; this.textContent = '发送验证码';
             }
         });
 
         forgotEmailResetBtn.addEventListener('click', async function() {
-            if (!cookieEnabled) {
-                showToastMessage('⚠️ 请先启用 Cookie', 'error');
-                return;
-            }
-
+            if (!cookieEnabled) { showToastMessage('⚠️ 请先启用 Cookie', 'error'); return; }
             var username = document.getElementById('forgotEmailUsername').value.trim();
             var email = document.getElementById('forgotEmailAddr').value.trim();
             var newPassword = document.getElementById('forgotEmailNewPassword').value;
             var verificationCode = document.getElementById('forgotVerificationCode').value.trim();
             var msg = document.getElementById('forgotMessage');
-
-            if (!username || !email || !newPassword || !verificationCode) {
-                msg.textContent = '请填写所有字段';
-                msg.className = 'message error';
-                return;
-            }
-
-            if (!validateEmail(email)) {
-                msg.textContent = '请输入有效的邮箱地址';
-                msg.className = 'message error';
-                return;
-            }
-
-            if (newPassword.length < 8) {
-                msg.textContent = '新密码长度至少8位';
-                msg.className = 'message error';
-                return;
-            }
-
-            var hasUpper = /[A-Z]/.test(newPassword);
-            var hasLower = /[a-z]/.test(newPassword);
-            var hasDigit = /[0-9]/.test(newPassword);
-            var hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(newPassword);
-            var typeCount = [hasUpper, hasLower, hasDigit, hasSpecial].filter(Boolean).length;
-            if (typeCount < 2) {
-                msg.textContent = '密码需包含至少两种类型（大小写字母/数字/特殊字符）';
-                msg.className = 'message error';
-                return;
-            }
-
-            if (verificationCode.length !== 6 || !/^\d{6}$/.test(verificationCode)) {
-                msg.textContent = '验证码为6位数字，请检查输入';
-                msg.className = 'message error';
-                return;
-            }
-
-            msg.textContent = '验证中...';
-            msg.className = 'message info';
+            if (!username || !email || !newPassword || !verificationCode) { msg.textContent = '请填写所有字段'; msg.className = 'message error'; return; }
+            if (!validateEmail(email)) { msg.textContent = '请输入有效的邮箱地址'; msg.className = 'message error'; return; }
+            if (newPassword.length < 8) { msg.textContent = '新密码长度至少8位'; msg.className = 'message error'; return; }
+            var hasUpper = /[A-Z]/.test(newPassword), hasLower = /[a-z]/.test(newPassword), hasDigit = /[0-9]/.test(newPassword), hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(newPassword);
+            if ([hasUpper, hasLower, hasDigit, hasSpecial].filter(Boolean).length < 2) { msg.textContent = '密码需包含至少两种类型'; msg.className = 'message error'; return; }
+            if (verificationCode.length !== 6 || !/^\d{6}$/.test(verificationCode)) { msg.textContent = '验证码为6位数字'; msg.className = 'message error'; return; }
+            msg.textContent = '验证中...'; msg.className = 'message info';
             this.disabled = true;
-
             try {
-                var response = await apiRequest('/api/forgot-password', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        username: username,
-                        email: email,
-                        newPassword: newPassword,
-                        verificationCode: verificationCode
-                    })
-                });
-
+                var response = await apiRequest('/api/forgot-password', { method: 'POST', body: JSON.stringify({ username: username, email: email, newPassword: newPassword, verificationCode: verificationCode }) });
                 if (response.success) {
                     msg.textContent = response.message || '密码重置成功，已扣除8.8积分';
                     msg.className = 'message success';
                     setTimeout(function() {
                         forgotModal.style.display = 'none';
                         forgotEmailResetBtn.disabled = false;
-                        if (forgotCodeTimer) {
-                            clearInterval(forgotCodeTimer);
-                            forgotCodeTimer = null;
-                            forgotCodeCountdown = 0;
-                        }
-                        if (forgotSendCodeBtn) {
-                            forgotSendCodeBtn.disabled = false;
-                            forgotSendCodeBtn.textContent = '发送验证码';
-                        }
+                        if (forgotCodeTimer) { clearInterval(forgotCodeTimer); forgotCodeTimer = null; forgotCodeCountdown = 0; }
+                        if (forgotSendCodeBtn) { forgotSendCodeBtn.disabled = false; forgotSendCodeBtn.textContent = '发送验证码'; }
                         if (forgotCodeCountdownEl) forgotCodeCountdownEl.textContent = '';
                     }, 2000);
                 } else {
@@ -1248,63 +962,33 @@
                 msg.textContent = error.message || '操作失败，请重试';
                 msg.className = 'message error';
                 this.disabled = false;
-                if (error.message && (error.message.includes('验证码错误') || error.message.includes('验证码不存在') || error.message.includes('验证码已过期') || error.message.includes('验证码已被使用'))) {
-                    if (forgotSendCodeBtn) {
-                        forgotSendCodeBtn.disabled = false;
-                        forgotSendCodeBtn.textContent = '重新获取验证码';
-                    }
-                    if (forgotCodeCountdownEl) forgotCodeCountdownEl.textContent = '⚠️ 验证码已失效，请点击"重新获取验证码"';
-                }
             }
         });
 
         window.onclick = function(e) {
             if (e.target === forgotModal) {
                 forgotModal.style.display = 'none';
-                if (forgotCodeTimer) {
-                    clearInterval(forgotCodeTimer);
-                    forgotCodeTimer = null;
-                    forgotCodeCountdown = 0;
-                }
-                if (forgotSendCodeBtn) {
-                    forgotSendCodeBtn.disabled = false;
-                    forgotSendCodeBtn.textContent = '发送验证码';
-                }
+                if (forgotCodeTimer) { clearInterval(forgotCodeTimer); forgotCodeTimer = null; forgotCodeCountdown = 0; }
+                if (forgotSendCodeBtn) { forgotSendCodeBtn.disabled = false; forgotSendCodeBtn.textContent = '发送验证码'; }
                 if (forgotCodeCountdownEl) forgotCodeCountdownEl.textContent = '';
             }
         };
 
-        document.getElementById('forgotEmailAddr').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') forgotSendCodeBtn.click();
-        });
-        document.getElementById('forgotEmailUsername').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') forgotSendCodeBtn.click();
-        });
-        document.getElementById('forgotVerificationCode').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') forgotEmailResetBtn.click();
-        });
-        document.getElementById('forgotEmailNewPassword').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') forgotEmailResetBtn.click();
-        });
+        document.getElementById('forgotEmailAddr').addEventListener('keypress', function(e) { if (e.key === 'Enter') forgotSendCodeBtn.click(); });
+        document.getElementById('forgotEmailUsername').addEventListener('keypress', function(e) { if (e.key === 'Enter') forgotSendCodeBtn.click(); });
+        document.getElementById('forgotVerificationCode').addEventListener('keypress', function(e) { if (e.key === 'Enter') forgotEmailResetBtn.click(); });
+        document.getElementById('forgotEmailNewPassword').addEventListener('keypress', function(e) { if (e.key === 'Enter') forgotEmailResetBtn.click(); });
 
         async function init() {
             checkJavaScript();
             cookieEnabled = checkCookieEnabled();
             cookieCheckDone = true;
-
-            if (!cookieEnabled) {
-                handleCookieDisabled();
-                console.warn('⚠️ Cookie 被禁用，请启用 Cookie 后刷新页面');
-                return;
-            }
-
+            if (!cookieEnabled) { handleCookieDisabled(); return; }
             handleCookieEnabled();
-            fetchCsrfToken().catch(function(e) {
-                console.warn('CSRF pre-fetch failed:', e);
-            });
-            await checkGithubPending();
-            if (!githubPending) {
-                await checkGithubStatus();
+            fetchCsrfToken().catch(function(e) { console.warn('CSRF pre-fetch failed:', e); });
+            await checkOAuthPending();
+            if (!githubPending && !loliaPending) {
+                await checkOAuthStatus();
                 await checkAuthAndRedirect();
             }
         }
