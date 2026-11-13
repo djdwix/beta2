@@ -249,6 +249,12 @@
                         <input type="email" id="oauthBindRegEmail" placeholder=" " autocomplete="email">
                         <label>邮箱地址</label>
                     </div>
+                    <div class="input-group code-group">
+                        <input type="text" id="oauthBindRegVerificationCode" placeholder=" " maxlength="6" autocomplete="off" style="flex:1;min-width:120px;">
+                        <label>邮箱验证码</label>
+                        <button type="button" id="oauthBindSendCodeBtn" class="code-btn">发送验证码</button>
+                    </div>
+                    <div class="code-countdown" id="oauthBindCodeCountdown"></div>
                     <div class="input-group">
                         <input type="password" id="oauthBindRegPassword" placeholder=" " autocomplete="new-password">
                         <label>密码</label>
@@ -369,6 +375,8 @@
         var loliaConfigured = false;
         var loliaPending = false;
         var kickedShown = false;
+        var oauthBindCodeTimer = null;
+        var oauthBindCodeCountdown = 0;
 
         function checkJavaScript() {
             var jsWarning = document.getElementById('jsWarning');
@@ -489,15 +497,21 @@
         function setCsrfTokenCookie(token) {
             try {
                 var expires = new Date(Date.now() + CSRF_TOKEN_TTL).toUTCString();
-                document.cookie = 'csrf_token=' + token + '; expires=' + expires + '; path=/; SameSite=Strict; Secure';
+                var secure = location.protocol === 'https:' ? '; Secure' : '';
+                document.cookie = 'csrf_token=' + token + '; expires=' + expires + '; path=/; SameSite=Strict' + secure;
             } catch (e) {}
+        }
+
+        function updateCsrfToken(token) {
+            if (!token) return;
+            csrfToken = token;
+            csrfTokenLastFetch = Date.now();
+            setCsrfTokenCookie(token);
         }
 
         function fetchCsrfToken() {
             if (csrfTokenRefreshPromise) return csrfTokenRefreshPromise;
             if (csrfToken && (Date.now() - csrfTokenLastFetch) < CSRF_TOKEN_TTL) return Promise.resolve(csrfToken);
-            var cookieToken = getCsrfTokenFromCookie();
-            if (cookieToken) { csrfToken = cookieToken; csrfTokenLastFetch = Date.now(); return Promise.resolve(csrfToken); }
             csrfTokenRefreshPromise = fetch('/api/csrf-token', {
                 method: 'GET', credentials: 'include',
                 headers: { 'Accept': 'application/json', 'Cache-Control': 'no-cache' }
@@ -506,14 +520,13 @@
                 return response.json();
             }).then(function(data) {
                 if (!data.csrf_token) throw new Error('No CSRF token in response');
-                csrfToken = data.csrf_token;
-                csrfTokenLastFetch = Date.now();
-                setCsrfTokenCookie(csrfToken);
+                updateCsrfToken(data.csrf_token);
                 csrfTokenRefreshPromise = null;
                 return csrfToken;
             }).catch(function(error) {
                 csrfTokenRefreshPromise = null;
                 csrfToken = null;
+                try { document.cookie = 'csrf_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/'; } catch (e) {}
                 throw error;
             });
             return csrfTokenRefreshPromise;
@@ -529,6 +542,7 @@
             if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') {
                 return fetch(url, options).then(function(response) {
                     return response.json().then(function(data) {
+                        if (data && data.csrf_token) updateCsrfToken(data.csrf_token);
                         if (data && data.kicked) { showKickedMessage(); throw new Error('kicked'); }
                         if (!response.ok) throw new Error(data.error || '请求失败: ' + response.status);
                         return data;
@@ -540,9 +554,10 @@
                 return fetch(url, options);
             }).then(function(response) {
                 return response.json().then(function(data) {
+                    if (data && data.csrf_token) updateCsrfToken(data.csrf_token);
                     if (data && data.kicked) { showKickedMessage(); throw new Error('kicked'); }
                     if (!response.ok) {
-                        if (response.status === 403 && data.error && (data.error.includes('CSRF') || data.error.includes('会话已过期') || data.error.includes('CSRF验证失败'))) {
+                        if (response.status === 403 && (data.csrf_error || (data.error && (data.error.indexOf('CSRF') !== -1 || data.error.indexOf('会话已过期') !== -1)))) {
                             csrfToken = null;
                             csrfTokenLastFetch = 0;
                             try { document.cookie = 'csrf_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/'; } catch (e) {}
@@ -551,6 +566,7 @@
                                 return fetch(url, options);
                             }).then(function(retryResponse) {
                                 return retryResponse.json().then(function(retryData) {
+                                    if (retryData && retryData.csrf_token) updateCsrfToken(retryData.csrf_token);
                                     if (retryData && retryData.kicked) { showKickedMessage(); throw new Error('kicked'); }
                                     if (!retryResponse.ok) throw new Error(retryData.error || '请求失败: ' + retryResponse.status);
                                     return retryData;
@@ -624,25 +640,69 @@
                     this.disabled = false;
                 }
             };
+            document.getElementById('oauthBindSendCodeBtn').onclick = async function() {
+                var e = document.getElementById('oauthBindRegEmail').value.trim();
+                var btn = this;
+                var msg = document.getElementById('oauthBindRegisterMessage');
+                if (!e) { msg.textContent = '请先输入邮箱地址'; msg.className = 'message error'; return; }
+                if (!validateEmail(e)) { msg.textContent = '请输入有效的邮箱地址'; msg.className = 'message error'; return; }
+                btn.disabled = true; btn.textContent = '发送中...';
+                msg.textContent = '发送中...'; msg.className = 'message info';
+                try {
+                    var response = await apiRequest('/api/send-verification-code', { method: 'POST', body: JSON.stringify({ email: e, purpose: '注册' }) });
+                    if (response.success) {
+                        msg.textContent = response.message || '验证码已发送至您的邮箱，请查收';
+                        msg.className = 'message success';
+                        oauthBindCodeCountdown = 60;
+                        btn.textContent = oauthBindCodeCountdown + 's';
+                        var countdownEl = document.getElementById('oauthBindCodeCountdown');
+                        if (countdownEl) countdownEl.textContent = '⏱️ ' + oauthBindCodeCountdown + '秒后可重新发送';
+                        if (oauthBindCodeTimer) clearInterval(oauthBindCodeTimer);
+                        oauthBindCodeTimer = setInterval(function() {
+                            oauthBindCodeCountdown--;
+                            if (oauthBindCodeCountdown <= 0) {
+                                clearInterval(oauthBindCodeTimer); oauthBindCodeTimer = null;
+                                btn.disabled = false; btn.textContent = '重新发送';
+                                if (countdownEl) countdownEl.textContent = '';
+                            } else {
+                                btn.textContent = oauthBindCodeCountdown + 's';
+                                if (countdownEl) countdownEl.textContent = '⏱️ ' + oauthBindCodeCountdown + '秒后可重新发送';
+                            }
+                        }, 1000);
+                    } else {
+                        msg.textContent = response.error || response.message || '发送失败';
+                        msg.className = 'message error';
+                        btn.disabled = false; btn.textContent = '发送验证码';
+                    }
+                } catch (err) {
+                    msg.textContent = err.message || '发送失败，请重试';
+                    msg.className = 'message error';
+                    btn.disabled = false; btn.textContent = '发送验证码';
+                }
+            };
             document.getElementById('oauthBindRegisterBtn').onclick = async function() {
                 var u = document.getElementById('oauthBindRegUsername').value.trim();
                 var e = document.getElementById('oauthBindRegEmail').value.trim();
                 var p = document.getElementById('oauthBindRegPassword').value;
                 var q = document.getElementById('oauthBindRegQqNumber').value.trim();
+                var code = document.getElementById('oauthBindRegVerificationCode').value.trim();
                 var msg = document.getElementById('oauthBindRegisterMessage');
                 if (!u || !p) { msg.textContent = '请填写用户名和密码'; msg.className = 'message error'; return; }
                 if (u.length < 3 || u.length > 20) { msg.textContent = '用户名长度必须为3-20位'; msg.className = 'message error'; return; }
                 if (!/^[a-zA-Z0-9_\u4e00-\u9fa5]+$/.test(u)) { msg.textContent = '用户名仅支持字母、数字、下划线、中文'; msg.className = 'message error'; return; }
-                if (e && !validateEmail(e)) { msg.textContent = '请输入有效的邮箱地址'; msg.className = 'message error'; return; }
+                if (!e) { msg.textContent = '请填写邮箱地址'; msg.className = 'message error'; return; }
+                if (!validateEmail(e)) { msg.textContent = '请输入有效的邮箱地址'; msg.className = 'message error'; return; }
+                if (!code || code.length !== 6 || !/^\d{6}$/.test(code)) { msg.textContent = '请输入6位数字验证码'; msg.className = 'message error'; return; }
                 if (p.length < 8) { msg.textContent = '密码长度至少8位'; msg.className = 'message error'; return; }
                 var hasUpper = /[A-Z]/.test(p), hasLower = /[a-z]/.test(p), hasDigit = /[0-9]/.test(p), hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(p);
                 if ([hasUpper, hasLower, hasDigit, hasSpecial].filter(Boolean).length < 2) { msg.textContent = '密码需包含至少两种类型'; msg.className = 'message error'; return; }
-                if (q && !/^\d{5,15}$/.test(q)) { msg.textContent = 'QQ号格式不正确'; msg.className = 'message error'; return; }
+                if (!q) { msg.textContent = 'QQ号是必填项'; msg.className = 'message error'; return; }
+                if (!/^\d{5,15}$/.test(q)) { msg.textContent = 'QQ号格式不正确'; msg.className = 'message error'; return; }
                 msg.textContent = '注册中...'; msg.className = 'message info';
                 this.disabled = true;
                 try {
                     var url = which === 'github' ? '/api/auth/github/register' : '/api/lolia/register';
-                    var r = await apiRequest(url, { method: 'POST', body: JSON.stringify({ username: u, email: e, password: p, qq_number: q }) });
+                    var r = await apiRequest(url, { method: 'POST', body: JSON.stringify({ username: u, email: e, password: p, qq_number: q, verification_code: code }) });
                     msg.textContent = r.message || '注册成功，正在跳转...';
                     msg.className = 'message success';
                     setTimeout(function() { window.location.href = '/'; }, 800);

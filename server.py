@@ -400,6 +400,7 @@ RATE_LIMITS = {
 
 LOCK_TIMEOUT = 15
 ATTENDANCE_TOKEN_TTL = 90
+CSRF_TOKEN_TTL = 3600
 
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
 
@@ -2807,6 +2808,9 @@ def delete_user_completely(username):
     if username in gateway_cards:
         del gateway_cards[username]
         save_gateway_cards()
+    if username in restricted_users:
+        del restricted_users[username]
+        save_restricted_users()
     if username in users:
         pl_balance = get_user_pl_balance(username)
         if pl_balance > 0:
@@ -2835,6 +2839,9 @@ def delete_user_completely(username):
         del user_coupons[cid]
     if coupons_to_remove:
         save_user_coupons()
+    if username in coupon_grants:
+        del coupon_grants[username]
+        save_coupon_grants()
     transfers_to_remove = []
     for tid, transfer in pl_transfers.items():
         if transfer.get('from_username') == username or transfer.get('to_username') == username:
@@ -2898,6 +2905,52 @@ def delete_user_completely(username):
         del pay_password_reset_tokens[tid]
     if reset_tokens_to_remove:
         save_pay_password_reset_tokens()
+    exchange_records_to_remove = []
+    for rid, record in pl_exchange_records.items():
+        if record.get('username') == username:
+            exchange_records_to_remove.append(rid)
+    for rid in exchange_records_to_remove:
+        del pl_exchange_records[rid]
+    if exchange_records_to_remove:
+        save_pl_exchange_records()
+    if username in newbie_pool_claims:
+        del newbie_pool_claims[username]
+        save_newbie_pool_claims(newbie_pool_claims)
+    email_push_to_remove = []
+    for rid, record in email_push_records.items():
+        if record.get('username') == username:
+            email_push_to_remove.append(rid)
+    for rid in email_push_to_remove:
+        del email_push_records[rid]
+    if email_push_to_remove:
+        save_email_push_records()
+    feedbacks_to_remove = []
+    for fid, fb in feedbacks.items():
+        if fb.get('username') == username:
+            feedbacks_to_remove.append(fid)
+    for fid in feedbacks_to_remove:
+        del feedbacks[fid]
+    if feedbacks_to_remove:
+        save_feedbacks()
+    orders_to_remove = []
+    for oid, order in orders.items():
+        if order.get('username') == username or order.get('owner') == username or order.get('payer') == username:
+            orders_to_remove.append(oid)
+    for oid in orders_to_remove:
+        del orders[oid]
+    if orders_to_remove:
+        save_orders()
+    if username in log_request_cooldown:
+        del log_request_cooldown[username]
+        save_log_request_cooldown()
+    attendance_token_to_remove = []
+    for tid, t in attendance_tokens.items():
+        if t.get('username') == username:
+            attendance_token_to_remove.append(tid)
+    for tid in attendance_token_to_remove:
+        del attendance_tokens[tid]
+    if attendance_token_to_remove:
+        save_attendance_tokens()
 
 def cleanup_unverified_users():
     current_time = datetime.now()
@@ -4645,18 +4698,40 @@ def csrf_protect(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if request.method in ['POST', 'PUT', 'DELETE', 'PATCH']:
+            token = request.headers.get('X-CSRF-Token', '').strip()
+            if not token:
+                return jsonify({'error': 'CSRF验证失败，请刷新页面重试', 'csrf_error': True}), 403
             session_token = session.get('_csrf_token')
-            if not session_token:
-                return jsonify({'error': '会话已过期，请刷新页面'}), 403
-            token = request.headers.get('X-CSRF-Token')
-            if not token or token != session_token:
-                return jsonify({'error': 'CSRF验证失败，请刷新页面重试'}), 403
+            if session_token:
+                if not hmac.compare_digest(token, session_token):
+                    return jsonify({'error': 'CSRF验证失败，请刷新页面重试', 'csrf_error': True}), 403
+            else:
+                cookie_token = request.cookies.get('csrf_token', '').strip()
+                if cookie_token and hmac.compare_digest(token, cookie_token):
+                    session['_csrf_token'] = cookie_token
+                else:
+                    new_token = secrets.token_hex(32)
+                    session['_csrf_token'] = new_token
+                    resp = jsonify({
+                        'error': 'CSRF验证失败，请刷新页面重试',
+                        'csrf_error': True,
+                        'csrf_token': new_token
+                    })
+                    resp.status_code = 403
+                    resp.set_cookie('csrf_token', new_token, max_age=CSRF_TOKEN_TTL, path='/', samesite='Strict', secure=request.is_secure)
+                    return resp
         return f(*args, **kwargs)
     return decorated_function
 
 @app.route('/api/csrf-token', methods=['GET'])
 def csrf_token_endpoint():
-    return jsonify({'csrf_token': get_csrf_token()})
+    token = session.get('_csrf_token')
+    if not token:
+        token = secrets.token_hex(32)
+        session['_csrf_token'] = token
+    resp = jsonify({'csrf_token': token})
+    resp.set_cookie('csrf_token', token, max_age=CSRF_TOKEN_TTL, path='/', samesite='Strict', secure=request.is_secure)
+    return resp
 
 @app.route('/api/health-web', methods=['GET'])
 @limiter.limit('5 per day')
@@ -5512,6 +5587,17 @@ def perform_refund_risk_check(username, refund_points):
     if not qq_number:
         risk_score += 5
         risk_details.append({'text': '未绑定QQ号', 'score': 5})
+    github_id = user_data.get('github_id', '')
+    lolia_id = user_data.get('lolia_id', '')
+    if not github_id:
+        risk_score += 10
+        risk_details.append({'text': '未绑定GitHub账号', 'score': 10})
+    if not lolia_id:
+        risk_score += 5
+        risk_details.append({'text': '未绑定Lolia账号', 'score': 5})
+    if not github_id and not lolia_id:
+        risk_score += 20
+        risk_details.append({'text': 'GitHub和Lolia账号均未绑定', 'score': 20})
     pl_balance = get_user_pl_balance(username)
     if pl_balance < 1 and total_points < 50:
         risk_score += 10
@@ -8478,7 +8564,7 @@ def cancel_account():
     user_data = users.get(username)
     if not user_data:
         return jsonify({'error': '用户不存在'}), 400
-    if user_data.get('email') != email:
+    if (user_data.get('email') or '').strip().lower() != email:
         return jsonify({'error': '邮箱与账号不匹配'}), 400
     success, message = email_service.verify_code(email, verification_code)
     if not success:
@@ -8487,16 +8573,20 @@ def cancel_account():
     delete_user_completely(username)
     invalidate_user_caches(username)
     session.clear()
-    response = make_response(jsonify({'success': True, 'message': '账号已成功注销'}))
-    response.set_cookie('session', '', expires=0, path='/')
-    response.set_cookie('session_expiration', '', expires=0, path='/')
+    new_csrf = secrets.token_hex(32)
+    session['_csrf_token'] = new_csrf
+    session.permanent = True
     response_time = int((time.time() - start_time) * 1000)
-    response_data = jsonify({
+    resp = jsonify({
         'success': True,
         'message': '账号已成功注销',
+        'csrf_token': new_csrf,
         'responseTime': response_time
     })
-    return response_data
+    resp.set_cookie('session', '', expires=0, path='/')
+    resp.set_cookie('session_expiration', '', expires=0, path='/')
+    resp.set_cookie('csrf_token', new_csrf, max_age=CSRF_TOKEN_TTL, path='/', samesite='Strict', secure=request.is_secure)
+    return resp
 
 @app.route('/api/use-makeup-code', methods=['POST'])
 @csrf_protect
@@ -9834,10 +9924,10 @@ def login():
         username = username_or_email
         user_data = users[username]
     else:
-        for u, data in users.items():
-            if data.get('email') == username_or_email.lower():
+        for u, data_u in users.items():
+            if (data_u.get('email') or '').strip().lower() == username_or_email.lower():
                 username = u
-                user_data = data
+                user_data = data_u
                 break
     if not user_data:
         return jsonify({'error': '用户名或密码错误'}), 400
@@ -9848,19 +9938,26 @@ def login():
     login_token = issue_login_token(username)
     if not login_token:
         return jsonify({'error': '登录失败，请重试'}), 500
+    old_csrf = session.get('_csrf_token', '')
     session.clear()
     session['user'] = {'username': username}
     session['login_token'] = login_token
+    new_csrf = secrets.token_hex(32)
+    session['_csrf_token'] = new_csrf
+    session.permanent = True
     user_data['lastLoginDate'] = datetime.now().strftime('%Y-%m-%d')
     save_users()
     invalidate_user_caches(username)
     response_time = int((time.time() - start_time) * 1000)
-    return jsonify({
+    resp = jsonify({
         'success': True,
         'username': username,
         'message': '登录成功',
+        'csrf_token': new_csrf,
         'responseTime': response_time
     })
+    resp.set_cookie('csrf_token', new_csrf, max_age=CSRF_TOKEN_TTL, path='/', samesite='Strict', secure=request.is_secure)
+    return resp
 
 @app.route('/api/register', methods=['POST'])
 @csrf_protect
@@ -9882,15 +9979,15 @@ def register():
     if not validate_email(email):
         return jsonify({'error': '邮箱格式不正确'}), 400
     for existing_user in users.values():
-        if existing_user.get('email') == email:
+        if (existing_user.get('email') or '').strip().lower() == email:
             return jsonify({'error': '邮箱已被注册'}), 400
     if not validate_password(password):
         return jsonify({'error': '密码至少8位，需包含至少两种类型（大小写字母/数字/特殊字符）'}), 400
     if qq_number and not re.match(r'^\d{5,15}$', qq_number):
         return jsonify({'error': 'QQ号格式不正确，请输入5-15位数字'}), 400
     if qq_number:
-        for u, data in users.items():
-            if data.get('qq_number') == qq_number:
+        for u, d in users.items():
+            if d.get('qq_number') == qq_number:
                 return jsonify({'error': '该QQ号已被其他用户绑定'}), 400
     if not verification_code:
         return jsonify({'error': '请输入邮箱验证码'}), 400
@@ -9930,6 +10027,16 @@ def register():
         'old_email': '',
         'login_token': '',
         'login_token_issued_at': 0,
+        'github_id': '',
+        'github_username': '',
+        'github_avatar': '',
+        'github_bound_at': 0,
+        'github_access_token': '',
+        'lolia_id': '',
+        'lolia_username': '',
+        'lolia_avatar': '',
+        'lolia_bound_at': 0,
+        'lolia_access_token': '',
         'membership': {
             'is_member': False,
             'activated_at': 0,
@@ -9942,13 +10049,19 @@ def register():
     session.clear()
     session['user'] = {'username': username}
     session['login_token'] = login_token
+    new_csrf = secrets.token_hex(32)
+    session['_csrf_token'] = new_csrf
+    session.permanent = True
     response_time = int((time.time() - start_time) * 1000)
-    return jsonify({
+    resp = jsonify({
         'success': True,
         'username': username,
         'message': '注册成功',
+        'csrf_token': new_csrf,
         'responseTime': response_time
     })
+    resp.set_cookie('csrf_token', new_csrf, max_age=CSRF_TOKEN_TTL, path='/', samesite='Strict', secure=request.is_secure)
+    return resp
 
 @app.route('/api/logout', methods=['POST'])
 def logout():
@@ -9957,11 +10070,13 @@ def logout():
         revoke_login_token(username)
         invalidate_user_caches(username)
     session.clear()
-    response = make_response(jsonify({'success': True, 'message': '已退出登录'}))
+    new_csrf = secrets.token_hex(32)
+    session['_csrf_token'] = new_csrf
+    session.permanent = True
+    response = make_response(jsonify({'success': True, 'message': '已退出登录', 'csrf_token': new_csrf}))
     response.set_cookie('session', '', expires=0, path='/')
     response.set_cookie('session_expiration', '', expires=0, path='/')
-    response.set_cookie('session', '', expires=0, path='/', domain=None)
-    response.set_cookie('session_expiration', '', expires=0, path='/', domain=None)
+    response.set_cookie('csrf_token', new_csrf, max_age=CSRF_TOKEN_TTL, path='/', samesite='Strict', secure=request.is_secure)
     return response
 
 @app.route('/api/check-auth', methods=['GET'])
@@ -10108,6 +10223,7 @@ def github_callback():
                             break
         except Exception:
             pass
+        github_email = (github_email or '').strip().lower()
         bind_intent = session.pop('github_bind_intent', False)
         current_username = session.get('user', {}).get('username')
         found_username = None
@@ -10119,6 +10235,7 @@ def github_callback():
             session_token = session.get('login_token', '')
             if not validate_login_token(current_username, session_token):
                 session.clear()
+                session['_csrf_token'] = secrets.token_hex(32)
                 resp = make_response('<html><body><script>alert("您的账号已在其他设备登录，当前会话已失效");window.location.href="/login.html";</script></body></html>')
                 resp.headers['Content-Type'] = 'text/html; charset=utf-8'
                 return resp
@@ -10151,6 +10268,9 @@ def github_callback():
             session.clear()
             session['user'] = {'username': found_username}
             session['login_token'] = login_token
+            new_csrf = secrets.token_hex(32)
+            session['_csrf_token'] = new_csrf
+            session.permanent = True
             users[found_username]['lastLoginDate'] = datetime.now().strftime('%Y-%m-%d')
             users[found_username]['github_username'] = github_login_name
             users[found_username]['github_avatar'] = github_avatar
@@ -10159,7 +10279,46 @@ def github_callback():
             invalidate_user_caches(found_username)
             resp = make_response('<html><body><script>window.location.href="/";</script></body></html>')
             resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+            resp.set_cookie('csrf_token', new_csrf, max_age=CSRF_TOKEN_TTL, path='/', samesite='Strict', secure=request.is_secure)
             return resp
+        if github_email:
+            matched_username = None
+            for uname, udata in users.items():
+                if (udata.get('email') or '').strip().lower() == github_email:
+                    matched_username = uname
+                    break
+            if matched_username:
+                if is_login_restricted(matched_username):
+                    resp = make_response('<html><body><script>alert("账号已被限制登录，请联系管理员");window.location.href="/login.html";</script></body></html>')
+                    resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+                    return resp
+                user_data = users[matched_username]
+                old_github_id = user_data.get('github_id', '')
+                if old_github_id and old_github_id != github_id:
+                    log.info(f"User {matched_username} github binding replaced by email match: {old_github_id} -> {github_id}")
+                user_data['github_id'] = github_id
+                user_data['github_username'] = github_login_name
+                user_data['github_avatar'] = github_avatar
+                user_data['github_bound_at'] = int(time.time() * 1000)
+                user_data['github_access_token'] = token.get('access_token', '')
+                user_data['lastLoginDate'] = datetime.now().strftime('%Y-%m-%d')
+                save_users()
+                login_token = issue_login_token(matched_username)
+                if not login_token:
+                    resp = make_response('<html><body><script>alert("登录失败，请重试");window.location.href="/login.html";</script></body></html>')
+                    resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+                    return resp
+                session.clear()
+                session['user'] = {'username': matched_username}
+                session['login_token'] = login_token
+                new_csrf = secrets.token_hex(32)
+                session['_csrf_token'] = new_csrf
+                session.permanent = True
+                invalidate_user_caches(matched_username)
+                resp = make_response('<html><body><script>window.location.href="/";</script></body></html>')
+                resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+                resp.set_cookie('csrf_token', new_csrf, max_age=CSRF_TOKEN_TTL, path='/', samesite='Strict', secure=request.is_secure)
+                return resp
         session['github_pending'] = {
             'github_id': github_id,
             'github_username': github_login_name,
@@ -10207,7 +10366,7 @@ def github_login_existing():
         user_data = users[username]
     else:
         for u, d in users.items():
-            if d.get('email') == username.lower():
+            if (d.get('email') or '').strip().lower() == username.lower():
                 found_username = u
                 user_data = d
                 break
@@ -10235,12 +10394,18 @@ def github_login_existing():
     session.clear()
     session['user'] = {'username': found_username}
     session['login_token'] = login_token
+    new_csrf = secrets.token_hex(32)
+    session['_csrf_token'] = new_csrf
+    session.permanent = True
     invalidate_user_caches(found_username)
-    return jsonify({
+    resp = jsonify({
         'success': True,
         'username': found_username,
-        'message': 'GitHub绑定成功并已登录'
+        'message': 'GitHub绑定成功并已登录',
+        'csrf_token': new_csrf
     })
+    resp.set_cookie('csrf_token', new_csrf, max_age=CSRF_TOKEN_TTL, path='/', samesite='Strict', secure=request.is_secure)
+    return resp
 
 
 @app.route('/api/auth/github/register', methods=['POST'])
@@ -10255,6 +10420,7 @@ def github_register():
     password = data.get('password', '')
     qq_number = data.get('qq_number', '').strip()
     email = data.get('email', '').strip().lower()
+    verification_code = data.get('verification_code', '').strip()
     if not username or not password:
         return jsonify({'error': '请填写用户名和密码'}), 400
     if not validate_username(username):
@@ -10262,13 +10428,11 @@ def github_register():
     if username in users:
         return jsonify({'error': '用户名已被使用'}), 400
     if not email:
-        email = pending.get('github_email', '')
-    if not email:
         return jsonify({'error': '请填写邮箱地址'}), 400
     if not validate_email(email):
         return jsonify({'error': '邮箱格式不正确'}), 400
     for existing_user in users.values():
-        if existing_user.get('email') == email:
+        if (existing_user.get('email') or '').strip().lower() == email:
             return jsonify({'error': '邮箱已被注册'}), 400
     if not validate_password(password):
         return jsonify({'error': '密码至少8位，需包含至少两种类型（大小写字母/数字/特殊字符）'}), 400
@@ -10278,6 +10442,11 @@ def github_register():
         for u, d in users.items():
             if d.get('qq_number') == qq_number:
                 return jsonify({'error': '该QQ号已被其他用户绑定'}), 400
+    if not verification_code:
+        return jsonify({'error': '请输入邮箱验证码'}), 400
+    success, message = email_service.verify_code(email, verification_code)
+    if not success:
+        return jsonify({'error': message}), 400
     github_id = pending.get('github_id', '')
     for uname, udata in users.items():
         if udata.get('github_id') == github_id:
@@ -10293,7 +10462,12 @@ def github_register():
         'github_avatar': pending.get('github_avatar', ''),
         'github_bound_at': int(time.time() * 1000),
         'github_access_token': pending.get('access_token', ''),
-        'totalPoints': 400,
+        'lolia_id': '',
+        'lolia_username': '',
+        'lolia_avatar': '',
+        'lolia_bound_at': 0,
+        'lolia_access_token': '',
+        'totalPoints': 0,
         'unlimitedPoints': 0,
         'dailyEarnedPoints': 0,
         'lastEarnedDate': datetime.now().strftime('%Y-%m-%d'),
@@ -10313,8 +10487,8 @@ def github_register():
         'plcard_code_purchase_count': 0,
         'lastSplashShown': 0,
         'last_plcard_purchase_date': '',
-        'email_verified': False,
-        'email_verified_at': 0,
+        'email_verified': True,
+        'email_verified_at': int(time.time() * 1000),
         'email_changed': False,
         'email_changed_at': 0,
         'old_email': '',
@@ -10335,12 +10509,16 @@ def github_register():
     session.clear()
     session['user'] = {'username': username}
     session['login_token'] = login_token
+    new_csrf = secrets.token_hex(32)
+    session['_csrf_token'] = new_csrf
+    session.permanent = True
     return jsonify({
         'success': True,
         'username': username,
         'message': '注册成功'
     })
-
+    resp.set_cookie('csrf_token', new_csrf, max_age=CSRF_TOKEN_TTL, path='/', samesite='Strict', secure=request.is_secure)
+    return resp
 
 @app.route('/api/user/bind-github', methods=['POST'])
 @csrf_protect
@@ -10524,7 +10702,6 @@ def lolia_callback():
         return jsonify({'error': '缺少授权码'}), 400
     if not expected_state or not hmac.compare_digest(state, expected_state):
         return jsonify({'error': 'state校验失败，请重新授权'}), 400
-    
     try:
         token_payload = {
             'grant_type': 'authorization_code',
@@ -10533,77 +10710,64 @@ def lolia_callback():
             'client_id': LOLIA_CLIENT_ID,
             'client_secret': LOLIA_CLIENT_SECRET
         }
-        
         token_resp = requests.post(
             LOLIA_TOKEN_URL,
             data=token_payload,
             headers={'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded'},
             timeout=15
         )
-        
         if token_resp.status_code != 200:
             log.error(f"Lolia token exchange failed: {token_resp.status_code} {token_resp.text[:300]}")
             resp = make_response('<html><body><script>alert("Lolia令牌交换失败，请重试");window.location.href="/login.html";</script></body></html>')
             resp.headers['Content-Type'] = 'text/html; charset=utf-8'
             return resp
-            
         token_data = token_resp.json()
         access_token = token_data.get('access_token', '')
-        
         if not access_token:
             log.error(f"Lolia token response missing access_token: {token_data}")
             resp = make_response('<html><body><script>alert("Lolia返回的令牌无效");window.location.href="/login.html";</script></body></html>')
             resp.headers['Content-Type'] = 'text/html; charset=utf-8'
             return resp
-            
         user_resp = requests.get(
             LOLIA_USERINFO_URL,
             headers={'Authorization': f'Bearer {access_token}', 'Accept': 'application/json'},
             timeout=15
         )
-        
         if user_resp.status_code != 200:
             log.error(f"Lolia userinfo failed: {user_resp.status_code} {user_resp.text[:300]}")
             resp = make_response('<html><body><script>alert("获取Lolia用户信息失败");window.location.href="/login.html";</script></body></html>')
             resp.headers['Content-Type'] = 'text/html; charset=utf-8'
             return resp
-            
         user_info = user_resp.json()
         lolia_user = user_info.get('data', user_info) if isinstance(user_info, dict) else {}
-        
         lolia_id = str(lolia_user.get('id', '') or lolia_user.get('uid', '') or lolia_user.get('user_id', ''))
         lolia_login_name = lolia_user.get('username', '') or lolia_user.get('name', '') or lolia_user.get('nickname', '')
         lolia_avatar = lolia_user.get('avatar', '') or lolia_user.get('avatar_url', '') or lolia_user.get('headimg', '')
-        lolia_email = lolia_user.get('email', '')
-        
+        lolia_email = (lolia_user.get('email', '') or '').strip().lower()
         if not lolia_id:
             log.error(f"Lolia userinfo missing id: {user_info}")
             resp = make_response('<html><body><script>alert("Lolia用户信息无效");window.location.href="/login.html";</script></body></html>')
             resp.headers['Content-Type'] = 'text/html; charset=utf-8'
             return resp
-            
         bind_intent = session.pop('lolia_bind_intent', False)
         current_username = session.get('user', {}).get('username')
         found_username = None
-        
         for uname, udata in users.items():
             if udata.get('lolia_id') == lolia_id:
                 found_username = uname
                 break
-                
         if bind_intent and current_username and current_username in users:
             session_token = session.get('login_token', '')
             if not validate_login_token(current_username, session_token):
                 session.clear()
+                session['_csrf_token'] = secrets.token_hex(32)
                 resp = make_response('<html><body><script>alert("您的账号已在其他设备登录，当前会话已失效");window.location.href="/login.html";</script></body></html>')
                 resp.headers['Content-Type'] = 'text/html; charset=utf-8'
                 return resp
-                
             if found_username and found_username != current_username:
                 resp = make_response('<html><body><script>alert("该Lolia账号已绑定到其他用户");window.location.href="/player_center.html";</script></body></html>')
                 resp.headers['Content-Type'] = 'text/html; charset=utf-8'
                 return resp
-                
             user_data = users[current_username]
             user_data['lolia_id'] = lolia_id
             user_data['lolia_username'] = lolia_login_name
@@ -10616,22 +10780,22 @@ def lolia_callback():
             resp = make_response('<html><body><script>window.location.href="/player_center.html?lolia_bound=1";</script></body></html>')
             resp.headers['Content-Type'] = 'text/html; charset=utf-8'
             return resp
-            
         if found_username:
             if is_login_restricted(found_username):
                 resp = make_response('<html><body><script>alert("账号已被限制登录，请联系管理员");window.location.href="/login.html";</script></body></html>')
                 resp.headers['Content-Type'] = 'text/html; charset=utf-8'
                 return resp
-                
             login_token = issue_login_token(found_username)
             if not login_token:
                 resp = make_response('<html><body><script>alert("登录失败，请重试");window.location.href="/login.html";</script></body></html>')
                 resp.headers['Content-Type'] = 'text/html; charset=utf-8'
                 return resp
-                
             session.clear()
             session['user'] = {'username': found_username}
             session['login_token'] = login_token
+            new_csrf = secrets.token_hex(32)
+            session['_csrf_token'] = new_csrf
+            session.permanent = True
             users[found_username]['lastLoginDate'] = datetime.now().strftime('%Y-%m-%d')
             users[found_username]['lolia_username'] = lolia_login_name
             users[found_username]['lolia_avatar'] = lolia_avatar
@@ -10640,8 +10804,46 @@ def lolia_callback():
             invalidate_user_caches(found_username)
             resp = make_response('<html><body><script>window.location.href="/";</script></body></html>')
             resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+            resp.set_cookie('csrf_token', new_csrf, max_age=CSRF_TOKEN_TTL, path='/', samesite='Strict', secure=request.is_secure)
             return resp
-            
+        if lolia_email:
+            matched_username = None
+            for uname, udata in users.items():
+                if (udata.get('email') or '').strip().lower() == lolia_email:
+                    matched_username = uname
+                    break
+            if matched_username:
+                if is_login_restricted(matched_username):
+                    resp = make_response('<html><body><script>alert("账号已被限制登录，请联系管理员");window.location.href="/login.html";</script></body></html>')
+                    resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+                    return resp
+                user_data = users[matched_username]
+                old_lolia_id = user_data.get('lolia_id', '')
+                if old_lolia_id and old_lolia_id != lolia_id:
+                    log.info(f"User {matched_username} lolia binding replaced by email match: {old_lolia_id} -> {lolia_id}")
+                user_data['lolia_id'] = lolia_id
+                user_data['lolia_username'] = lolia_login_name
+                user_data['lolia_avatar'] = lolia_avatar
+                user_data['lolia_bound_at'] = int(time.time() * 1000)
+                user_data['lolia_access_token'] = access_token
+                user_data['lastLoginDate'] = datetime.now().strftime('%Y-%m-%d')
+                save_users()
+                login_token = issue_login_token(matched_username)
+                if not login_token:
+                    resp = make_response('<html><body><script>alert("登录失败，请重试");window.location.href="/login.html";</script></body></html>')
+                    resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+                    return resp
+                session.clear()
+                session['user'] = {'username': matched_username}
+                session['login_token'] = login_token
+                new_csrf = secrets.token_hex(32)
+                session['_csrf_token'] = new_csrf
+                session.permanent = True
+                invalidate_user_caches(matched_username)
+                resp = make_response('<html><body><script>window.location.href="/";</script></body></html>')
+                resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+                resp.set_cookie('csrf_token', new_csrf, max_age=CSRF_TOKEN_TTL, path='/', samesite='Strict', secure=request.is_secure)
+                return resp
         session['lolia_pending'] = {
             'lolia_id': lolia_id,
             'lolia_username': lolia_login_name,
@@ -10652,7 +10854,6 @@ def lolia_callback():
         resp = make_response('<html><body><script>window.location.href="/login.html?lolia_bind=1";</script></body></html>')
         resp.headers['Content-Type'] = 'text/html; charset=utf-8'
         return resp
-        
     except Exception as e:
         log.error(f"Lolia callback error: {e}")
         return jsonify({'error': f'Lolia登录失败: {str(e)}'}), 500
@@ -10720,10 +10921,15 @@ def lolia_login_existing():
         
     session.pop('lolia_pending', None)
     session.clear()
-    session['user'] = {'username': found_username}
+    session['user'] = {'username': username}
     session['login_token'] = login_token
+    new_csrf = secrets.token_hex(32)
+    session['_csrf_token'] = new_csrf
+    session.permanent = True
     invalidate_user_caches(found_username)
     return jsonify({'success': True, 'username': found_username, 'message': 'Lolia绑定成功并已登录'})
+    resp.set_cookie('csrf_token', new_csrf, max_age=CSRF_TOKEN_TTL, path='/', samesite='Strict', secure=request.is_secure)
+    return resp
 
 
 @app.route('/api/lolia/register', methods=['POST'])
@@ -10738,6 +10944,7 @@ def lolia_register():
     password = data.get('password', '')
     qq_number = data.get('qq_number', '').strip()
     email = data.get('email', '').strip().lower()
+    verification_code = data.get('verification_code', '').strip()
     if not username or not password:
         return jsonify({'error': '请填写用户名和密码'}), 400
     if not validate_username(username):
@@ -10745,13 +10952,11 @@ def lolia_register():
     if username in users:
         return jsonify({'error': '用户名已被使用'}), 400
     if not email:
-        email = pending.get('lolia_email', '')
-    if not email:
         return jsonify({'error': '请填写邮箱地址'}), 400
     if not validate_email(email):
         return jsonify({'error': '邮箱格式不正确'}), 400
     for existing_user in users.values():
-        if existing_user.get('email') == email:
+        if (existing_user.get('email') or '').strip().lower() == email:
             return jsonify({'error': '邮箱已被注册'}), 400
     if not validate_password(password):
         return jsonify({'error': '密码至少8位，需包含至少两种类型（大小写字母/数字/特殊字符）'}), 400
@@ -10761,46 +10966,79 @@ def lolia_register():
         for u, d in users.items():
             if d.get('qq_number') == qq_number:
                 return jsonify({'error': '该QQ号已被其他用户绑定'}), 400
-                
+    if not verification_code:
+        return jsonify({'error': '请输入邮箱验证码'}), 400
+    success, message = email_service.verify_code(email, verification_code)
+    if not success:
+        return jsonify({'error': message}), 400
     lolia_id = pending.get('lolia_id', '')
     for uname, udata in users.items():
         if udata.get('lolia_id') == lolia_id:
             return jsonify({'error': '该Lolia账号已绑定到其他用户'}), 400
-            
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
     users[username] = {
-        'username': username, 'email': email, 'password': hashed_password,
+        'username': username,
+        'email': email,
+        'password': hashed_password,
         'qq_number': qq_number,
-        'lolia_id': lolia_id, 'lolia_username': pending.get('lolia_username', ''),
-        'lolia_avatar': pending.get('lolia_avatar', ''), 'lolia_bound_at': int(time.time() * 1000),
+        'lolia_id': lolia_id,
+        'lolia_username': pending.get('lolia_username', ''),
+        'lolia_avatar': pending.get('lolia_avatar', ''),
+        'lolia_bound_at': int(time.time() * 1000),
         'lolia_access_token': pending.get('access_token', ''),
-        'github_id': '', 'github_username': '', 'github_avatar': '', 'github_bound_at': 0, 'github_access_token': '',
-        'totalPoints': 0, 'unlimitedPoints': 0, 'dailyEarnedPoints': 0,
+        'github_id': '',
+        'github_username': '',
+        'github_avatar': '',
+        'github_bound_at': 0,
+        'github_access_token': '',
+        'totalPoints': 0,
+        'unlimitedPoints': 0,
+        'dailyEarnedPoints': 0,
         'lastEarnedDate': datetime.now().strftime('%Y-%m-%d'),
         'lastLoginDate': datetime.now().strftime('%Y-%m-%d'),
         'createdAt': datetime.now().isoformat(),
-        'attendanceTotalDays': 0, 'attendanceConsecutiveDays': 0, 'lastAttendanceTimestamp': 0,
-        'attendanceClaimedTotalCycles': {}, 'attendanceClaimedConsecutiveCycles': {},
-        'coupon_usage_count': 0, 'makeup_code_used_count': 0,
-        'gamblers_code_purchase_count': 0, 'last_gamblers_purchase_date': '',
-        'box_code_purchase_count': 0, 'last_box_purchase_date': '',
-        'plcard_code_purchase_count': 0, 'lastSplashShown': 0, 'last_plcard_purchase_date': '',
-        'email_verified': False, 'email_verified_at': 0,
-        'email_changed': False, 'email_changed_at': 0, 'old_email': '',
-        'login_token': '', 'login_token_issued_at': 0,
-        'membership': {'is_member': False, 'activated_at': 0, 'expires_at': 0, 'lifetime': True}
+        'attendanceTotalDays': 0,
+        'attendanceConsecutiveDays': 0,
+        'lastAttendanceTimestamp': 0,
+        'attendanceClaimedTotalCycles': {},
+        'attendanceClaimedConsecutiveCycles': {},
+        'coupon_usage_count': 0,
+        'makeup_code_used_count': 0,
+        'gamblers_code_purchase_count': 0,
+        'last_gamblers_purchase_date': '',
+        'box_code_purchase_count': 0,
+        'last_box_purchase_date': '',
+        'plcard_code_purchase_count': 0,
+        'lastSplashShown': 0,
+        'last_plcard_purchase_date': '',
+        'email_verified': True,
+        'email_verified_at': int(time.time() * 1000),
+        'email_changed': False,
+        'email_changed_at': 0,
+        'old_email': '',
+        'login_token': '',
+        'login_token_issued_at': 0,
+        'membership': {
+            'is_member': False,
+            'activated_at': 0,
+            'expires_at': 0,
+            'lifetime': True
+        }
     }
     save_users()
-    
     login_token = issue_login_token(username)
     if not login_token:
         return jsonify({'error': '注册失败，请重试'}), 500
-        
     session.pop('lolia_pending', None)
     session.clear()
     session['user'] = {'username': username}
     session['login_token'] = login_token
+    new_csrf = secrets.token_hex(32)
+    session['_csrf_token'] = new_csrf
+    session.permanent = True
     return jsonify({'success': True, 'username': username, 'message': '注册成功'})
+    resp.set_cookie('csrf_token', new_csrf, max_age=CSRF_TOKEN_TTL, path='/', samesite='Strict', secure=request.is_secure)
+    return resp
 
 
 @app.route('/api/user/unbind-lolia', methods=['POST'])
